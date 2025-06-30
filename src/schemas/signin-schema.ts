@@ -7,6 +7,6 @@ export const loginSchema = z.object({
     .email("Correo inválido"),
 
   password: z.string({ required_error: "La contraseña es obligatoria" })
-    .min(6, "La contraseña debe tener al menos 6 caracteres"),
+    .min(4, "La contraseña debe tener al menos 4 caracteres"),
 });
 
