@@ -4,7 +4,7 @@ import React from "react";
 interface AlertProps {
   variant: "success" | "error" | "warning" | "info"; // Alert type
   title: string; // Title of the alert
-  message: string; // Message of the alert
+  message: string | string []; // Message of the alert
   showLink?: boolean; // Whether to show the "Learn More" link
   linkHref?: string; // Link URL
   linkText?: string; // Link text
@@ -126,7 +126,13 @@ const Alert: React.FC<AlertProps> = ({
             {title}
           </h4>
 
-          <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
+          <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+            {Array.isArray(message)
+              ? message.map((msg, i) => <div key={i}>- {msg}</div>)
+              : typeof message === "string" && message.includes(',')
+                ? message.split(',').map((msg, i) => <div key={i}>- {msg.trim()}</div>)
+                : <div>- {message}</div>}
+          </div>
 
           {showLink && (
             <Link

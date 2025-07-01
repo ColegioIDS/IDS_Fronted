@@ -33,6 +33,14 @@ const navItems: NavItem[] = [
     path: "/dashboard",
   },
   {
+    icon: <PlugInIcon />,
+    name: "Roles & Permisos",
+    subItems: [
+      { name: "Roles", path: "/roles", pro: false, },
+      { name: "Permisos", path: "/permissions", pro: false },
+    ],
+  },
+  {
     icon: <CalenderIcon />,
     name: "Calendar",
     path: "/calendar",

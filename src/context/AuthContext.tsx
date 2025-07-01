@@ -40,12 +40,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
 
   const checkAuth = useCallback(async (force = false) => {
+     setIsLoading(true);
     if (!force && Date.now() - lastCheck < 5 * 60 * 1000) {
       setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
   
     try {
       const userData = await verifySession();
@@ -100,6 +100,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     logout,
     checkAuth,
   };
+
+   
 
   return (
     <AuthContext.Provider value={value}>
