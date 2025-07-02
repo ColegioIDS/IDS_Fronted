@@ -2,12 +2,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Permission } from '@/types/permission';
 import { getPermissions } from '@/services/usePermission';
+import { PermissionsState } from '@/types/permission';
 
-interface PermissionsState {
-  permissions: Permission[];
-  isLoading: boolean;
-  error: Error | null;
-}
+
 
 export const usePermissions = () => {
   const [state, setState] = useState<PermissionsState>({

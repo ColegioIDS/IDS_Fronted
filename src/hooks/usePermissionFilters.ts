@@ -1,14 +1,8 @@
 // hooks/usePermissionFilters.ts
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Permission } from '@/types/permission';
+import { FilterOptions } from '@/types/permission';
 
-type FilterOptions = {
-  module: string;
-  action: string;
-  status: string;
-  system: string;
-  search: string;
-};
 
 type SortConfig = {
   key: keyof Permission;
@@ -24,9 +18,9 @@ export const usePermissionFilters = (permissions: Permission[] = []) => {
     search: ''
   });
 
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ 
-    key: 'module', 
-    direction: 'asc' 
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: 'module',
+    direction: 'asc'
   });
 
   // Valores únicos para los selects

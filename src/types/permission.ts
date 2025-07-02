@@ -8,3 +8,20 @@ export interface Permission {
     isSystem: boolean;
 
 }
+
+export interface PermissionsState {
+  permissions: Permission[];
+  isLoading: boolean;
+  error: Error | null;
+}
+
+
+export type FilterOptions = {
+  module: string;
+  action: string;
+  status: string;
+  system: string;
+  search: string;
+};
+
+
