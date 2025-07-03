@@ -1,16 +1,22 @@
-//src\context\RoleContext.tsx
-
+// src/context/RoleContext.tsx
 "use client";
-import { createContext, useContext, useState } from "react";
-import { userole } from "@/hooks/useRoles";
+import { createContext, useContext } from "react";
+import { useRoles } from "@/hooks/useRoles";
+import type { RoleTableRow } from "@/types/role";
 
-type RoleContextType = ReturnType<typeof userole>;
-const RoleContext = createContext<RoleContextType | null>(null);
+interface RoleContextValue {
+  roles: RoleTableRow[]; // Asegurar que siempre es RoleTableRow[]
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => Promise<void>;
+}
+
+const RoleContext = createContext<RoleContextValue | null>(null);
 
 export const RoleProvider = ({ children }: { children: React.ReactNode }) => {
-  const roles = userole();
+  const { roles, isLoading, error, refetch } = useRoles();
   return (
-    <RoleContext.Provider value={roles}>
+    <RoleContext.Provider value={{ roles, isLoading, error, refetch }}>
       {children}
     </RoleContext.Provider>
   );
@@ -19,7 +25,7 @@ export const RoleProvider = ({ children }: { children: React.ReactNode }) => {
 export const useRoleContext = () => {
   const context = useContext(RoleContext);
   if (!context) {
-    throw new Error("useRole must be used within a RoleProvider");
+    throw new Error("useRoleContext must be used within a RoleProvider");
   }
   return context;
 };

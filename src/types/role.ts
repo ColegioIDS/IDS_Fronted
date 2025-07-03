@@ -1,17 +1,15 @@
-export interface Role {
+//src/types/role.ts
+import { DateRange as ReactDayPickerDateRange } from 'react-day-picker';
+
+// Tipo base para User (debe estar definido en otro archivo o aquí mismo)
+interface User {
   id: number;
-  name: string;
-  description: string;
-  permissions: number[]; // array de IDs de permisos
-  isActive: boolean;
+  fullName: string;
+  email?: string;
+  // ... otras propiedades de usuario
 }
 
-export interface RoleState {
-  roles: Role[];
-  isLoading: boolean;
-  error: Error | null;
-}
-
+// Tipo para Permission (ajustado a tu necesidad)
 export interface Permission {
   id: number;
   module: string;
@@ -23,27 +21,58 @@ export interface Permission {
   updatedAt: string;
 }
 
-export interface CreatedBy {
-  id: number;
-  fullName: string;
+// Relación Role-Permission (ajustada a Prisma)
+export interface RolePermission {
+  roleId: number;
+  permissionId: number;
+  assignedAt: Date | string;
+  assignedBy?: string;
+  permission: Permission; // Relación completa
 }
 
+// Tipo completo para Role (fiel a tu modelo Prisma)
+export interface Role {
+  id: number;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  createdById?: number | null;
+  modifiedById?: number | null;
+  createdBy?: User | null;
+  modifiedBy?: User | null;
+  permissions: RolePermission[]; // Relación completa
+  users?: User[]; // Opcional según necesidad
+}
+
+// Tipo optimizado para visualización en tablas
 export interface RoleTableRow {
   id: number;
   name: string;
-  description: string;
+  description: string | null;
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  createdById: number | null;
-  modifiedById: number | null;
+  createdAt: string; // Formateado para UI
+  updatedAt: string; // Formateado para UI
+  createdBy?: string; // Solo el nombre del creador
   userCount: number;
-  permissions: Permission[];
-  createdBy: CreatedBy | null;
-  modifiedBy: CreatedBy | null;
+  permissionCount: number;
+   permissions?: Permission[];
+   actions?: never;
 }
 
-export interface SortConfig<T = string> {
+// Estado para manejo en frontend
+export interface RoleState {
+  roles: Role[] | RoleTableRow[]; // Dependiendo del caso de uso
+  isLoading: boolean;
+  error: Error | null;
+}
+
+// Configuración para ordenamiento
+export interface SortConfig<T = keyof RoleTableRow> {
   key: T;
   direction: 'asc' | 'desc';
 }
+
+// Tipo para rangos de fecha (react-day-picker)
+export type DateRange = ReactDayPickerDateRange;

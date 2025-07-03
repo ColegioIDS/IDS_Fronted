@@ -1,3 +1,7 @@
+// React y Hooks
+import { useState } from "react";
+
+// Componentes de UI
 import {
   Table,
   TableBody,
@@ -6,18 +10,38 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import Badge from "@/components/ui/badge/Badge";
-import { useState } from "react";
-import { PermissionsModal } from "@/components/ui/modal/Modal";
-import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import Pagination from "@/components/tables/Pagination";
-import { FaChevronUp, FaChevronDown } from 'react-icons/fa';
-import { FaSearch, FaTimes } from 'react-icons/fa';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
+import IconInput from "@/components/form/input/IconInput";
 
+// Iconos
+import { FaChevronUp, FaChevronDown, FaSearch, FaTimes } from 'react-icons/fa';
+
+// Utilidades
+import { format } from "date-fns";
+import type { DateRange } from "react-day-picker";
+
+// Tipos
 import { Permission, CreatedBy, RoleTableRow as Role, SortConfig } from "@/types/role";
 
-import Input from "@/components/form/input/InputField";
-import Select from "@/components/form/Select";
+
+
 
 
 
@@ -229,56 +253,68 @@ const labelMap = {
 
 
 export default function RolesTable() {
-
+  // ==============================
   // 1. Estados React
+  // ==============================
+
+  // General
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+
+  // Ordenamiento
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
 
+  // Filtros
   const [filterText, setFilterText] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
-  const [filterCreator, setFilterCreator] = useState<string>(''); // fullName
-  const [filterDateRange, setFilterDateRange] = useState<[string, string] | null>(null); // ISO strings
-  const [filterUserCount, setFilterUserCount] = useState<[number, number]>([0, 100]); // ajustar según datos reales
+  const [filterCreator, setFilterCreator] = useState<string>('');
+  const [filterUserCount, setFilterUserCount] = useState<[number, number]>([0, 100]);
+  const [filterDateRange, setFilterDateRange] = useState<[string, string] | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
+  // ==============================
+  // 2. Filtro de datos
+  // ==============================
 
   const filteredData = rolesData.data.filter((role) => {
-    // 1. Texto libre
     const matchesText = [role.name, role.description]
       .some(field => field.toLowerCase().includes(filterText.toLowerCase()));
 
-    // 2. Estado
     const matchesStatus =
       filterStatus === 'all' ||
       (filterStatus === 'active' && role.isActive) ||
       (filterStatus === 'inactive' && !role.isActive);
 
-    // 3. Creador
     const matchesCreator =
       !filterCreator || role.createdBy?.fullName?.toLowerCase().includes(filterCreator.toLowerCase());
 
-    // 4. Fecha de creación
     const matchesDate = !filterDateRange || (
       new Date(role.createdAt) >= new Date(filterDateRange[0]) &&
       new Date(role.createdAt) <= new Date(filterDateRange[1])
     );
 
-    // 5. Rango de usuarios
     const matchesUserCount =
       role.userCount >= filterUserCount[0] && role.userCount <= filterUserCount[1];
 
     return matchesText && matchesStatus && matchesCreator && matchesDate && matchesUserCount;
   });
 
+  // ==============================
+  // 3. Datos derivados
+  // ==============================
 
-  // 2. Datos derivados
   const totalItems = filteredData.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const safeCurrentPage = Math.min(currentPage, totalPages);
 
-  // 3. Ordenamiento
+  // ==============================
+  // 4. Ordenamiento
+  // ==============================
+
   const sortedData = [...filteredData].sort((a, b) => {
     if (!sortConfig) return 0;
 
@@ -311,17 +347,19 @@ export default function RolesTable() {
     }
   });
 
+  // ==============================
+  // 5. Paginación
+  // ==============================
 
-
-
-
-  // 4. Paginación
   const paginatedData = sortedData.slice(
     (safeCurrentPage - 1) * itemsPerPage,
     safeCurrentPage * itemsPerPage
   );
 
-  // 5. Handlers
+  // ==============================
+  // 6. Handlers
+  // ==============================
+
   const handlePageChange = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
   };
@@ -338,7 +376,20 @@ export default function RolesTable() {
     });
   };
 
+  const resetFilters = () => {
+    setFilterText('');
+    setFilterStatus('all');
+    setFilterCreator('');
+    setFilterUserCount([0, 100]);
+    setDateRange(undefined);
+    setFilterDateRange(undefined);
+    setSortConfig(null);
+    setCurrentPage(1);
+  };
 
+  // ==============================
+  // 7. Modales
+  // ==============================
 
   const openPermissionsModal = (role: Role) => {
     setSelectedRole(role);
@@ -352,10 +403,6 @@ export default function RolesTable() {
 
 
 
-
-
-
-
   return (
 
     <div className="space-y-6">
@@ -366,55 +413,126 @@ export default function RolesTable() {
             Filtros y Agrupación
           </h2>
 
-          <div className="flex flex-wrap gap-4 mb-4 items-end">
+          {/* Contenedor de filtros */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end">
             {/* Filtro texto */}
-
-
-            <Input
-              icon={<FaSearch />}
-              placeholder="Buscar Roles..."
+            <IconInput
+              icon={FaSearch}
+              placeholder="Buscar por nombre o descripción"
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
-              className="pl-10"
+              className="w-full"
             />
 
             {/* Filtro estado */}
+            <div>
+              <label className="block text-sm text-muted-foreground mb-1">Estado</label>
+              <Select
+                value={filterStatus}
+                onValueChange={(value) => setFilterStatus(value as 'all' | 'active' | 'inactive')}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Filtrar estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="active">Activos</SelectItem>
+                  <SelectItem value="inactive">Inactivos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-
-            <Select
-              value={filterStatus}
-              onChange={(value) => setFilterStatus(value as 'all' | 'active' | 'inactive')}
-              options={[
-                { value: 'all', label: 'Todas las acciones' },
-                { value: 'active', label: 'Activos' },
-                { value: 'inactive', label: 'Inactivos' },
-              ]}
-            />
-
-             {/* Filtro creador */}
-               <Input
-              icon={<FaSearch />}
-              placeholder="Buscar por creador..."
+            {/* Filtro creador */}
+            <IconInput
+              icon={FaSearch}
+              placeholder="Buscar por creador"
               value={filterCreator}
               onChange={(e) => setFilterCreator(e.target.value)}
-              className="pl-10"
+              className="w-full"
             />
 
+            {/* Filtro por fechas */}
+            <div className="w-full">
+              <label className="block text-sm text-muted-foreground mb-1">Fecha de creación</label>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        `${format(dateRange.from, "dd/MM/yyyy")} – ${format(
+                          dateRange.to,
+                          "dd/MM/yyyy"
+                        )}`
+                      ) : (
+                        format(dateRange.from, "dd/MM/yyyy")
+                      )
+                    ) : (
+                      <span className="text-muted-foreground">Seleccionar rango de fechas</span>
+                    )}
 
 
-             
-              
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+
+                  <Calendar
+                    mode="range"
+                    selected={dateRange}
+                    onSelect={(range) => {
+                      setDateRange(range);
+                      if (range?.from && range?.to) {
+                        setFilterDateRange([
+                          format(range.from, "yyyy-MM-dd"),
+                          format(range.to, "yyyy-MM-dd"),
+                        ]);
+                      } else {
+                        setFilterDateRange(undefined);
+                      }
+                    }}
+                    numberOfMonths={1}
+                  />
+
+                </PopoverContent>
+              </Popover>
 
 
+            </div>
 
+            {/* Rango de usuarios */}
+            <div className="w-full">
+              <label className="block text-sm text-muted-foreground mb-1">
+                Usuarios: {filterUserCount[0]} – {filterUserCount[1]}
+              </label>
+              <Slider
+                min={0}
+                max={10}
+                step={1}
+                value={filterUserCount}
+                onValueChange={(value) => setFilterUserCount(value as [number, number])}
+              />
+            </div>
+
+
+            <Button
+              variant="outline"
+              onClick={resetFilters}
+              className="flex items-center gap-2"
+              disabled={!filterText && filterStatus === 'all' && !filterCreator && filterUserCount[0] === 0 && filterUserCount[1] === 100 && !dateRange}
+            >
+              <FaTimes className="text-gray-500" />
+              Limpiar filtros
+            </Button>
 
 
           </div>
-
-
-
         </div>
       </div>
+
 
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
@@ -486,9 +604,9 @@ export default function RolesTable() {
                       <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">
                         No hay roles disponibles
                       </p>
-                      <Button variant="primary" onClick={() => console.log("Agregar nuevo rol")}>
+                      {/*   <Button variant="primary" onClick={() => console.log("Agregar nuevo rol")}>
                         + Agregar nuevo rol
-                      </Button>
+                      </Button> */}
                     </div>
                   </TableCell>
                 </TableRow>

@@ -1,60 +1,26 @@
+// src/app/roles/page.tsx
 "use client";
 import dynamic from 'next/dynamic';
-import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
-import { toast } from 'react-toastify';
-import Breadcrumb from '@/components/common/Breadcrumb';
-import { SiAwsorganizations } from "react-icons/si";
-import ComponentCard from "@/components/common/ComponentCard";
-
 import { RoleProvider, useRoleContext } from '@/context/RoleContext';
 
-
-const PageBlank = dynamic(() => import('@/components/roles/PageBlank'), {
-  loading: () => <ProfileSkeleton type="meta" />
+const RolesTable = dynamic(() => import('@/components/roles'), {
+  loading: () => <p>Cargando tabla...</p>,
 });
 
-const RoleTable = dynamic(() => import('@/components/roles/Table'), {
-  loading: () => <ProfileSkeleton type="meta" />
-});
-
-export default function PermissionContent() {
+export default function RolesPage() {
   return (
     <RoleProvider>
-      <PermissionContentInner />
-
+      <RolesContent />
     </RoleProvider>
   );
 }
 
-function PermissionContentInner() {
-  const { isLoading, error } = useRoleContext();
-  if (isLoading) return <ProfileSkeleton type="full" />;
-  return (
+function RolesContent() {
+  const { roles, isLoading, error } = useRoleContext();
 
-    <div>
+  if (isLoading) return <p>Cargando...</p>;
+  if (error) return <p>Error: {error.message}</p>;
 
-      <Breadcrumb
-        pageTitle="Roles"
-        icon={<SiAwsorganizations />}
-        items={[
-          { label: "Inicio", href: "/dashboard" },
-          { label: "Roles", href: "/roles" },
-        ]}
-      />
-
-      <div>
-        <div className="space-y-6">
-          
-        
-          <RoleTable />
-
-        </div>
-      </div>
-
-
-
-    </div>
-
-
-  );
+  // roles ya es RoleTableRow[] gracias al contexto
+  return <RolesTable initialData={roles} />;
 }
