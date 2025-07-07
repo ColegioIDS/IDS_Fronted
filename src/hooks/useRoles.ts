@@ -1,67 +1,46 @@
-// src/hooks/useRoles.ts
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { RoleTableRow } from '@/types/role';
+import { getRoles, createRole as createRoleService, deleteRole as deleteRoleService, updateRole as updateRoleService } from '@/services/useRole';
+import { Role, RoleTableRow, RoleFormValues } from '@/types/role';
 
-interface ApiResponse {
-  success: boolean;
-  message: string;
-  data: Array<{
-    id: number;
-    name: string;
-    description: string | null;
-    isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
-    createdById: number | null;
-    modifiedById: number | null;
-    userCount: number;
-    permissions: Array<{
-      id: number;
-      module: string;
-      action: string;
-      description: string | null;
-      isActive: boolean;
-      isSystem: boolean;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    createdBy: {
-      id: number;
-      fullName: string;
-    } | null;
-    modifiedBy: {
-      id: number;
-      fullName: string;
-    } | null;
-  }>;
+const formatDate = (date: string | Date): string =>
+  new Date(date).toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+
+interface RoleState {
+  roles: RoleTableRow[];
+  isLoading: boolean;
+  isSaving: boolean;
+  error: Error | null;
 }
 
+const initialFormData: RoleFormValues = {
+  name: '',
+  description: '',
+  isActive: true,
+};
+
 export const useRoles = () => {
-  const [state, setState] = useState<{
-    roles: RoleTableRow[];
-    isLoading: boolean;
-    error: Error | null;
-  }>({
+  const [roleState, setRoleState] = useState<RoleState>({
     roles: [],
     isLoading: true,
+    isSaving: false,
     error: null,
   });
 
-  const { roles, isLoading, error } = state;
+  const [formData, setFormData] = useState<RoleFormValues>(initialFormData);
+
+  const { roles, isLoading, isSaving, error } = roleState;
 
   const fetchRoles = useCallback(async () => {
     try {
-      setState(prev => ({ ...prev, isLoading: true, error: null }));
-      
-      const response = await fetch('http://localhost:5000/api/roles');
-      const result: ApiResponse = await response.json();
+      setRoleState(prev => ({ ...prev, isLoading: true, error: null }));
 
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to fetch roles');
-      }
+      const roleData = await getRoles();
 
-      // Transformación directa a RoleTableRow
-      const tableRows: RoleTableRow[] = result.data.map(role => ({
+      const tableRows: RoleTableRow[] = roleData.map(role => ({
         id: role.id,
         name: role.name,
         description: role.description || '',
@@ -71,33 +50,101 @@ export const useRoles = () => {
         createdBy: role.createdBy?.fullName || '',
         userCount: role.userCount,
         permissionCount: role.permissions.length,
-        permissions:role.permissions
+        permissions: role.permissions
       }));
+      console.log('Roles obtenidos:', tableRows);
 
-      console.log('Roles transformados:', tableRows);
-
-      setState({ 
-        roles: tableRows, 
-        isLoading: false, 
-        error: null 
+      setRoleState({
+        roles: tableRows,
+        isLoading: false,
+        isSaving: false,
+        error: null,
       });
     } catch (err) {
-      setState({ 
-        roles: [], 
-        isLoading: false, 
-        error: err instanceof Error ? err : new Error('Error fetching roles') 
-      });
+      setRoleState(prev => ({
+        ...prev,
+        roles: [],
+        isLoading: false,
+        error: err instanceof Error ? err : new Error('Error al obtener los roles'),
+      }));
     }
   }, []);
 
-  // Helper para formatear fechas
-  const formatDate = (date: string): string => {
-    return new Date(date).toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  };
+  const updateFormData = useCallback((updates: Partial<RoleFormValues>) => {
+    setFormData(prev => ({
+      ...prev,
+      ...updates,
+    }));
+  }, []);
+
+  const createRole = useCallback(async (data?: RoleFormValues) => {
+    try {
+      setRoleState(prev => ({ ...prev, isSaving: true, error: null }));
+
+      const roleToCreate = data || formData;
+      const createdRole = await createRoleService(roleToCreate as Role);
+
+      await fetchRoles(); // Refresca la lista después de crear
+      setFormData(initialFormData); // Limpia formulario
+
+      return createdRole;
+    } catch (err) {
+
+      const error = err instanceof Error ? err : new Error('Error al crear el rol');
+      setRoleState(prev => ({ ...prev, isSaving: false }));
+      throw error;
+    }
+  }, [formData, fetchRoles]);
+
+
+
+  const deleteRole = useCallback(async (roleId: string) => {
+  try {
+    setRoleState(prev => ({ ...prev, isSaving: true, error: null }));
+
+    await deleteRoleService(roleId);
+    await fetchRoles(); // Refresca la lista después de eliminar
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error('Error al eliminar el rol');
+    setRoleState(prev => ({ ...prev, isSaving: false, error }));
+    throw error;
+  }
+}, [fetchRoles]);
+
+const updateRole = useCallback(
+  async (roleId: string, updates: Partial<RoleFormValues>) => {
+    try {
+      setRoleState(prev => ({ ...prev, isSaving: true, error: null }));
+
+      // Llama al servicio
+      const updated = await updateRoleService(roleId, updates);
+
+      // Vuelve a obtener la lista para mantener sincronizado
+      await fetchRoles();
+
+      return updated;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Error al actualizar el rol');
+      setRoleState(prev => ({ ...prev, isSaving: false, error }));
+      throw error;
+    }
+  },
+  [fetchRoles]
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   useEffect(() => {
     fetchRoles();
@@ -106,7 +153,24 @@ export const useRoles = () => {
   return useMemo(() => ({
     roles,
     isLoading,
+    isSaving,
     error,
-    refetch: fetchRoles
-  }), [roles, isLoading, error, fetchRoles]);
+    formData,
+    updateFormData,
+    createRole,
+    refetch: fetchRoles,
+    deleteRole,
+    updateRole
+  }), [
+    roles,
+    isLoading,
+    isSaving,
+    error,
+    formData,
+    updateFormData,
+    createRole,
+    fetchRoles,
+    deleteRole,
+    updateRole
+  ]);
 };

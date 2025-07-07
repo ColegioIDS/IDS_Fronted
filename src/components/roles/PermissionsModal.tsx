@@ -14,6 +14,8 @@ interface PermissionsModalProps {
 export default function PermissionsModal({ role, isOpen, onClose }: PermissionsModalProps) {
   if (!role) return null;
 
+  console.log("Role in PermissionsModal:", role);
+
   return (
     <Modal
       isOpen={isOpen}

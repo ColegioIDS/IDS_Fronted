@@ -1,9 +1,11 @@
+// src/components/roles/TableComponent.tsx
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
 import Badge from '@/components/ui/badge/Badge';
 import { Button } from '@/components/ui/button';
 import { FaChevronUp, FaChevronDown, FaRegEdit, FaTrashAlt } from 'react-icons/fa';
 import { TABLE_COLUMNS } from '@/constants/rolesTable';
 import type { RoleTableRow } from '@/types/role';
+import { on } from 'events';
 
 interface SortConfig {
   key: string;
@@ -23,6 +25,9 @@ interface TableComponentProps {
   sortConfig?: SortConfig | null;
   onSort: (key: keyof RoleTableRow) => void;
   onRowClick?: (row: any) => void;
+  onDelete?: (row: RoleTableRow) => void;
+  onEdit?: (row: RoleTableRow) => void;
+
 }
 
 export default function TableComponent({
@@ -31,6 +36,8 @@ export default function TableComponent({
   sortConfig,
   onSort,
   onRowClick,
+  onDelete, // ✅ nueva prop
+  onEdit, // ✅ nueva prop
 }: TableComponentProps) {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
@@ -102,6 +109,7 @@ export default function TableComponent({
                         <Button variant="ghost" size="icon" className="size-8"
                           onClick={(e) => {
                             e.stopPropagation();
+                            onEdit?.(row);
                             console.log("Editar:", row.id);
                             // Aquí puedes llamar a una función onEdit(row) si la necesitas
                           }}
@@ -116,6 +124,7 @@ export default function TableComponent({
                           variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation();
+                           onDelete?.(row);
                             console.log("Eliminar:", row.id);
                           }}
                           className="size-8"

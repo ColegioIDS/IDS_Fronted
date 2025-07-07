@@ -1,3 +1,5 @@
+// File: src/components/example/ModalExample/ModalBasedAlerts.tsx
+
 "use client";
 import React from "react";
 import ComponentCard from "../../common/ComponentCard";

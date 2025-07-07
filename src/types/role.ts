@@ -42,8 +42,9 @@ export interface Role {
   modifiedById?: number | null;
   createdBy?: User | null;
   modifiedBy?: User | null;
-  permissions: RolePermission[]; // Relación completa
+  permissions: Permission[]; // Relación completa
   users?: User[]; // Opcional según necesidad
+    userCount: number;
 }
 
 // Tipo optimizado para visualización en tablas
@@ -72,6 +73,18 @@ export interface RoleState {
 export interface SortConfig<T = keyof RoleTableRow> {
   key: T;
   direction: 'asc' | 'desc';
+}
+
+
+export interface RoleFormValues {
+  name: string;
+  description?: string;
+  isActive: boolean;
+}
+
+export interface CreatedBy {
+  id: number;
+  fullName: string;
 }
 
 // Tipo para rangos de fecha (react-day-picker)

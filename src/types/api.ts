@@ -3,4 +3,5 @@ export  interface ApiResponse<T> {
   success: boolean;
   message: string;
   data: T;
+  details?: string[]; // Detalles opcionales para errores
 }
