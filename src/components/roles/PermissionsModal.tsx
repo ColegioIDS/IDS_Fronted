@@ -1,5 +1,5 @@
 import { Modal } from '@/components/ui/modal';
-import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table'; // Importación corregida
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/tableCustom'; // Importación corregida
 import Badge from "@/components/ui/badge/Badge";
 import { Button } from '@/components/ui/button';
 import type { RoleTableRow as Role } from '@/types/role';
@@ -14,7 +14,6 @@ interface PermissionsModalProps {
 export default function PermissionsModal({ role, isOpen, onClose }: PermissionsModalProps) {
   if (!role) return null;
 
-  console.log("Role in PermissionsModal:", role);
 
   return (
     <Modal

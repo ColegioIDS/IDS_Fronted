@@ -17,10 +17,10 @@ import FormularioRolModal from '@/components/roles/ModalFormulario';
 // Importamos los componentes dinámicamente
 const RolesTable = dynamic(() => import('@/components/roles'), {
   loading: () => <ProfileSkeleton type="meta" />,
-  ssr: false
+  ssr: false 
 });
 
-export default function RolesPage() {
+export default function RolesContent() {
   return (
     <RoleProvider>
       <RolesPageContent />

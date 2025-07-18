@@ -869,3 +869,42 @@ span.flatpickr-weekday,
     @apply bg-background text-foreground;
   }
 }
+
+
+/* animation */
+
+@keyframes search-sweep {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(10px);
+  }
+}
+
+.animate-search-sweep {
+  animation: search-sweep 3s ease-in-out infinite;
+}
+
+
+
+/* Scroll personalizado */
+.scroll-custom {
+  overflow-x: auto;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #a1a1aa transparent; /* Firefox */
+}
+
+/* WebKit (Chrome, Edge, Safari) */
+.scroll-custom::-webkit-scrollbar {
+  height: 8px;
+}
+
+.scroll-custom::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-custom::-webkit-scrollbar-thumb {
+  background-color: #a1a1aa; /* color del thumb */
+  border-radius: 4px;
+}

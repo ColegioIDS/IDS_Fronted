@@ -48,7 +48,7 @@ export const PermissionFilters: React.FC<PermissionFiltersProps> = ({
         ]}
       />
 
-     
+
 
       <Select
         value={filters.module}
@@ -59,7 +59,7 @@ export const PermissionFilters: React.FC<PermissionFiltersProps> = ({
         ]}
       />
 
-       <Input
+      <Input
         icon={<FaSearch />}
         placeholder="Buscar permisos..."
         value={filters.search}
@@ -67,12 +67,12 @@ export const PermissionFilters: React.FC<PermissionFiltersProps> = ({
         className="pl-10"
       />
 
-      
+
     </div>
 
     {/* Segunda fila de filtros */}
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Select
+      <Select
         value={filters.action}
         onChange={(value) => setFilters({ ...filters, action: value })}
         options={[
@@ -89,7 +89,7 @@ export const PermissionFilters: React.FC<PermissionFiltersProps> = ({
           { value: 'inactive', label: 'Inactivo' },
         ]}
       />
-      
+
       <Select
         value={filters.system}
         onChange={(value) => setFilters({ ...filters, system: value })}
@@ -99,7 +99,7 @@ export const PermissionFilters: React.FC<PermissionFiltersProps> = ({
           { value: 'custom', label: 'Personalizado' },
         ]}
       />
- <div className="flex items-end">
+      <div className="flex items-end">
         <Button
           variant="outline"
           className="w-full md:w-auto px-4" // Ajuste importante aquí

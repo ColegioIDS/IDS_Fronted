@@ -45,6 +45,7 @@ export const useRoles = () => {
         name: role.name,
         description: role.description || '',
         isActive: role.isActive,
+         isSystem: role.isSystem,
         createdAt: formatDate(role.createdAt),
         updatedAt: formatDate(role.updatedAt),
         createdBy: role.createdBy?.fullName || '',
@@ -99,59 +100,52 @@ export const useRoles = () => {
 
 
   const deleteRole = useCallback(async (roleId: string) => {
-  try {
-    setRoleState(prev => ({ ...prev, isSaving: true, error: null }));
-
-    await deleteRoleService(roleId);
-    await fetchRoles(); // Refresca la lista después de eliminar
-  } catch (err) {
-    const error = err instanceof Error ? err : new Error('Error al eliminar el rol');
-    setRoleState(prev => ({ ...prev, isSaving: false, error }));
-    throw error;
-  }
-}, [fetchRoles]);
-
-const updateRole = useCallback(
-  async (roleId: string, updates: Partial<RoleFormValues>) => {
     try {
       setRoleState(prev => ({ ...prev, isSaving: true, error: null }));
 
-      // Llama al servicio
-      const updated = await updateRoleService(roleId, updates);
-
-      // Vuelve a obtener la lista para mantener sincronizado
-      await fetchRoles();
-
-      return updated;
+      await deleteRoleService(roleId);
+      await fetchRoles(); // Refresca la lista después de eliminar
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Error al actualizar el rol');
+      const error = err instanceof Error ? err : new Error('Error al eliminar el rol');
       setRoleState(prev => ({ ...prev, isSaving: false, error }));
       throw error;
     }
-  },
-  [fetchRoles]
-);
+  }, [fetchRoles]);
 
+  const updateRole = useCallback(
+    async (roleId: string, updates: Partial<RoleFormValues>) => {
+      try {
+        setRoleState(prev => ({ ...prev, isSaving: true, error: null }));
 
+        // Llama al servicio
+        const updated = await updateRoleService(roleId, updates);
 
+        // Vuelve a obtener la lista para mantener sincronizado
+        await fetchRoles();
 
-
-
-
-
-
-
-
-
-
-
+        return updated;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Error al actualizar el rol');
+        setRoleState(prev => ({ ...prev, isSaving: false, error }));
+        throw error;
+      }
+    },
+    [fetchRoles]
+  );
 
   useEffect(() => {
     fetchRoles();
   }, [fetchRoles]);
 
+  const activeRoles = useMemo(() => {
+  return roles.filter(role => role.isActive);
+}, [roles]);
+
+
+
   return useMemo(() => ({
     roles,
+    activeRoles,
     isLoading,
     isSaving,
     error,
@@ -163,6 +157,7 @@ const updateRole = useCallback(
     updateRole
   }), [
     roles,
+    activeRoles,
     isLoading,
     isSaving,
     error,

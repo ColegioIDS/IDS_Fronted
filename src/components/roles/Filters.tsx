@@ -90,7 +90,7 @@ export default function Filters({
 
 
           {/* Filtro por fechas */}
-        {/*   <div className="w-full">
+          {/*   <div className="w-full">
             <label className="block text-sm text-muted-foreground mb-1">Fecha de creación</label>
 
             <Popover>
@@ -150,11 +150,6 @@ export default function Filters({
             Limpiar filtros
           </Button>
         </div>
-
-
-
-
-
       </div>
     </div>
   );

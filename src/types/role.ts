@@ -36,6 +36,7 @@ export interface Role {
   name: string;
   description: string | null;
   isActive: boolean;
+  isSystem: boolean; // Indica si es un rol del sistema
   createdAt: Date | string;
   updatedAt: Date | string;
   createdById?: number | null;
@@ -53,6 +54,7 @@ export interface RoleTableRow {
   name: string;
   description: string | null;
   isActive: boolean;
+  isSystem: boolean; // Indica si es un rol del sistema
   createdAt: string; // Formateado para UI
   updatedAt: string; // Formateado para UI
   createdBy?: string; // Solo el nombre del creador

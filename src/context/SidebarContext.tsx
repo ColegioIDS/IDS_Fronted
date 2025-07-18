@@ -12,6 +12,7 @@ type SidebarContextType = {
   setIsHovered: (isHovered: boolean) => void;
   setActiveItem: (item: string | null) => void;
   toggleSubmenu: (item: string) => void;
+  setIsExpanded: (expanded: boolean) => void;
 };
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
@@ -27,12 +28,28 @@ export const useSidebar = () => {
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+
+  const [isExpanded, setIsExpanded] = useState<boolean>(true);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebarExpanded');
+    if (saved !== null) {
+      setIsExpanded(JSON.parse(saved));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) {
+      localStorage.setItem('sidebarExpanded', JSON.stringify(isExpanded));
+    }
+  }, [isExpanded, isMobile]);
+
 
   useEffect(() => {
     const handleResize = () => {
@@ -76,6 +93,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsHovered,
         setActiveItem,
         toggleSubmenu,
+        setIsExpanded, // Expose the setter for isExpanded
       }}
     >
       {children}

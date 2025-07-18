@@ -1,5 +1,7 @@
 // components/EnhancedPermissionsTable.tsx
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
+"use client";
+
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/tableCustom";
 import Badge from "../ui/badge/Badge";
 import { usePermissionContext } from '@/context/PermissionContext';
 import Pagination from "@/components/tables/Pagination";

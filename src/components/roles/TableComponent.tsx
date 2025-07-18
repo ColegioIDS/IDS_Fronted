@@ -1,5 +1,5 @@
 // src/components/roles/TableComponent.tsx
-import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/tableCustom';
 import Badge from '@/components/ui/badge/Badge';
 import { Button } from '@/components/ui/button';
 import { FaChevronUp, FaChevronDown, FaRegEdit, FaTrashAlt } from 'react-icons/fa';

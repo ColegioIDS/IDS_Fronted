@@ -10,11 +10,11 @@ interface FormularioRolModalProps {
   isOpen: boolean;
   onClose: () => void;
   defaultValues?: RoleFormValues | null;
-  roleId?: string | null; 
+  roleId?: string | null;
 }
 
 const FormularioRolModal = ({ isOpen, onClose, defaultValues, roleId }: FormularioRolModalProps) => {
-const { createRole, updateRole, isSaving } = useRoleContext();
+  const { createRole, updateRole, isSaving } = useRoleContext();
 
   const [formError, setFormError] = useState<{
     message: string;
@@ -24,24 +24,24 @@ const { createRole, updateRole, isSaving } = useRoleContext();
   // Función para manejar el submit del formulario
 
 
- const handleSubmit = async (values: RoleFormValues) => {
-  try {
-    if (roleId) {
-      await updateRole(roleId, values);
-      toast.success("Rol actualizado correctamente");
-    } else {
-      await createRole(values);
-      toast.success("Rol creado exitosamente");
-    }
+  const handleSubmit = async (values: RoleFormValues) => {
+    try {
+      if (roleId) {
+        await updateRole(roleId, values);
+        toast.success("Rol actualizado correctamente");
+      } else {
+        await createRole(values);
+        toast.success("Rol creado exitosamente");
+      }
 
-    setFormError(null);
-    onClose();
-  } catch (error: any) {
-    const message = error?.message || "Ocurrió un error";
-    const details = error?.details || error?.response?.data?.details || [];
-    setFormError({ message, details });
-  }
-};
+      setFormError(null);
+      onClose();
+    } catch (error: any) {
+      const message = error?.message || "Ocurrió un error";
+      const details = error?.details || error?.response?.data?.details || [];
+      setFormError({ message, details });
+    }
+  };
 
 
 
@@ -51,14 +51,14 @@ const { createRole, updateRole, isSaving } = useRoleContext();
     <SideModal isOpen={isOpen} onClose={onClose}>
       <div className="p-6 h-full">
 
-    {roleId ? (
-        <h2 className="text-xl font-bold mb-6">Editar Rol</h2>
-    ):(
-        <h2 className="text-xl font-bold mb-6">Crear Rol</h2>
-    )}
-     
-     
-       
+        {roleId ? (
+          <h2 className="text-xl font-bold mb-6">Editar Rol</h2>
+        ) : (
+          <h2 className="text-xl font-bold mb-6">Crear Rol</h2>
+        )}
+
+
+
 
 
         <RoleForm
