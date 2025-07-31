@@ -416,189 +416,189 @@ export const UserView = () => {
                         ) : (
                             <div className="grid grid-cols-1 gap-4 scroll-custom">
 
-                            <div
-                                className={cn(
-                                    "shadow-2xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:border-primary/20 rounded-xl border group dark:border-gray-800 dark:bg-white/[0.03]",
-                                    "bg-white"
-                                )}
-                            >
-
-                                
-                                <Table>
-                                    <TableHeader className="bg-muted/50">
-                                        <TableRow>
-                                            <TableHead className="px-6 py-3 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Usuario</TableHead>
-                                            <TableHead className="px-6 py-3 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Contacto</TableHead>
-                                            <TableHead className="px-6 py-3 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Rol</TableHead>
-                                            <TableHead className="px-6 py-3 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Departamento</TableHead>
-                                            <TableHead className="px-6 py-3 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Nacimiento</TableHead>
-                                            <TableHead className="px-6 py-3 text-right text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-                                                Acciones
-                                            </TableHead>
-
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
+                                <div
+                                    className={cn(
+                                        "shadow-2xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:border-primary/20 rounded-xl border group dark:border-gray-800 dark:bg-white/[0.03]",
+                                        "bg-white"
+                                    )}
+                                >
 
 
-                                        {paginatedData.map((user) => (
-                                            <TableRow
-                                                key={user.id}
-                                                className={cn(
-                                                    "hover:bg-muted/40 transition-colors",
-                                                    !user.isActive && "opacity-60 grayscale-[0.3]"
-                                                )}
-                                            >
-                                                <TableCell className="px-6 py-4">
-                                                    <div className="flex items-center space-x-3 relative">
-                                                        <Avatar className="h-9 w-9 ring-1 ring-primary/10">
-                                                            <AvatarImage
-                                                                src={
-                                                                    user.pictures?.find(p => p.kind === 'profile')?.url ||
-                                                                    `https://api.dicebear.com/7.x/initials/svg?seed=${user.givenNames} ${user.lastNames}`
-                                                                }
-                                                            />
-                                                            <AvatarFallback>
-                                                                {getInitials(user.givenNames, user.lastNames)}
-                                                            </AvatarFallback>
-                                                        </Avatar>
-                                                        <span
-                                                            className={cn(
-                                                                "absolute bottom-1 right-1 h-3 w-3 rounded-full border-2 border-background",
-                                                                user.isActive ? "bg-green-500" : "bg-red-500"
-                                                            )}
-                                                        />
-                                                        <div>
-                                                            <div className="font-semibold">
-                                                                {`${user.givenNames} ${user.lastNames}`}
-                                                            </div>
-                                                            <div className="text-xs text-muted-foreground">
-                                                                @{user.username || "sin_usuario"}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
+                                    <Table>
+                                        <TableHeader className="bg-muted/50">
+                                            <TableRow>
+                                                <TableHead className="px-6 py-3 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Usuario</TableHead>
+                                                <TableHead className="px-6 py-3 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Contacto</TableHead>
+                                                <TableHead className="px-6 py-3 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Rol</TableHead>
+                                                <TableHead className="px-6 py-3 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Departamento</TableHead>
+                                                <TableHead className="px-6 py-3 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Nacimiento</TableHead>
+                                                <TableHead className="px-6 py-3 text-right text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                                                    Acciones
+                                                </TableHead>
 
-                                                <TableCell className="px-6 py-4">
-                                                    <div className="space-y-1">
-                                                        <div className="flex items-center text-sm">
-                                                            <FiMail className="mr-2 h-4 w-4 text-muted-foreground" />
-                                                            {user.email || (
-                                                                <span className="text-muted-foreground italic">Sin correo</span>
-                                                            )}
-                                                        </div>
-                                                        {user.phone && (
-                                                            <div className="flex items-center text-sm">
-                                                                <FiPhone className="mr-2 h-4 w-4 text-muted-foreground" />
-                                                                {user.phone}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
 
-                                                <TableCell className="px-6 py-4 space-y-1">
-                                                    {user.role?.name ? (
-                                                        <Badge
-                                                            className={`text-xs py-1 px-2 ${getRoleBadgeColor(user.role.name)}`}
-                                                        >
-                                                            {user.role.name}
-                                                        </Badge>
-                                                    ) : (
-                                                        <span className="text-muted-foreground italic text-sm">Sin rol</span>
+
+                                            {paginatedData.map((user) => (
+                                                <TableRow
+                                                    key={user.id}
+                                                    className={cn(
+                                                        "hover:bg-muted/40 transition-colors",
+                                                        !user.isActive && "opacity-60 grayscale-[0.3]"
                                                     )}
-                                                    <div>
-                                                        {user.isActive ? (
+                                                >
+                                                    <TableCell className="px-6 py-4">
+                                                        <div className="flex items-center space-x-3 relative">
+                                                            <Avatar className="h-9 w-9 ring-1 ring-primary/10">
+                                                                <AvatarImage
+                                                                    src={
+                                                                        user.pictures?.find(p => p.kind === 'profile')?.url ||
+                                                                        `https://api.dicebear.com/7.x/initials/svg?seed=${user.givenNames} ${user.lastNames}`
+                                                                    }
+                                                                />
+                                                                <AvatarFallback>
+                                                                    {getInitials(user.givenNames, user.lastNames)}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <span
+                                                                className={cn(
+                                                                    "absolute bottom-1 right-1 h-3 w-3 rounded-full border-2 border-background",
+                                                                    user.isActive ? "bg-green-500" : "bg-red-500"
+                                                                )}
+                                                            />
+                                                            <div>
+                                                                <div className="font-semibold">
+                                                                    {`${user.givenNames} ${user.lastNames}`}
+                                                                </div>
+                                                                <div className="text-xs text-muted-foreground">
+                                                                    @{user.username || "sin_usuario"}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+
+                                                    <TableCell className="px-6 py-4">
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center text-sm">
+                                                                <FiMail className="mr-2 h-4 w-4 text-muted-foreground" />
+                                                                {user.email || (
+                                                                    <span className="text-muted-foreground italic">Sin correo</span>
+                                                                )}
+                                                            </div>
+                                                            {user.phone && (
+                                                                <div className="flex items-center text-sm">
+                                                                    <FiPhone className="mr-2 h-4 w-4 text-muted-foreground" />
+                                                                    {user.phone}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    <TableCell className="px-6 py-4 space-y-1">
+                                                        {user.role?.name ? (
                                                             <Badge
-                                                                variant="outline"
-                                                                className="text-green-600 border-green-600 bg-green-100/30 text-xs mt-1"
+                                                                className={`text-xs py-1 px-2 ${getRoleBadgeColor(user.role.name)}`}
                                                             >
-                                                                Activo
+                                                                {user.role.name}
                                                             </Badge>
                                                         ) : (
-                                                            <Badge variant="destructive" className="text-xs mt-1">
-                                                                Inactivo
-                                                            </Badge>
+                                                            <span className="text-muted-foreground italic text-sm">Sin rol</span>
                                                         )}
-                                                    </div>
-                                                </TableCell>
-
-                                                <TableCell className="px-6 py-4 text-sm">
-                                                    {user.address?.department || (
-                                                        <span className="text-muted-foreground italic">No asignado</span>
-                                                    )}
-                                                </TableCell>
-
-                                                <TableCell className="px-6 py-4 text-sm">
-                                                    {user.birthDate ? (
-                                                        formatDate(user.birthDate)
-                                                    ) : (
-                                                        <span className="text-muted-foreground italic">Sin fecha</span>
-                                                    )}
-                                                </TableCell>
-
-                                                <TableCell className="px-6 py-4 text-right space-x-2">
-                                                    {/* Ver perfil */}
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="rounded-full border-primary/30 hover:border-primary/50 group"
-                                                        onClick={() => console.log("Ver perfil", user.id)}
-                                                    >
-                                                        <FiUser className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
-                                                        Ver perfil
-                                                    </Button>
-
-                                                    {/* Menú de acciones */}
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8 rounded-lg hover:bg-primary/10"
-                                                            >
-                                                                <FiMoreVertical className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-
-                                                        <DropdownMenuContent align="end" className="w-48">
+                                                        <div>
                                                             {user.isActive ? (
-                                                                <>
-                                                                    <DropdownMenuItem onClick={() => console.log("Ver", user.id)}>
-                                                                        <FiEye className="mr-2 h-4 w-4" />
-                                                                        <span>Ver detalles</span>
-                                                                    </DropdownMenuItem>
-                                                                    <DropdownMenuItem onClick={() => console.log("Editar", user.id)}>
-                                                                        <FiEdit className="mr-2 h-4 w-4" />
-                                                                        <span>Editar</span>
-                                                                    </DropdownMenuItem>
-                                                                    <DropdownMenuSeparator />
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="text-green-600 border-green-600 bg-green-100/30 text-xs mt-1"
+                                                                >
+                                                                    Activo
+                                                                </Badge>
+                                                            ) : (
+                                                                <Badge variant="destructive" className="text-xs mt-1">
+                                                                    Inactivo
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    <TableCell className="px-6 py-4 text-sm">
+                                                        {user.address?.department || (
+                                                            <span className="text-muted-foreground italic">No asignado</span>
+                                                        )}
+                                                    </TableCell>
+
+                                                    <TableCell className="px-6 py-4 text-sm">
+                                                        {user.birthDate ? (
+                                                            formatDate(user.birthDate)
+                                                        ) : (
+                                                            <span className="text-muted-foreground italic">Sin fecha</span>
+                                                        )}
+                                                    </TableCell>
+
+                                                    <TableCell className="px-6 py-4 text-right space-x-2">
+                                                        {/* Ver perfil */}
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="rounded-full border-primary/30 hover:border-primary/50 group"
+                                                            onClick={() => console.log("Ver perfil", user.id)}
+                                                        >
+                                                            <FiUser className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
+                                                            Ver perfil
+                                                        </Button>
+
+                                                        {/* Menú de acciones */}
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 rounded-lg hover:bg-primary/10"
+                                                                >
+                                                                    <FiMoreVertical className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+
+                                                            <DropdownMenuContent align="end" className="w-48">
+                                                                {user.isActive ? (
+                                                                    <>
+                                                                        <DropdownMenuItem onClick={() => console.log("Ver", user.id)}>
+                                                                            <FiEye className="mr-2 h-4 w-4" />
+                                                                            <span>Ver detalles</span>
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem onClick={() => console.log("Editar", user.id)}>
+                                                                            <FiEdit className="mr-2 h-4 w-4" />
+                                                                            <span>Editar</span>
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuSeparator />
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => openStatusModal(user.id, user.isActive)}
+                                                                            className="text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                                                                        >
+                                                                            <CgPlayListRemove className="mr-2 h-4 w-4" />
+                                                                            <span>Desactivar cuenta</span>
+                                                                        </DropdownMenuItem>
+                                                                    </>
+                                                                ) : (
                                                                     <DropdownMenuItem
                                                                         onClick={() => openStatusModal(user.id, user.isActive)}
-                                                                        className="text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                                                                        className="text-green-600 focus:bg-green-50 dark:focus:bg-green-900/20"
                                                                     >
                                                                         <CgPlayListRemove className="mr-2 h-4 w-4" />
-                                                                        <span>Desactivar cuenta</span>
+                                                                        <span>Activar cuenta</span>
                                                                     </DropdownMenuItem>
-                                                                </>
-                                                            ) : (
-                                                                <DropdownMenuItem
-                                                                    onClick={() => openStatusModal(user.id, user.isActive)}
-                                                                    className="text-green-600 focus:bg-green-50 dark:focus:bg-green-900/20"
-                                                                >
-                                                                    <CgPlayListRemove className="mr-2 h-4 w-4" />
-                                                                    <span>Activar cuenta</span>
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </TableCell>
-                                            </TableRow>
+                                                                )}
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </TableCell>
+                                                </TableRow>
 
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
 
-                                        </div>
+                                </div>
                             </div>
                         )}
 

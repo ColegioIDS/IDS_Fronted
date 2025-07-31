@@ -908,3 +908,16 @@ span.flatpickr-weekday,
   background-color: #a1a1aa; /* color del thumb */
   border-radius: 4px;
 }
+
+
+/* Ajusta los selects dentro del calendario */
+[class*="rdp"] select {
+  background-color: white;
+  color: black;
+}
+
+.dark [class*="rdp"] select {
+  background-color: #1f2937; /* gray-800 */
+  color: white;
+  border-color: #4b5563; /* gray-600 */
+}

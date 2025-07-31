@@ -1,3 +1,4 @@
+// src/types/user.ts
 export type Gender = 'Masculino' | 'Femenino' | 'Otro';
 
 export type RelationshipType = 'mother' | 'father' | 'legal_guardian' | 'tutor' | 'other';
