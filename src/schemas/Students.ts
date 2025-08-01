@@ -173,15 +173,15 @@ export const createBaseStudentSchema = () => z.object({
   favoriteSubject: z.string().max(50).optional(),
   favoriteToy: z.string().max(50).optional(),
   favoriteCake: z.string().max(50).optional(),
-    enrollmentStatus:z.string().max(50).optional(),
+  enrollmentStatus: z.string().max(50).optional(),
   profileImage: z.union([z.instanceof(File), z.string(), z.null()]).optional(),
 
   pictures: z.array(z.object({
-  url: z.string(),
-  publicId: z.string(),
-  kind: z.string().optional(),
-  description: z.string().optional(),
-})).optional(),
+    url: z.string(),
+    publicId: z.string(),
+    kind: z.string().optional(),
+    description: z.string().optional(),
+  })).optional(),
 
   address: AddressSchema.nullish(),
 });
@@ -326,7 +326,7 @@ export const defaultValues: StudentFormValues = {
     acceptedRules: false,
     signedDate: null,
   },
- pictures: [],
+  pictures: [],
 
 
 

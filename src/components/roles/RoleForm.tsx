@@ -110,13 +110,10 @@ export function RoleForm({
 
                 {serverError && (
                     <div className="grid w-full max-w-xl items-start gap-4">
-
-
                         <Alert variant="destructive">
                             <IoAlertCircleOutline className="h-4 w-4" />
                             <AlertTitle>{serverError.message}</AlertTitle>
                             <AlertDescription>
-
                                 {serverError.details && serverError.details.length > 0 && (
                                     <ul className="list-inside list-disc text-sm">
 

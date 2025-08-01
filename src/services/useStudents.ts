@@ -2,7 +2,6 @@
 import axios, { AxiosError } from 'axios';
 import { API_BASE_URL } from '@/config/api';
 import { Student, CreateStudentPayload, ParentDpiResponse  } from '@/types/student';
-import {StudentProfileProps} from "@/types/studentProfile"
 import { ApiResponse } from '@/types/api';
 
 const apiClient = axios.create({
@@ -60,9 +59,9 @@ export const getUserByDPI = async (dpi: string): Promise<ParentDpiResponse | nul
   }
 };
 
-export const getStudentById = async (userId: number): Promise<StudentProfileProps | null> => {
+export const getStudentById = async (userId: number): Promise<Student | null> => {
   try {
-    const { data } = await apiClient.get<ApiResponse<StudentProfileProps>>(`/api/students/${userId}`);
+    const { data } = await apiClient.get<ApiResponse<Student>>(`/api/students/${userId}`);
 
     if (!data.success) {
       if (data.message === 'User not found') return null;
