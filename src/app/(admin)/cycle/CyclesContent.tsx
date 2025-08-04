@@ -1,3 +1,4 @@
+//src\app\(admin)\cycle\CyclesContent.tsx
 'use client';
 import dynamic from 'next/dynamic';
 import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';

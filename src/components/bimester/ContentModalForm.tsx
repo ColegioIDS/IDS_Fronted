@@ -1,25 +1,28 @@
 import { useState } from 'react';
 import { SideModal } from '@/components/ui/drawer/side-modal';
-import { CycleForm } from './CycleForm';
-import { SchoolCycleFormValues } from '@/schemas/SchoolCycle';
-import { useCyclesContext } from '@/context/CyclesContext';
+import { BimesterForm } from './bimesterForm';
+import { BimesterFormData } from '@/schemas/bimester.schema';
+import { useBimesterContext } from '@/context/BimesterContext';
 import { toast } from 'react-toastify';
 import { useAutoClearError } from '@/hooks/useAutoClearError';
 
-interface FormularioCycleModalProps {
+interface BimesterModalFormProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultValues?: SchoolCycleFormValues | null;
-  cycleId?: string | number | null;
+  defaultValues?: Partial<BimesterFormData> | null;
+  bimesterId?: string | number | null;
+  cycleId: number; // Requerido para crear/editar bimestres
 }
 
-const ModalFormularioCycle = ({
+const BimesterModalForm = ({
   isOpen,
   onClose,
   defaultValues,
+  bimesterId,
   cycleId,
-}: FormularioCycleModalProps) => {
-  const { createCycle, updateCycle, isSubmitting } = useCyclesContext();
+}: BimesterModalFormProps) => {
+  const { createBimester, updateBimester, isSubmitting } = useBimesterContext();
+  console.log(cycleId, "ciclo en form")
   
   // Usamos el hook personalizado para manejo de errores
   const { error: serverError, setError: setServerError, clearError } = useAutoClearError(6000);
@@ -29,15 +32,18 @@ const ModalFormularioCycle = ({
     onClose();
   };
 
-  const onSubmit = async (values: SchoolCycleFormValues) => {
+  const onSubmit = async (values: BimesterFormData) => {
     clearError(); // Limpiamos errores previos
     
     try {
       let result;
-      if (cycleId) {
-        result = await updateCycle(Number(cycleId), values);
+      if (bimesterId) {
+        result = await updateBimester(Number(bimesterId), values);
       } else {
-        result = await createCycle(values);
+        // Aseguramos que el cycleId esté incluido en los valores
+        const payload = { ...values, cycleId };
+        console.log("payload", payload)
+        result = await createBimester(payload);
       }
 
       // Verifica si la respuesta contiene un error
@@ -49,8 +55,8 @@ const ModalFormularioCycle = ({
         return;
       }
 
-     // toast.success(cycleId ? 'Ciclo actualizado' : 'Ciclo creado');
-      handleClose(); // Usamos handleClose en lugar de onClose directo
+      //toast.success(bimesterId ? 'Bimestre actualizado' : 'Bimestre creado');
+      handleClose();
     } catch (error: any) {
       console.error('Error completo:', error);
       
@@ -74,19 +80,20 @@ const ModalFormularioCycle = ({
     <SideModal isOpen={isOpen} onClose={handleClose}>
       <div className="p-6 h-full">
         <h2 className="text-xl font-bold mb-6">
-          {cycleId ? 'Editar Ciclo Escolar' : 'Crear Ciclo Escolar'}
+          {bimesterId ? 'Editar Bimestre' : 'Crear Bimestre'}
         </h2>
 
-        <CycleForm
+        <BimesterForm
           onSubmit={onSubmit}
           isLoading={isSubmitting}
           defaultValues={
             defaultValues || {
               name: '',
+              number: 1,
               startDate: new Date(),
               endDate: new Date(),
               isActive: false,
-              isClosed: false,
+              weeksCount: 8,
             }
           }
           serverError={serverError}
@@ -96,4 +103,4 @@ const ModalFormularioCycle = ({
   );
 };
 
-export default ModalFormularioCycle;
+export default BimesterModalForm;

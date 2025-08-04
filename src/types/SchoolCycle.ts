@@ -1,7 +1,7 @@
 // src\types\SchoolCycle.ts
 
 export interface SchoolCycle {
-  id?: number;
+  id: number;
   name: string;
  startDate: Date | string; // ✅ Date, no string
   endDate: Date | string;

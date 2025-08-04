@@ -24,145 +24,98 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
-import { FiChevronLeft, FiChevronRight, FiEye, FiEdit, FiMoreVertical } from "react-icons/fi"
+import { FiChevronLeft, FiChevronRight, FiEdit, FiMoreVertical } from "react-icons/fi"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CgPlayListRemove } from "react-icons/cg"
-import {SchoolCycle} from "@/types/SchoolCycle"
-import {formatDate} from "@/utils/date"
-import {
-  Calendar,
-  CheckCircle,
-  XCircle,
-  Clock,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-} from "lucide-react"
+import { Bimester } from "@/types/SchoolBimesters"
+import { formatDate } from "@/utils/date"
 
-
-interface CycleDataTableProps {
-  data: SchoolCycle[],
-  onEdit: (cycle: SchoolCycle) => void; // 👈 nuevo
-
+interface BimesterDataTableProps {
+  data: Bimester[];
+  onEdit: (bimester: Bimester) => void;
+  onDelete?: (bimester: Bimester) => void;
 }
 
-
-export const getColumns = (
-  onEdit: (cycle: SchoolCycle) => void,
-  onDelete?: (cycle: SchoolCycle) => void
-): ColumnDef<SchoolCycle>[] => [
+export const getBimesterColumns = (
+  onEdit: (bimester: Bimester) => void,
+  onDelete?: (bimester: Bimester) => void
+): ColumnDef<Bimester>[] => [
   {
     accessorKey: "name",
-    header: "Ciclo Escolar",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-blue-100 rounded-lg">
-          <Calendar className="h-4 w-4 text-blue-600" />
-        </div>
-        <div>
-          <p className="font-semibold">{row.original.name}</p>
-          <p className="text-sm">{row.original.id || 4} bimestres</p>
-        </div>
-      </div>
-    ),
+    header: "Bimestre",
   },
   {
-    accessorKey: "period",
-    header: "Período Académico",
-    cell: ({ row }) => (
-      <div className="space-y-1">
-        <p className="text-sm font-medium">{formatDate(row.original.startDate)}</p>
-        <p className="text-sm">hasta {formatDate(row.original.endDate)}</p>
-      </div>
-    ),
+    accessorKey: "number",
+    header: "Número",
+    cell: ({ row }) => `Bimestre ${row.original.number}`,
   },
   {
-    accessorKey: "status",
+    accessorKey: "startDate",
+    header: "Fecha de inicio",
+    cell: ({ row }) => formatDate(row.original.startDate),
+  },
+  {
+    accessorKey: "endDate",
+    header: "Fecha de fin",
+    cell: ({ row }) => formatDate(row.original.endDate),
+  },
+  {
+    accessorKey: "isActive",
     header: "Estado",
     cell: ({ row }) => (
-      <div className="flex gap-2">
-        {row.original.isActive ? (
-          <Badge className="bg-green-100 text-green-800 hover:bg-green-100 shadow-sm">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Activo
-          </Badge>
-        ) : (
-          <Badge variant="secondary" className="bg-gray-100 text-gray-600">
-            <XCircle className="h-3 w-3 mr-1" />
-            Inactivo
-          </Badge>
-        )}
-        {row.original.isClosed && (
-          <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Cerrado</Badge>
-        )}
-      </div>
+      <Badge variant={row.original.isActive ? "default" : "secondary"}>
+        {row.original.isActive ? "Activo" : "Inactivo"}
+      </Badge>
     ),
   },
   {
-    accessorKey: "createdAt",
-    header: "Fecha de Creación",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <Clock className="h-4 w-4" />
-        <span className="text-sm">
-          {row.original.createdAt ? formatDate(row.original.createdAt) : "—"}
-        </span>
-      </div>
-    ),
+    accessorKey: "weeksCount",
+    header: "Semanas",
   },
   {
     id: "actions",
-    header: "Acciones",
     cell: ({ row }) => {
-      const cycle = row.original
+      const bimester = row.original;
       return (
-        <div className="flex justify-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Abrir menú</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => onEdit(cycle)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Editar
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <FiMoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onEdit(bimester)}>
+              <FiEdit className="mr-2 h-4 w-4" /> Editar
+            </DropdownMenuItem>
+            {onDelete && (
+              <DropdownMenuItem 
+                className="text-red-600 focus:bg-red-50"
+                onClick={() => onDelete(bimester)}
+              >
+                <CgPlayListRemove className="mr-2 h-4 w-4" /> Eliminar
               </DropdownMenuItem>
-              {onDelete && (
-                <DropdownMenuItem
-                  className="text-red-600 focus:bg-red-50 focus:text-red-600"
-                  onClick={() => onDelete(cycle)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Eliminar
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
     },
   },
-]
+];
 
-
-
-
-export function CycleDataTable({ data, onEdit }: CycleDataTableProps) {
-  const columns = getColumns(onEdit);
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+export function BimesterDataTable({ data, onEdit, onDelete }: BimesterDataTableProps) {
+  const columns = getBimesterColumns(onEdit, onDelete);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
-  })
+  });
 
- const table = useReactTable({
+  const table = useReactTable({
     data,
-    columns: getColumns(onEdit), 
+    columns,
     state: {
       sorting,
       columnFilters,
@@ -175,10 +128,10 @@ export function CycleDataTable({ data, onEdit }: CycleDataTableProps) {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-  })
+  });
 
   return (
-    <div className="rounded-md">
+    <div className="rounded-md border">
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center space-x-2">
           <p className="text-sm font-medium">Filas por página</p>
@@ -192,7 +145,7 @@ export function CycleDataTable({ data, onEdit }: CycleDataTableProps) {
               <SelectValue placeholder={table.getState().pagination.pageSize} />
             </SelectTrigger>
             <SelectContent side="top">
-              {[10, 20, 30, 40, 50].map((pageSize) => (
+              {[5, 10, 20, 30, 40, 50].map((pageSize) => (
                 <SelectItem key={pageSize} value={`${pageSize}`}>
                   {pageSize}
                 </SelectItem>
@@ -232,9 +185,9 @@ export function CycleDataTable({ data, onEdit }: CycleDataTableProps) {
                   {header.isPlaceholder
                     ? null
                     : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
                 </TableHead>
               ))}
             </TableRow>
@@ -254,7 +207,7 @@ export function CycleDataTable({ data, onEdit }: CycleDataTableProps) {
           ) : (
             <TableRow>
               <TableCell colSpan={columns.length} className="h-24 text-center">
-                No hay ciclos escolares
+                No hay bimestres registrados
               </TableCell>
             </TableRow>
           )}
@@ -264,7 +217,7 @@ export function CycleDataTable({ data, onEdit }: CycleDataTableProps) {
       <div className="flex items-center justify-between p-4">
         <div className="text-sm text-muted-foreground">
           Mostrando {pagination.pageIndex * pagination.pageSize + 1}-
-          {Math.min((pagination.pageIndex + 1) * pagination.pageSize, data.length)} de {data.length} ciclos
+          {Math.min((pagination.pageIndex + 1) * pagination.pageSize, data.length)} de {data.length} bimestres
         </div>
         <div className="flex items-center space-x-2">
           <Button
@@ -302,5 +255,5 @@ export function CycleDataTable({ data, onEdit }: CycleDataTableProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }
