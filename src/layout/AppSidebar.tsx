@@ -56,7 +56,7 @@ const navItems: NavItem[] = [
 
   },
   {
-    icon: <PiStudentBold   className="w-5 h-5"/>,
+    icon: <PiStudentBold className="w-5 h-5" />,
     name: "Estudiantes",
     subItems: [
       { name: "Lista de Estudiantes", path: "/students/list", pro: false },
@@ -64,11 +64,12 @@ const navItems: NavItem[] = [
     ]
   },
   {
-    icon: <CalendarPlus    className="w-5 h-5"/>,
+    icon: <CalendarPlus className="w-5 h-5" />,
     name: "Ciclo Escolar",
     subItems: [
       { name: "Ciclos Escolares", path: "/cycle", pro: false },
       { name: "Bimestres", path: "/bimesters", pro: false },
+      { name: "Dias Libres", path: "/holiday", pro: false }
     ]
   },
 
