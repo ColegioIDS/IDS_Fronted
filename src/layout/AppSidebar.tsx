@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import { PiStudentBold } from "react-icons/pi";
-import { CalendarPlus } from 'lucide-react';
+import { CalendarPlus, GraduationCap } from 'lucide-react';
 
 import {
   BoxCubeIcon,
@@ -73,6 +73,19 @@ const navItems: NavItem[] = [
     ]
   },
 
+
+    {
+      icon:<GraduationCap  className="w-5 h-5"/>,
+      name: "Grados & Secciones",
+      subItems:[
+        {name: "Grados", path: "/grades"},
+        {name: "Secciones", path: "/sections"}
+      ]
+
+
+
+
+    },
 
   {
     icon: <CalenderIcon />,
