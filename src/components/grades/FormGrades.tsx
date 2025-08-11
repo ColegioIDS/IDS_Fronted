@@ -28,7 +28,7 @@ export function GradeForm({
   onSubmit,
   isLoading = false,
   serverError = null,
-  defaultValues, 
+  defaultValues,
 }: GradeFormProps) {
   const form = useForm<GradeFormValues>({
     resolver: zodResolver(gradeSchema),
@@ -61,28 +61,28 @@ export function GradeForm({
           )}
         />
 
-       <FormField
-  control={form.control}
-  name="level"
-  render={({ field }) => (
-    <FormItem className="w-full"> {/* <- Asegura que el contenedor tenga full width */}
-      <FormLabel>Nivel Educativo *</FormLabel>
-      <Select onValueChange={field.onChange} defaultValue={field.value}>
-        <FormControl>
-          <SelectTrigger className="w-full"> {/* <- Aquí también */}
-            <SelectValue placeholder="Selecciona un nivel" />
-          </SelectTrigger>
-        </FormControl>
-        <SelectContent className="z-[90002] w-full"> {/* <- Asegura ancho completo */}
-          <SelectItem value="Primaria">Primaria</SelectItem>
-          <SelectItem value="Secundaria">Secundaria</SelectItem>
-          <SelectItem value="Kinder">Kinder</SelectItem>
-        </SelectContent>
-      </Select>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+        <FormField
+          control={form.control}
+          name="level"
+          render={({ field }) => (
+            <FormItem className="w-full"> {/* <- Asegura que el contenedor tenga full width */}
+              <FormLabel>Nivel Educativo *</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger className="w-full"> {/* <- Aquí también */}
+                    <SelectValue placeholder="Selecciona un nivel" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent className="z-[90002] w-full"> {/* <- Asegura ancho completo */}
+                  <SelectItem value="Primaria">Primaria</SelectItem>
+                  <SelectItem value="Secundaria">Secundaria</SelectItem>
+                  <SelectItem value="Kinder">Kinder</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
 
         <FormField
@@ -92,10 +92,10 @@ export function GradeForm({
             <FormItem>
               <FormLabel>Orden *</FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
-                  placeholder="Ej: 1" 
-                  {...field} 
+                <Input
+                  type="number"
+                  placeholder="Ej: 1"
+                  {...field}
                   onChange={(e) => field.onChange(Number(e.target.value))}
                 />
               </FormControl>

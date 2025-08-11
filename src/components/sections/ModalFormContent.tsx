@@ -1,25 +1,25 @@
-// src/components/grades/ModalFormContent.tsx
+// src/components/sections/ModalFormContent.tsx
 "use client";
 
 import { SideModal } from '@/components/ui/drawer/side-modal';
-import { GradeForm } from './FormGrades';
-import { useGradeContext } from '@/context/GradeContext';
+import { SectionForm } from './SectionForm';
+import { useSectionContext } from '@/context/SectionContext';
 import { toast } from 'react-toastify';
 import { useAutoClearError } from '@/hooks/useAutoClearError';
-import { Grade, GradeFormValues } from '@/types/grades';
+import { Section, SectionFormValues } from '@/types/sections';
 
-interface GradeFormModalProps {
+interface SectionFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  editingGrade?: Grade | null; // Propiedad correctamente definida
+  editingSection?: Section | null;
 }
 
-const GradeFormModal = ({
+const SectionFormModal = ({
   isOpen,
   onClose,
-  editingGrade,
-}: GradeFormModalProps) => {
-  const { createGrade, updateGrade, isSubmitting } = useGradeContext();
+  editingSection,
+}: SectionFormModalProps) => {
+  const { createSection, updateSection, isSubmitting } = useSectionContext();
   const { error: serverError, setError: setServerError, clearError } = useAutoClearError(6000);
 
   const handleClose = () => {
@@ -27,13 +27,13 @@ const GradeFormModal = ({
     onClose();
   };
 
-  const onSubmit = async (values: GradeFormValues) => {
+  const onSubmit = async (values: SectionFormValues) => {
     clearError();
     
     try {
-      const result = editingGrade?.id 
-        ? await updateGrade(editingGrade.id, values)
-        : await createGrade(values);
+      const result = editingSection?.id 
+        ? await updateSection(editingSection.id, values)
+        : await createSection(values);
 
       if (result && !result.success) {
         setServerError({
@@ -43,7 +43,7 @@ const GradeFormModal = ({
         return;
       }
 
-      toast.success(editingGrade?.id ? 'Grado actualizado' : 'Grado creado');
+     // toast.success(editingSection?.id ? 'Sección actualizada' : 'Sección creada');
       handleClose();
     } catch (error: any) {
       const errorData = error?.response?.data || error;
@@ -62,23 +62,26 @@ const GradeFormModal = ({
     <SideModal isOpen={isOpen} onClose={handleClose}>
       <div className="p-6 h-full">
         <h2 className="text-xl font-bold mb-6">
-          {editingGrade?.id ? 'Editar Grado' : 'Crear Nuevo Grado'}
+          {editingSection?.id ? 'Editar Sección' : 'Crear Nueva Sección'}
         </h2>
 
-        <GradeForm
+        <SectionForm
+          key={editingSection?.id || 'create'}
           onSubmit={onSubmit}
           isLoading={isSubmitting}
-          defaultValues={editingGrade ? {
-            name: editingGrade.name,
-            level: editingGrade.level,
-            order: editingGrade.order,
-            isActive: editingGrade.isActive,
-          } : undefined}
           serverError={serverError}
+          editMode={!!editingSection?.id}
+          currentSection={editingSection ? {
+            name: editingSection.name,
+            capacity: editingSection.capacity,
+            gradeId: editingSection.gradeId,
+            teacherId: editingSection.teacherId ?? null 
+          } : undefined}
+          onCancel={handleClose}
         />
       </div>
     </SideModal>
   );
 };
 
-export default GradeFormModal;
+export default SectionFormModal;
