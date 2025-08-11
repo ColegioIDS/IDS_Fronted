@@ -36,7 +36,7 @@ export function SectionForm({
   currentSection,
   onCancel,
 }: SectionFormProps) {
-  const { grades, isLoading: isLoadingGrades } = useGradeContext();
+  const { grades, isLoadingGrades: isLoadingGrades } = useGradeContext();
   const { teachers, isLoading: isLoadingTeachers } = useTeachers();
   const [isInitialized, setIsInitialized] = useState(false);
 
