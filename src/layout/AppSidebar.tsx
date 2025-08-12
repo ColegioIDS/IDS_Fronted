@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import { PiStudentBold } from "react-icons/pi";
-import { CalendarPlus, GraduationCap } from 'lucide-react';
+import { CalendarPlus, GraduationCap, CalendarCheck } from 'lucide-react';
 
 import {
   BoxCubeIcon,
@@ -74,19 +74,26 @@ const navItems: NavItem[] = [
   },
 
 
-    {
-      icon:<GraduationCap  className="w-5 h-5"/>,
-      name: "Grados & Secciones",
-      subItems:[
-        {name: "Grados", path: "/grades"},
-        {name: "Secciones", path: "/sections"}
-      ]
+  {
+    icon: <GraduationCap className="w-5 h-5" />,
+    name: "Grados & Secciones",
+    subItems: [
+      { name: "Grados", path: "/grades" },
+      { name: "Secciones", path: "/sections" }
+    ]
 
 
 
+  },
 
-    },
-
+  {
+    icon: <CalendarCheck className="w-5 h-5" />,
+    name: "Cursos y Horarios",
+    subItems: [
+      { name: "Cursos", path: "/courses", pro: false },
+      { name: "Horarios", path: "/schedules", pro: false },
+    ]
+  },
   {
     icon: <CalenderIcon />,
     name: "Calendar",
@@ -416,7 +423,7 @@ const AppSidebar: React.FC = () => {
             </div>
           </div>
         </nav>
-        {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
+      {/*   {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null} */}
       </div>
     </aside>
   );

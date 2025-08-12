@@ -5,3 +5,10 @@ export  interface ApiResponse<T> {
   data: T;
   details?: string[]; // Detalles opcionales para errores
 }
+
+
+export interface PaginatedApiResponse<T = any> extends ApiResponse<T[]> {
+  total: number;
+  page: number;
+  limit: number;
+}
