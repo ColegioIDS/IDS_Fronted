@@ -1,27 +1,42 @@
 // src/hooks/useTeachers.ts
-'use client';
-
-import { useUserContext } from '@/context/UserContext';
+import { useEffect, useState } from 'react';
+import { useUser } from '@/hooks/useUser';
 import { User } from '@/types/user';
 
 export function useTeachers() {
-  const context = useUserContext();
+  const { 
+    users, 
+    isLoadingUsers, 
+    usersError,
+    refetchUsers 
+  } = useUser();
   
-  if (!context) {
-    throw new Error('useTeachers must be used within a UserProvider');
-  }
+  const [teachers, setTeachers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const { users } = context;
-  
-  // Filtrar usuarios con rol de docente
-  const teachers = users.filter(user => 
-    user.role?.name.toLowerCase() === 'docente' || 
-    user.role?.name.toLowerCase() === 'teacher'
-  );
+  useEffect(() => {
+    if (!isLoadingUsers) {
+      // Filtrar usuarios con rol de docente
+      const filteredTeachers = users.filter(user => {
+        const roleName = user.role?.name.toLowerCase();
+        return roleName === 'docente' || roleName === 'teacher';
+      });
+      
+      setTeachers(filteredTeachers);
+      setIsLoading(false);
+      setError(usersError);
+    }
+  }, [users, isLoadingUsers, usersError]);
+
+  const refetch = async () => {
+    await refetchUsers();
+  };
 
   return {
     teachers,
-    isLoading: false,
-    error: null
+    isLoading,
+    error,
+    refetch
   };
 }
