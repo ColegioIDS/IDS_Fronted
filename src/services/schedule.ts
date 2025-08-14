@@ -98,6 +98,33 @@ export const deleteSchedule = async (id: number): Promise<void> => {
   }
 };
 
+
+
+export const batchSaveSchedules = async (schedules: ScheduleFormValues[]): Promise<Schedule[]> => {
+  try {
+    const { data } = await apiClient.post<ApiResponse<Schedule[]>>('/api/schedules/batch', {
+      schedules
+    });
+    if (!data.success) throw new Error(data.message || 'Error al guardar horarios');
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al guardar horarios masivamente');
+  }
+};
+
+export const deleteSchedulesBySection = async (sectionId: number, keepIds: number[] = []): Promise<void> => {
+  try {
+    const { data } = await apiClient.delete<ApiResponse<void>>(`/api/schedules/section/${sectionId}`, {
+      data: { keepIds }
+    });
+    if (!data.success) throw new Error(data.message || 'Error al limpiar horarios');
+  } catch (error) {
+    handleApiError(error, 'Error al limpiar horarios de la sección');
+  }
+};
+
+
+
 // ==================== UTILS ====================
 function handleApiError(error: unknown, fallbackMessage: string): never {
   if (axios.isAxiosError(error)) {

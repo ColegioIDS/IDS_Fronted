@@ -7,7 +7,9 @@ import {
   updateSchedule, 
   getScheduleById,
   getSchedulesBySection,
-  getSchedulesByTeacher
+  getSchedulesByTeacher,
+  batchSaveSchedules,
+  deleteSchedulesBySection
 } from '@/services/schedule';
 import { scheduleSchema, defaultValues } from "@/schemas/schedule";
 import { z } from 'zod';
@@ -154,6 +156,39 @@ export function useSchedule(isEditMode: boolean = false, id?: number) {
         }
     };
 
+
+    // Función para guardado masivo
+const handleBatchSave = async (schedules: ScheduleFormData[]) => {
+  setIsSubmitting(true);
+  try {
+    const savedSchedules = await batchSaveSchedules(schedules);
+    toast.success(`${savedSchedules.length} horarios guardados correctamente`);
+    await fetchSchedules();
+    return { success: true, data: savedSchedules };
+  } catch (error: any) {
+    console.error("Error en guardado masivo:", error);
+    
+    if (error.response?.data) {
+      return { 
+        success: false,
+        message: error.response.data.message || "Error en guardado masivo",
+        details: error.response.data.details || []
+      };
+    }
+    
+    toast.error(error.message || "Error al guardar horarios masivamente");
+    return { 
+      success: false, 
+      message: error.message || "Error desconocido",
+      details: []
+    };
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+
+
     const handleSubmit = isEditMode && id ? 
         (data: ScheduleFormData) => handleUpdateSchedule(id, data) : 
         handleCreateSchedule;
@@ -175,6 +210,7 @@ export function useSchedule(isEditMode: boolean = false, id?: number) {
         createSchedule: handleCreateSchedule,
         updateSchedule: handleUpdateSchedule,
         resetForm: () => form.reset(defaultValues),
-        handleSubmit
+        handleSubmit,
+         batchSave: handleBatchSave,
     };
 }

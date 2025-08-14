@@ -1,29 +1,37 @@
 // components/schedules/ScheduleCalendarView.tsx
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import type { Schedule, DayOfWeek, ScheduleFormValues } from "@/types/schedules";
 import type { 
   DragItem, 
   TimeSlot, 
   TempSchedule, 
-  ScheduleChange 
+  ScheduleChange
+} from "@/types/schedules.types";
+import type { ScheduleConfig } from "@/types/schedule-config";
+import { 
+  DEFAULT_TIME_SLOTS,
+  ALL_DAYS_OF_WEEK,
+  ScheduleTimeGenerator
 } from "@/types/schedules.types";
 import { useScheduleContext } from "@/context/ScheduleContext";
 import { useSectionContext } from "@/context/SectionContext";
 import { useCourseContext } from "@/context/CourseContext";
 import { useTeacherContext } from "@/context/TeacherContext";
+import { useScheduleConfigContext } from "@/context/ScheduleConfigContext";
 import { ScheduleHeader } from "./calendar/ScheduleHeader";
 import { ScheduleSidebar } from "./calendar/ScheduleSidebar";
 import { ScheduleGrid } from "./calendar/ScheduleGrid";
+import { toast } from "sonner";
 
 interface ScheduleCalendarViewProps {
   selectedSectionId?: number;
   onScheduleClick?: (schedule: Schedule) => void;
-  onCreateSchedule?: (data: Partial<ScheduleFormValues>) => void;
-  onUpdateSchedule?: (id: number, data: Partial<ScheduleFormValues>) => void;
-  onDeleteSchedule?: (id: number) => void;
-  onBatchSave?: (changes: ScheduleChange[]) => Promise<void>;
+  onCreateSchedule?: (data: Partial<ScheduleFormValues>) => Promise<{ success: boolean; message?: string; }>;
+  onUpdateSchedule?: (id: number, data: Partial<ScheduleFormValues>) => Promise<{ success: boolean; message?: string; }>;
+  onDeleteSchedule?: (id: number) => Promise<void>;
+  onBatchSave?: (changes: ScheduleChange[]) => Promise<{ success: boolean; }>; // Cambiar de void a objeto
 }
 
 export function ScheduleCalendarView({
@@ -38,39 +46,169 @@ export function ScheduleCalendarView({
   const [tempSchedules, setTempSchedules] = useState<TempSchedule[]>([]);
   const [pendingChanges, setPendingChanges] = useState<ScheduleChange[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+
+
+  
+  // Usar tu context existente
+  const { 
+    currentConfig,
+    isLoading: configsLoading,
+    fetchConfigBySection,
+    createConfig,
+    updateConfig
+  } = useScheduleConfigContext();
   
   const { schedules, fetchSchedules } = useScheduleContext();
   const { sections, isLoadingSections: sectionsLoading } = useSectionContext();
   const { courses, isLoadingCourses: coursesLoading } = useCourseContext();
   const { teachers, isLoading: teachersLoading } = useTeacherContext();
 
+  // Función para convertir workingDays de tu formato [0-6] a mi formato [1-7]
+  const convertWorkingDaysToMyFormat = (workingDays: number[]): number[] => {
+    return workingDays.map(day => day === 0 ? 7 : day); // 0 (domingo) -> 7, resto igual
+  };
+
+  // Función para convertir de mi formato [1-7] a tu formato [0-6]
+  const convertWorkingDaysToYourFormat = (workingDays: number[]): number[] => {
+    return workingDays.map(day => day === 7 ? 0 : day); // 7 (domingo) -> 0, resto igual
+  };
+
+  // Adaptador para convertir BreakSlots entre tipos
+  const adaptBreakSlots = (breakSlots: import("@/types/schedule-config").BreakSlot[]): import("@/types/schedules.types").BreakSlot[] => {
+    return breakSlots.map(slot => ({
+      start: slot.start,
+      end: slot.end,
+      label: slot.label || 'DESCANSO' // Asegurar que label no sea undefined
+    }));
+  };
+
+  // Generar timeSlots dinámicamente basado en la configuración de la sección
+  const dynamicTimeSlots = useMemo((): TimeSlot[] => {
+    console.log('🔍 Generando dynamicTimeSlots para sección:', selectedSection);
+    
+    if (!selectedSection || selectedSection === 0) {
+      console.log('🔍 Sin sección seleccionada, usando DEFAULT_TIME_SLOTS');
+      return DEFAULT_TIME_SLOTS;
+    }
+
+    if (!currentConfig) {
+      console.log('🔍 Sin configuración para sección', selectedSection, ', usando DEFAULT_TIME_SLOTS');
+      return DEFAULT_TIME_SLOTS;
+    }
+
+    // Generar slots dinámicamente
+    try {
+      console.log('🔍 Usando generador con configuración:', {
+        startTime: currentConfig.startTime,
+        endTime: currentConfig.endTime,
+        classDuration: currentConfig.classDuration,
+        breakSlots: currentConfig.breakSlots
+      });
+      
+      const generatedSlots = ScheduleTimeGenerator.generateTimeSlots({
+        startTime: currentConfig.startTime,
+        endTime: currentConfig.endTime,
+        classDuration: currentConfig.classDuration,
+        breakSlots: adaptBreakSlots(currentConfig.breakSlots) // Usar adaptador
+      });
+      
+      console.log('🔍 Slots generados exitosamente:', generatedSlots.length, 'slots');
+      return generatedSlots;
+    } catch (error) {
+      console.error('🔴 Error generando timeSlots dinámicos:', error);
+      console.log('🔍 Fallback a DEFAULT_TIME_SLOTS debido al error');
+      return DEFAULT_TIME_SLOTS;
+    }
+  }, [selectedSection, currentConfig]);
+
+  // Generar días de trabajo dinámicamente
+  const dynamicWorkingDays = useMemo(() => {
+    console.log('🔍 Generando dynamicWorkingDays para sección:', selectedSection);
+    
+    if (!selectedSection || selectedSection === 0) {
+      console.log('🔍 Sin sección, usando días por defecto (Lun-Vie)');
+      return ALL_DAYS_OF_WEEK.filter(day => [1, 2, 3, 4, 5].includes(day.value));
+    }
+
+    if (!currentConfig) {
+      console.log('🔍 Sin config, usando días por defecto (Lun-Vie)');
+      return ALL_DAYS_OF_WEEK.filter(day => [1, 2, 3, 4, 5].includes(day.value));
+    }
+
+    // Convertir workingDays de tu formato [0-6] a mi formato [1-7]
+    const convertedDays = convertWorkingDaysToMyFormat(currentConfig.workingDays);
+    const filteredDays = ALL_DAYS_OF_WEEK.filter(day => convertedDays.includes(day.value));
+    
+    console.log('🔍 Días de tu config:', currentConfig.workingDays);
+    console.log('🔍 Días convertidos:', convertedDays);
+    console.log('🔍 Días filtrados:', filteredDays.map(d => d.label));
+    
+    return filteredDays;
+  }, [selectedSection, currentConfig]);
+
   // Combinar horarios reales y temporales
   const allSchedules = useMemo(() => {
-    const realSchedules = schedules?.filter(schedule => schedule.sectionId === selectedSection) || [];
-    const sectionTempSchedules = tempSchedules.filter(schedule => schedule.sectionId === selectedSection);
+    if (!selectedSection) return [];
+    
+    const realSchedules = schedules?.filter(schedule => 
+      schedule.sectionId === selectedSection
+    ) || [];
+    
+    const sectionTempSchedules = tempSchedules.filter(schedule => 
+      schedule.sectionId === selectedSection
+    );
+
+    // Filtrar schedules que están marcados para eliminar en pendingChanges
+    const schedulesToDelete = pendingChanges
+      .filter(change => change.action === 'delete')
+      .map(change => change.schedule.id);
+
+    const filteredRealSchedules = realSchedules.filter(
+      schedule => !schedulesToDelete.includes(schedule.id)
+    );
+
+    const filteredTempSchedules = sectionTempSchedules.filter(
+      schedule => !schedulesToDelete.includes(schedule.id)
+    );
+
     console.log('AllSchedules combinados:', {
-      realSchedules: realSchedules.length,
-      tempSchedules: sectionTempSchedules.length,
-      total: realSchedules.length + sectionTempSchedules.length
+      realSchedules: filteredRealSchedules.length,
+      tempSchedules: filteredTempSchedules.length,
+      total: filteredRealSchedules.length + filteredTempSchedules.length,
+      schedulesToDelete: schedulesToDelete.length,
+      workingDays: dynamicWorkingDays.map(d => d.label).join(', '),
+      timeSlots: dynamicTimeSlots.length
     });
-    return [...realSchedules, ...sectionTempSchedules];
-  }, [schedules, selectedSection, tempSchedules]);
+
+    return [...filteredRealSchedules, ...filteredTempSchedules];
+  }, [schedules, selectedSection, tempSchedules, pendingChanges, dynamicWorkingDays, dynamicTimeSlots]);
 
   // Organizar horarios por día y horario
   const scheduleGrid = useMemo(() => {
     const grid: { [key: string]: (Schedule | TempSchedule)[] } = {};
     
-    allSchedules.forEach((schedule) => {
-      const key = `${schedule.dayOfWeek}-${schedule.startTime}`;
-      if (!grid[key]) {
-        grid[key] = [];
-      }
-      grid[key].push(schedule);
+    // Solo considerar schedules de días que están configurados
+    const validDays = dynamicWorkingDays.map(d => d.value);
+    
+    allSchedules
+      .filter(schedule => validDays.includes(schedule.dayOfWeek))
+      .forEach((schedule) => {
+        const key = `${schedule.dayOfWeek}-${schedule.startTime}`;
+        if (!grid[key]) {
+          grid[key] = [];
+        }
+        grid[key].push(schedule);
+      });
+    
+    console.log('Schedule Grid generado con configuración dinámica:', {
+      totalSlots: Object.keys(grid).length,
+      workingDays: validDays,
+      timeSlots: dynamicTimeSlots.length
     });
     
-    console.log('Schedule Grid generado:', Object.keys(grid).length, 'slots con horarios');
     return grid;
-  }, [allSchedules]);
+  }, [allSchedules, dynamicWorkingDays, dynamicTimeSlots]);
 
   // Calcular horas asignadas por profesor
   const teacherHours = useMemo(() => {
@@ -92,214 +230,238 @@ export function ScheduleCalendarView({
   // Generar ID temporal único
   const generateTempId = () => `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-  // Manejar drop de elementos
- /*   const handleDrop = useCallback((item: DragItem, day: DayOfWeek, timeSlot: TimeSlot) => {
-    console.log('HandleDrop ejecutado:', { item, day, timeSlot });
+  // Función para manejar guardado de configuración usando tu infraestructura
+  const handleConfigSave = useCallback(async (config: import("@/types/schedule-config").ScheduleConfig) => {
+    console.log('🟢 ===== GUARDANDO CONFIGURACIÓN =====');
+    console.log('🟢 Config recibida:', config);
     
-    if (!selectedSection || timeSlot.label.includes("RECREO") || timeSlot.label.includes("ALMUERZO")) {
-      console.log('Drop cancelado: sin sección o es recreo/almuerzo');
+    try {
+      setIsSaving(true);
+      
+      // Convertir workingDays de mi formato [1-7] a tu formato [0-6]
+      const configToSave = {
+        ...config,
+        workingDays: convertWorkingDaysToYourFormat(config.workingDays)
+      };
+      
+      console.log('🟢 Config convertida para tu API:', configToSave);
+      
+      let result;
+      if (currentConfig?.id) {
+        // Actualizar existente
+        console.log('🟢 Actualizando configuración existente ID:', currentConfig.id);
+        result = await updateConfig(currentConfig.id, configToSave);
+      } else {
+        // Crear nueva
+        console.log('🟢 Creando nueva configuración');
+        result = await createConfig(configToSave);
+      }
+      
+      if (result.success) {
+        console.log('🟢 ✅ Configuración guardada exitosamente:', result.data);
+        
+        // Limpiar schedules temporales si la configuración cambió significativamente
+        if (tempSchedules.length > 0) {
+          const shouldClearSchedules = confirm(
+            'La configuración de horarios ha cambiado. ¿Deseas limpiar los horarios temporales actuales?'
+          );
+          
+          if (shouldClearSchedules) {
+            setTempSchedules([]);
+            setPendingChanges([]);
+          }
+        }
+      } else {
+        console.error('🔴 Error del servidor:', result.message);
+        alert(`Error al guardar: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('🔴 Error guardando configuración:', error);
+      alert('Error al guardar la configuración. Verifica tu conexión.');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [currentConfig, updateConfig, createConfig, tempSchedules]);
+
+  // Cargar configuración automáticamente al cambiar de sección
+  useEffect(() => {
+    if (selectedSection > 0) {
+      console.log('🔄 Cargando configuración para nueva sección:', selectedSection);
+      fetchConfigBySection(selectedSection).then(config => {
+        if (config) {
+          console.log('📋 Configuración cargada automáticamente:', config);
+        } else {
+          console.log('📋 No hay configuración guardada para esta sección');
+        }
+      }).catch(error => {
+        console.log('📋 Error cargando configuración o no existe:', error.message);
+      });
+    }
+  }, [selectedSection, fetchConfigBySection]);
+
+  // Manejar drop de elementos - ACTUALIZADO para validar configuración dinámica
+  const handleDrop = useCallback((item: DragItem, day: DayOfWeek, timeSlot: TimeSlot) => {
+    if (!selectedSection) return;
+    
+    // Validar que el día esté en los días de trabajo configurados
+    if (currentConfig) {
+      const convertedDays = convertWorkingDaysToMyFormat(currentConfig.workingDays);
+      if (!convertedDays.includes(day)) {
+        console.warn('⚠️ Día no configurado para esta sección:', day);
+        const allowedDays = convertedDays.map(d => 
+          ALL_DAYS_OF_WEEK.find(dayObj => dayObj.value === d)?.label
+        ).join(', ');
+        alert(`El día seleccionado no está configurado para esta sección. Días permitidos: ${allowedDays}`);
+        return;
+      }
+    }
+    
+    // Validar que no sea un break slot
+    if (timeSlot.isBreak || timeSlot.label.includes("RECREO") || timeSlot.label.includes("ALMUERZO")) {
+      console.warn('⚠️ No se puede arrastrar a un slot de recreo/almuerzo');
       return;
     }
 
-     setTempSchedules(prev =>
-    prev.filter(s => !(s.dayOfWeek === day && s.startTime === timeSlot.start && s.sectionId === selectedSection))
-  );
+    // Buscar schedule existente en ese slot para esta sección
+    const existingSchedule = tempSchedules.find(
+      s => s.dayOfWeek === day && s.startTime === timeSlot.start && s.sectionId === selectedSection
+    );
+
+    const section = sections?.find(s => s.id === selectedSection);
 
     if (item.type === 'course') {
       const course = item.data as any;
-      const tempSchedule: TempSchedule = {
-        id: generateTempId(),
-        sectionId: selectedSection,
-        courseId: item.id,
-        teacherId: null,
-        dayOfWeek: day,
-        startTime: timeSlot.start,
-        endTime: timeSlot.end,
-        classroom: null,
-        course: course ? {
-          id: course.id,
-          name: course.name
-        } : null,
-        teacher: null,
-        section: sections?.find(s => s.id === selectedSection),
-        isTemp: true,
-      };
-      
-      console.log('Creando schedule temporal de curso:', tempSchedule);
-      setTempSchedules(prev => [...prev, tempSchedule]);
-      setPendingChanges(prev => [...prev, {
-        action: 'create',
-        schedule: tempSchedule
-      }]);
-      
-    } else if (item.type === 'teacher') {
-      const teacher = item.data as any;
-      const tempSchedule: TempSchedule = {
-        id: generateTempId(),
-        sectionId: selectedSection,
-        courseId: null,
-        teacherId: item.id,
-        dayOfWeek: day,
-        startTime: timeSlot.start,
-        endTime: timeSlot.end,
-        classroom: null,
-        course: null,
-        teacher: teacher ? { 
-          id: teacher.id,
-          name: item.name 
-        } : null,
-        section: sections?.find(s => s.id === selectedSection),
-        isTemp: true,
-      };
-      
-      console.log('Creando schedule temporal de profesor:', tempSchedule);
-      setTempSchedules(prev => [...prev, tempSchedule]);
-      setPendingChanges(prev => [...prev, {
-        action: 'create',
-        schedule: tempSchedule
-      }]);
-      
-   } else if (item.type === 'schedule') {
-    const existingSchedule = item.data as Schedule | TempSchedule;
-    console.log('Moviendo schedule existente:', existingSchedule);
 
-    if ('isTemp' in existingSchedule && existingSchedule.isTemp) {
-      // 🔹 Eliminar el original del array antes de agregar el actualizado
-      setTempSchedules(prev => prev.filter(s => s.id !== existingSchedule.id));
-
-      const updatedSchedule: TempSchedule = {
-        ...existingSchedule,
-        dayOfWeek: day,
-        startTime: timeSlot.start,
-        endTime: timeSlot.end,
-      };
-
-      setTempSchedules(prev => [...prev, updatedSchedule]);
-      setPendingChanges(prev =>
-        prev.map(change =>
-          change.schedule.id === existingSchedule.id
-            ? { ...change, schedule: updatedSchedule }
-            : change
-        )
-      );
-    } else {
-        const updatedSchedule = {
+      if (existingSchedule) {
+        // ACTUALIZAR el curso del schedule existente
+        const updatedSchedule: TempSchedule = {
           ...existingSchedule,
+          courseId: item.id,
+          course: {
+            id: course.id,
+            name: course.name
+          },
+        };
+        
+        setTempSchedules(prev =>
+          prev.map(s => s.id === existingSchedule.id ? updatedSchedule : s)
+        );
+        
+        setPendingChanges(prev =>
+          prev.map(change =>
+            change.schedule.id === existingSchedule.id
+              ? { ...change, schedule: updatedSchedule }
+              : change
+          )
+        );
+      } else {
+        // CREAR nuevo schedule con solo curso
+        const tempSchedule: TempSchedule = {
+          id: generateTempId(),
+          sectionId: selectedSection,
+          courseId: item.id,
+          teacherId: null,
           dayOfWeek: day,
           startTime: timeSlot.start,
           endTime: timeSlot.end,
-        } as Schedule;
+          classroom: null,
+          course: {
+            id: course.id,
+            name: course.name
+          },
+          teacher: null,
+          section,
+          isTemp: true,
+        };
         
-        setPendingChanges(prev => {
-          const existingChangeIndex = prev.findIndex(
-            change => change.schedule.id === existingSchedule.id && change.action === 'update'
-          );
-          
-          if (existingChangeIndex >= 0) {
-            const newChanges = [...prev];
-            newChanges[existingChangeIndex] = {
-              action: 'update',
-              schedule: updatedSchedule,
-              originalSchedule: existingSchedule as Schedule
-            };
-            return newChanges;
-          } else {
-            return [...prev, {
-              action: 'update',
-              schedule: updatedSchedule,
-              originalSchedule: existingSchedule as Schedule
-            }];
-          }
-        });
+        console.log('Creando schedule temporal de curso:', tempSchedule);
+        setTempSchedules(prev => [...prev, tempSchedule]);
+        setPendingChanges(prev => [...prev, {
+          action: 'create',
+          schedule: tempSchedule
+        }]);
       }
-    }
-  }, [selectedSection, sections]); 
- */
-
- /*    const handleDrop = useCallback((item: DragItem, day: DayOfWeek, timeSlot: TimeSlot) => {
-    if (!selectedSection || timeSlot.label.includes("RECREO") || timeSlot.label.includes("ALMUERZO")) {
-      return;
-    }
-
-    if (item.type === 'course') {
-      // Crear horario temporal para curso
-      const tempSchedule: TempSchedule = {
-        id: generateTempId(),
-        sectionId: selectedSection,
-        courseId: item.id,
-        teacherId: undefined,
-        dayOfWeek: day,
-        startTime: timeSlot.start,
-        endTime: timeSlot.end,
-        classroom: undefined,
-        course: item.data,
-        teacher: undefined,
-        section: sections?.find(s => s.id === selectedSection),
-        isTemp: true,
-      };
-      
-      setTempSchedules(prev => [...prev, tempSchedule]);
-      
-      // Agregar a cambios pendientes
-      setPendingChanges(prev => [...prev, {
-        action: 'create',
-        schedule: tempSchedule
-      }]);
       
     } else if (item.type === 'teacher') {
-      // Crear horario temporal para profesor
-      const tempSchedule: TempSchedule = {
-        id: generateTempId(),
-        sectionId: selectedSection,
-        courseId: undefined,
-        teacherId: item.id,
-        dayOfWeek: day,
-        startTime: timeSlot.start,
-        endTime: timeSlot.end,
-        classroom: undefined,
-        course: undefined,
-        teacher: { name: item.name, ...item.data },
-        section: sections?.find(s => s.id === selectedSection),
-        isTemp: true,
-      };
-      
-      setTempSchedules(prev => [...prev, tempSchedule]);
-      
-      // Agregar a cambios pendientes
-      setPendingChanges(prev => [...prev, {
-        action: 'create',
-        schedule: tempSchedule
-      }]);
-      
-    } else if (item.type === 'schedule') {
-      // Mover horario existente
-      const existingSchedule = item.data as Schedule | TempSchedule;
-      
-      if ('isTemp' in existingSchedule && existingSchedule.isTemp) {
-        // Es un horario temporal, solo actualizarlo
+      const teacher = item.data as any;
+
+      if (existingSchedule) {
+        // ACTUALIZAR el maestro del schedule existente
         const updatedSchedule: TempSchedule = {
           ...existingSchedule,
+          teacherId: item.id,
+          teacher: {
+            id: teacher.id,
+            name: item.name
+          },
+        };
+        
+        setTempSchedules(prev =>
+          prev.map(s => s.id === existingSchedule.id ? updatedSchedule : s)
+        );
+        
+        setPendingChanges(prev =>
+          prev.map(change =>
+            change.schedule.id === existingSchedule.id
+              ? { ...change, schedule: updatedSchedule }
+              : change
+          )
+        );
+      } else {
+        // CREAR nuevo schedule con solo maestro
+        const tempSchedule: TempSchedule = {
+          id: generateTempId(),
+          sectionId: selectedSection,
+          courseId: null,
+          teacherId: item.id,
+          dayOfWeek: day,
+          startTime: timeSlot.start,
+          endTime: timeSlot.end,
+          classroom: null,
+          course: null,
+          teacher: {
+            id: teacher.id,
+            name: item.name
+          },
+          section,
+          isTemp: true,
+        };
+        
+        console.log('Creando schedule temporal de profesor:', tempSchedule);
+        setTempSchedules(prev => [...prev, tempSchedule]);
+        setPendingChanges(prev => [...prev, {
+          action: 'create',
+          schedule: tempSchedule
+        }]);
+      }
+      
+    } else if (item.type === 'schedule') {
+      // Mover schedule existente
+      const existingScheduleToMove = item.data as Schedule | TempSchedule;
+      console.log('Moviendo schedule existente:', existingScheduleToMove);
+      
+      if ('isTemp' in existingScheduleToMove && existingScheduleToMove.isTemp) {
+        const updatedSchedule: TempSchedule = {
+          ...existingScheduleToMove,
           dayOfWeek: day,
           startTime: timeSlot.start,
           endTime: timeSlot.end,
         };
         
         setTempSchedules(prev => 
-          prev.map(s => s.id === existingSchedule.id ? updatedSchedule : s)
+          prev.map(s => s.id === existingScheduleToMove.id ? updatedSchedule : s)
         );
         
-        // Actualizar en cambios pendientes
         setPendingChanges(prev => 
           prev.map(change => 
-            change.schedule.id === existingSchedule.id 
+            change.schedule.id === existingScheduleToMove.id 
               ? { ...change, schedule: updatedSchedule }
               : change
           )
         );
       } else {
-        // Es un horario real, crear un cambio de actualización
         const updatedSchedule = {
-          ...existingSchedule,
+          ...existingScheduleToMove,
           dayOfWeek: day,
           startTime: timeSlot.start,
           endTime: timeSlot.end,
@@ -307,281 +469,175 @@ export function ScheduleCalendarView({
         
         setPendingChanges(prev => {
           const existingChangeIndex = prev.findIndex(
-            change => change.schedule.id === existingSchedule.id && change.action === 'update'
+            change => change.schedule.id === existingScheduleToMove.id && change.action === 'update'
           );
           
           if (existingChangeIndex >= 0) {
-            // Actualizar cambio existente
             const newChanges = [...prev];
             newChanges[existingChangeIndex] = {
               action: 'update',
               schedule: updatedSchedule,
-              originalSchedule: existingSchedule as Schedule
+              originalSchedule: existingScheduleToMove as Schedule
             };
             return newChanges;
           } else {
-            // Nuevo cambio de actualización
             return [...prev, {
               action: 'update',
               schedule: updatedSchedule,
-              originalSchedule: existingSchedule as Schedule
+              originalSchedule: existingScheduleToMove as Schedule
             }];
           }
         });
       }
     }
-  }, [selectedSection, sections]);
- */
-const handleDrop = useCallback((item: DragItem, day: DayOfWeek, timeSlot: TimeSlot) => {
-  if (!selectedSection || timeSlot.label.includes("RECREO") || timeSlot.label.includes("ALMUERZO")) {
-    return;
-  }
+  }, [selectedSection, sections, tempSchedules, currentConfig]);
 
-  // Buscar todos los schedules existentes en ese slot para esta sección
-  const existingSchedules = tempSchedules.filter(
-    s => s.dayOfWeek === day && s.startTime === timeSlot.start && s.sectionId === selectedSection
-  );
-
-  let existingSchedule = existingSchedules[0]; // asumimos como base el primero (si hay uno)
-
-  // Si ya hay uno con el mismo tipo, lo reemplazamos. Si no, lo agregamos.
-  const section = sections?.find(s => s.id === selectedSection);
-
-  if (item.type === 'course') {
-    const course = item.data as any;
-
-    // Si ya hay un schedule en ese slot para esa sección, actualiza el curso
-    if (existingSchedule) {
-      const updatedSchedule = {
-        ...existingSchedule,
-        courseId: item.id,
-        course: {
-          id: course.id,
-          name: course.name
-        },
-      };
-      setTempSchedules(prev =>
-        prev.map(s => s.id === existingSchedule!.id ? updatedSchedule : s)
-      );
-      setPendingChanges(prev =>
-        prev.map(change =>
-          change.schedule.id === existingSchedule!.id
-            ? { ...change, schedule: updatedSchedule }
-            : change
-        )
-      );
-    } else {
-      // Crear nuevo si no hay nada
-      const tempSchedule: TempSchedule = {
-        id: generateTempId(),
-        sectionId: selectedSection,
-        courseId: item.id,
-        teacherId: null,
-        dayOfWeek: day,
-        startTime: timeSlot.start,
-        endTime: timeSlot.end,
-        classroom: null,
-        course: {
-          id: course.id,
-          name: course.name
-        },
-        teacher: null,
-        section,
-        isTemp: true,
-      };
-      setTempSchedules(prev => [...prev, tempSchedule]);
-      setPendingChanges(prev => [...prev, {
-        action: 'create',
-        schedule: tempSchedule
-      }]);
-    }
-  } else if (item.type === 'teacher') {
-    const teacher = item.data as any;
-
-    if (existingSchedule) {
-      const updatedSchedule = {
-        ...existingSchedule,
-        teacherId: item.id,
-        teacher: {
-          id: teacher.id,
-          name: item.name
-        },
-      };
-      setTempSchedules(prev =>
-        prev.map(s => s.id === existingSchedule!.id ? updatedSchedule : s)
-      );
-      setPendingChanges(prev =>
-        prev.map(change =>
-          change.schedule.id === existingSchedule!.id
-            ? { ...change, schedule: updatedSchedule }
-            : change
-        )
-      );
-    } else {
-      const tempSchedule: TempSchedule = {
-        id: generateTempId(),
-        sectionId: selectedSection,
-        courseId: null,
-        teacherId: item.id,
-        dayOfWeek: day,
-        startTime: timeSlot.start,
-        endTime: timeSlot.end,
-        classroom: null,
-        course: null,
-        teacher: {
-          id: teacher.id,
-          name: item.name
-        },
-        section,
-        isTemp: true,
-      };
-      setTempSchedules(prev => [...prev, tempSchedule]);
-      setPendingChanges(prev => [...prev, {
-        action: 'create',
-        schedule: tempSchedule
-      }]);
-    }
-  }
-
-}, [selectedSection, sections, tempSchedules]);
-
-
-  // Manejar eliminación de horarios - MEJORADO CON MÁS DEBUG
-// Manejar eliminación de horarios
-const handleScheduleDelete = useCallback((id: string | number) => {
-  console.log('🔴 handleScheduleDelete EJECUTADO con ID:', id, 'tipo:', typeof id);
-  console.log('🔴 TempSchedules antes:', tempSchedules.map(s => ({ id: s.id, type: typeof s.id })));
-  console.log('🔴 Schedules reales:', schedules?.map(s => ({ id: s.id, type: typeof s.id })));
-  
-  if (typeof id === 'string') {
-    console.log('🔴 Eliminando schedule temporal:', id);
-
-    // 1️⃣ Quitar del estado de temporales
-    setTempSchedules(prev => {
-      const filtered = prev.filter(s => s.id !== id);
-      console.log('🔴 TempSchedules después del filter:', filtered.length, 'antes:', prev.length);
-      return filtered;
-    });
-
-    // 2️⃣ Agregar un "delete" a pendingChanges para que el grid lo oculte
-    setPendingChanges(prev => {
-      const filtered = prev.filter(change => change.schedule.id !== id);
-      const deletedSchedule = tempSchedules.find(s => s.id === id);
-
-      // Solo agregamos si existía en tempSchedules
-      if (deletedSchedule) {
-        return [
-          ...filtered,
-          { action: 'delete' as const, schedule: deletedSchedule }
-        ];
-      }
-      return filtered;
-    });
-
-  } else {
-    console.log('🔴 Procesando eliminación de schedule real:', id);
-    const schedule = schedules?.find(s => s.id === id);
-    if (schedule) {
-      console.log('🔴 Schedule encontrado para eliminar:', schedule);
-      setPendingChanges(prev => {
-        const newChanges = [...prev, {
-          action: 'delete' as const,
-          schedule: schedule,
-          originalSchedule: schedule
-        }];
-        console.log('🔴 Nuevos pending changes:', newChanges.length);
-        return newChanges;
+  // Manejar eliminación de horarios
+  const handleScheduleDelete = useCallback((id: string | number) => {
+    console.log('🔴 handleScheduleDelete EJECUTADO con ID:', id, 'tipo:', typeof id);
+    
+    if (typeof id === 'string') {
+      console.log('🔴 Eliminando schedule temporal:', id);
+      
+      setTempSchedules(prev => {
+        const filtered = prev.filter(s => s.id !== id);
+        console.log('🔴 TempSchedules después del filter:', filtered.length, 'antes:', prev.length);
+        return filtered;
       });
+
+      setPendingChanges(prev => {
+        const filtered = prev.filter(change => change.schedule.id !== id);
+        console.log('🔴 PendingChanges después del filter:', filtered.length);
+        return filtered;
+      });
+      
     } else {
-      console.log('🔴 ⚠️ Schedule no encontrado para ID:', id);
-    }
-  }
-}, [schedules, tempSchedules]);
-
-  // Guardar todos los cambios
-  const handleSaveAll = useCallback(async () => {
-    if (pendingChanges.length === 0 && tempSchedules.length === 0) return;
-
-    setIsSaving(true);
-    try {
-      if (onBatchSave) {
-        await onBatchSave(pendingChanges);
-      } else {
-        for (const change of pendingChanges) {
-          switch (change.action) {
-            case 'create':
-              if (onCreateSchedule) {
-                const scheduleData: Partial<ScheduleFormValues> = {
-                  sectionId: change.schedule.sectionId,
-                  courseId: change.schedule.courseId || undefined,
-                  teacherId: change.schedule.teacherId || undefined,
-                  dayOfWeek: change.schedule.dayOfWeek,
-                  startTime: change.schedule.startTime,
-                  endTime: change.schedule.endTime,
-                  classroom: change.schedule.classroom || undefined,
-                };
-                await onCreateSchedule(scheduleData);
-              }
-              break;
-            case 'update':
-              if (onUpdateSchedule && typeof change.schedule.id === 'number') {
-                const scheduleData: Partial<ScheduleFormValues> = {
-                  sectionId: change.schedule.sectionId,
-                  courseId: change.schedule.courseId || undefined,
-                  teacherId: change.schedule.teacherId || undefined,
-                  dayOfWeek: change.schedule.dayOfWeek,
-                  startTime: change.schedule.startTime,
-                  endTime: change.schedule.endTime,
-                  classroom: change.schedule.classroom || undefined,
-                };
-                await onUpdateSchedule(change.schedule.id, scheduleData);
-              }
-              break;
-            case 'delete':
-              if (onDeleteSchedule && typeof change.schedule.id === 'number') {
-                await onDeleteSchedule(change.schedule.id);
-              }
-              break;
+      console.log('🔴 Procesando eliminación de schedule real:', id);
+      const schedule = schedules?.find(s => s.id === id);
+      if (schedule) {
+        console.log('🔴 Schedule encontrado para eliminar:', schedule);
+        
+        setPendingChanges(prev => {
+          const existingChangeIndex = prev.findIndex(
+            change => change.schedule.id === id
+          );
+          
+          if (existingChangeIndex >= 0) {
+            const newChanges = [...prev];
+            newChanges[existingChangeIndex] = {
+              action: 'delete',
+              schedule: schedule,
+              originalSchedule: schedule
+            };
+            return newChanges;
+          } else {
+            return [...prev, {
+              action: 'delete',
+              schedule: schedule,
+              originalSchedule: schedule
+            }];
           }
+        });
+      } else {
+        console.log('🔴 ⚠️ Schedule no encontrado para ID:', id);
+      }
+    }
+  }, [schedules]);
+
+  // Resto de funciones iguales...
+    // En ScheduleCalendarView.tsx, modificar handleSaveAll:
+
+// En ScheduleCalendarView.tsx, actualizar handleSaveAll:
+
+const handleSaveAll = useCallback(async () => {
+  if (pendingChanges.length === 0 && tempSchedules.length === 0) return;
+
+  setIsSaving(true);
+  try {
+    if (onBatchSave) {
+      const result = await onBatchSave(pendingChanges);
+      if (!result.success) {
+        throw new Error('Error en guardado masivo');
+      }
+    } else {
+      // Fallback a operaciones individuales
+      for (const change of pendingChanges) {
+        switch (change.action) {
+          case 'create':
+            if (onCreateSchedule && change.schedule.courseId && change.schedule.sectionId) {
+              const scheduleData: Partial<ScheduleFormValues> = {
+                sectionId: change.schedule.sectionId,
+                courseId: change.schedule.courseId,
+                teacherId: change.schedule.teacherId,
+                dayOfWeek: change.schedule.dayOfWeek,
+                startTime: change.schedule.startTime,
+                endTime: change.schedule.endTime,
+                classroom: change.schedule.classroom || undefined,
+              };
+              await onCreateSchedule(scheduleData);
+            }
+            break;
+          case 'update':
+            if (onUpdateSchedule && typeof change.schedule.id === 'number') {
+              const scheduleData: Partial<ScheduleFormValues> = {
+                sectionId: change.schedule.sectionId,
+                courseId: change.schedule.courseId || undefined,
+                teacherId: change.schedule.teacherId,
+                dayOfWeek: change.schedule.dayOfWeek,
+                startTime: change.schedule.startTime,
+                endTime: change.schedule.endTime,
+                classroom: change.schedule.classroom || undefined,
+              };
+              await onUpdateSchedule(change.schedule.id, scheduleData);
+            }
+            break;
+          case 'delete':
+            if (onDeleteSchedule && typeof change.schedule.id === 'number') {
+              await onDeleteSchedule(change.schedule.id);
+            }
+            break;
         }
       }
-
-      setTempSchedules([]);
-      setPendingChanges([]);
-      
-      if (fetchSchedules) {
-        await fetchSchedules();
-      }
-      
-    } catch (error) {
-      console.error('Error al guardar cambios:', error);
-    } finally {
-      setIsSaving(false);
     }
-  }, [pendingChanges, tempSchedules, onBatchSave, onCreateSchedule, onUpdateSchedule, onDeleteSchedule, fetchSchedules]);
 
-  // Descartar cambios
+    setTempSchedules([]);
+    setPendingChanges([]);
+    
+    if (fetchSchedules) {
+      await fetchSchedules();
+    }
+    
+  } catch (error) {
+    console.error('Error al guardar cambios:', error);
+  } finally {
+    setIsSaving(false);
+  }
+}, [pendingChanges, tempSchedules, onBatchSave, onCreateSchedule, onUpdateSchedule, onDeleteSchedule, fetchSchedules]);
+
+
   const handleDiscardChanges = useCallback(() => {
     setTempSchedules([]);
     setPendingChanges([]);
   }, []);
 
-  // Cambiar de sección
   const handleSectionChange = useCallback((value: string) => {
+    const newSectionId = parseInt(value);
+    
     if (pendingChanges.length > 0 || tempSchedules.length > 0) {
       if (confirm('Tienes cambios sin guardar. ¿Deseas descartarlos y cambiar de sección?')) {
         handleDiscardChanges();
-        setSelectedSection(parseInt(value));
+        setSelectedSection(newSectionId);
       }
     } else {
-      setSelectedSection(parseInt(value));
+      setSelectedSection(newSectionId);
     }
   }, [pendingChanges, tempSchedules, handleDiscardChanges]);
 
   const hasUnsavedChanges = pendingChanges.length > 0 || tempSchedules.length > 0;
+  const totalPendingChanges = pendingChanges.length;
 
-  // Loading state
-  if (sectionsLoading || coursesLoading || teachersLoading) {
+  // Loading state - incluir carga de configuraciones
+  if (sectionsLoading || coursesLoading || teachersLoading || configsLoading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center space-y-4">
@@ -592,26 +648,27 @@ const handleScheduleDelete = useCallback((id: string | number) => {
     );
   }
 
-  console.log('🟢 Renderizando ScheduleCalendarView con handleScheduleDelete:', !!handleScheduleDelete);
+  console.log('🟢 Renderizando ScheduleCalendarView con tu infraestructura:');
+  console.log('🟢 - currentConfig:', currentConfig);
+  console.log('🟢 - dynamicTimeSlots:', dynamicTimeSlots.length);
+  console.log('🟢 - dynamicWorkingDays:', dynamicWorkingDays.map(d => d.label));
 
   return (
     <div className="space-y-6 p-4 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
-      {/* Header */}
-      <ScheduleHeader
-        selectedSection={selectedSection}
-        sections={sections || []}
-        totalSchedules={allSchedules.length}
-        pendingChanges={pendingChanges.length + tempSchedules.length}
-        isSaving={isSaving}
-        hasUnsavedChanges={hasUnsavedChanges}
-        onSectionChange={handleSectionChange}
-        onSaveAll={handleSaveAll}
-        onDiscardChanges={handleDiscardChanges}
-      />
-
-      {/* Main content */}
+<ScheduleHeader
+  selectedSection={selectedSection}
+  sections={sections || []}
+  totalSchedules={allSchedules.length}
+  pendingChanges={totalPendingChanges}
+  isSaving={isSaving}
+  hasUnsavedChanges={hasUnsavedChanges}
+  currentConfig={currentConfig} // Usar adaptador
+  onSectionChange={handleSectionChange}
+  onSaveAll={handleSaveAll}
+  onDiscardChanges={handleDiscardChanges}
+  onConfigSave={handleConfigSave}
+/>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar */}
         <div className="lg:col-span-1">
           <ScheduleSidebar
             courses={courses || []}
@@ -623,11 +680,12 @@ const handleScheduleDelete = useCallback((id: string | number) => {
           />
         </div>
 
-        {/* Grid */}
         <div className="lg:col-span-3">
           <ScheduleGrid
             scheduleGrid={scheduleGrid}
             pendingChanges={pendingChanges}
+            timeSlots={dynamicTimeSlots}
+            workingDays={dynamicWorkingDays}
             onDrop={handleDrop}
             onScheduleEdit={(schedule) => onScheduleClick?.(schedule as Schedule)}
             onScheduleDelete={handleScheduleDelete}

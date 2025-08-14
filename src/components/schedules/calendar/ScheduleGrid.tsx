@@ -5,11 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { Schedule, DayOfWeek } from "@/types/schedules";
 import type { TimeSlot, DragItem, TempSchedule, ScheduleChange } from "@/types/schedules.types";
 import { DroppableTimeSlot } from "./DroppableTimeSlot";
-import { TIME_SLOTS, DAYS_OF_WEEK } from "@/types/schedules.types";
+import { DEFAULT_TIME_SLOTS, ALL_DAYS_OF_WEEK } from "@/types/schedules.types";
 
 interface ScheduleGridProps {
   scheduleGrid: { [key: string]: (Schedule | TempSchedule)[] };
   pendingChanges: ScheduleChange[];
+  timeSlots?: TimeSlot[]; // NUEVO: timeSlots dinámicos
+  workingDays?: typeof ALL_DAYS_OF_WEEK[0][]; // NUEVO: días dinámicos
   onDrop: (item: DragItem, day: DayOfWeek, timeSlot: TimeSlot) => void;
   onScheduleEdit: (schedule: Schedule | TempSchedule) => void;
   onScheduleDelete: (id: string | number) => void;
@@ -18,29 +20,41 @@ interface ScheduleGridProps {
 export function ScheduleGrid({
   scheduleGrid,
   pendingChanges,
+  timeSlots,
+  workingDays,
   onDrop,
   onScheduleEdit,
   onScheduleDelete
 }: ScheduleGridProps) {
-  // Días de la semana a mostrar (Lunes a Viernes)
-  const weekDays = DAYS_OF_WEEK.slice(0, 5);
+  // Usar timeSlots dinámicos o fallback a default
+  const currentTimeSlots = timeSlots || DEFAULT_TIME_SLOTS;
+  
+  // Usar días dinámicos o fallback a Lun-Vie
+  const currentWorkingDays = workingDays || ALL_DAYS_OF_WEEK.slice(0, 5);
 
-  console.log("aca")
+  console.log('🟢 ScheduleGrid renderizando con:', {
+    timeSlots: currentTimeSlots.length,
+    workingDays: currentWorkingDays.map(d => d.shortLabel).join(', '),
+    scheduleGridKeys: Object.keys(scheduleGrid).length
+  });
 
   return (
     <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl overflow-hidden">
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <div className="min-w-[900px]">
-            {/* Encabezado con días de la semana */}
-            <div className="grid grid-cols-6 border-b bg-gradient-to-r from-gray-50 to-gray-100">
+            {/* Encabezado con días de la semana - DINÁMICO */}
+            <div className={`grid border-b bg-gradient-to-r from-gray-50 to-gray-100`} 
+                 style={{ gridTemplateColumns: `120px repeat(${currentWorkingDays.length}, 1fr)` }}>
               <div className="p-4 font-semibold text-gray-700 border-r flex items-center justify-center">
                 <span className="text-sm uppercase tracking-wide">Horario</span>
               </div>
-              {weekDays.map((day) => (
+              {currentWorkingDays.map((day, index) => (
                 <div
                   key={day.value}
-                  className="p-4 font-semibold text-center border-r last:border-r-0"
+                  className={`p-4 font-semibold text-center border-r ${
+                    index === currentWorkingDays.length - 1 ? '' : 'border-r'
+                  }`}
                 >
                   <div className="text-gray-800 font-bold">{day.shortLabel}</div>
                   <div className="text-xs font-normal text-gray-500 mt-1">
@@ -50,17 +64,19 @@ export function ScheduleGrid({
               ))}
             </div>
 
-            {/* Filas de horarios */}
-            {TIME_SLOTS.map((timeSlot, index) => {
-              const isBreakTime = timeSlot.label.includes("RECREO") || 
+            {/* Filas de horarios - DINÁMICAS */}
+            {currentTimeSlots.map((timeSlot, index) => {
+              const isBreakTime = timeSlot.isBreak || 
+                                 timeSlot.label.includes("RECREO") || 
                                  timeSlot.label.includes("ALMUERZO");
               
               return (
                 <div 
-                  key={timeSlot.start} 
-                  className={`grid grid-cols-6 border-b last:border-b-0 ${
+                  key={`${timeSlot.start}-${timeSlot.end}`}
+                  className={`grid border-b last:border-b-0 ${
                     index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
                   }`}
+                  style={{ gridTemplateColumns: `120px repeat(${currentWorkingDays.length}, 1fr)` }}
                 >
                   {/* Columna de horario */}
                   <div className={`
@@ -88,8 +104,8 @@ export function ScheduleGrid({
                     </div>
                   </div>
 
-                  {/* Celdas de horario para cada día */}
-                  {weekDays.map((day) => {
+                  {/* Celdas de horario para cada día - DINÁMICAS */}
+                  {currentWorkingDays.map((day, dayIndex) => {
                     const key = `${day.value}-${timeSlot.start}`;
                     let daySchedules = scheduleGrid[key] || [];
                     
@@ -116,7 +132,7 @@ export function ScheduleGrid({
                     
                     return (
                       <DroppableTimeSlot
-                        key={`${day.value}-${timeSlot.start}`}
+                        key={`${day.value}-${timeSlot.start}-${timeSlot.end}`}
                         day={day.value as DayOfWeek}
                         timeSlot={timeSlot}
                         schedules={daySchedules}
@@ -132,6 +148,23 @@ export function ScheduleGrid({
             })}
           </div>
         </div>
+
+        {/* Footer con información de configuración */}
+        {(timeSlots || workingDays) && (
+          <div className="px-4 py-2 bg-gray-50 border-t text-xs text-gray-600">
+            <div className="flex flex-wrap gap-4 items-center justify-between">
+              <div className="flex gap-4">
+                <span>📅 <strong>{currentWorkingDays.length}</strong> días laborales</span>
+                <span>⏰ <strong>{currentTimeSlots.length}</strong> slots de tiempo</span>
+                <span>📚 <strong>{currentTimeSlots.filter(s => !s.isBreak).length}</strong> períodos de clase</span>
+                <span>☕ <strong>{currentTimeSlots.filter(s => s.isBreak).length}</strong> recreos</span>
+              </div>
+              <div className="text-green-600 font-medium">
+                ✅ Configuración personalizada
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

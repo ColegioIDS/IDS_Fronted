@@ -1,10 +1,11 @@
 'use client';
 
 import { CyclesProvider } from '@/context/CyclesContext';
-import { SectionProvider } from '@/context/SectionContext'; // Nuevo
-import { CourseProvider } from '@/context/CourseContext'; // Nuevo
-import { TeacherProvider } from '@/context/TeacherContext'; // Nuevo
+import { SectionProvider } from '@/context/SectionContext';
+import { CourseProvider } from '@/context/CourseContext';
+import { TeacherProvider } from '@/context/TeacherContext';
 import { ScheduleProvider } from '@/context/ScheduleContext';
+import { ScheduleConfigProvider } from '@/context/ScheduleConfigContext'; // Nuevo
 
 export default function ScheduleLayout({
   children,
@@ -17,7 +18,9 @@ export default function ScheduleLayout({
         <CourseProvider>
           <TeacherProvider>
             <ScheduleProvider>
-              {children}
+              <ScheduleConfigProvider> {/* Nuevo provider */}
+                {children}
+              </ScheduleConfigProvider>
             </ScheduleProvider>
           </TeacherProvider>
         </CourseProvider>
