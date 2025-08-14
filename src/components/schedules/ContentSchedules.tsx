@@ -21,14 +21,10 @@ export default function ContentSchedules() {
 
   return (
     <div className="p-4">
-      <h1 className="text-xl font-semibold mb-4">Horario</h1>
+    
    
     <ScheduleCalendarView
-  selectedSectionId={1} // Debes pasar un ID válido
-  onScheduleClick={(schedule) => console.log('Schedule clicked', schedule)}
-  onCreateSchedule={(data) => console.log('Create schedule', data)}
-  onUpdateSchedule={(id, data) => console.log('Update schedule', id, data)}
-  onDeleteSchedule={(id) => console.log('Delete schedule', id)}
+
 />
 
 

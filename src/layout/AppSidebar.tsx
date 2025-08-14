@@ -91,6 +91,7 @@ const navItems: NavItem[] = [
     name: "Cursos y Horarios",
     subItems: [
       { name: "Cursos", path: "/courses", pro: false },
+      { name: "Asignación Cursos", path: "/course-grades", pro: false },
       { name: "Horarios", path: "/schedules", pro: false },
     ]
   },
