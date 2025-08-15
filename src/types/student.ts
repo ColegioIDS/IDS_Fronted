@@ -1,3 +1,4 @@
+//src\types\student.ts
 // Enums y tipos base
 export type EnrollmentStatus = 'active' | 'inactive' | 'graduated' | 'transferred';
 export type Gender = 'Masculino' | 'Femenino' | 'Otro' | null;
