@@ -8,12 +8,22 @@ import  StudentProfile  from '@/components/students/StudentProfile';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect } from 'react';
 
+import { CyclesProvider, useCyclesContext } from '@/context/CyclesContext';
+import { GradeProvider, useGradeContext } from '@/context/GradeContext';
+import { SectionProvider, useSectionContext } from '@/context/SectionContext';
+
 export default function UserListContent() {
 
     return (
-        <StudentProvider isEditMode={true}>
-            <StudentProfileContentInner />
-        </StudentProvider>
+             <CyclesProvider>
+                  <GradeProvider>
+                      <SectionProvider>
+                          <StudentProvider isEditMode={true}>
+                              <StudentProfileContentInner />
+                          </StudentProvider>
+                      </SectionProvider>
+                  </GradeProvider>
+              </CyclesProvider>
     );
 }
 

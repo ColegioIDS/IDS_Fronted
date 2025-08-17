@@ -15,6 +15,7 @@ const errors = {
 export const GenderSchema = z.enum(['Masculino', 'Femenino', 'Otro'], {
   errorMap: () => ({ message: "Seleccione un género válido" }),
 }).optional();
+
 export const RelationshipTypeSchema = z.enum(['Madre', 'Padre', 'Tutor', 'Abuelo', 'Tío', 'Otro']);
 
 export const EnrollmentStatusSchema = z.enum(
@@ -22,9 +23,15 @@ export const EnrollmentStatusSchema = z.enum(
   { errorMap: () => ({ message: "Estado de matrícula inválido" }) }
 ).default('active');
 
+// ✅ NUEVO: Schema para enrollment
+export const EnrollmentDataSchema = z.object({
+  cycleId: z.number().int().positive("Debe seleccionar un ciclo escolar válido"),
+  gradeId: z.number().int().positive("Debe seleccionar un grado válido"),
+  sectionId: z.number().int().positive("Debe seleccionar una sección válida"),
+  status: z.enum(['active', 'inactive', 'graduated', 'transferred']),
+});
+
 // === Sub-esquemas ===
-
-
 const AddressSchema = z.object({
   street: z.string()
     .min(3, "La calle debe tener al menos 3 caracteres")
@@ -38,7 +45,7 @@ const AddressSchema = z.object({
   department: z.string()
     .min(3, "El departamento debe tener al menos 3 caracteres")
     .max(50, "El departamento no puede exceder 50 caracteres"),
-})
+});
 
 const MedicalInfoSchema = z.object({
   hasDisease: z.boolean(),
@@ -50,23 +57,19 @@ const MedicalInfoSchema = z.object({
   emergencyMedicationAllowed: z.boolean(),
   hasLearningDisability: z.boolean(),
   disabilityDetails: z.string().max(500, errors.maxLength(500)).nullable().optional(),
-
   strengths: z.string().max(500, errors.maxLength(500)).nullable().optional(),
   areasToImprove: z.string().max(500, errors.maxLength(500)).nullable().optional(),
-
 }).refine(
   (data) => !data.hasDisease || data.diseaseDetails,
   { message: "Debe proporcionar detalles si tiene una enfermedad", path: ["diseaseDetails"] }
 );
-
 
 export const AcademicRecordSchema = z.object({
   schoolName: z.string().min(2, errors.minLength(2)).max(100, errors.maxLength(100)),
   gradeCompleted: z.string().min(1, errors.required).max(20),
   gradePromotedTo: z.string().min(1, errors.required).max(20),
   year: z.number().int(),
-
-})
+});
 
 export const UserCreateSchema = z.object({
   givenNames: z.string().min(2, "Los nombres son requeridos"),
@@ -77,7 +80,6 @@ export const UserCreateSchema = z.object({
   birthDate: z.coerce.date().optional().nullable(),
   gender: GenderSchema,
 });
-
 
 export const ParentDetailsSchema = z.object({
   dpiIssuedAt: z.string().min(2, "Lugar de emisión requerido"),
@@ -93,7 +95,6 @@ export const ParentLinkSchema = z.object({
     ...UserCreateSchema.shape,
     details: ParentDetailsSchema,
   }).optional().nullable(),
-
   relationshipType: RelationshipTypeSchema,
   isPrimaryContact: z.boolean(),
   hasLegalCustody: z.boolean(),
@@ -102,13 +103,11 @@ export const ParentLinkSchema = z.object({
   emergencyContactPriority: z.number().int(),
 });
 
-
 export const EmergencyContactSchema = z.object({
   name: z.string().min(2, "Nombre requerido"),
   relationship: z.string().min(2, "Relación requerida"),
   phone: z.string().min(8, "Teléfono inválido"),
 });
-
 
 export const AuthorizedPersonSchema = z.object({
   name: z.string(),
@@ -116,15 +115,11 @@ export const AuthorizedPersonSchema = z.object({
   phone: z.string().optional()
 });
 
-
 export const SiblingSchema = z.object({
   name: z.string(),
   age: z.number().int().nonnegative(),
   gender: GenderSchema,
-
 });
-
-
 
 export const BusServiceSchema = z.object({
   hasService: z.boolean(),
@@ -139,14 +134,6 @@ export const BusServiceSchema = z.object({
   acceptedRules: z.boolean(),
   signedDate: z.coerce.date().optional().nullable(),
 });
-
-
-
-
-
-
-
-
 
 // === Esquema Base ===
 export const createBaseStudentSchema = () => z.object({
@@ -173,7 +160,7 @@ export const createBaseStudentSchema = () => z.object({
   favoriteSubject: z.string().max(50).optional(),
   favoriteToy: z.string().max(50).optional(),
   favoriteCake: z.string().max(50).optional(),
-  enrollmentStatus: z.string().max(50).optional(),
+  // ❌ REMOVIDO: enrollmentStatus (ya no va en Student)
   profileImage: z.union([z.instanceof(File), z.string(), z.null()]).optional(),
 
   pictures: z.array(z.object({
@@ -186,9 +173,11 @@ export const createBaseStudentSchema = () => z.object({
   address: AddressSchema.nullish(),
 });
 
-
 /* Esquema Extendido */
 export const ExtendedStudentSchema = createBaseStudentSchema().extend({
+  // ✅ NUEVO: Enrollment obligatorio
+  enrollment: EnrollmentDataSchema,
+  
   medicalInfo: MedicalInfoSchema.optional(),
   academicRecords: z.array(AcademicRecordSchema).min(1, "Debe proporcionar al menos un registro académico"),
   parents: z.array(ParentLinkSchema).min(1, "Debe proporcionar al menos un padre o tutor"),
@@ -198,7 +187,6 @@ export const ExtendedStudentSchema = createBaseStudentSchema().extend({
   busService: BusServiceSchema.optional()
 });
 
-
 export const StudentSchema = ExtendedStudentSchema.refine(
   (data) => data.siblingsCount === data.brothersCount + data.sistersCount,
   {
@@ -206,6 +194,7 @@ export const StudentSchema = ExtendedStudentSchema.refine(
     path: ["siblingsCount"],
   }
 );
+
 // === Tipos ===
 export type StudentFormValues = z.infer<typeof StudentSchema>;
 export type CreateStudentDto = Omit<StudentFormValues, 'academicRecords' | 'medicalInfo'> & {
@@ -213,13 +202,12 @@ export type CreateStudentDto = Omit<StudentFormValues, 'academicRecords' | 'medi
   academicRecords?: z.infer<typeof AcademicRecordSchema>[];
 };
 
-
-
+// ✅ ACTUALIZADO: defaultValues con enrollment
 export const defaultValues: StudentFormValues = {
   codeSIRE: undefined,
   givenNames: "",
   lastNames: "",
-  birthDate: new Date(), // Puedes ajustar esto si usas un input que acepta `null` o `undefined`
+  birthDate: new Date(),
   birthPlace: undefined,
   nationality: undefined,
   livesWithText: undefined,
@@ -234,6 +222,15 @@ export const defaultValues: StudentFormValues = {
   favoriteSubject: undefined,
   favoriteToy: undefined,
   favoriteCake: undefined,
+  
+  // ✅ NUEVO: Enrollment con valores por defecto
+  enrollment: {
+    cycleId: 0, // Se debe actualizar con el ciclo activo
+    gradeId: 0, // Se debe seleccionar en el formulario
+    sectionId: 0, // Se debe seleccionar en el formulario
+    status: 'active' as 'active' | 'inactive' | 'graduated' | 'transferred',
+  },
+  
   address: {
     street: "",
     zone: "",
@@ -263,6 +260,7 @@ export const defaultValues: StudentFormValues = {
       year: new Date().getFullYear(),
     }
   ],
+  
   parents: [
     {
       userId: null,
@@ -306,6 +304,7 @@ export const defaultValues: StudentFormValues = {
       phone: undefined,
     }
   ],
+  
   siblings: [
     {
       name: "",
@@ -313,6 +312,7 @@ export const defaultValues: StudentFormValues = {
       gender: undefined,
     }
   ],
+  
   busService: {
     hasService: false,
     pickupPersonName: null,
@@ -326,10 +326,6 @@ export const defaultValues: StudentFormValues = {
     acceptedRules: false,
     signedDate: null,
   },
+  
   pictures: [],
-
-
-
-
-
-}
+};

@@ -4,14 +4,23 @@ import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
 import Breadcrumb from '@/components/common/Breadcrumb';
 import { StudentProvider, useStudentContext } from '@/context/StudentContext';
 import { StudentList } from '@/components/students/StudentList';
+import { CyclesProvider, useCyclesContext } from '@/context/CyclesContext';
+import { GradeProvider, useGradeContext } from '@/context/GradeContext';
+import { SectionProvider, useSectionContext } from '@/context/SectionContext';
 
 
 export default function UserListContent() {
 
     return (
-        <StudentProvider>
-            <StudentListContentInner />
-        </StudentProvider>
+       <CyclesProvider>
+                  <GradeProvider>
+                      <SectionProvider>
+                          <StudentProvider>
+                              <StudentListContentInner />
+                          </StudentProvider>
+                      </SectionProvider>
+                  </GradeProvider>
+              </CyclesProvider>
     );
 }
 

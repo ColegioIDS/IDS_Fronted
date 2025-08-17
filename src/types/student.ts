@@ -4,6 +4,43 @@ export type EnrollmentStatus = 'active' | 'inactive' | 'graduated' | 'transferre
 export type Gender = 'Masculino' | 'Femenino' | 'Otro' | null;
 export type RelationshipType = 'Madre' | 'Padre' | 'Tutor' | 'Abuelo' | 'Tío' | 'Otro';
 
+// ✅ NUEVO: Interface para datos de enrollment
+export interface EnrollmentData {
+  cycleId: number;
+  gradeId: number;
+  sectionId: number;
+  status: EnrollmentStatus;
+}
+
+// ✅ NUEVO: Interface para enrollment completo (respuesta del backend)
+export interface Enrollment {
+  id: number;
+  studentId: number;
+  cycleId: number;
+  gradeId: number;
+  sectionId: number;
+  status: EnrollmentStatus;
+  cycle?: {
+    id: number;
+    name: string;
+    startDate: string;
+    endDate: string;
+    isActive: boolean;
+  };
+  section?: {
+    id: number;
+    name: string;
+    capacity: number;
+    gradeId: number;
+    grade?: {
+      id: number;
+      name: string;
+      level: string;
+      order: number;
+    };
+  };
+}
+
 // Interfaces de sub-componentes
 export interface Address {
   id?: number;
@@ -101,10 +138,32 @@ export interface Picture {
   uploadedAt?: string;
 }
 
+// ✅ ACTUALIZADO: Detalles del padre para casos de creación
+export interface ParentDetails {
+  dpiIssuedAt: string;
+  occupation: string;
+  workplace: string;
+  email?: string | null;
+  workPhone?: string | null;
+}
+
+// ✅ ACTUALIZADO: Datos de nuevo padre
+export interface NewParentData {
+  givenNames: string;
+  lastNames: string;
+  dpi: string;
+  phone: string;
+  email?: string | null;
+  birthDate?: Date | string | null;
+  gender?: Gender;
+  details: ParentDetails;
+}
+
+// ✅ ACTUALIZADO: Link de padre con soporte para crear nuevos padres
 export interface ParentLink {
   id?: number;
-  parentId?: number;
-  
+  userId?: number | null; // Para padres existentes
+  newParent?: NewParentData | null; // Para crear nuevos padres
   relationshipType: RelationshipType;
   isPrimaryContact?: boolean;
   hasLegalCustody?: boolean;
@@ -113,17 +172,27 @@ export interface ParentLink {
   financialResponsible?: boolean;
   emergencyContactPriority?: number;
   receivesSchoolNotices?: boolean;
+  
+  // Para respuestas del backend (padre ya vinculado)
   parent?: {
+    id: number;
     givenNames: string;
     lastNames: string;
     phone: string;
     email?: string | null;
     birthDate?: Date | string | null;
     gender?: Gender;
+    parentDetails?: {
+      dpiIssuedAt?: string | null;
+      occupation?: string | null;
+      workplace?: string | null;
+      email?: string | null;
+      workPhone?: string | null;
+    };
   };
 }
 
-// Interface principal del estudiante
+// ✅ ACTUALIZADO: Interface principal del estudiante (SIN enrollmentStatus)
 export interface Student {
   id?: number;
   codeSIRE?: string | null;
@@ -145,7 +214,6 @@ export interface Student {
   favoriteToy?: string | null;
   favoriteCake?: string | null;
   addressId?: number | null;
-  enrollmentStatus: EnrollmentStatus;
   createdAt?: string;
   updatedAt?: string;
   
@@ -160,37 +228,89 @@ export interface Student {
   siblings?: Sibling[];
   pictures?: Picture[];
   parents?: ParentLink[];
+  
+  // ✅ NUEVO: Enrollments (reemplaza enrollmentStatus)
+  enrollments?: Enrollment[];
 }
 
-// Para formularios
-export interface CreateStudentPayload extends Omit<Student, 'id' | 'createdAt' | 'updatedAt'> {}
+// ✅ ACTUALIZADO: Para formularios de creación (CON enrollment obligatorio)
+export interface CreateStudentPayload extends Omit<Student, 'id' | 'createdAt' | 'updatedAt' | 'enrollments'> {
+  enrollment: EnrollmentData; // Campo obligatorio
+}
 
-// Para respuesta de padres
+// ✅ NUEVO: Para transferencias de estudiantes
+export interface StudentTransferPayload {
+  newSectionId: number;
+  newGradeId: number;
+  cycleId: number;
+}
+
+// ✅ ACTUALIZADO: Para respuesta de padres por DPI
 export interface ParentDpiResponse {
-  user: {
-    id: number;
-    givenNames: string;
-    lastNames: string;
-    dpi: string;
-    phone?: string | null;
-    email?: string | null;
-    birthDate?: Date | string | null;
-    gender?: Gender;
+  success: boolean;
+  data: {
+    user: {
+      id: number;
+      firstName: string; // Cambiado de givenNames
+      lastName: string;  // Cambiado de lastNames
+      dpi: string;
+      phone?: string | null;
+      email?: string | null;
+    };
+    parentDetails?: {
+      id: number;
+      userId: number;
+      dpiIssuedAt?: string | null;
+      occupation?: string | null;
+      workplace?: string | null;
+      email?: string | null;
+      workPhone?: string | null;
+      isSponsor?: boolean;
+      sponsorInfo?: any;
+      createdAt?: string;
+      updatedAt?: string;
+    } | null;
+    parentLinks: Array<{
+      relationshipType: RelationshipType;
+      isPrimaryContact: boolean;
+      hasLegalCustody: boolean;
+      canAccessInfo: boolean;
+      livesWithStudent: boolean;
+      financialResponsible: boolean;
+      emergencyContactPriority: number;
+      receivesSchoolNotices: boolean;
+      student: {
+        id: number;
+        fullName: string;
+        codeSIRE?: string | null;
+        birthDate: Date | string;
+      };
+    }>;
   };
-  parentDetails: {
-    id: number;
-    userId: number;
-    dpiIssuedAt?: string | null;
-    occupation?: string | null;
-    workplace?: string | null;
-    email?: string | null;
-    workPhone?: string | null;
-    isSponsor?: boolean;
-    sponsorInfo?: any;
-    createdAt?: string;
-    updatedAt?: string;
-  };
-  parentLinks?: {
-    relationshipType?: RelationshipType | null;
-  };
+}
+
+// ✅ NUEVO: Para selects/dropdowns en formularios
+export interface Grade {
+  id: number;
+  name: string;
+  level: string;
+  order: number;
+  isActive: boolean;
+}
+
+export interface Section {
+  id: number;
+  name: string;
+  capacity: number;
+  gradeId: number;
+  teacherId?: number | null;
+}
+
+export interface SchoolCycle {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  isClosed: boolean;
 }

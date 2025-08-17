@@ -3,6 +3,11 @@ export function cleanNulls(data: any): any {
     return undefined;
   }
 
+  // ⛑️ Mantener fechas intactas
+  if (data instanceof Date) {
+    return data;
+  }
+
   if (typeof data === 'object') {
     if (Array.isArray(data)) {
       return data.map(cleanNulls).filter(item => item !== undefined);
