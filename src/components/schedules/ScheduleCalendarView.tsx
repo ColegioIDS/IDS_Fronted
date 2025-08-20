@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useTheme } from 'next-themes';
 import type { Schedule, DayOfWeek, ScheduleFormValues } from "@/types/schedules";
 import type { 
   DragItem, 
@@ -15,11 +16,14 @@ import {
   ALL_DAYS_OF_WEEK,
   ScheduleTimeGenerator
 } from "@/types/schedules.types";
+
+// 🔥 CAMBIO: Usar contextos en lugar de useScheduleIntegration
 import { useScheduleContext } from "@/context/ScheduleContext";
-import { useSectionContext } from "@/context/SectionContext";
+import { useSectionContext } from "@/context/SectionsContext";
 import { useCourseContext } from "@/context/CourseContext";
-import { useTeacherContext } from "@/context/TeacherContext";
-import { useScheduleConfigContext } from "@/context/ScheduleConfigContext";
+import { useTeacherAvailabilityContext } from "@/context/TeacherContext";
+
+import { useGradeScheduleConfigContext } from "@/context/ScheduleConfigContext";
 import { ScheduleHeader } from "./calendar/ScheduleHeader";
 import { ScheduleSidebar } from "./calendar/ScheduleSidebar";
 import { ScheduleGrid } from "./calendar/ScheduleGrid";
@@ -32,6 +36,7 @@ interface ScheduleCalendarViewProps {
   onUpdateSchedule?: (id: number, data: Partial<ScheduleFormValues>) => Promise<{ success: boolean; message?: string; }>;
   onDeleteSchedule?: (id: number) => Promise<void>;
   onBatchSave?: (changes: ScheduleChange[]) => Promise<{ success: boolean; }>; // Cambiar de void a objeto
+  className?: string;
 }
 
 export function ScheduleCalendarView({
@@ -41,28 +46,57 @@ export function ScheduleCalendarView({
   onUpdateSchedule,
   onDeleteSchedule,
   onBatchSave,
+  className = ""
 }: ScheduleCalendarViewProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [selectedSection, setSelectedSection] = useState<number>(selectedSectionId || 0);
   const [tempSchedules, setTempSchedules] = useState<TempSchedule[]>([]);
   const [pendingChanges, setPendingChanges] = useState<ScheduleChange[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
+  // 🔥 CAMBIO: Usar contextos individuales
+  const { state: scheduleState, refreshSchedules } = useScheduleContext();
+  const { state: sectionState } = useSectionContext();
+  const { state: courseState } = useCourseContext();
+  const { availableTeachers, assignedTeachers } = useTeacherAvailabilityContext();
 
+  // 🔥 CAMBIO: Extraer datos de los contextos
+  const schedules = scheduleState.schedules;
+  const sections = sectionState.sections;
+  const courses = courseState.courses;
+  
+  // 🔥 IMPORTANTE: Para el sidebar, solo mostrar profesores disponibles (que se pueden arrastrar)
+  // 🔥 VALIDACIÓN: Garantizar que siempre sea un array
+  const teachers = Array.isArray(availableTeachers) ? availableTeachers : [];
+  
+  // 🔥 CAMBIO: Determinar loading desde contextos
+  const loading = {
+    anyLoading: scheduleState.loading || sectionState.loading || courseState.loading
+  };
 
+  // 🔥 CAMBIO: Función de refresh actualizada
+  const refreshAllData = async () => {
+    await refreshSchedules();
+    // Los otros contextos se manejan automáticamente
+  };
+
+  console.log('🎯 ScheduleCalendarView - Teachers for sidebar:', {
+    availableTeachers: availableTeachers?.length || 0,
+    assignedTeachers: assignedTeachers?.length || 0,
+    teachersForSidebar: teachers.length
+  });
   
-  // Usar tu context existente
-  const { 
-    currentConfig,
-    isLoading: configsLoading,
-    fetchConfigBySection,
-    createConfig,
-    updateConfig
-  } = useScheduleConfigContext();
-  
-  const { schedules, fetchSchedules } = useScheduleContext();
-  const { sections, isLoadingSections: sectionsLoading } = useSectionContext();
-  const { courses, isLoadingCourses: coursesLoading } = useCourseContext();
-  const { teachers, isLoading: teachersLoading } = useTeacherContext();
+  // Mantener el context específico de configuración
+  const gradeScheduleContext = useGradeScheduleConfigContext();
+
+  // Extraer propiedades específicas para configuración de horarios
+  const currentConfig = gradeScheduleContext.state.currentScheduleConfig;
+  const configsLoading = gradeScheduleContext.state.loading.general;
+  const fetchConfigBySection = gradeScheduleContext.fetchScheduleConfigBySection;
+  const createConfig = gradeScheduleContext.createScheduleConfig;
+  const updateConfig = gradeScheduleContext.updateScheduleConfig;
 
   // Función para convertir workingDays de tu formato [0-6] a mi formato [1-7]
   const convertWorkingDaysToMyFormat = (workingDays: number[]): number[] => {
@@ -85,7 +119,6 @@ export function ScheduleCalendarView({
 
   // Generar timeSlots dinámicamente basado en la configuración de la sección
   const dynamicTimeSlots = useMemo((): TimeSlot[] => {
-    console.log('🔍 Generando dynamicTimeSlots para sección:', selectedSection);
     
     if (!selectedSection || selectedSection === 0) {
       console.log('🔍 Sin sección seleccionada, usando DEFAULT_TIME_SLOTS');
@@ -210,12 +243,26 @@ export function ScheduleCalendarView({
     return grid;
   }, [allSchedules, dynamicWorkingDays, dynamicTimeSlots]);
 
-  // Calcular horas asignadas por profesor
+  // 🔥 CAMBIO: Calcular horas considerando todos los profesores (disponibles + asignados)
   const teacherHours = useMemo(() => {
     const hours: { [key: number]: number } = {};
     
+    // Combinar profesores disponibles y asignados para mostrar sus horas
+    const allTeachers = [
+      ...(availableTeachers || []),
+      ...(assignedTeachers || [])
+    ];
+    
+    // Eliminar duplicados
+    const uniqueTeachers = allTeachers.reduce((acc, teacher) => {
+      if (!acc.find(t => t.id === teacher.id)) {
+        acc.push(teacher);
+      }
+      return acc;
+    }, [] as typeof allTeachers);
+    
     allSchedules.forEach((schedule) => {
-      if (schedule.teacherId) {
+      if (schedule.teacherId && uniqueTeachers.find(t => t.id === schedule.teacherId)) {
         const startTime = new Date(`2000-01-01T${schedule.startTime}:00`);
         const endTime = new Date(`2000-01-01T${schedule.endTime}:00`);
         const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
@@ -225,13 +272,13 @@ export function ScheduleCalendarView({
     });
     
     return hours;
-  }, [allSchedules]);
+  }, [allSchedules, availableTeachers, assignedTeachers]);
 
   // Generar ID temporal único
   const generateTempId = () => `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   // Función para manejar guardado de configuración usando tu infraestructura
-  const handleConfigSave = useCallback(async (config: import("@/types/schedule-config").ScheduleConfig) => {
+  const handleConfigSave = useCallback(async (config: ScheduleConfig) => {
     console.log('🟢 ===== GUARDANDO CONFIGURACIÓN =====');
     console.log('🟢 Config recibida:', config);
     
@@ -258,7 +305,7 @@ export function ScheduleCalendarView({
       }
       
       if (result.success) {
-        console.log('🟢 ✅ Configuración guardada exitosamente:', result.data);
+        console.log('🟢 ✅ Configuración guardada exitosamente:', result);
         
         // Limpiar schedules temporales si la configuración cambió significativamente
         if (tempSchedules.length > 0) {
@@ -275,7 +322,7 @@ export function ScheduleCalendarView({
         console.error('🔴 Error del servidor:', result.message);
         alert(`Error al guardar: ${result.message}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('🔴 Error guardando configuración:', error);
       alert('Error al guardar la configuración. Verifica tu conexión.');
     } finally {
@@ -287,13 +334,9 @@ export function ScheduleCalendarView({
   useEffect(() => {
     if (selectedSection > 0) {
       console.log('🔄 Cargando configuración para nueva sección:', selectedSection);
-      fetchConfigBySection(selectedSection).then(config => {
-        if (config) {
-          console.log('📋 Configuración cargada automáticamente:', config);
-        } else {
-          console.log('📋 No hay configuración guardada para esta sección');
-        }
-      }).catch(error => {
+      fetchConfigBySection(selectedSection).then(() => {
+        console.log('📋 Configuración cargada automáticamente');
+      }).catch((error: any) => {
         console.log('📋 Error cargando configuración o no existe:', error.message);
       });
     }
@@ -544,76 +587,70 @@ export function ScheduleCalendarView({
     }
   }, [schedules]);
 
-  // Resto de funciones iguales...
-    // En ScheduleCalendarView.tsx, modificar handleSaveAll:
+  const handleSaveAll = useCallback(async () => {
+    if (pendingChanges.length === 0 && tempSchedules.length === 0) return;
 
-// En ScheduleCalendarView.tsx, actualizar handleSaveAll:
-
-const handleSaveAll = useCallback(async () => {
-  if (pendingChanges.length === 0 && tempSchedules.length === 0) return;
-
-  setIsSaving(true);
-  try {
-    if (onBatchSave) {
-      const result = await onBatchSave(pendingChanges);
-      if (!result.success) {
-        throw new Error('Error en guardado masivo');
-      }
-    } else {
-      // Fallback a operaciones individuales
-      for (const change of pendingChanges) {
-        switch (change.action) {
-          case 'create':
-            if (onCreateSchedule && change.schedule.courseId && change.schedule.sectionId) {
-              const scheduleData: Partial<ScheduleFormValues> = {
-                sectionId: change.schedule.sectionId,
-                courseId: change.schedule.courseId,
-                teacherId: change.schedule.teacherId,
-                dayOfWeek: change.schedule.dayOfWeek,
-                startTime: change.schedule.startTime,
-                endTime: change.schedule.endTime,
-                classroom: change.schedule.classroom || undefined,
-              };
-              await onCreateSchedule(scheduleData);
-            }
-            break;
-          case 'update':
-            if (onUpdateSchedule && typeof change.schedule.id === 'number') {
-              const scheduleData: Partial<ScheduleFormValues> = {
-                sectionId: change.schedule.sectionId,
-                courseId: change.schedule.courseId || undefined,
-                teacherId: change.schedule.teacherId,
-                dayOfWeek: change.schedule.dayOfWeek,
-                startTime: change.schedule.startTime,
-                endTime: change.schedule.endTime,
-                classroom: change.schedule.classroom || undefined,
-              };
-              await onUpdateSchedule(change.schedule.id, scheduleData);
-            }
-            break;
-          case 'delete':
-            if (onDeleteSchedule && typeof change.schedule.id === 'number') {
-              await onDeleteSchedule(change.schedule.id);
-            }
-            break;
+    setIsSaving(true);
+    try {
+      if (onBatchSave) {
+        const result = await onBatchSave(pendingChanges);
+        if (!result.success) {
+          throw new Error('Error en guardado masivo');
+        }
+      } else {
+        // Fallback a operaciones individuales
+        for (const change of pendingChanges) {
+          switch (change.action) {
+            case 'create':
+              if (onCreateSchedule && change.schedule.courseId && change.schedule.sectionId) {
+                const scheduleData: Partial<ScheduleFormValues> = {
+                  sectionId: change.schedule.sectionId,
+                  courseId: change.schedule.courseId,
+                  teacherId: change.schedule.teacherId,
+                  dayOfWeek: change.schedule.dayOfWeek,
+                  startTime: change.schedule.startTime,
+                  endTime: change.schedule.endTime,
+                  classroom: change.schedule.classroom || undefined,
+                };
+                await onCreateSchedule(scheduleData);
+              }
+              break;
+            case 'update':
+              if (onUpdateSchedule && typeof change.schedule.id === 'number') {
+                const scheduleData: Partial<ScheduleFormValues> = {
+                  sectionId: change.schedule.sectionId,
+                  courseId: change.schedule.courseId || undefined,
+                  teacherId: change.schedule.teacherId,
+                  dayOfWeek: change.schedule.dayOfWeek,
+                  startTime: change.schedule.startTime,
+                  endTime: change.schedule.endTime,
+                  classroom: change.schedule.classroom || undefined,
+                };
+                await onUpdateSchedule(change.schedule.id, scheduleData);
+              }
+              break;
+            case 'delete':
+              if (onDeleteSchedule && typeof change.schedule.id === 'number') {
+                await onDeleteSchedule(change.schedule.id);
+              }
+              break;
+          }
         }
       }
-    }
 
-    setTempSchedules([]);
-    setPendingChanges([]);
-    
-    if (fetchSchedules) {
-      await fetchSchedules();
+      setTempSchedules([]);
+      setPendingChanges([]);
+      
+      if (refreshAllData) {
+        await refreshAllData();
+      }
+      
+    } catch (error) {
+      console.error('Error al guardar cambios:', error);
+    } finally {
+      setIsSaving(false);
     }
-    
-  } catch (error) {
-    console.error('Error al guardar cambios:', error);
-  } finally {
-    setIsSaving(false);
-  }
-}, [pendingChanges, tempSchedules, onBatchSave, onCreateSchedule, onUpdateSchedule, onDeleteSchedule, fetchSchedules]);
-
+  }, [pendingChanges, tempSchedules, onBatchSave, onCreateSchedule, onUpdateSchedule, onDeleteSchedule, refreshAllData]);
 
   const handleDiscardChanges = useCallback(() => {
     setTempSchedules([]);
@@ -636,43 +673,47 @@ const handleSaveAll = useCallback(async () => {
   const hasUnsavedChanges = pendingChanges.length > 0 || tempSchedules.length > 0;
   const totalPendingChanges = pendingChanges.length;
 
-  // Loading state - incluir carga de configuraciones
-  if (sectionsLoading || coursesLoading || teachersLoading || configsLoading) {
+  // Loading state - incluir carga de configuraciones y del hook integrado
+  if (loading.anyLoading || configsLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className={`flex items-center justify-center h-96 ${className}`}>
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="text-gray-600">Cargando información...</p>
+          <div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto ${
+            isDark ? 'border-blue-400' : 'border-blue-500'
+          }`}></div>
+          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>
+            Cargando información...
+          </p>
         </div>
       </div>
     );
   }
 
-  console.log('🟢 Renderizando ScheduleCalendarView con tu infraestructura:');
-  console.log('🟢 - currentConfig:', currentConfig);
-  console.log('🟢 - dynamicTimeSlots:', dynamicTimeSlots.length);
-  console.log('🟢 - dynamicWorkingDays:', dynamicWorkingDays.map(d => d.label));
-
   return (
-    <div className="space-y-6 p-4 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
-<ScheduleHeader
-  selectedSection={selectedSection}
-  sections={sections || []}
-  totalSchedules={allSchedules.length}
-  pendingChanges={totalPendingChanges}
-  isSaving={isSaving}
-  hasUnsavedChanges={hasUnsavedChanges}
-  currentConfig={currentConfig} // Usar adaptador
-  onSectionChange={handleSectionChange}
-  onSaveAll={handleSaveAll}
-  onDiscardChanges={handleDiscardChanges}
-  onConfigSave={handleConfigSave}
-/>
+    <div className={`space-y-6 p-4 min-h-screen ${
+      isDark 
+        ? 'bg-gradient-to-br from-gray-900 to-gray-800' 
+        : 'bg-gradient-to-br from-gray-50 to-gray-100'
+    } ${className}`}>
+      <ScheduleHeader
+        selectedSection={selectedSection}
+        sections={sections || []}
+        totalSchedules={allSchedules.length}
+        pendingChanges={totalPendingChanges}
+        isSaving={isSaving}
+        hasUnsavedChanges={hasUnsavedChanges}
+        currentConfig={currentConfig}
+        onSectionChange={handleSectionChange}
+        onSaveAll={handleSaveAll}
+        onDiscardChanges={handleDiscardChanges}
+        onConfigSave={handleConfigSave}
+      />
+      
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1">
           <ScheduleSidebar
             courses={courses || []}
-            teachers={teachers || []}
+            teachers={teachers} // 🔥 Solo profesores disponibles para arrastrar
             teacherHours={teacherHours}
             pendingChanges={pendingChanges}
             tempSchedulesCount={tempSchedules.length}

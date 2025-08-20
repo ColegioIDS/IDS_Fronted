@@ -19,7 +19,7 @@ export default function EnrollmentsPage() {
           { label: "Matrículas", href: "#" },
         ]}
       />
-      <EnrollmentsContent />
+     {/*  <EnrollmentsContent /> */}
     </div>
   );
 }

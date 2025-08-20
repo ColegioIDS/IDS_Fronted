@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useEnrollmentContext } from '@/context/EnrollmentContext';
 import { useCyclesContext } from '@/context/CyclesContext';
 import { useGradeContext } from '@/context/GradeContext';
-import { useSectionContext } from '@/context/SectionContext';
+import { useSectionContext } from '@/context/SectionsContext';
 
 import {
   Filter,

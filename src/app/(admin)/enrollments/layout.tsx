@@ -3,7 +3,7 @@
 
 import { CyclesProvider } from '@/context/CyclesContext';
 import { GradeProvider } from '@/context/GradeContext';
-import { SectionProvider } from '@/context/SectionContext';
+import { SectionProvider } from '@/context/SectionsContext';
 import { StudentProvider } from '@/context/StudentContext';
 import { EnrollmentProvider } from '@/context/EnrollmentContext';
 

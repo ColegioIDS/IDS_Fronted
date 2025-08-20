@@ -5,7 +5,7 @@ import { useEnrollmentContext } from '@/context/EnrollmentContext';
 import { useStudentContext } from '@/context/StudentContext';
 import { useCyclesContext } from '@/context/CyclesContext';
 import { useGradeContext } from '@/context/GradeContext';
-import { useSectionContext } from '@/context/SectionContext';
+import { useSectionContext } from '@/context/SectionsContext';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';

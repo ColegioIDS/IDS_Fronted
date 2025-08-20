@@ -8,33 +8,44 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useCourseContext } from '@/context/CourseContext';
-import { Loader2, Save, X } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useCourseForm } from '@/context/CourseContext';
+import { Loader2, Save, X, AlertCircle } from 'lucide-react';
+import { CourseFormValues, CourseArea } from '@/types/courses';
+import { courseSchema, defaultCourseValues } from '@/schemas/courses';
+import { toast } from 'react-toastify';
 
 interface CourseFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  isEditMode?: boolean;
-  courseId?: number;
+  mode?: 'create' | 'edit';
 }
 
-export function CourseForm({ open, onOpenChange, isEditMode = false, courseId }: CourseFormProps) {
+export function CourseForm({ open, onOpenChange, mode = 'create' }: CourseFormProps) {
   const {
-    form,
-    isSubmitting,
-    createCourse,
-    updateCourse,
+    submitting,
+    formMode,
     currentCourse,
-    resetForm
-  } = useCourseContext();
+    handleSubmit,
+    cancelForm
+  } = useCourseForm();
+
+  // Form con react-hook-form y zod
+  const form = useForm<CourseFormValues>({
+    resolver: zodResolver(courseSchema),
+    defaultValues: defaultCourseValues
+  });
 
   // Areas disponibles
-  const areas = [
+  const areas: CourseArea[] = [
     'Científica',
     'Humanística',
+    'Sociales',
+    'Tecnológica',
     'Artística',
-    'Deportiva',
-    'Tecnológica'
+    'Idiomas',
+    'Educación Física'
   ];
 
   // Colores predefinidos
@@ -47,34 +58,85 @@ export function CourseForm({ open, onOpenChange, isEditMode = false, courseId }:
     { name: 'Cian', value: '#06B6D4' },
     { name: 'Rosa', value: '#EC4899' },
     { name: 'Naranja', value: '#F97316' },
+    { name: 'Índigo', value: '#6366F1' },
+    { name: 'Lima', value: '#84CC16' },
+    { name: 'Esmeralda', value: '#059669' },
+    { name: 'Slate', value: '#64748B' }
   ];
 
-  const onSubmit = async (data: any) => {
-    let result;
-
-    if (isEditMode && courseId) {
-      result = await updateCourse(courseId, data);
-    } else {
-      result = await createCourse(data);
+  // Efecto para cargar datos en modo edición
+  useEffect(() => {
+    if (open && formMode === 'edit' && currentCourse) {
+      form.reset({
+        code: currentCourse.code,
+        name: currentCourse.name,
+        area: currentCourse.area || null,
+        color: currentCourse.color || null,
+        isActive: currentCourse.isActive
+      });
+    } else if (open && formMode === 'create') {
+      form.reset(defaultCourseValues);
     }
+  }, [open, formMode, currentCourse, form]);
 
-    if (result?.success) {
-      onOpenChange(false);
-      resetForm();
+  // Función para enviar el formulario
+  const onSubmit = async (data: CourseFormValues) => {
+    try {
+      const result = await handleSubmit(data);
+      
+      if (result?.success) {
+        handleClose();
+        toast.success(
+          formMode === 'edit' 
+            ? 'Curso actualizado correctamente' 
+            : 'Curso creado correctamente'
+        );
+      } else {
+        // Manejar errores de validación del servidor
+        if (result?.details && Array.isArray(result.details)) {
+          result.details.forEach((detail: any) => {
+            if (detail.field && detail.message) {
+              form.setError(detail.field as keyof CourseFormValues, {
+                type: 'server',
+                message: detail.message
+              });
+            }
+          });
+        } else {
+          toast.error(result?.message || 'Error al procesar el formulario');
+        }
+      }
+    } catch (error) {
+      console.error('Error en el formulario:', error);
+      toast.error('Error inesperado al procesar el formulario');
     }
   };
 
+  // Función para cerrar el formulario
   const handleClose = () => {
+    form.reset(defaultCourseValues);
+    cancelForm();
     onOpenChange(false);
-    resetForm();
+  };
+
+  // Función para manejar cambios en el dialog
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen && !submitting) {
+      handleClose();
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[600px] z-[100]">
         <DialogHeader>
-          <DialogTitle>
-            {isEditMode ? 'Editar Curso' : 'Crear Nuevo Curso'}
+          <DialogTitle className="flex items-center gap-2">
+            {mode === 'edit' ? 'Editar Curso' : 'Crear Nuevo Curso'}
+            {mode === 'edit' && currentCourse && (
+              <span className="text-sm font-normal text-gray-500">
+                ({currentCourse.code})
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -91,8 +153,8 @@ export function CourseForm({ open, onOpenChange, isEditMode = false, courseId }:
                     <FormControl>
                       <Input
                         placeholder="ej. MATE-101"
+                        disabled={submitting}
                         {...field}
-                        value={field.value || ''}
                       />
                     </FormControl>
                     <FormMessage />
@@ -109,7 +171,8 @@ export function CourseForm({ open, onOpenChange, isEditMode = false, courseId }:
                     <FormLabel>Área</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      value={field.value || undefined}
+                      value={field.value || ''}
+                      disabled={submitting}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -140,8 +203,8 @@ export function CourseForm({ open, onOpenChange, isEditMode = false, courseId }:
                   <FormControl>
                     <Input
                       placeholder="ej. Matemáticas Básicas"
+                      disabled={submitting}
                       {...field}
-                      value={field.value || ''}
                     />
                   </FormControl>
                   <FormMessage />
@@ -159,15 +222,25 @@ export function CourseForm({ open, onOpenChange, isEditMode = false, courseId }:
                     <FormLabel>Color</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      value={field.value || undefined}
+                      value={field.value || ''}
+                      disabled={submitting}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar color" />
+                          <SelectValue placeholder="Seleccionar color">
+                            {field.value && (
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-4 h-4 rounded-full border"
+                                  style={{ backgroundColor: field.value }}
+                                />
+                                {colors.find(c => c.value === field.value)?.name || 'Color personalizado'}
+                              </div>
+                            )}
+                          </SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="z-[101]">
-
                         {colors.map((color) => (
                           <SelectItem key={color.value} value={color.value}>
                             <div className="flex items-center gap-2">
@@ -198,6 +271,7 @@ export function CourseForm({ open, onOpenChange, isEditMode = false, courseId }:
                         <Switch
                           checked={field.value}
                           onCheckedChange={field.onChange}
+                          disabled={submitting}
                         />
                       </FormControl>
                       <Label className="text-sm">
@@ -212,39 +286,53 @@ export function CourseForm({ open, onOpenChange, isEditMode = false, courseId }:
 
             {/* Preview del color seleccionado */}
             {form.watch('color') && (
-              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border">
                 <div
-                  className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
-                  style={{ backgroundColor: form.watch('color') ?? undefined }}
+                  className="w-8 h-8 rounded-full border-2 border-white shadow-sm ring-1 ring-gray-200"
+                  style={{ backgroundColor: form.watch('color') || undefined }}
                 />
-                <span className="text-sm text-gray-600">
-                  Vista previa del color seleccionado
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-700">
+                    Vista previa del color
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {form.watch('color')}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Indicador de errores generales */}
+            {form.formState.errors.root && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="h-4 w-4 text-red-500" />
+                <span className="text-sm text-red-700">
+                  {form.formState.errors.root.message}
                 </span>
               </div>
             )}
 
-
             {/* Botones de acción */}
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex justify-end gap-3 pt-4 border-t">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleClose}
-                disabled={isSubmitting}
+                disabled={submitting}
               >
                 <X className="h-4 w-4 mr-2" />
                 Cancelar
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={submitting || !form.formState.isValid}
               >
-                {isSubmitting ? (
+                {submitting ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
                   <Save className="h-4 w-4 mr-2" />
                 )}
-                {isEditMode ? 'Actualizar' : 'Crear'} Curso
+                {formMode === 'edit' ? 'Actualizar' : 'Crear'} Curso
               </Button>
             </div>
           </form>

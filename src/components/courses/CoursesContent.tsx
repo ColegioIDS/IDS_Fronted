@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -10,8 +10,8 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { Plus, Search, Grid, List, Filter } from 'lucide-react';
-import { useCourseContext } from '@/context/CourseContext';
+import { Plus, Search, Grid, List, Filter, RefreshCw } from 'lucide-react';
+import { useCourseList, useCourseForm } from '@/context/CourseContext';
 import { CoursesList } from '@/components/courses/CoursesList';
 import { CourseForm } from '@/components/courses/CourseForm';
 import {
@@ -20,15 +20,32 @@ import {
 } from '@/types/courses';
 
 export default function CoursesContent() {
-  const { fetchCourses, isLoadingCourses } = useCourseContext();
+  // Hooks del Context
+  const { 
+    courses, 
+    loading, 
+    error, 
+    filters,
+    handleFilterChange,
+    refetch 
+  } = useCourseList();
+  
+  const { 
+    startCreate,
+    formMode,
+    cancelForm 
+  } = useCourseForm();
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedArea, setSelectedArea] = useState<string>('all');
+  // Estados locales para UI
+  const [searchTerm, setSearchTerm] = useState(filters.searchQuery || '');
+  const [selectedArea, setSelectedArea] = useState<string>(filters.area || 'all');
+  const [selectedStatus, setSelectedStatus] = useState<string>(
+    filters.isActive === undefined ? 'all' : filters.isActive ? 'active' : 'inactive'
+  );
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [showForm, setShowForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Definir áreas disponibles (puedes mover esto a una constante global o hook)
+  // Definir áreas disponibles
   const courseAreas: CourseArea[] = [
     'Científica',
     'Humanística',
@@ -44,30 +61,72 @@ export default function CoursesContent() {
     return courseAreas.includes(value as CourseArea);
   };
 
-  // Buscar cursos con término y área actual
-  const handleSearch = (value: string) => {
+  // Función auxiliar para construir filtros
+  const buildFilters = (
+    search: string = searchTerm,
+    area: string = selectedArea,
+    status: string = selectedStatus
+  ): FilterType => {
+    const filters: FilterType = {};
+
+    if (search && search.trim()) {
+      filters.searchQuery = search.trim();
+    }
+
+    if (area !== 'all' && isValidCourseArea(area)) {
+      filters.area = area;
+    }
+
+    if (status !== 'all') {
+      filters.isActive = status === 'active';
+    }
+
+    return filters;
+  };
+
+  // Buscar cursos con término
+  const handleSearch = async (value: string) => {
     setSearchTerm(value);
-
-    const filters: FilterType = {
-      searchQuery: value || undefined,
-      area: isValidCourseArea(selectedArea) ? selectedArea : undefined,
-      isActive: true
-    };
-
-    fetchCourses(filters);
+    const newFilters = buildFilters(value, selectedArea, selectedStatus);
+    await handleFilterChange(newFilters);
   };
 
   // Cambiar área y filtrar
-  const handleAreaChange = (value: string) => {
+  const handleAreaChange = async (value: string) => {
     setSelectedArea(value);
+    const newFilters = buildFilters(searchTerm, value, selectedStatus);
+    await handleFilterChange(newFilters);
+  };
 
-    const filters: FilterType = {
-      searchQuery: searchTerm || undefined,
-      area: isValidCourseArea(value) ? value : undefined,
-      isActive: true
-    };
+  // Cambiar estado y filtrar
+  const handleStatusChange = async (value: string) => {
+    setSelectedStatus(value);
+    const newFilters = buildFilters(searchTerm, selectedArea, value);
+    await handleFilterChange(newFilters);
+  };
 
-    fetchCourses(filters);
+  // Refrescar datos
+  const handleRefresh = async () => {
+    await refetch();
+  };
+
+  // Inicializar filtros al cargar el componente
+  useEffect(() => {
+    // Solo aplicar filtros iniciales si no hay cursos cargados
+    if (courses.length === 0 && !loading) {
+      const initialFilters = buildFilters();
+      handleFilterChange(initialFilters);
+    }
+  }, []);
+
+  // Manejar apertura del formulario
+  const handleCreateCourse = () => {
+    startCreate();
+  };
+
+  // Manejar cierre del formulario
+  const handleCloseForm = () => {
+    cancelForm();
   };
 
   return (
@@ -82,6 +141,7 @@ export default function CoursesContent() {
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
               className="pl-10 w-full sm:w-80"
+              disabled={loading}
             />
           </div>
           
@@ -93,6 +153,17 @@ export default function CoursesContent() {
           >
             <Filter className="h-4 w-4 mr-2" />
             Filtros
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={loading}
+            className="shrink-0"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Actualizar
           </Button>
         </div>
 
@@ -117,7 +188,10 @@ export default function CoursesContent() {
             </Button>
           </div>
 
-          <Button onClick={() => setShowForm(true)}>
+          <Button 
+            onClick={handleCreateCourse}
+            disabled={loading}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Nuevo Curso
           </Button>
@@ -130,23 +204,30 @@ export default function CoursesContent() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Área</label>
-              <Select value={selectedArea} onValueChange={handleAreaChange}>
+              <Select 
+                value={selectedArea} 
+                onValueChange={handleAreaChange}
+                disabled={loading}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Todas las áreas" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas las áreas</SelectItem>
-                {courseAreas.map((area) => (
+                  {courseAreas.map((area) => (
                     <SelectItem key={area} value={area}>{area}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             
-            {/* Puedes agregar más filtros aquí */}
             <div>
               <label className="text-sm font-medium mb-2 block">Estado</label>
-              <Select defaultValue="active">
+              <Select 
+                value={selectedStatus} 
+                onValueChange={handleStatusChange}
+                disabled={loading}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -157,22 +238,57 @@ export default function CoursesContent() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Indicador de resultados */}
+            <div className="sm:col-span-2 flex items-end">
+              <div className="text-sm text-gray-600">
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Cargando...
+                  </span>
+                ) : (
+                  <span>
+                    {courses.length} curso{courses.length !== 1 ? 's' : ''} encontrado{courses.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* Mostrar error si existe */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <div className="text-red-800 text-sm font-medium">Error:</div>
+            <div className="text-red-700 text-sm">{error}</div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            className="mt-2"
+          >
+            Reintentar
+          </Button>
         </div>
       )}
 
       {/* Lista/Grid de cursos */}
       <CoursesList 
         viewMode={viewMode}
-        searchTerm={searchTerm}
-        selectedArea={selectedArea}
+        loading={loading}
+        courses={courses}
+        error={error}
       />
 
       {/* Modal/Dialog del formulario */}
       <CourseForm 
-        open={showForm}
-        onOpenChange={setShowForm}
-      
+        open={formMode === 'create' || formMode === 'edit'}
+        onOpenChange={(open) => !open && handleCloseForm()}
+        mode={formMode || 'create'}
       />
     </div>
   );

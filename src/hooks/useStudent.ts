@@ -17,7 +17,7 @@ import { deleteImageFromCloudinary } from '@/services/useCloudinary';
 // ✅ NUEVO: Importar contexts
 import { useCyclesContext } from '@/context/CyclesContext';
 import { useGradeContext } from '@/context/GradeContext';
-import { useSectionContext } from '@/context/SectionContext';
+import { useSectionContext } from '@/context/SectionsContext';
 
 type StudentFormData = z.infer<typeof StudentSchema>;
 

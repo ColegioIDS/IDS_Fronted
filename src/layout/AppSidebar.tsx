@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import { PiStudentBold } from "react-icons/pi";
-import { CalendarPlus, GraduationCap, CalendarCheck, ClipboardList } from 'lucide-react';
+import { CalendarPlus, GraduationCap, CalendarCheck, ClipboardList, CalendarCheck2   } from 'lucide-react';
 
 import {
   BoxCubeIcon,
@@ -69,6 +69,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Ciclos Escolares", path: "/cycle", pro: false },
       { name: "Bimestres", path: "/bimesters", pro: false },
+      { name: "Semanas Academicas", path: "/academic-weeks", pro: false },
       { name: "Dias Libres", path: "/holiday", pro: false }
     ]
   },
@@ -104,6 +105,12 @@ const navItems: NavItem[] = [
       { name: "Crear Matrícula", path: "/enrollments/create", pro: false },
     ]
   },
+  {
+    icon: <CalendarCheck2 className="w-5 h-5" />,
+    name: "Asistencia",
+    path: "/attendance"
+
+  }
 
 ];
 
