@@ -20,7 +20,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEffect, useState } from "react";
-import { useStudent } from '@/hooks/useStudent';
+
+// ✅ NUEVO: Importar el context de estudiantes
+import { useStudentForm } from '@/context/StudentContext';
 
 import type { ParentDpiResponse } from "@/types/student"
 
@@ -52,8 +54,15 @@ type ParentFormValues = {
 
 export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolean }) => {
   const { control, setValue } = useFormContext();
-  const { fetchParentByDpi } = useStudent();
   const form = useFormContext();
+
+  // ✅ NUEVO: Usar el context de estudiantes para búsqueda de DPI
+  const {
+    parentDpiInfo,
+    loadingDpi,
+    searchParentByDPI,
+    clearParentDpiInfo
+  } = useStudentForm();
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -61,6 +70,7 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
   });
 
   const [usedRelationships, setUsedRelationships] = useState<string[]>([]);
+  const [searchingDpiIndex, setSearchingDpiIndex] = useState<number | null>(null);
   const parents = useWatch({ control, name: 'parents' }) as ParentFormValues[];
 
   // Actualizar relaciones usadas cuando cambian los padres
@@ -84,43 +94,65 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
     (rel: RelationshipOption) => !usedRelationships.includes(rel.value)
   );
 
-  // Función para verificar si un DPI existe (simulada)
-  const checkDpiExists = async (dpi: string): Promise<boolean> => {
-    // Integra aquí tu hook real para verificar el DPI
-    console.log("Verificando DPI:", dpi);
-    return false;
-  };
-
-  // Manejar cambio de DPI
+  // ✅ NUEVO: Manejar cambio de DPI con el context
   const handleDpiChange = async (index: number, dpi: string) => {
-    if (dpi.length >= 13) {
+    if (dpi.length >= 13) { // DPI completo
       const currentDpi = form.getValues(`parents.${index}.newParent.dpi`);
 
+      // Si estamos en modo edición y el DPI no cambió, no hacer nada
       if (isEditMode && dpi === currentDpi) {
-        return; // No hagas nada si es el mismo DPI en edición
+        return;
       }
 
-      const response = await fetchParentByDpi(dpi) as ParentDpiResponse;
-
-      if (response?.user) {
-        const { user, parentDetails, parentLinks } = response;
-        console.log(parentLinks)
-
-        const givenNames = form.getValues(`parents.${index}.newParent.givenNames`);
-        if (!givenNames || !isEditMode) {
-          setValue(`parents.${index}.newParent.givenNames`, user.firstName);
-          setValue(`parents.${index}.newParent.lastNames`, user.lastName);
-          setValue(`parents.${index}.newParent.phone`, user.phone ?? '');
-          setValue(`parents.${index}.newParent.email`, user.email ?? '');
-          setValue(`parents.${index}.newParent.details.dpiIssuedAt`, parentDetails?.dpiIssuedAt ?? '');
-          setValue(`parents.${index}.newParent.details.occupation`, parentDetails?.occupation ?? '');
-          setValue(`parents.${index}.newParent.details.workplace`, parentDetails?.workplace ?? '');
-          setValue(`parents.${index}.newParent.details.workPhone`, parentDetails?.workPhone ?? '');
-        }
+      try {
+        setSearchingDpiIndex(index);
+        
+        // ✅ Buscar padre por DPI usando el context
+        await searchParentByDPI(dpi);
+        
+        // El resultado estará en parentDpiInfo, procesarlo en useEffect
+      } catch (error) {
+        console.error('Error al buscar padre por DPI:', error);
+      } finally {
+        setSearchingDpiIndex(null);
       }
     }
   };
 
+  // ✅ NUEVO: Procesar resultado de búsqueda de DPI
+// ✅ REEMPLAZAR el useEffect completo (líneas ~120-145):
+useEffect(() => {
+  if (parentDpiInfo && searchingDpiIndex !== null) {
+    const { user } = parentDpiInfo.data || {}; // Acceder a user dentro de data
+    
+    if (user) {
+      // Solo llenar campos si no están llenos (en modo creación) o si estamos actualizando
+      const currentGivenNames = form.getValues(`parents.${searchingDpiIndex}.newParent.givenNames`);
+      
+      if (!currentGivenNames || !isEditMode) {
+        // ✅ CORREGIDO: Usar firstName/lastName de la respuesta del API
+        setValue(`parents.${searchingDpiIndex}.newParent.givenNames`, user.firstName);
+        setValue(`parents.${searchingDpiIndex}.newParent.lastNames`, user.lastName);
+        setValue(`parents.${searchingDpiIndex}.newParent.phone`, user.phone || '');
+        setValue(`parents.${searchingDpiIndex}.newParent.email`, user.email || '');
+        
+        // Datos adicionales si existen
+        if (parentDpiInfo.data?.parentDetails) {
+          setValue(`parents.${searchingDpiIndex}.newParent.details.dpiIssuedAt`, parentDpiInfo.data.parentDetails.dpiIssuedAt || '');
+          setValue(`parents.${searchingDpiIndex}.newParent.details.occupation`, parentDpiInfo.data.parentDetails.occupation || '');
+          setValue(`parents.${searchingDpiIndex}.newParent.details.workplace`, parentDpiInfo.data.parentDetails.workplace || '');
+          setValue(`parents.${searchingDpiIndex}.newParent.details.workPhone`, parentDpiInfo.data.parentDetails.workPhone || '');
+        }
+      }
+      
+      // Limpiar la búsqueda después de procesar
+      setTimeout(() => {
+        clearParentDpiInfo();
+        setSearchingDpiIndex(null);
+      }, 1000);
+    }
+  }
+}, [parentDpiInfo, searchingDpiIndex, form, setValue, isEditMode, clearParentDpiInfo]);
 
   return (
     <div className="space-y-6">
@@ -139,6 +171,7 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
         {fields.map((field, index) => {
           const dpiValue = parents?.[index]?.newParent?.dpi || '';
           const isDisabled = !dpiValue;
+          const isSearching = searchingDpiIndex === index && loadingDpi;
 
           return (
             <div key={field.id} className="relative p-6 border rounded-lg">
@@ -163,7 +196,6 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
 
                     return (
                       <FormItem className="w-full max-w-full p-0">
-
                         <FormLabel className="text-base">Relación con el estudiante</FormLabel>
                         <Select
                           onValueChange={(value) => {
@@ -210,6 +242,9 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
                       <FormLabel className="flex items-center gap-1">
                         <IdCard className="h-4 w-4 opacity-70" />
                         DPI
+                        {isSearching && (
+                          <span className="ml-2 text-xs text-blue-600">Buscando...</span>
+                        )}
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -220,10 +255,18 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
                             field.onChange(e);
                             handleDpiChange(index, e.target.value);
                           }}
+                          disabled={isSearching}
                           className="bg-background/50 hover:bg-background/70 transition-colors"
                         />
                       </FormControl>
                       <FormMessage className="text-xs" />
+                      {/* ✅ NUEVO: Mostrar estado de búsqueda */}
+                      {parentDpiInfo && searchingDpiIndex === index && (
+                        <p className="text-xs text-green-600 mt-1">
+                        ✓ Padre encontrado: {parentDpiInfo.data?.user?.firstName} {parentDpiInfo.data?.user?.lastName}
+
+                        </p>
+                      )}
                     </FormItem>
                   )}
                 />
@@ -245,7 +288,7 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
                           placeholder="Juan Carlos"
                           {...field}
                           value={field.value ?? ''}
-                          disabled={isDisabled}
+                          disabled={isDisabled || isSearching}
                           className="bg-background/50 hover:bg-background/70 transition-colors disabled:opacity-70"
                         />
                       </FormControl>
@@ -268,7 +311,7 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
                           placeholder="Pérez García"
                           {...field}
                           value={field.value ?? ''}
-                          disabled={isDisabled}
+                          disabled={isDisabled || isSearching}
                           className="bg-background/50 hover:bg-background/70 transition-colors disabled:opacity-70"
                         />
                       </FormControl>
@@ -291,7 +334,7 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
                           placeholder="Guatemala"
                           {...field}
                           value={field.value ?? ''}
-                          disabled={isDisabled}
+                          disabled={isDisabled || isSearching}
                           className="bg-background/50 hover:bg-background/70 transition-colors disabled:opacity-70"
                         />
                       </FormControl>
@@ -314,7 +357,7 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
                           placeholder="1234 5678"
                           {...field}
                           value={field.value ?? ''}
-                          disabled={isDisabled}
+                          disabled={isDisabled || isSearching}
                           className="bg-background/50 hover:bg-background/70 transition-colors disabled:opacity-70"
                         />
                       </FormControl>
@@ -341,7 +384,7 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
                           type="email"
                           {...field}
                           value={field.value ?? ''}
-                          disabled={isDisabled}
+                          disabled={isDisabled || isSearching}
                           className="bg-background/50 hover:bg-background/70 transition-colors disabled:opacity-70"
                         />
                       </FormControl>
@@ -364,7 +407,7 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
                           placeholder="Ingeniero, Doctor, etc."
                           {...field}
                           value={field.value ?? ''}
-                          disabled={isDisabled}
+                          disabled={isDisabled || isSearching}
                           className="bg-background/50 hover:bg-background/70 transition-colors disabled:opacity-70"
                         />
                       </FormControl>
@@ -387,7 +430,7 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
                           placeholder="Empresa o Institución"
                           {...field}
                           value={field.value ?? ''}
-                          disabled={isDisabled}
+                          disabled={isDisabled || isSearching}
                           className="bg-background/50 hover:bg-background/70 transition-colors disabled:opacity-70"
                         />
                       </FormControl>
@@ -435,6 +478,14 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
             <User className="h-4 w-4" />
             Agregar padre o encargado
           </Button>
+        </div>
+
+        {/* ✅ NUEVO: Información de ayuda */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            💡 <strong>Tip:</strong> Al ingresar un DPI completo (13 dígitos), el sistema buscará automáticamente 
+            si el padre ya está registrado y completará sus datos.
+          </p>
         </div>
       </div>
     </div>

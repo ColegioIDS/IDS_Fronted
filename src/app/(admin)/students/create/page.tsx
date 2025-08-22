@@ -1,17 +1,37 @@
-import { Metadata } from "next";
-import StudentContent from "./StudentContent";
-export const metadata: Metadata = {
-  title: "Next.js Permisos | TailAdmin - Next.js Dashboard Template",
-  description:
-    "Pagina para Crear usuarios de la aplicacion",
-};
 
+// src/app/(admin)/students/page.tsx
+"use client";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SchoolCycleProvider } from '@/context/SchoolCycleContext';
+import { GradeProvider } from '@/context/GradeContext';
+import { SectionProvider } from '@/context/SectionsContext';
+import { StudentProvider } from '@/context/StudentContext';
+import { StudentForm } from '@/components/students/StudentForm';
+// Crear cliente específico para esta página
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutos (datos de estudiantes son relativamente estables)
+      refetchOnWindowFocus: true,
+      refetchInterval: 10 * 60 * 1000, // Refrescar cada 10 minutos
+    },
+  },
+});
 
-export default function Permission() {
+export default function StudentsPageWrapper() {
   return (
-    <div>
+    <QueryClientProvider client={queryClient}>
+      <SchoolCycleProvider>
 
-        <StudentContent />
-    </div>
+
+        <GradeProvider>
+          <SectionProvider>
+            <StudentProvider>
+              <StudentForm />
+            </StudentProvider>
+          </SectionProvider>
+        </GradeProvider>
+      </SchoolCycleProvider>
+    </QueryClientProvider>
   );
 }

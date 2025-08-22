@@ -236,6 +236,7 @@ export interface Student {
 // ✅ ACTUALIZADO: Para formularios de creación (CON enrollment obligatorio)
 export interface CreateStudentPayload extends Omit<Student, 'id' | 'createdAt' | 'updatedAt' | 'enrollments'> {
   enrollment: EnrollmentData; // Campo obligatorio
+    profileImage?: File | string | null;
 }
 
 // ✅ NUEVO: Para transferencias de estudiantes

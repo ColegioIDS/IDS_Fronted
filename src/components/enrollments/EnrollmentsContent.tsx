@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useEnrollmentContext } from '@/context/EnrollmentContext';
+import { useEnrollmentContext, useEnrollmentList, useEnrollmentStatsContext, useEnrollmentBulkOperations } from '@/context/EnrollmentContext';
 import { 
   Users, 
   GraduationCap, 
@@ -37,6 +37,7 @@ import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 import { EnrollmentStatus } from '@/types/enrollment.types';
+import { toast } from 'react-toastify';
 
 // Import the actual components
 import EnrollmentTable from '@/components/enrollments/EnrollmentTable';
@@ -46,45 +47,65 @@ import CreateEnrollmentModal from '@/components/enrollments/CreateEnrollmentModa
 
 // Wrapper para CreateEnrollmentModal que usa el contexto
 function CreateEnrollmentModalWrapper({ onClose }: { onClose: () => void }) {
-  const { createEnrollment, isSubmitting } = useEnrollmentContext();
+  const { state: { submitting }, createEnrollment } = useEnrollmentContext();
   
   return (
     <CreateEnrollmentModal 
       onClose={onClose}
       createEnrollment={createEnrollment}
-      isSubmitting={isSubmitting}
+      isSubmitting={submitting}
     />
   );
 }
 
 export default function EnrollmentsContent() {
   const { 
-    enrollments, 
-    stats,
-    isLoadingEnrollments,
-    isLoadingStats,
+    state: { 
+      enrollments, 
+      loading: isLoadingEnrollments, 
+      error,
+      selectedIds 
+    },
     fetchEnrollments,
-    fetchEnrollmentStats,
-    refreshData,
-    createEnrollment
+    refreshEnrollments,
+    setSelectedIds,
+    toggleSelectedId,
+    clearSelection
   } = useEnrollmentContext();
+
+  const { 
+    stats, 
+    loading: isLoadingStats, 
+    fetchStats 
+  } = useEnrollmentStatsContext();
+
+  const {
+    hasSelection,
+    submitting: isBulkOperating,
+    handleBulkGraduate,
+    handleBulkTransfer
+  } = useEnrollmentBulkOperations();
 
   const [activeView, setActiveView] = useState<'table' | 'cards'>('table');
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Cargar datos iniciales
   useEffect(() => {
     fetchEnrollments();
-    fetchEnrollmentStats();
-  }, []);
+    fetchStats();
+  }, [fetchEnrollments, fetchStats]);
 
   // Función para refrescar datos
   const handleRefresh = async () => {
-    await refreshData();
-    await fetchEnrollmentStats();
+    try {
+      await refreshEnrollments();
+      await fetchStats();
+      toast.success('Datos actualizados correctamente');
+    } catch (error) {
+      toast.error('Error al actualizar los datos');
+    }
   };
 
   // Calcular estadísticas en tiempo real si no vienen del backend
@@ -163,6 +184,43 @@ export default function EnrollmentsContent() {
 
   const statsWithTrends = calculateStatsWithTrends();
 
+  // Manejo de filtros
+  const handleFiltersChange = (filters: any) => {
+    console.log('Filters changed:', filters);
+    // Aquí puedes llamar a fetchEnrollments con los filtros
+    fetchEnrollments(filters);
+  };
+
+  // Manejo de selección múltiple
+  const handleSelectionChange = (ids: number[]) => {
+    setSelectedIds(ids);
+  };
+
+  // Manejo de acciones masivas
+  const handleBulkGraduateAction = async () => {
+    if (!hasSelection) {
+      toast.warning('Selecciona al menos una matrícula');
+      return;
+    }
+
+    const result = await handleBulkGraduate();
+    if (result.success) {
+      clearSelection();
+    }
+  };
+
+  const handleBulkTransferAction = async () => {
+    if (!hasSelection) {
+      toast.warning('Selecciona al menos una matrícula');
+      return;
+    }
+
+    const result = await handleBulkTransfer();
+    if (result.success) {
+      clearSelection();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900">
       {/* Clean Header */}
@@ -195,7 +253,7 @@ export default function EnrollmentsContent() {
                 Actualizar
               </Button>
               
-              <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen }> 
+              <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}> 
                 <DialogTrigger asChild>
                   <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
                     <Plus className="h-4 w-4 mr-2" />
@@ -346,10 +404,7 @@ export default function EnrollmentsContent() {
               <CollapsibleContent>
                 <div className="pt-4">
                   <Separator className="mb-4" />
-                  <EnrollmentFilters onFiltersChange={(filters) => {
-                    // Aquí puedes manejar los cambios de filtros
-                    console.log('Filters changed:', filters);
-                  }} />
+                  <EnrollmentFilters onFiltersChange={handleFiltersChange} />
                 </div>
               </CollapsibleContent>
             </Collapsible>
@@ -357,7 +412,7 @@ export default function EnrollmentsContent() {
         </Card>
 
         {/* Clean Action Toolbar */}
-        {selectedItems.length > 0 && (
+        {hasSelection && selectedIds.length > 0 && (
           <Card className="bg-orange-50/70 dark:bg-orange-900/20 backdrop-blur-sm border border-orange-200 dark:border-orange-800 shadow-lg">
             <CardContent className="flex items-center justify-between py-4 px-6">
               <div className="flex items-center gap-3">
@@ -366,7 +421,7 @@ export default function EnrollmentsContent() {
                 </div>
                 <div>
                   <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-                    {selectedItems.length} seleccionados
+                    {selectedIds.length} seleccionados
                   </Badge>
                   <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
                     Acciones masivas disponibles
@@ -378,19 +433,23 @@ export default function EnrollmentsContent() {
                 <Button 
                   variant="outline" 
                   size="sm"
+                  onClick={handleBulkGraduateAction}
+                  disabled={isBulkOperating}
                   className="bg-white/50 dark:bg-gray-800/50 border-orange-200 text-orange-700 hover:bg-orange-50"
                 >
                   <GraduationCap className="h-4 w-4 mr-2" />
-                  Graduar Seleccionados
+                  {isBulkOperating ? 'Graduando...' : 'Graduar Seleccionados'}
                 </Button>
                 
                 <Button 
                   variant="outline" 
                   size="sm"
+                  onClick={handleBulkTransferAction}
+                  disabled={isBulkOperating}
                   className="bg-white/50 dark:bg-gray-800/50 border-orange-200 text-orange-700 hover:bg-orange-50"
                 >
                   <ArrowRightLeft className="h-4 w-4 mr-2" />
-                  Transferir Seleccionados
+                  {isBulkOperating ? 'Transfiriendo...' : 'Transferir Seleccionados'}
                 </Button>
                 
                 <DropdownMenu>
@@ -398,6 +457,7 @@ export default function EnrollmentsContent() {
                     <Button 
                       variant="outline" 
                       size="sm"
+                      disabled={isBulkOperating}
                       className="bg-white/50 dark:bg-gray-800/50 border-orange-200 text-orange-700 hover:bg-orange-50"
                     >
                       <MoreHorizontal className="h-4 w-4" />
@@ -418,12 +478,22 @@ export default function EnrollmentsContent() {
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={() => setSelectedItems([])}
+                  onClick={() => clearSelection()}
+                  disabled={isBulkOperating}
                   className="text-orange-700 hover:bg-orange-100"
                 >
                   Cancelar
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error Display */}
+        {error && (
+          <Card className="bg-red-50/70 dark:bg-red-900/20 backdrop-blur-sm border border-red-200 dark:border-red-800">
+            <CardContent className="py-4 px-6">
+              <p className="text-red-600 dark:text-red-400">{error}</p>
             </CardContent>
           </Card>
         )}
@@ -469,15 +539,15 @@ export default function EnrollmentsContent() {
             <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'table' | 'cards')}>
               <TabsContent value="table" className="mt-0">
                 <EnrollmentTable 
-                  selectedItems={selectedItems}
-                  onSelectionChange={setSelectedItems}
+                  selectedItems={selectedIds}
+                  onSelectionChange={handleSelectionChange}
                 />
               </TabsContent>
               
               <TabsContent value="cards" className="mt-0">
                 <EnrollmentCards 
-                  selectedItems={selectedItems}
-                  onSelectionChange={setSelectedItems}
+                  selectedItems={selectedIds}
+                  onSelectionChange={handleSelectionChange}
                 />
               </TabsContent>
             </Tabs>

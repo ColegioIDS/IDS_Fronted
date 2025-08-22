@@ -58,21 +58,19 @@ export default function EnrollmentFilters({ onFiltersChange }: EnrollmentFilters
   
   // Contexts para datos reales
   const { 
-    cycles, 
-    fetchCycles,
-    isLoadingCycles 
+    cycles,
+    isLoadingCycles,
+    fetchCycles
   } = useCyclesContext();
   
-  const { 
-    grades, 
-    fetchGrades,
-    isLoadingGrades 
-  } = useGradeContext();
+const { 
+  state: { grades, loading: gradesLoading },
+  fetchGrades
+} = useGradeContext();
   
-  const { 
-    sections, 
-    fetchSections,
-    isLoadingSections 
+   const { 
+    state: { sections, loading: sectionsLoading },
+    fetchSections
   } = useSectionContext();
 
   // Filter state
@@ -91,15 +89,16 @@ export default function EnrollmentFilters({ onFiltersChange }: EnrollmentFilters
   useEffect(() => {
     fetchCycles();
     fetchGrades();
-  }, []);
+  }, []); // Sin dependencias para evitar bucles
 
   // Cargar secciones cuando cambie el grado seleccionado
   useEffect(() => {
     if (selectedGrade) {
       const gradeId = parseInt(selectedGrade);
-      fetchSections(gradeId);
+      // Ajustar según la API del contexto de secciones
+      fetchSections({ gradeId });
     }
-  }, [selectedGrade]);
+  }, [selectedGrade]); // Sin fetchSections en dependencias
 
   // Filtrar secciones por el grado seleccionado
   const availableSections = sections?.filter(section => 
@@ -127,7 +126,7 @@ export default function EnrollmentFilters({ onFiltersChange }: EnrollmentFilters
     if (onFiltersChange) {
       onFiltersChange(filters);
     }
-    await fetchEnrollments(filters);
+    // El contexto se encargará de ejecutar fetchEnrollments automáticamente
   };
 
   // Clear all filters
@@ -143,7 +142,7 @@ export default function EnrollmentFilters({ onFiltersChange }: EnrollmentFilters
     if (onFiltersChange) {
       onFiltersChange({});
     }
-    fetchEnrollments({});
+    // El contexto se encargará de ejecutar fetchEnrollments automáticamente
   };
 
   // Clear individual filter
@@ -178,7 +177,19 @@ export default function EnrollmentFilters({ onFiltersChange }: EnrollmentFilters
   };
 
   // Loading state
-  const isLoading = isLoadingCycles || isLoadingGrades || isLoadingSections;
+  const isLoading = isLoadingCycles || gradesLoading || sectionsLoading;
+
+  // Show loading state for initial data
+  if (isLoadingCycles && !cycles?.length) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+          <span className="text-gray-600 dark:text-gray-400">Cargando filtros...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -224,10 +235,10 @@ export default function EnrollmentFilters({ onFiltersChange }: EnrollmentFilters
           <Select 
             value={selectedGrade} 
             onValueChange={setSelectedGrade}
-            disabled={isLoadingGrades}
+            disabled={gradesLoading}
           >
             <SelectTrigger className="bg-white/70 dark:bg-gray-800/70 border-gray-200 dark:border-gray-700">
-              <SelectValue placeholder={isLoadingGrades ? "Cargando..." : "Seleccionar grado"} />
+              <SelectValue placeholder={gradesLoading ? "Cargando..." : "Seleccionar grado"} />
             </SelectTrigger>
             <SelectContent>
               {grades?.filter(grade => grade.isActive).map((grade) => (
@@ -253,12 +264,12 @@ export default function EnrollmentFilters({ onFiltersChange }: EnrollmentFilters
           <Select 
             value={selectedSection} 
             onValueChange={setSelectedSection}
-            disabled={!selectedGrade || isLoadingSections}
+            disabled={!selectedGrade || sectionsLoading}
           >
             <SelectTrigger className="bg-white/70 dark:bg-gray-800/70 border-gray-200 dark:border-gray-700">
               <SelectValue placeholder={
                 !selectedGrade ? "Selecciona un grado primero" :
-                isLoadingSections ? "Cargando..." : 
+                sectionsLoading ? "Cargando..." : 
                 "Seleccionar sección"
               } />
             </SelectTrigger>
@@ -270,9 +281,9 @@ export default function EnrollmentFilters({ onFiltersChange }: EnrollmentFilters
                     <span className="text-xs text-gray-500">
                       (Cap: {section.capacity})
                     </span>
-                    {section.teacher && (
+                    {section.teacherId && (
                       <span className="text-xs text-gray-400 truncate max-w-20">
-                        - {section.teacher.givenNames.split(' ')[0]}
+                        - Maestro asignado
                       </span>
                     )}
                   </div>

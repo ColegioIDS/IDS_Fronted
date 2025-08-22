@@ -46,17 +46,60 @@ import { es } from "date-fns/locale";
 import { useStudentContext } from "@/context/StudentContext";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
-type UserFormProps = {
-  isEditMode?: boolean;
-  studentId?: number;
+type StudentProfileProps = {
+  studentId: number;
 };
 
-export default function StudentProfile({ isEditMode = false, studentId }: UserFormProps) {
-  const { studentData } = useStudentContext();
+export default function StudentProfile({ studentId }: StudentProfileProps) {
+  const { 
+    state: { currentStudent, loading, error },
+    fetchStudentById 
+  } = useStudentContext();
+  
   const router = useRouter();
 
-  if (!studentData) {
+  // Cargar datos del estudiante cuando el componente se monta
+  useEffect(() => {
+    if (studentId) {
+      fetchStudentById(studentId);
+    }
+  }, [studentId, fetchStudentById]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto" />
+          <p className="text-lg font-medium text-muted-foreground">
+            Cargando datos del estudiante...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <AlertCircle className="h-16 w-16 text-destructive mx-auto" />
+          <p className="text-lg font-medium text-destructive">
+            Error: {error}
+          </p>
+          <Button 
+            variant="outline"
+            onClick={() => router.push('/students')}
+          >
+            Volver a estudiantes
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentStudent) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
@@ -75,8 +118,8 @@ export default function StudentProfile({ isEditMode = false, studentId }: UserFo
     );
   }
 
-  const profilePicture = studentData.pictures?.find(pic => pic.kind === "profile")?.url;
-  const birthDate = studentData.birthDate ? new Date(studentData.birthDate) : null;
+  const profilePicture = currentStudent.pictures?.find(pic => pic.kind === "profile")?.url;
+  const birthDate = currentStudent.birthDate ? new Date(currentStudent.birthDate) : null;
   
   // Calcular edad
   const calculateAge = () => {
@@ -92,13 +135,9 @@ export default function StudentProfile({ isEditMode = false, studentId }: UserFo
   
   const age = calculateAge();
 
-  console.log(studentData, "studentData")
-  
   // Obtener enrollment activo
-
-
-const activeEnrollment = studentData.enrollment;
-const isActive = activeEnrollment?.status === 'active';
+  const activeEnrollment = currentStudent.enrollments?.find(e => e.status === 'active');
+  const isActive = activeEnrollment?.status === 'active';
 
   // Función para iconos de género
   const GenderIcon = ({ gender }: { gender?: string }) => {
@@ -127,7 +166,7 @@ const isActive = activeEnrollment?.status === 'active';
                       <AvatarImage src={profilePicture} className="object-cover" />
                     ) : (
                       <AvatarFallback className="text-2xl font-semibold">
-                        {studentData.givenNames.charAt(0)}{studentData.lastNames.charAt(0)}
+                        {currentStudent.givenNames.charAt(0)}{currentStudent.lastNames.charAt(0)}
                       </AvatarFallback>
                     )}
                   </Avatar>
@@ -147,10 +186,10 @@ const isActive = activeEnrollment?.status === 'active';
                 {/* Info Principal */}
                 <div className="flex-1 text-center lg:text-left">
                   <h1 className="text-3xl lg:text-4xl font-bold mb-3">
-                    {studentData.givenNames} {studentData.lastNames}
+                    {currentStudent.givenNames} {currentStudent.lastNames}
                   </h1>
                   <p className="text-lg text-muted-foreground mb-4">
-                    {age ? `${age} años` : ''} • {studentData.gender || 'No especificado'} • {studentData.nationality || 'Guatemala'}
+                    {age ? `${age} años` : ''} • {currentStudent.gender || 'No especificado'} • {currentStudent.nationality || 'Guatemala'}
                   </p>
                   
                   {/* Badges */}
@@ -170,14 +209,29 @@ const isActive = activeEnrollment?.status === 'active';
                     {activeEnrollment && (
                       <Badge variant="outline">
                         <GraduationCap className="w-4 h-4 mr-2" />
-                        Grado {activeEnrollment.gradeId} • Sección {activeEnrollment.sectionId}
+                        {activeEnrollment.section?.grade?.name || `Grado ${activeEnrollment.gradeId}`} • 
+                        Sección {activeEnrollment.section?.name || activeEnrollment.sectionId}
                       </Badge>
                     )}
 
-                    {studentData.codeSIRE && (
+                    {currentStudent.codeSIRE && (
                       <Badge variant="outline">
                         <Shield className="w-4 h-4 mr-2" />
-                        SIRE: {studentData.codeSIRE}
+                        SIRE: {currentStudent.codeSIRE}
+                      </Badge>
+                    )}
+
+                    {activeEnrollment?.cycle && (
+                      <Badge variant="outline">
+                        <CalendarDays className="w-4 h-4 mr-2" />
+                        {activeEnrollment.cycle.name}
+                      </Badge>
+                    )}
+
+                    {currentStudent.gender && (
+                      <Badge variant="outline">
+                        <GenderIcon gender={currentStudent.gender} />
+                        <span className="ml-2">{currentStudent.gender}</span>
                       </Badge>
                     )}
                   </div>
@@ -229,10 +283,10 @@ const isActive = activeEnrollment?.status === 'active';
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Hermanos</p>
-                  <p className="font-semibold">{studentData.siblingsCount || 0}</p>
+                  <p className="font-semibold">{currentStudent.siblingsCount || 0}</p>
                   <div className="flex gap-2 text-xs text-muted-foreground">
-                    {studentData.brothersCount > 0 && <span>{studentData.brothersCount} ♂</span>}
-                    {studentData.sistersCount > 0 && <span>{studentData.sistersCount} ♀</span>}
+                    {(currentStudent.brothersCount || 0) > 0 && <span>{currentStudent.brothersCount} ♂</span>}
+                    {(currentStudent.sistersCount || 0) > 0 && <span>{currentStudent.sistersCount} ♀</span>}
                   </div>
                 </div>
               </div>
@@ -248,10 +302,10 @@ const isActive = activeEnrollment?.status === 'active';
                 <div>
                   <p className="text-sm text-muted-foreground">Transporte</p>
                   <p className="font-semibold">
-                    {studentData.busService?.hasService ? 'Sí' : 'No'}
+                    {currentStudent.busService?.hasService ? 'Sí' : 'No'}
                   </p>
-                  {studentData.busService?.route && (
-                    <p className="text-xs text-muted-foreground">Ruta: {studentData.busService.route}</p>
+                  {currentStudent.busService?.route && (
+                    <p className="text-xs text-muted-foreground">Ruta: {currentStudent.busService.route}</p>
                   )}
                 </div>
               </div>
@@ -267,8 +321,99 @@ const isActive = activeEnrollment?.status === 'active';
                 <div>
                   <p className="text-sm text-muted-foreground">Materia Favorita</p>
                   <p className="font-semibold text-sm">
-                    {studentData.favoriteSubject || 'No especificada'}
+                    {currentStudent.favoriteSubject || 'No especificada'}
                   </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card adicional para información médica */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg">
+                  <FirstAid className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Información Médica</p>
+                  <p className="font-semibold text-sm">
+                    {currentStudent.medicalInfo ? 'Completada' : 'Pendiente'}
+                  </p>
+                  {currentStudent.medicalInfo && (
+                    <div className="flex gap-1 text-xs text-muted-foreground">
+                      {currentStudent.medicalInfo.hasAllergies && (
+                        <span className="text-amber-600">⚠️ Alergias</span>
+                      )}
+                      {currentStudent.medicalInfo.takesMedication && (
+                        <span className="text-blue-600">💊 Medicación</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card para padres/tutores */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/20 rounded-lg">
+                  <UserCheck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Padres/Tutores</p>
+                  <p className="font-semibold">{currentStudent.parents?.length || 0}</p>
+                  {currentStudent.parents && currentStudent.parents.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {currentStudent.parents.map(p => p.relationshipType).join(', ')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card para contactos de emergencia */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/20 rounded-lg">
+                  <Phone className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Contactos Emerg.</p>
+                  <p className="font-semibold">{currentStudent.emergencyContacts?.length || 0}</p>
+                  {currentStudent.emergencyContacts && currentStudent.emergencyContacts.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Configurados
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card para estado académico */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg">
+                  <GraduationCap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Estado Académico</p>
+                  <p className="font-semibold text-sm">
+                    {activeEnrollment?.status === 'active' ? 'Activo' :
+                     activeEnrollment?.status === 'graduated' ? 'Graduado' :
+                     activeEnrollment?.status === 'transferred' ? 'Transferido' : 'Inactivo'}
+                  </p>
+                  {activeEnrollment?.cycle && (
+                    <p className="text-xs text-muted-foreground">
+                      {activeEnrollment.cycle.name}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -325,36 +470,37 @@ const isActive = activeEnrollment?.status === 'active';
 
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <GenderIcon gender={studentData.gender} />
+                       <GenderIcon gender={currentStudent.gender ?? undefined} />
+
                         Género
                       </div>
                       <p className="font-medium">
-                        {studentData.gender || 'No especificado'}
+                        {currentStudent.gender || 'No especificado'}
                       </p>
                     </div>
 
-                    {studentData.birthPlace && (
+                    {currentStudent.birthPlace && (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <MapPin className="h-4 w-4" />
                           Lugar de Nacimiento
                         </div>
-                        <p className="font-medium">{studentData.birthPlace}</p>
+                        <p className="font-medium">{currentStudent.birthPlace}</p>
                       </div>
                     )}
 
-                    {studentData.nationality && (
+                    {currentStudent.nationality && (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Building className="h-4 w-4" />
                           Nacionalidad
                         </div>
-                        <p className="font-medium">{studentData.nationality}</p>
+                        <p className="font-medium">{currentStudent.nationality}</p>
                       </div>
                     )}
                   </div>
 
-                  {studentData.address && (
+                  {currentStudent.address && (
                     <div className="space-y-2 pt-4 border-t">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Home className="h-4 w-4" />
@@ -362,10 +508,10 @@ const isActive = activeEnrollment?.status === 'active';
                       </div>
                       <div>
                         <p className="font-medium">
-                          {studentData.address.street}, Zona {studentData.address.zone}
+                          {currentStudent.address.street}, Zona {currentStudent.address.zone}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {studentData.address.municipality}, {studentData.address.department}
+                          {currentStudent.address.municipality}, {currentStudent.address.department}
                         </p>
                       </div>
                     </div>
@@ -383,22 +529,22 @@ const isActive = activeEnrollment?.status === 'active';
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 gap-4">
-                    {studentData.favoriteColor && (
+                    {currentStudent.favoriteColor && (
                       <div className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
                           <div 
                             className="h-6 w-6 rounded-full border-2 border-muted"
-                            style={{ backgroundColor: studentData.favoriteColor }}
+                            style={{ backgroundColor: currentStudent.favoriteColor }}
                           />
                           <div>
                             <p className="text-sm text-muted-foreground">Color favorito</p>
-                            <p className="font-medium">{studentData.favoriteColor}</p>
+                            <p className="font-medium">{currentStudent.favoriteColor}</p>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {studentData.hobby && (
+                    {currentStudent.hobby && (
                       <div className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-muted rounded-lg">
@@ -406,13 +552,13 @@ const isActive = activeEnrollment?.status === 'active';
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Pasatiempo</p>
-                            <p className="font-medium">{studentData.hobby}</p>
+                            <p className="font-medium">{currentStudent.hobby}</p>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {studentData.favoriteFood && (
+                    {currentStudent.favoriteFood && (
                       <div className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-muted rounded-lg">
@@ -420,13 +566,13 @@ const isActive = activeEnrollment?.status === 'active';
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Comida favorita</p>
-                            <p className="font-medium">{studentData.favoriteFood}</p>
+                            <p className="font-medium">{currentStudent.favoriteFood}</p>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {studentData.favoriteSubject && (
+                    {currentStudent.favoriteSubject && (
                       <div className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-muted rounded-lg">
@@ -434,13 +580,13 @@ const isActive = activeEnrollment?.status === 'active';
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Materia favorita</p>
-                            <p className="font-medium">{studentData.favoriteSubject}</p>
+                            <p className="font-medium">{currentStudent.favoriteSubject}</p>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {studentData.favoriteToy && (
+                    {currentStudent.favoriteToy && (
                       <div className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-muted rounded-lg">
@@ -448,13 +594,13 @@ const isActive = activeEnrollment?.status === 'active';
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Juguete favorito</p>
-                            <p className="font-medium">{studentData.favoriteToy}</p>
+                            <p className="font-medium">{currentStudent.favoriteToy}</p>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {studentData.favoriteCake && (
+                    {currentStudent.favoriteCake && (
                       <div className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-muted rounded-lg">
@@ -462,7 +608,7 @@ const isActive = activeEnrollment?.status === 'active';
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Postre favorito</p>
-                            <p className="font-medium">{studentData.favoriteCake}</p>
+                            <p className="font-medium">{currentStudent.favoriteCake}</p>
                           </div>
                         </div>
                       </div>
@@ -485,14 +631,14 @@ const isActive = activeEnrollment?.status === 'active';
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {studentData.parents && studentData.parents.length > 0 ? (
+                  {currentStudent.parents && currentStudent.parents.length > 0 ? (
                     <div className="space-y-4">
-                      {studentData.parents.map((parent, index) => (
+                      {currentStudent.parents.map((parent, index) => (
                         <div key={index} className="p-4 border rounded-lg space-y-3">
                           <div className="flex items-start justify-between">
                             <div>
                               <h3 className="font-semibold">
-                                {parent.newParent?.givenNames} {parent.newParent?.lastNames}
+                                {parent.parent?.givenNames} {parent.parent?.lastNames}
                               </h3>
                               <p className="text-sm text-muted-foreground">
                                 {parent.relationshipType}
@@ -507,16 +653,16 @@ const isActive = activeEnrollment?.status === 'active';
                           </div>
                           
                           <div className="space-y-2">
-                            {parent.newParent?.phone && (
+                            {parent.parent?.phone && (
                               <div className="flex items-center gap-2 text-sm">
                                 <Phone className="h-4 w-4 text-muted-foreground" />
-                                {parent.newParent.phone}
+                                {parent.parent.phone}
                               </div>
                             )}
-                            {parent.newParent?.email && (
+                            {parent.parent?.email && (
                               <div className="flex items-center gap-2 text-sm">
                                 <Mail className="h-4 w-4 text-muted-foreground" />
-                                {parent.newParent.email}
+                                {parent.parent.email}
                               </div>
                             )}
                           </div>
@@ -564,9 +710,9 @@ const isActive = activeEnrollment?.status === 'active';
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {studentData.siblings && studentData.siblings.length > 0 ? (
+                    {currentStudent.siblings && currentStudent.siblings.length > 0 ? (
                       <div className="space-y-3">
-                        {studentData.siblings.map((sibling, index) => (
+                        {currentStudent.siblings.map((sibling, index) => (
                           <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                             <div className="flex items-center gap-3">
                               <div className="p-2 bg-muted rounded-lg">
@@ -605,23 +751,23 @@ const isActive = activeEnrollment?.status === 'active';
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {studentData.livesWithText && (
+                    {currentStudent.livesWithText && (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <HeartHandshake className="h-4 w-4" />
                           Vive con
                         </div>
-                        <p className="font-medium">{studentData.livesWithText}</p>
+                        <p className="font-medium">{currentStudent.livesWithText}</p>
                       </div>
                     )}
                     
-                    {studentData.financialResponsibleText && (
+                    {currentStudent.financialResponsibleText && (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <DollarSign className="h-4 w-4" />
                           Responsable Financiero
                         </div>
-                        <p className="font-medium">{studentData.financialResponsibleText}</p>
+                        <p className="font-medium">{currentStudent.financialResponsibleText}</p>
                       </div>
                     )}
                   </CardContent>
@@ -643,9 +789,9 @@ const isActive = activeEnrollment?.status === 'active';
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {studentData.academicRecords && studentData.academicRecords.length > 0 ? (
+                    {currentStudent.academicRecords && currentStudent.academicRecords.length > 0 ? (
                       <div className="space-y-4">
-                        {studentData.academicRecords.map((record, index) => (
+                        {currentStudent.academicRecords.map((record, index) => (
                           <div key={index} className="p-4 border-l-4 border-primary bg-muted/50 rounded-lg">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
@@ -698,46 +844,46 @@ const isActive = activeEnrollment?.status === 'active';
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {studentData.busService?.hasService ? (
+                  {currentStudent.busService?.hasService ? (
                     <div className="space-y-4">
-                      {studentData.busService.route && (
+                      {currentStudent.busService.route && (
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <MapPin className="h-4 w-4" />
                             Ruta
                           </div>
-                          <p className="font-medium">{studentData.busService.route}</p>
+                          <p className="font-medium">{currentStudent.busService.route}</p>
                         </div>
                       )}
                       
-                      {studentData.busService.pickupPersonName && (
+                      {currentStudent.busService.pickupPersonName && (
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <UserCheck className="h-4 w-4" />
                             Recoge
                           </div>
-                          <p className="font-medium">{studentData.busService.pickupPersonName}</p>
+                          <p className="font-medium">{currentStudent.busService.pickupPersonName}</p>
                         </div>
                       )}
                       
-                      {studentData.busService.dropoffPersonName && (
+                      {currentStudent.busService.dropoffPersonName && (
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <UserCheck className="h-4 w-4" />
                             Entrega
                           </div>
-                          <p className="font-medium">{studentData.busService.dropoffPersonName}</p>
+                          <p className="font-medium">{currentStudent.busService.dropoffPersonName}</p>
                         </div>
                       )}
                       
-                      {studentData.busService.monthlyFee && (
+                      {currentStudent.busService.monthlyFee && (
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <DollarSign className="h-4 w-4" />
                             Tarifa Mensual
                           </div>
                           <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                            Q{studentData.busService.monthlyFee.toFixed(2)}
+                            Q{currentStudent.busService.monthlyFee.toFixed(2)}
                           </p>
                         </div>
                       )}
@@ -763,7 +909,7 @@ const isActive = activeEnrollment?.status === 'active';
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {studentData.medicalInfo ? (
+                {currentStudent.medicalInfo ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Enfermedades */}
                     <div className="p-4 border rounded-lg space-y-3">
@@ -774,10 +920,10 @@ const isActive = activeEnrollment?.status === 'active';
                         <h4 className="font-medium">Enfermedades</h4>
                       </div>
                       <p className="text-sm">
-                        {studentData.medicalInfo.hasDisease ? (
+                        {currentStudent.medicalInfo.hasDisease ? (
                           <span className="flex items-center gap-2">
                             <AlertCircle className="h-4 w-4 text-red-600" />
-                            {studentData.medicalInfo.diseaseDetails || "Sí, sin detalles"}
+                            {currentStudent.medicalInfo.diseaseDetails || "Sí, sin detalles"}
                           </span>
                         ) : (
                           <span className="flex items-center gap-2 text-green-600">
@@ -797,10 +943,10 @@ const isActive = activeEnrollment?.status === 'active';
                         <h4 className="font-medium">Medicamentos</h4>
                       </div>
                       <p className="text-sm">
-                        {studentData.medicalInfo.takesMedication ? (
+                        {currentStudent.medicalInfo.takesMedication ? (
                           <span className="flex items-center gap-2">
                             <AlertCircle className="h-4 w-4 text-blue-600" />
-                            {studentData.medicalInfo.medicationDetails || "Sí, sin detalles"}
+                            {currentStudent.medicalInfo.medicationDetails || "Sí, sin detalles"}
                           </span>
                         ) : (
                           <span className="flex items-center gap-2 text-green-600">
@@ -820,10 +966,10 @@ const isActive = activeEnrollment?.status === 'active';
                         <h4 className="font-medium">Alergias</h4>
                       </div>
                       <p className="text-sm">
-                        {studentData.medicalInfo.hasAllergies ? (
+                        {currentStudent.medicalInfo.hasAllergies ? (
                           <span className="flex items-center gap-2">
                             <AlertCircle className="h-4 w-4 text-orange-600" />
-                            {studentData.medicalInfo.allergiesDetails || "Sí, sin detalles"}
+                            {currentStudent.medicalInfo.allergiesDetails || "Sí, sin detalles"}
                           </span>
                         ) : (
                           <span className="flex items-center gap-2 text-green-600">
@@ -843,7 +989,7 @@ const isActive = activeEnrollment?.status === 'active';
                         <h4 className="font-medium">Medicación de Emergencia</h4>
                       </div>
                       <p className="text-sm">
-                        {studentData.medicalInfo.emergencyMedicationAllowed ? (
+                        {currentStudent.medicalInfo.emergencyMedicationAllowed ? (
                           <span className="flex items-center gap-2 text-green-600 font-medium">
                             <CheckCircle2 className="h-4 w-4" />
                             Autorizada
@@ -858,7 +1004,7 @@ const isActive = activeEnrollment?.status === 'active';
                     </div>
 
                     {/* Discapacidad de Aprendizaje */}
-                    {studentData.medicalInfo.hasLearningDisability && (
+                    {currentStudent.medicalInfo.hasLearningDisability && (
                       <div className="p-4 border rounded-lg space-y-3">
                         <div className="flex items-center gap-2">
                           <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
@@ -867,13 +1013,13 @@ const isActive = activeEnrollment?.status === 'active';
                           <h4 className="font-medium">Discapacidad de Aprendizaje</h4>
                         </div>
                         <p className="text-sm">
-                          {studentData.medicalInfo.disabilityDetails || "Sí, sin detalles especificados"}
+                          {currentStudent.medicalInfo.disabilityDetails || "Sí, sin detalles especificados"}
                         </p>
                       </div>
                     )}
 
                     {/* Fortalezas */}
-                    {studentData.medicalInfo.strengths && (
+                    {currentStudent.medicalInfo.strengths && (
                       <div className="p-4 border rounded-lg space-y-3">
                         <div className="flex items-center gap-2">
                           <div className="p-2 bg-teal-100 dark:bg-teal-900/20 rounded-lg">
@@ -881,12 +1027,12 @@ const isActive = activeEnrollment?.status === 'active';
                           </div>
                           <h4 className="font-medium">Fortalezas</h4>
                         </div>
-                        <p className="text-sm">{studentData.medicalInfo.strengths}</p>
+                        <p className="text-sm">{currentStudent.medicalInfo.strengths}</p>
                       </div>
                     )}
 
                     {/* Áreas a Mejorar */}
-                    {studentData.medicalInfo.areasToImprove && (
+                    {currentStudent.medicalInfo.areasToImprove && (
                       <div className="p-4 border rounded-lg space-y-3">
                         <div className="flex items-center gap-2">
                           <div className="p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
@@ -894,7 +1040,7 @@ const isActive = activeEnrollment?.status === 'active';
                           </div>
                           <h4 className="font-medium">Áreas a Mejorar</h4>
                         </div>
-                        <p className="text-sm">{studentData.medicalInfo.areasToImprove}</p>
+                        <p className="text-sm">{currentStudent.medicalInfo.areasToImprove}</p>
                       </div>
                     )}
                   </div>
@@ -920,9 +1066,9 @@ const isActive = activeEnrollment?.status === 'active';
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {studentData.emergencyContacts && studentData.emergencyContacts.length > 0 ? (
+                  {currentStudent.emergencyContacts && currentStudent.emergencyContacts.length > 0 ? (
                     <div className="space-y-4">
-                      {studentData.emergencyContacts.map((contact, index) => (
+                      {currentStudent.emergencyContacts.map((contact, index) => (
                         <div key={index} className="p-4 border border-red-200 dark:border-red-800 rounded-lg bg-red-50/50 dark:bg-red-900/10">
                           <div className="flex items-start gap-4">
                             <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
@@ -966,9 +1112,9 @@ const isActive = activeEnrollment?.status === 'active';
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {studentData.authorizedPersons && studentData.authorizedPersons.length > 0 ? (
+                  {currentStudent.authorizedPersons && currentStudent.authorizedPersons.length > 0 ? (
                     <div className="space-y-4">
-                      {studentData.authorizedPersons.map((person, index) => (
+                      {currentStudent.authorizedPersons.map((person, index) => (
                         <div key={index} className="p-4 border border-green-200 dark:border-green-800 rounded-lg bg-green-50/50 dark:bg-green-900/10">
                           <div className="flex items-start justify-between">
                             <div className="flex items-start gap-4 flex-1">

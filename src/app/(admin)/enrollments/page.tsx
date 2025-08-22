@@ -1,25 +1,41 @@
-//src\app\(admin)\enrollments\page.tsx
+// src/app/(admin)/enrollments/page.tsx
 'use client';
-import dynamic from 'next/dynamic';
-import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
-import Breadcrumb from '@/components/common/Breadcrumb';
 
-const EnrollmentsContent = dynamic(() => import('@/components/enrollments/EnrollmentsContent'), {
-  loading: () => <ProfileSkeleton type="meta" />
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { CyclesProvider } from '@/context/CyclesContext';
+import { GradeProvider } from '@/context/GradeContext';
+import { SectionProvider } from '@/context/SectionsContext';
+import { StudentProvider } from '@/context/StudentContext';
+import { EnrollmentProvider } from '@/context/EnrollmentContext';
+import EnrollmentsContent from '@/components/enrollments/EnrollmentsContent'; // Tu componente principal
+
+
+
+// Cliente específico para esta página
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutos
+      refetchOnWindowFocus: true,
+      refetchInterval: 10 * 60 * 1000, // 10 minutos
+    },
+  },
 });
 
-export default function EnrollmentsPage() {
+export default function EnrollmentPage() {
   return (
-    <div className="space-y-6">
-      <Breadcrumb
-        pageTitle="Matrículas"
-        items={[
-          { label: "Inicio", href: "/dashboard" },
-          { label: "Académico", href: "/academic" },
-          { label: "Matrículas", href: "#" },
-        ]}
-      />
-     {/*  <EnrollmentsContent /> */}
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <CyclesProvider>
+        <GradeProvider>
+          <SectionProvider>
+            <StudentProvider>
+              <EnrollmentProvider>
+                <EnrollmentsContent />
+              </EnrollmentProvider>
+            </StudentProvider>
+          </SectionProvider>
+        </GradeProvider>
+      </CyclesProvider>
+    </QueryClientProvider>
   );
 }

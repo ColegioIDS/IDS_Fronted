@@ -102,32 +102,28 @@ export default function CreateEnrollmentModal({
   // Usar props si están disponibles, sino usar contexto como fallback
   const contextValues = useEnrollmentContext();
   const createEnrollment = createEnrollmentProp || contextValues.createEnrollment;
-  const isSubmitting = isSubmittingProp ?? contextValues.isSubmitting;
+  const isSubmitting = isSubmittingProp ?? contextValues.state.submitting;
   
   // Contexts para datos reales - usando las propiedades correctas de los hooks
   const { 
-    student: students, // El hook retorna 'student' que es un array
-    isLoadingUsers: studentsLoading,
-    usersError: studentsError,
-    fetchUsers: fetchStudents
+    state: { students, loading: studentsLoading, error: studentsError },
+    fetchStudents
   } = useStudentContext();
   
-  const { 
-    cycles, 
-    fetchCycles,
-    isLoadingCycles: cyclesLoading 
-  } = useCyclesContext();
+ const { 
+  cycles,
+  isLoadingCycles: cyclesLoading,
+  fetchCycles
+} = useCyclesContext();
+
+const { 
+  state: { grades, loading: gradesLoading },
+  fetchGrades
+} = useGradeContext();
   
   const { 
-    grades, 
-    fetchGrades,
-    isLoadingGrades: gradesLoading 
-  } = useGradeContext();
-  
-  const { 
-    sections, 
-    fetchSections,
-    isLoadingSections: sectionsLoading 
+    state: { sections, loading: sectionsLoading },
+    fetchSections
   } = useSectionContext();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -153,21 +149,21 @@ export default function CreateEnrollmentModal({
   const watchedValues = watch();
 
   // Cargar datos iniciales
-  useEffect(() => {
-    fetchCycles();
-    fetchGrades();
-    fetchStudents();
-  }, []);
+useEffect(() => {
+  fetchCycles();
+  fetchGrades();
+  fetchStudents();
+}, []); // Sin dependencias para que solo se ejecute una vez
 
   // Auto-seleccionar ciclo activo cuando se cargan los ciclos
-  useEffect(() => {
-    if (cycles && cycles.length > 0 && !watchedValues.cycleId) {
-      const activeCycle = cycles.find(cycle => cycle.isActive);
-      if (activeCycle) {
-        setValue('cycleId', activeCycle.id as any);
-      }
+useEffect(() => {
+  if (cycles && cycles.length > 0 && !watchedValues.cycleId) {
+    const activeCycle = cycles.find(cycle => cycle.isActive);
+    if (activeCycle) {
+      setValue('cycleId', activeCycle.id as any);
     }
-  }, [cycles, watchedValues.cycleId]);
+  }
+}, [cycles, watchedValues.cycleId]); // Remover setValue de las dependencias
 
   // Filtrar estudiantes por término de búsqueda
   useEffect(() => {
@@ -186,12 +182,12 @@ export default function CreateEnrollmentModal({
   }, [students, searchTerm]);
 
   // Cargar secciones cuando cambie el grado seleccionado
-  useEffect(() => {
-    if (selectedGrade) {
-      const gradeId = parseInt(selectedGrade);
-      fetchSections(gradeId);
-    }
-  }, [selectedGrade]);
+useEffect(() => {
+  if (selectedGrade) {
+    const gradeId = parseInt(selectedGrade);
+    fetchSections({ gradeId });
+  }
+}, [selectedGrade]);
 
   // Actualizar secciones disponibles cuando cambien las secciones
   useEffect(() => {
@@ -318,7 +314,7 @@ export default function CreateEnrollmentModal({
   const isLoading = studentsLoading || cyclesLoading || gradesLoading || sectionsLoading;
 
   return (
-<DialogContent className="!max-w-[90vw] w-[90vw] max-h-[90vh] overflow-y-auto">
+    <DialogContent className="!max-w-[90vw] w-[90vw] max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -388,6 +384,14 @@ export default function CreateEnrollmentModal({
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
                     <span className="ml-2 text-gray-500">Cargando estudiantes...</span>
+                  </div>
+                ) : studentsError ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                      <p className="text-red-600">Error al cargar estudiantes</p>
+                      <p className="text-sm text-gray-500">{studentsError}</p>
+                    </div>
                   </div>
                 ) : filteredStudents && filteredStudents.length > 0 ? (
                   filteredStudents.map((student) => (
@@ -630,9 +634,9 @@ export default function CreateEnrollmentModal({
                                     <span className="text-xs text-gray-500">
                                       ({enrolledCount}/{section.capacity})
                                     </span>
-                                    {section.teacher && (
+                                    {section.teacherId && (
                                       <span className="text-xs text-gray-500 truncate max-w-20">
-                                        {section.teacher.givenNames.split(' ')[0]}
+                                        Maestro asignado
                                       </span>
                                     )}
                                   </div>

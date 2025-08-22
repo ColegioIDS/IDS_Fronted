@@ -1,26 +1,637 @@
-//src\context\StudentContext.tsx
+// src/contexts/StudentContext.tsx
 'use client';
 
-import { createContext, useContext } from 'react';
-import { useStudent } from '@/hooks/useStudent';
+import React, { createContext, useContext, useReducer, useCallback, ReactNode } from 'react';
+import { toast } from 'react-toastify';
+import {
+  Student,
+  CreateStudentPayload,
+  ParentDpiResponse,
+  StudentTransferPayload,
+  Enrollment
+} from '@/types/student';
+import {
+  getStudents,
+  createStudent,
+  getStudentById,
+  updateStudent,
+  deleteStudent,
+  getUserByDPI,
+  getActiveEnrollment,
+  transferStudent
+} from '@/services/useStudents';
 
-type StudentContextType = ReturnType<typeof useStudent>;
-const StudentContext = createContext<StudentContextType | null>(null);
+import { uploadImageToCloudinary } from '@/lib/cloudinary';
+import { deleteImageFromCloudinary } from '@/services/useCloudinary';
 
-export const useStudentContext = () => {
-    const context = useContext(StudentContext);
-    if (!context) {
-        throw new Error('useStudentContext must be used within a StudentProvider');
-    }
-    return context;
-};
-interface StudentProviderProps {
-    children: React.ReactNode;
-    isEditMode?: boolean;
+
+// Interfaces para filtros y paginación
+interface StudentFilters {
+  search?: string;
+  gradeId?: number;
+  sectionId?: number;
+  cycleId?: number;
+  status?: string;
+  page?: number;
+  limit?: number;
 }
 
-export const StudentProvider = ({ children, isEditMode }: StudentProviderProps) => {
-    const student = useStudent(isEditMode);
-    return <StudentContext.Provider value={student}>{children}</StudentContext.Provider>;
+// Estado del contexto
+interface StudentState {
+  // Data
+  students: Student[];
+  currentStudent: Student | null;
+  parentDpiInfo: ParentDpiResponse | null;
+  activeEnrollment: Enrollment | null;
+  
+  // Meta información
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  
+  // Estados de carga
+  loading: boolean;
+  submitting: boolean;
+  loadingDpi: boolean;
+  loadingEnrollment: boolean;
+  
+  // Estados de error
+  error: string | null;
+  
+  // Filtros actuales
+  filters: StudentFilters;
+  
+  // Estado de formularios
+  formMode: 'create' | 'edit' | 'transfer' | null;
+  editingId: number | null;
+}
+
+// Acciones
+type StudentAction =
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_SUBMITTING'; payload: boolean }
+  | { type: 'SET_LOADING_DPI'; payload: boolean }
+  | { type: 'SET_LOADING_ENROLLMENT'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'SET_STUDENTS'; payload: { data: Student[]; meta: StudentState['meta'] } }
+  | { type: 'ADD_STUDENT'; payload: Student }
+  | { type: 'UPDATE_STUDENT'; payload: { id: number; data: Student } }
+  | { type: 'REMOVE_STUDENT'; payload: number }
+  | { type: 'SET_CURRENT_STUDENT'; payload: Student | null }
+  | { type: 'SET_PARENT_DPI_INFO'; payload: ParentDpiResponse | null }
+  | { type: 'SET_ACTIVE_ENROLLMENT'; payload: Enrollment | null }
+  | { type: 'SET_FILTERS'; payload: StudentFilters }
+  | { type: 'SET_FORM_MODE'; payload: { mode: 'create' | 'edit' | 'transfer' | null; editingId?: number } }
+  | { type: 'RESET_STATE' };
+
+// Estado inicial
+const initialState: StudentState = {
+  students: [],
+  currentStudent: null,
+  parentDpiInfo: null,
+  activeEnrollment: null,
+  meta: {
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 0
+  },
+  loading: false,
+  submitting: false,
+  loadingDpi: false,
+  loadingEnrollment: false,
+  error: null,
+  filters: {},
+  formMode: null,
+  editingId: null
 };
-export const StudentConsumer = StudentContext.Consumer;
+
+// Reducer
+function studentReducer(state: StudentState, action: StudentAction): StudentState {
+  switch (action.type) {
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+      
+    case 'SET_SUBMITTING':
+      return { ...state, submitting: action.payload };
+      
+    case 'SET_LOADING_DPI':
+      return { ...state, loadingDpi: action.payload };
+      
+    case 'SET_LOADING_ENROLLMENT':
+      return { ...state, loadingEnrollment: action.payload };
+      
+    case 'SET_ERROR':
+      return { ...state, error: action.payload };
+      
+    case 'SET_STUDENTS':
+      return {
+        ...state,
+        students: action.payload.data,
+        meta: action.payload.meta,
+        loading: false,
+        error: null
+      };
+      
+    case 'ADD_STUDENT':
+      return {
+        ...state,
+        students: [action.payload, ...state.students],
+        meta: {
+          ...state.meta,
+          total: state.meta.total + 1
+        }
+      };
+      
+    case 'UPDATE_STUDENT':
+      return {
+        ...state,
+        students: state.students.map(student =>
+          student.id === action.payload.id ? action.payload.data : student
+        ),
+        currentStudent: state.currentStudent?.id === action.payload.id 
+          ? action.payload.data 
+          : state.currentStudent
+      };
+      
+    case 'REMOVE_STUDENT':
+      return {
+        ...state,
+        students: state.students.filter(student => student.id !== action.payload),
+        meta: {
+          ...state.meta,
+          total: Math.max(0, state.meta.total - 1)
+        }
+      };
+      
+    case 'SET_CURRENT_STUDENT':
+      return { ...state, currentStudent: action.payload };
+      
+    case 'SET_PARENT_DPI_INFO':
+      return { ...state, parentDpiInfo: action.payload, loadingDpi: false };
+      
+    case 'SET_ACTIVE_ENROLLMENT':
+      return { ...state, activeEnrollment: action.payload, loadingEnrollment: false };
+      
+    case 'SET_FILTERS':
+      return { ...state, filters: action.payload };
+      
+    case 'SET_FORM_MODE':
+      return {
+        ...state,
+        formMode: action.payload.mode,
+        editingId: action.payload.editingId || null
+      };
+      
+    case 'RESET_STATE':
+      return initialState;
+      
+    default:
+      return state;
+  }
+}
+
+// Tipos del contexto
+interface StudentContextType {
+  // Estado
+  state: StudentState;
+  
+  // Acciones de datos
+  fetchStudents: (filters?: StudentFilters) => Promise<void>;
+  fetchStudentById: (id: number) => Promise<void>;
+  fetchParentByDPI: (dpi: string) => Promise<void>;
+  fetchActiveEnrollment: (studentId: number, cycleId: number) => Promise<void>;
+  
+  // Acciones CRUD
+  createStudent: (data: CreateStudentPayload) => Promise<{ success: boolean; message?: string; details?: any[] }>;
+  updateStudent: (id: number, data: Partial<Student>) => Promise<{ success: boolean; message?: string }>;
+  removeStudent: (id: number) => Promise<{ success: boolean; message?: string }>;
+  transferStudent: (studentId: number, transferData: StudentTransferPayload) => Promise<{ success: boolean; message?: string }>;
+  
+  // Acciones de UI
+  setFilters: (filters: StudentFilters) => void;
+  setFormMode: (mode: 'create' | 'edit' | 'transfer' | null, editingId?: number) => void;
+  clearError: () => void;
+  clearParentDpiInfo: () => void;
+  resetState: () => void;
+  
+  // Utilidades
+  refreshStudents: () => Promise<void>;
+  getStudentById: (id: number) => Student | undefined;
+}
+
+// Crear contexto
+const StudentContext = createContext<StudentContextType | undefined>(undefined);
+
+// Provider del contexto
+interface StudentProviderProps {
+  children: ReactNode;
+}
+
+export function StudentProvider({ children }: StudentProviderProps) {
+  const [state, dispatch] = useReducer(studentReducer, initialState);
+
+  // Función auxiliar para manejar errores
+  const handleError = useCallback((error: any, fallbackMessage: string) => {
+    const message = error?.message || fallbackMessage;
+    dispatch({ type: 'SET_ERROR', payload: message });
+    toast.error(message);
+    return message;
+  }, []);
+
+  // Simular meta información (ya que el servicio actual no la proporciona)
+  const createMockMeta = useCallback((data: Student[], filters: StudentFilters = {}): StudentState['meta'] => {
+    const limit = filters.limit || 10;
+    const page = filters.page || 1;
+    const total = data.length;
+    const totalPages = Math.ceil(total / limit);
+    
+    return { total, page, limit, totalPages };
+  }, []);
+
+  // Acciones de datos
+  const fetchStudents = useCallback(async (filters?: StudentFilters) => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+      
+      const data = await getStudents();
+      const meta = createMockMeta(data, filters);
+      
+      dispatch({
+        type: 'SET_STUDENTS',
+        payload: { data, meta }
+      });
+      
+      if (filters) {
+        dispatch({ type: 'SET_FILTERS', payload: filters });
+      }
+    } catch (error) {
+      handleError(error, 'Error al cargar los estudiantes');
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, [handleError, createMockMeta]);
+
+  const fetchStudentById = useCallback(async (id: number) => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+      
+      const student = await getStudentById(id);
+      dispatch({ type: 'SET_CURRENT_STUDENT', payload: student });
+    } catch (error) {
+      handleError(error, 'Error al cargar el estudiante');
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, [handleError]);
+
+  const fetchParentByDPI = useCallback(async (dpi: string) => {
+    try {
+      dispatch({ type: 'SET_LOADING_DPI', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+      
+      const parentInfo = await getUserByDPI(dpi);
+      dispatch({ type: 'SET_PARENT_DPI_INFO', payload: parentInfo });
+    } catch (error) {
+      handleError(error, 'Error al buscar padre por DPI');
+    } finally {
+      dispatch({ type: 'SET_LOADING_DPI', payload: false });
+    }
+  }, [handleError]);
+
+  const fetchActiveEnrollment = useCallback(async (studentId: number, cycleId: number) => {
+    try {
+      dispatch({ type: 'SET_LOADING_ENROLLMENT', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+      
+      const enrollment = await getActiveEnrollment(studentId, cycleId);
+      dispatch({ type: 'SET_ACTIVE_ENROLLMENT', payload: enrollment });
+    } catch (error) {
+      handleError(error, 'Error al cargar la matrícula activa');
+    } finally {
+      dispatch({ type: 'SET_LOADING_ENROLLMENT', payload: false });
+    }
+  }, [handleError]);
+
+  // Acciones CRUD
+const createStudentAction = useCallback(async (data: CreateStudentPayload) => {
+  let uploadedPicture: { publicId: string; kind: string; url: string; description: string } | undefined;
+  
+  try {
+    dispatch({ type: 'SET_SUBMITTING', payload: true });
+    dispatch({ type: 'SET_ERROR', payload: null });
+    
+    if (data.profileImage instanceof File) {
+      console.log('📸 Procesando imagen de perfil...');
+      try {
+        console.log('📸 Subiendo imagen a Cloudinary...');
+        const result = await uploadImageToCloudinary(data.profileImage);
+        uploadedPicture = {
+          publicId: result.publicId,
+          kind: 'profile',
+          url: result.url,
+          description: 'Foto de perfil del estudiante',
+        };
+        console.log('✅ Imagen subida exitosamente:', result.url);
+      } catch (imageError) {
+        console.error('❌ Error al subir imagen:', imageError);
+        toast.error('No se pudo subir la imagen');
+        throw new Error('Error al subir la imagen');
+      }
+    }
+
+    // ✅ PREPARAR payload final
+    const studentPayload = {
+      ...data,
+      pictures: uploadedPicture 
+        ? [...(data.pictures || []), uploadedPicture] 
+        : data.pictures,
+      profileImage: undefined, // Remover File del payload
+    };
+    
+    const newStudent = await createStudent(studentPayload);
+    dispatch({ type: 'ADD_STUDENT', payload: newStudent });
+    
+    toast.success("Estudiante creado correctamente");
+    return { success: true };
+  } catch (error: any) {
+    // ✅ AHORA uploadedPicture está disponible aquí
+    if (uploadedPicture?.publicId) {
+      try {
+        console.log('🗑️ Eliminando imagen por error en registro...');
+        await deleteImageFromCloudinary(uploadedPicture.publicId);
+      } catch (deleteError) {
+        console.warn("No se pudo eliminar la imagen:", deleteError);
+      }
+    }
+    
+    const message = handleError(error, 'Error al crear el estudiante');
+    return {
+      success: false,
+      message,
+      details: error.details || []
+    };
+  } finally {
+    dispatch({ type: 'SET_SUBMITTING', payload: false });
+  }
+}, [handleError]);
+
+  const updateStudentAction = useCallback(async (id: number, data: Partial<Student>) => {
+    try {
+      dispatch({ type: 'SET_SUBMITTING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+      
+      const updatedStudent = await updateStudent(id, data);
+      dispatch({
+        type: 'UPDATE_STUDENT',
+        payload: { id, data: updatedStudent }
+      });
+      
+      toast.success("Estudiante actualizado correctamente");
+      return { success: true };
+    } catch (error: any) {
+      const message = handleError(error, 'Error al actualizar el estudiante');
+      return { success: false, message };
+    } finally {
+      dispatch({ type: 'SET_SUBMITTING', payload: false });
+    }
+  }, [handleError]);
+
+  const removeStudent = useCallback(async (id: number) => {
+    try {
+      dispatch({ type: 'SET_SUBMITTING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+      
+      await deleteStudent(id);
+      dispatch({ type: 'REMOVE_STUDENT', payload: id });
+      
+      toast.success("Estudiante eliminado correctamente");
+      return { success: true };
+    } catch (error: any) {
+      const message = handleError(error, 'Error al eliminar el estudiante');
+      return { success: false, message };
+    } finally {
+      dispatch({ type: 'SET_SUBMITTING', payload: false });
+    }
+  }, [handleError]);
+
+  const transferStudentAction = useCallback(async (studentId: number, transferData: StudentTransferPayload) => {
+    try {
+      dispatch({ type: 'SET_SUBMITTING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+      
+      const newEnrollment = await transferStudent(studentId, transferData);
+      dispatch({ type: 'SET_ACTIVE_ENROLLMENT', payload: newEnrollment });
+      
+      toast.success("Estudiante transferido correctamente");
+      return { success: true };
+    } catch (error: any) {
+      const message = handleError(error, 'Error al transferir el estudiante');
+      return { success: false, message };
+    } finally {
+      dispatch({ type: 'SET_SUBMITTING', payload: false });
+    }
+  }, [handleError]);
+
+  // Acciones de UI
+  const setFilters = useCallback((filters: StudentFilters) => {
+    dispatch({ type: 'SET_FILTERS', payload: filters });
+  }, []);
+
+  const setFormMode = useCallback((mode: 'create' | 'edit' | 'transfer' | null, editingId?: number) => {
+    dispatch({ type: 'SET_FORM_MODE', payload: { mode, editingId } });
+  }, []);
+
+  const clearError = useCallback(() => {
+    dispatch({ type: 'SET_ERROR', payload: null });
+  }, []);
+
+  const clearParentDpiInfo = useCallback(() => {
+    dispatch({ type: 'SET_PARENT_DPI_INFO', payload: null });
+  }, []);
+
+  const resetState = useCallback(() => {
+    dispatch({ type: 'RESET_STATE' });
+  }, []);
+
+  // Utilidades
+  const refreshStudents = useCallback(async () => {
+    await fetchStudents(state.filters);
+  }, [fetchStudents, state.filters]);
+
+  const getStudentByIdFromState = useCallback((id: number) => {
+    return state.students.find(student => student.id === id);
+  }, [state.students]);
+
+  // Valor del contexto
+  const contextValue: StudentContextType = {
+    state,
+    
+    // Acciones de datos
+    fetchStudents,
+    fetchStudentById,
+    fetchParentByDPI,
+    fetchActiveEnrollment,
+    
+    // Acciones CRUD
+    createStudent: createStudentAction,
+    updateStudent: updateStudentAction,
+    removeStudent,
+    transferStudent: transferStudentAction,
+    
+    // Acciones de UI
+    setFilters,
+    setFormMode,
+    clearError,
+    clearParentDpiInfo,
+    resetState,
+    
+    // Utilidades
+    refreshStudents,
+    getStudentById: getStudentByIdFromState
+  };
+
+  return (
+    <StudentContext.Provider value={contextValue}>
+      {children}
+    </StudentContext.Provider>
+  );
+}
+
+// Hook para usar el contexto
+export function useStudentContext() {
+  const context = useContext(StudentContext);
+  if (context === undefined) {
+    throw new Error('useStudentContext must be used within a StudentProvider');
+  }
+  return context;
+}
+
+// Hook especializado para formularios
+export function useStudentForm() {
+  const {
+    state: { submitting, formMode, editingId, currentStudent, parentDpiInfo, loadingDpi },
+    createStudent,
+    updateStudent,
+    setFormMode,
+    fetchStudentById,
+    fetchParentByDPI,
+    clearParentDpiInfo
+  } = useStudentContext();
+
+  const handleSubmit = useCallback(async (data: CreateStudentPayload | Partial<Student>) => {
+    if (formMode === 'edit' && editingId) {
+      return await updateStudent(editingId, data as Partial<Student>);
+    } else {
+      return await createStudent(data as CreateStudentPayload);
+    }
+  }, [formMode, editingId, createStudent, updateStudent]);
+
+  const startEdit = useCallback(async (id: number) => {
+    setFormMode('edit', id);
+    await fetchStudentById(id);
+  }, [setFormMode, fetchStudentById]);
+
+  const startCreate = useCallback(() => {
+    setFormMode('create');
+  }, [setFormMode]);
+
+  const startTransfer = useCallback(async (id: number) => {
+    setFormMode('transfer', id);
+    await fetchStudentById(id);
+  }, [setFormMode, fetchStudentById]);
+
+  const cancelForm = useCallback(() => {
+    setFormMode(null);
+    clearParentDpiInfo();
+  }, [setFormMode, clearParentDpiInfo]);
+
+  const searchParentByDPI = useCallback(async (dpi: string) => {
+    await fetchParentByDPI(dpi);
+  }, [fetchParentByDPI]);
+
+  return {
+    submitting,
+    formMode,
+    editingId,
+    currentStudent,
+    parentDpiInfo,
+    loadingDpi,
+    handleSubmit,
+    startEdit,
+    startCreate,
+    startTransfer,
+    cancelForm,
+    searchParentByDPI,
+    clearParentDpiInfo
+  };
+}
+
+// Hook especializado para listas
+export function useStudentList() {
+  const {
+    state: { students, meta, loading, error, filters },
+    fetchStudents,
+    setFilters,
+    removeStudent
+  } = useStudentContext();
+
+  const handleFilterChange = useCallback(async (newFilters: StudentFilters) => {
+    setFilters(newFilters);
+    await fetchStudents(newFilters);
+  }, [setFilters, fetchStudents]);
+
+  const handleDelete = useCallback(async (id: number) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este estudiante?')) {
+      return await removeStudent(id);
+    }
+    return { success: false, message: 'Operación cancelada' };
+  }, [removeStudent]);
+
+  return {
+    students,
+    meta,
+    loading,
+    error,
+    filters,
+    handleFilterChange,
+    handleDelete,
+    refetch: () => fetchStudents(filters)
+  };
+}
+
+// Hook especializado para transferencias
+export function useStudentTransfer() {
+  const {
+    state: { submitting, currentStudent, activeEnrollment, loadingEnrollment },
+    transferStudent,
+    fetchActiveEnrollment,
+    setFormMode
+  } = useStudentContext();
+
+  const handleTransfer = useCallback(async (studentId: number, transferData: StudentTransferPayload) => {
+    const result = await transferStudent(studentId, transferData);
+    if (result.success) {
+      setFormMode(null);
+    }
+    return result;
+  }, [transferStudent, setFormMode]);
+
+  const loadStudentEnrollment = useCallback(async (studentId: number, cycleId: number) => {
+    await fetchActiveEnrollment(studentId, cycleId);
+  }, [fetchActiveEnrollment]);
+
+  return {
+    submitting,
+    currentStudent,
+    activeEnrollment,
+    loadingEnrollment,
+    handleTransfer,
+    loadStudentEnrollment
+  };
+}

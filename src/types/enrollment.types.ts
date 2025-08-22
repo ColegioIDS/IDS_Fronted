@@ -67,6 +67,7 @@ export interface Section {
   capacity: number;
   gradeId: number;
   teacherId?: number;
+    grade?: Grade;
 }
 
 export interface Attendance {

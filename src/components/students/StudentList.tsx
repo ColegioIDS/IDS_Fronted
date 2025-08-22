@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSidebar } from '@/context/SidebarContext'
-import { useStudentContext } from '@/context/StudentContext'
+// ✅ CORREGIDO: Usar el nuevo hook del context
+import { useStudentList } from '@/context/StudentContext'
 import { usePagination } from '@/hooks/usePagination'
 import { cn } from '@/lib/utils'
 
@@ -51,6 +52,7 @@ import { NoResultsFound } from '@/components/users/NoResultsFound'
 import { ModalWarningConfirm } from '@/components/ui/modal/ModalWarningConfirm'
 import { StudentDataTable } from '@/components/students/StudentDataTable'
 import { StudentCard } from '@/components/students/StudentCard'
+import Loading from '@/components/loading/loading'
 
 type ViewMode = 'cards' | 'table'
 type SortOrder = 'asc' | 'desc'
@@ -72,7 +74,18 @@ interface Filters {
 }
 
 export const StudentList = () => {
-    const { student, fetchUsers } = useStudentContext()
+    // ✅ CORREGIDO: Usar el nuevo hook del context
+    const {
+        students,
+        meta,
+        loading,
+        error,
+        filters: contextFilters,
+        handleFilterChange,
+        handleDelete,
+        refetch
+    } = useStudentList()
+
     const router = useRouter()
     const { setIsExpanded } = useSidebar()
 
@@ -81,8 +94,8 @@ export const StudentList = () => {
     const [itemsPerPage, setItemsPerPage] = useState(12)
     const [isFiltersOpen, setIsFiltersOpen] = useState(false)
 
-    // Filter States
-    const [filters, setFilters] = useState<Filters>({
+    // Local Filter States (para UI, luego se sincronizan con el context)
+    const [localFilters, setLocalFilters] = useState<Filters>({
         search: '',
         gender: 'all',
         status: 'all',
@@ -101,14 +114,37 @@ export const StudentList = () => {
         isActive: false,
     })
 
-    // Update filter function
-    const updateFilter = (key: keyof Filters, value: any) => {
-        setFilters(prev => ({ ...prev, [key]: value }))
+    // ✅ NUEVO: Cargar estudiantes al montar el componente
+    useEffect(() => {
+        if (students.length === 0 && !loading) {
+            refetch()
+        }
+    }, [students.length, loading, refetch])
+
+    // ✅ NUEVO: Sincronizar filtros locales con el context
+    useEffect(() => {
+        const debounceTimer = setTimeout(() => {
+            // Convertir filtros locales al formato del context
+            const contextFiltersUpdate = {
+                search: localFilters.search,
+                // Agregar más filtros según lo que soporte el context
+                status: localFilters.status !== 'all' ? localFilters.status : undefined,
+            }
+            
+            handleFilterChange(contextFiltersUpdate)
+        }, 300) // Debounce de 300ms
+
+        return () => clearTimeout(debounceTimer)
+    }, [localFilters, handleFilterChange])
+
+    // Update local filter function
+    const updateLocalFilter = (key: keyof Filters, value: any) => {
+        setLocalFilters(prev => ({ ...prev, [key]: value }))
     }
 
     // Reset filters
     const resetFilters = () => {
-        setFilters({
+        setLocalFilters({
             search: '',
             gender: 'all',
             status: 'all',
@@ -119,6 +155,8 @@ export const StudentList = () => {
             hasTransport: 'all',
             hasMedicalInfo: 'all'
         })
+        // También limpiar filtros del context
+        handleFilterChange({})
     }
 
     // Calculate age from birth date
@@ -134,56 +172,45 @@ export const StudentList = () => {
         return age
     }
 
-    // Filter and sort students
-    const processedStudents = student
+    // ✅ CORREGIDO: Filtros y ordenamiento locales (complementando los del context)
+    const processedStudents = students
         .filter(student => {
-            // Search filter
-            const matchesSearch =
-                student.givenNames.toLowerCase().includes(filters.search.toLowerCase()) ||
-                student.lastNames.toLowerCase().includes(filters.search.toLowerCase()) ||
-                (student.codeSIRE && student.codeSIRE.toLowerCase().includes(filters.search.toLowerCase()))
+            // Gender filter (local)
+            const matchesGender = localFilters.gender === 'all' || student.gender === localFilters.gender
 
-            // Gender filter
-            const matchesGender = filters.gender === 'all' || student.gender === filters.gender
-
-            // Status filter
-            const activeEnrollment = student.enrollments?.find(e => e.status === 'active')
-            const studentStatus = activeEnrollment?.status || 'inactive'
-            const matchesStatus = filters.status === 'all' || studentStatus === filters.status
-
-            // Age filter
+            // Age filter (local)
             const age = calculateAge(student.birthDate)
-            const matchesAge = filters.ageRange === 'all' || !age || (
-                (filters.ageRange === '3-5' && age >= 3 && age <= 5) ||
-                (filters.ageRange === '6-8' && age >= 6 && age <= 8) ||
-                (filters.ageRange === '9-11' && age >= 9 && age <= 11) ||
-                (filters.ageRange === '12-14' && age >= 12 && age <= 14) ||
-                (filters.ageRange === '15+' && age >= 15)
+            const matchesAge = localFilters.ageRange === 'all' || !age || (
+                (localFilters.ageRange === '3-5' && age >= 3 && age <= 5) ||
+                (localFilters.ageRange === '6-8' && age >= 6 && age <= 8) ||
+                (localFilters.ageRange === '9-11' && age >= 9 && age <= 11) ||
+                (localFilters.ageRange === '12-14' && age >= 12 && age <= 14) ||
+                (localFilters.ageRange === '15+' && age >= 15)
             )
 
-            // Grade filter
+            // Grade filter (local)
+            const activeEnrollment = student.enrollments?.find(e => e.status === 'active')
             const studentGrade = activeEnrollment?.gradeId?.toString() || 'none'
-            const matchesGrade = filters.grade === 'all' || studentGrade === filters.grade
+            const matchesGrade = localFilters.grade === 'all' || studentGrade === localFilters.grade
 
-            // Transport filter
+            // Transport filter (local)
             const hasTransport = student.busService?.hasService || false
-            const matchesTransport = filters.hasTransport === 'all' || 
-                (filters.hasTransport === 'yes' && hasTransport) ||
-                (filters.hasTransport === 'no' && !hasTransport)
+            const matchesTransport = localFilters.hasTransport === 'all' || 
+                (localFilters.hasTransport === 'yes' && hasTransport) ||
+                (localFilters.hasTransport === 'no' && !hasTransport)
 
-            // Medical info filter
+            // Medical info filter (local)
             const hasMedicalInfo = !!student.medicalInfo
-            const matchesMedicalInfo = filters.hasMedicalInfo === 'all' ||
-                (filters.hasMedicalInfo === 'yes' && hasMedicalInfo) ||
-                (filters.hasMedicalInfo === 'no' && !hasMedicalInfo)
+            const matchesMedicalInfo = localFilters.hasMedicalInfo === 'all' ||
+                (localFilters.hasMedicalInfo === 'yes' && hasMedicalInfo) ||
+                (localFilters.hasMedicalInfo === 'no' && !hasMedicalInfo)
 
-            return matchesSearch && matchesGender && matchesStatus && matchesAge && 
-                   matchesGrade && matchesTransport && matchesMedicalInfo
+            return matchesGender && matchesAge && matchesGrade && matchesTransport && matchesMedicalInfo
         })
         .sort((a, b) => {
             let valueA: any, valueB: any
 
-            switch (filters.sortBy) {
+            switch (localFilters.sortBy) {
                 case 'name':
                     valueA = `${a.givenNames} ${a.lastNames}`.toLowerCase()
                     valueB = `${b.givenNames} ${b.lastNames}`.toLowerCase()
@@ -199,12 +226,12 @@ export const StudentList = () => {
                     break
             }
 
-            if (filters.sortBy === 'name') {
-                return filters.sortOrder === 'asc' 
+            if (localFilters.sortBy === 'name') {
+                return localFilters.sortOrder === 'asc' 
                     ? valueA.localeCompare(valueB)
                     : valueB.localeCompare(valueA)
             } else {
-                return filters.sortOrder === 'asc' ? valueA - valueB : valueB - valueA
+                return localFilters.sortOrder === 'asc' ? valueA - valueB : valueB - valueA
             }
         })
 
@@ -217,8 +244,8 @@ export const StudentList = () => {
         totalItems,
     } = usePagination(processedStudents, itemsPerPage)
 
-    // Handlers
-    const handleStatusChange = (userId: number, isActive: boolean) => {
+    // ✅ CORREGIDO: Handlers con el nuevo context
+    const handleStatusChange = async (userId: number, isActive: boolean) => {
         setWarningModal({
             isOpen: true,
             userId,
@@ -227,12 +254,17 @@ export const StudentList = () => {
     }
 
     const confirmStatusChange = async () => {
-        console.log('Status change confirmed for user:', warningModal.userId)
+        if (warningModal.userId) {
+            const result = await handleDelete(warningModal.userId)
+            if (result.success) {
+                console.log('Status change confirmed')
+            }
+        }
         setWarningModal({ isOpen: false, userId: null, isActive: false })
     }
 
     // Active filters count
-    const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
+    const activeFiltersCount = Object.entries(localFilters).filter(([key, value]) => {
         if (key === 'search') return value.length > 0
         if (key === 'sortBy' || key === 'sortOrder') return false
         return value !== 'all'
@@ -240,10 +272,54 @@ export const StudentList = () => {
 
     // Get unique grades for filter
     const availableGrades = Array.from(new Set(
-        student
+        students
             .map(s => s.enrollments?.find(e => e.status === 'active')?.gradeId)
             .filter(Boolean)
     )).sort((a, b) => (a || 0) - (b || 0))
+
+    // ✅ LOADING: Mostrar loading mientras carga
+    if (loading && students.length === 0) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                        <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold">Estudiantes</h1>
+                        <p className="text-sm text-muted-foreground">Cargando...</p>
+                    </div>
+                </div>
+                <Loading variant="spinner" size="lg" text="Cargando estudiantes..." />
+            </div>
+        )
+    }
+
+    // ✅ ERROR: Mostrar error si hay uno
+    if (error) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                        <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold">Estudiantes</h1>
+                        <p className="text-sm text-red-600">{error}</p>
+                    </div>
+                </div>
+                <Card>
+                    <CardContent className="p-8 text-center">
+                        <p className="text-red-600 mb-4">Error al cargar estudiantes</p>
+                        <Button onClick={refetch}>
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Reintentar
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-6">
@@ -256,9 +332,9 @@ export const StudentList = () => {
                     <div>
                         <h1 className="text-2xl font-bold">Estudiantes</h1>
                         <p className="text-sm text-muted-foreground">
-                            {processedStudents.length === student.length
-                                ? `${student.length} estudiantes en total`
-                                : `${processedStudents.length} de ${student.length} estudiantes`}
+                            {processedStudents.length === students.length
+                                ? `${students.length} estudiantes en total`
+                                : `${processedStudents.length} de ${students.length} estudiantes`}
                         </p>
                     </div>
                 </div>
@@ -267,6 +343,9 @@ export const StudentList = () => {
                     <Button onClick={() => router.push('/students/create')}>
                         <UserPlus className="h-4 w-4 mr-2" />
                         Nuevo Estudiante
+                    </Button>
+                    <Button variant="outline" onClick={refetch} disabled={loading}>
+                        <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
                     </Button>
                 </div>
             </div>
@@ -281,8 +360,8 @@ export const StudentList = () => {
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Buscar por nombre o código SIRE..."
-                                    value={filters.search}
-                                    onChange={(e) => updateFilter('search', e.target.value)}
+                                    value={localFilters.search}
+                                    onChange={(e) => updateLocalFilter('search', e.target.value)}
                                     className="pl-10"
                                 />
                             </div>
@@ -291,8 +370,8 @@ export const StudentList = () => {
                             <div className="flex items-center gap-2 flex-wrap">
                                 {/* Status Quick Filter */}
                                 <Select
-                                    value={filters.status}
-                                    onValueChange={(value: FilterStatus) => updateFilter('status', value)}
+                                    value={localFilters.status}
+                                    onValueChange={(value: FilterStatus) => updateLocalFilter('status', value)}
                                 >
                                     <SelectTrigger className="w-32">
                                         <SelectValue />
@@ -357,8 +436,8 @@ export const StudentList = () => {
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Género</label>
                                             <Select
-                                                value={filters.gender}
-                                                onValueChange={(value: FilterGender) => updateFilter('gender', value)}
+                                                value={localFilters.gender}
+                                                onValueChange={(value: FilterGender) => updateLocalFilter('gender', value)}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue />
@@ -376,8 +455,8 @@ export const StudentList = () => {
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Edad</label>
                                             <Select
-                                                value={filters.ageRange}
-                                                onValueChange={(value: AgeRange) => updateFilter('ageRange', value)}
+                                                value={localFilters.ageRange}
+                                                onValueChange={(value: AgeRange) => updateLocalFilter('ageRange', value)}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue />
@@ -397,8 +476,8 @@ export const StudentList = () => {
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Grado</label>
                                             <Select
-                                                value={filters.grade}
-                                                onValueChange={(value) => updateFilter('grade', value)}
+                                                value={localFilters.grade}
+                                                onValueChange={(value) => updateLocalFilter('grade', value)}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue />
@@ -418,8 +497,8 @@ export const StudentList = () => {
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Transporte</label>
                                             <Select
-                                                value={filters.hasTransport}
-                                                onValueChange={(value) => updateFilter('hasTransport', value)}
+                                                value={localFilters.hasTransport}
+                                                onValueChange={(value) => updateLocalFilter('hasTransport', value)}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue />
@@ -436,8 +515,8 @@ export const StudentList = () => {
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Info. Médica</label>
                                             <Select
-                                                value={filters.hasMedicalInfo}
-                                                onValueChange={(value) => updateFilter('hasMedicalInfo', value)}
+                                                value={localFilters.hasMedicalInfo}
+                                                onValueChange={(value) => updateLocalFilter('hasMedicalInfo', value)}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue />
@@ -455,8 +534,8 @@ export const StudentList = () => {
                                             <label className="text-sm font-medium">Ordenar por</label>
                                             <div className="flex gap-2">
                                                 <Select
-                                                    value={filters.sortBy}
-                                                    onValueChange={(value: SortBy) => updateFilter('sortBy', value)}
+                                                    value={localFilters.sortBy}
+                                                    onValueChange={(value: SortBy) => updateLocalFilter('sortBy', value)}
                                                 >
                                                     <SelectTrigger className="flex-1">
                                                         <SelectValue />
@@ -470,9 +549,9 @@ export const StudentList = () => {
                                                 <Button
                                                     variant="outline"
                                                     size="icon"
-                                                    onClick={() => updateFilter('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')}
+                                                    onClick={() => updateLocalFilter('sortOrder', localFilters.sortOrder === 'asc' ? 'desc' : 'asc')}
                                                 >
-                                                    {filters.sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+                                                    {localFilters.sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
                                                 </Button>
                                             </div>
                                         </div>

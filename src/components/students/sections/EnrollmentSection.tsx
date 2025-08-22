@@ -80,139 +80,150 @@ export const EnrollmentSection = memo(function EnrollmentSection({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
           
-          {/* Ciclo Escolar */}
-          <FormField
-            control={control}
-            name="enrollment.cycleId"
-            render={({ field }) => (
-              <FormItem className="space-y-2">
-                <FormLabel className="flex items-center gap-2 text-sm font-medium">
-                  <CalendarIcon className="w-4 h-4 opacity-70" />
-                  Ciclo Escolar
-                </FormLabel>
-                <FormControl>
-                  <Select
-                    value={field.value?.toString() || ''}
-                    onValueChange={(value) => field.onChange(Number(value))}
-                    disabled={!activeCycle} // Deshabilitar si no hay ciclo activo
-                  >
-                    <SelectTrigger className="bg-white dark:bg-gray-800">
-                      <SelectValue placeholder="Seleccionar ciclo escolar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cycles.map((cycle) => (
-                        <SelectItem key={cycle.id} value={cycle.id.toString()}>
-                          <div className="flex items-center gap-2">
-                            {cycle.name}
-                            {cycle.isActive && (
-                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                                Activo
-                              </span>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage className="text-xs" />
-                {activeCycle && (
-                  <p className="text-xs text-green-600 dark:text-green-400">
-                    Ciclo activo: {activeCycle.name}
-                  </p>
-                )}
-              </FormItem>
-            )}
-          />
-
-          {/* Grado */}
-          <FormField
-            control={control}
-            name="enrollment.gradeId"
-            render={({ field }) => (
-              <FormItem className="space-y-2">
-                <FormLabel className="flex items-center gap-2 text-sm font-medium">
-                  <GraduationCapIcon className="w-4 h-4 opacity-70" />
-                  Grado
-                </FormLabel>
-                <FormControl>
-                  <Select
-                    value={field.value?.toString() || ''}
-                    onValueChange={handleGradeChange}
-                  >
-                    <SelectTrigger className="bg-white dark:bg-gray-800">
-                      <SelectValue placeholder="Seleccionar grado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {grades && grades.length > 0 ? (
-                        grades.map((grade) => (
-                          <SelectItem key={grade.id} value={grade.id.toString()}>
-                            <div className="flex flex-col">
-                              <span>{grade.name}</span>
-                              <span className="text-xs text-gray-500">{grade.level}</span>
-                            </div>
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="" disabled>
-                          No hay grados disponibles
-                        </SelectItem>
+        {/* Ciclo Escolar */}
+  <FormField
+    control={control}
+    name="enrollment.cycleId"
+    render={({ field }) => (
+      <FormItem className="space-y-2">
+        <FormLabel className="flex items-center gap-2 text-sm font-medium">
+          <CalendarIcon className="w-4 h-4 opacity-70" />
+          Ciclo Escolar
+        </FormLabel>
+        <FormControl>
+          <Select
+            value={field.value?.toString() || ''}
+            onValueChange={(value) => field.onChange(Number(value))}
+            disabled={!activeCycle}
+          >
+            <SelectTrigger className="bg-white dark:bg-gray-800">
+              <SelectValue placeholder="Seleccionar ciclo escolar" />
+            </SelectTrigger>
+            <SelectContent>
+              {cycles && cycles.length > 0 ? (
+                cycles.map((cycle) => (
+                  <SelectItem key={cycle.id} value={cycle.id.toString()}>
+                    <div className="flex items-center gap-2">
+                      {cycle.name}
+                      {cycle.isActive && (
+                        <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                          Activo
+                        </span>
                       )}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage className="text-xs" />
-              </FormItem>
-            )}
-          />
+                    </div>
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="p-2 text-sm text-gray-500 text-center">
+                  No hay ciclos disponibles
+                </div>
+              )}
+            </SelectContent>
+          </Select>
+        </FormControl>
+        <FormMessage className="text-xs" />
+        {activeCycle && (
+          <p className="text-xs text-green-600 dark:text-green-400">
+            Ciclo activo: {activeCycle.name}
+          </p>
+        )}
+      </FormItem>
+    )}
+  />
 
-          {/* Sección */}
-          <FormField
-            control={control}
-            name="enrollment.sectionId"
-            render={({ field }) => (
-              <FormItem className="space-y-2">
-                <FormLabel className="flex items-center gap-2 text-sm font-medium">
-                  <UsersIcon className="w-4 h-4 opacity-70" />
-                  Sección
-                </FormLabel>
-                <FormControl>
-                  <Select
-                    value={field.value?.toString() || ''}
-                    onValueChange={(value) => field.onChange(Number(value))}
-                    disabled={!selectedGradeId || selectedGradeId === 0}
-                  >
-                    <SelectTrigger className="bg-white dark:bg-gray-800">
-                      <SelectValue placeholder="Seleccionar sección" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sections.map((section) => (
-                        <SelectItem key={section.id} value={section.id.toString()}>
-                          <div className="flex items-center justify-between w-full">
-                            <span>Sección {section.name}</span>
-                            <span className="text-xs text-gray-500 ml-2">
-                              Cap: {section.capacity}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                      {sections.length === 0 && selectedGradeId > 0 && (
-                        <SelectItem value="" disabled>
-                          No hay secciones disponibles
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage className="text-xs" />
-                {!selectedGradeId && (
-                  <p className="text-xs text-gray-500">
-                    Primero seleccione un grado
-                  </p>
-                )}
-              </FormItem>
-            )}
-          />
+  {/* Grado */}
+  <FormField
+    control={control}
+    name="enrollment.gradeId"
+    render={({ field }) => (
+      <FormItem className="space-y-2">
+        <FormLabel className="flex items-center gap-2 text-sm font-medium">
+          <GraduationCapIcon className="w-4 h-4 opacity-70" />
+          Grado
+        </FormLabel>
+        <FormControl>
+          <Select
+            value={field.value?.toString() || ''}
+            onValueChange={handleGradeChange}
+          >
+            <SelectTrigger className="bg-white dark:bg-gray-800">
+              <SelectValue placeholder="Seleccionar grado" />
+            </SelectTrigger>
+            <SelectContent>
+              {grades && grades.length > 0 ? (
+                grades.map((grade) => (
+                  <SelectItem key={grade.id} value={grade.id.toString()}>
+                    <div className="flex flex-col">
+                      <span>{grade.name}</span>
+                      <span className="text-xs text-gray-500">{grade.level}</span>
+                    </div>
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="p-2 text-sm text-gray-500 text-center">
+                  No hay grados disponibles
+                </div>
+              )}
+            </SelectContent>
+          </Select>
+        </FormControl>
+        <FormMessage className="text-xs" />
+      </FormItem>
+    )}
+  />
+
+  {/* Sección */}
+  <FormField
+    control={control}
+    name="enrollment.sectionId"
+    render={({ field }) => (
+      <FormItem className="space-y-2">
+        <FormLabel className="flex items-center gap-2 text-sm font-medium">
+          <UsersIcon className="w-4 h-4 opacity-70" />
+          Sección
+        </FormLabel>
+        <FormControl>
+          <Select
+            value={field.value?.toString() || ''}
+            onValueChange={(value) => field.onChange(Number(value))}
+            disabled={!selectedGradeId || selectedGradeId === 0}
+          >
+            <SelectTrigger className="bg-white dark:bg-gray-800">
+              <SelectValue placeholder="Seleccionar sección" />
+            </SelectTrigger>
+            <SelectContent>
+              {sections && sections.length > 0 ? (
+                sections.map((section) => (
+                  <SelectItem key={section.id} value={section.id.toString()}>
+                    <div className="flex items-center justify-between w-full">
+                      <span>Sección {section.name}</span>
+                      <span className="text-xs text-gray-500 ml-2">
+                        Cap: {section.capacity}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))
+              ) : selectedGradeId > 0 ? (
+                <div className="p-2 text-sm text-gray-500 text-center">
+                  No hay secciones disponibles para este grado
+                </div>
+              ) : (
+                <div className="p-2 text-sm text-gray-500 text-center">
+                  Primero seleccione un grado
+                </div>
+              )}
+            </SelectContent>
+          </Select>
+        </FormControl>
+        <FormMessage className="text-xs" />
+        {!selectedGradeId && (
+          <p className="text-xs text-gray-500">
+            Primero seleccione un grado
+          </p>
+        )}
+      </FormItem>
+    )}
+  />
 
           {/* Estado (oculto, siempre activo para nuevos estudiantes) */}
           <FormField

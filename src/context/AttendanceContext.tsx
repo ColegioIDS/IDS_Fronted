@@ -57,6 +57,14 @@ interface AttendanceState {
   editingId: number | null;
 }
 
+// Helper para meta seguro
+const safeMeta = (meta: any) => ({
+  total: meta?.total || 0,
+  page: meta?.page || 1,
+  limit: meta?.limit || 10,
+  totalPages: meta?.totalPages || 0
+});
+
 // Acciones
 type AttendanceAction =
   | { type: 'SET_LOADING'; payload: boolean }
@@ -112,36 +120,38 @@ function attendanceReducer(state: AttendanceState, action: AttendanceAction): At
     case 'SET_ATTENDANCES':
       return {
         ...state,
-        attendances: action.payload.data,
-        meta: action.payload.meta,
+        attendances: action.payload.data || [],
+        meta: action.payload.meta || safeMeta(null),
         loading: false,
         error: null
       };
       
     case 'ADD_ATTENDANCE':
+      const addMeta = safeMeta(state.meta);
       return {
         ...state,
-        attendances: [action.payload, ...state.attendances],
+        attendances: [action.payload, ...(Array.isArray(state.attendances) ? state.attendances : [])],
         meta: {
-          ...state.meta,
-          total: state.meta.total + 1
+          ...addMeta,
+          total: addMeta.total + 1
         }
       };
       
     case 'ADD_BULK_ATTENDANCES':
+      const bulkMeta = safeMeta(state.meta);
       return {
         ...state,
-        attendances: [...action.payload, ...state.attendances],
+        attendances: [...(action.payload || []), ...(Array.isArray(state.attendances) ? state.attendances : [])],
         meta: {
-          ...state.meta,
-          total: state.meta.total + action.payload.length
+          ...bulkMeta,
+          total: bulkMeta.total + (action.payload?.length || 0)
         }
       };
       
     case 'UPDATE_ATTENDANCE':
       return {
         ...state,
-        attendances: state.attendances.map(attendance =>
+        attendances: (Array.isArray(state.attendances) ? state.attendances : []).map(attendance =>
           attendance.id === action.payload.id ? action.payload.data : attendance
         ),
         currentAttendance: state.currentAttendance?.id === action.payload.id 
@@ -150,12 +160,15 @@ function attendanceReducer(state: AttendanceState, action: AttendanceAction): At
       };
       
     case 'REMOVE_ATTENDANCE':
+      const removeMeta = safeMeta(state.meta);
       return {
         ...state,
-        attendances: state.attendances.filter(attendance => attendance.id !== action.payload),
+        attendances: (Array.isArray(state.attendances) ? state.attendances : []).filter(attendance => 
+          attendance.id !== action.payload
+        ),
         meta: {
-          ...state.meta,
-          total: Math.max(0, state.meta.total - 1)
+          ...removeMeta,
+          total: Math.max(0, removeMeta.total - 1)
         }
       };
       
@@ -339,30 +352,47 @@ export function AttendanceProvider({ children }: AttendanceProviderProps) {
     }
   }, [handleError]);
 
-  const fetchAttendancesByBimester = useCallback(async (
-    bimesterId: number,
-    filters?: Omit<AttendanceFilters, 'bimesterId'>
-  ) => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      dispatch({ type: 'SET_ERROR', payload: null });
-      
-      const response = await getAttendancesByBimester(bimesterId, filters);
-      dispatch({
-        type: 'SET_ATTENDANCES',
-        payload: {
-          data: response.data,
-          meta: response.meta
-        }
-      });
-      
-      dispatch({ type: 'SET_FILTERS', payload: { ...filters, bimesterId } });
-    } catch (error) {
-      handleError(error, 'Error al cargar las asistencias del bimestre');
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+const fetchAttendancesByBimester = useCallback(async (
+  bimesterId: number,
+  filters?: Omit<AttendanceFilters, 'bimesterId'>
+) => {
+  try {
+    dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: 'SET_ERROR', payload: null });
+    
+    const response = await getAttendancesByBimester(bimesterId, filters);
+    
+    // 🔧 SOLUCIÓN: Manejar ambas estructuras posibles
+    let attendanceData: Attendance[] = [];
+    let metaData = { total: 0, page: 1, limit: 10, totalPages: 0 };
+    
+    // Si la respuesta tiene la estructura con wrapper
+    if (response && typeof response === 'object' && 'data' in response) {
+      const apiResponse = response as any; // Casting temporal
+      if (apiResponse.data && apiResponse.data.data) {
+        attendanceData = apiResponse.data.data;
+        metaData = apiResponse.data.meta || metaData;
+      }
+    } else if (Array.isArray(response)) {
+      // Si la respuesta es directamente un array
+      attendanceData = response;
     }
-  }, [handleError]);
+    
+    dispatch({
+      type: 'SET_ATTENDANCES',
+      payload: {
+        data: attendanceData,
+        meta: metaData
+      }
+    });
+    
+    dispatch({ type: 'SET_FILTERS', payload: { ...filters, bimesterId } });
+  } catch (error) {
+    handleError(error, 'Error al cargar las asistencias del bimestre');
+  } finally {
+    dispatch({ type: 'SET_LOADING', payload: false });
+  }
+}, [handleError]);
 
   const fetchAttendanceStats = useCallback(async (enrollmentId: number, bimesterId?: number) => {
     try {
@@ -483,9 +513,9 @@ export function AttendanceProvider({ children }: AttendanceProviderProps) {
     await fetchAttendances(state.filters);
   }, [fetchAttendances, state.filters]);
 
-  const getAttendanceByIdFromState = useCallback((id: number) => {
-    return state.attendances.find(attendance => attendance.id === id);
-  }, [state.attendances]);
+const getAttendanceByIdFromState = useCallback((id: number) => {
+  return (Array.isArray(state.attendances) ? state.attendances : []).find(attendance => attendance.id === id);
+}, [state.attendances]);
 
   // Valor del contexto
   const contextValue: AttendanceContextType = {
