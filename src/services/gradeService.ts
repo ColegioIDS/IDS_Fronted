@@ -1,3 +1,4 @@
+//src\services\gradeService.ts
 import axios, { AxiosError } from 'axios';
 import { API_BASE_URL } from '@/config/api';
 import { 
@@ -178,6 +179,52 @@ export const getGradeStats = async (): Promise<GradeStats> => {
     } catch (fallbackError) {
       handleApiError(error, 'Error al obtener estadísticas de grados');
     }
+  }
+};
+
+
+// ==================== NUEVOS ENDPOINTS PARA COURSE ASSIGNMENTS ====================
+
+/**
+ * Obtener cursos asignados a un grado específico
+ * Endpoint: GET /api/grades/:id/courses
+ */
+export const getGradeCourses = async (gradeId: number) => {
+  try {
+    const { data } = await apiClient.get(`/api/grades/${gradeId}/courses`);
+    if (!data.success) throw new Error(data.message || 'Error al obtener cursos del grado');
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener cursos del grado');
+  }
+};
+
+/**
+ * Obtener configuración completa de asignaciones para un grado
+ * Endpoint: GET /api/grades/:id/course-config
+ * Retorna secciones con sus maestros titulares y asignaciones específicas
+ */
+export const getGradeCourseConfig = async (gradeId: number) => {
+  try {
+    const { data } = await apiClient.get(`/api/grades/${gradeId}/course-config`);
+    if (!data.success) throw new Error(data.message || 'Error al obtener configuración del grado');
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener configuración del grado');
+  }
+};
+
+/**
+ * Obtener estadísticas de un grado específico
+ * Endpoint: GET /api/grades/:id/stats
+ */
+export const getGradeStatsById = async (gradeId: number) => {
+  try {
+    const { data } = await apiClient.get(`/api/grades/${gradeId}/stats`);
+    if (!data.success) throw new Error(data.message || 'Error al obtener estadísticas del grado');
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener estadísticas del grado');
   }
 };
 

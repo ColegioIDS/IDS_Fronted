@@ -80,10 +80,10 @@ export function StudentCard({
   const currentSection = currentSectionId ? `${currentSectionId}` : ''
 
   const handleViewDetails = () => {
-    if (student.id) {
+     if (student.id) {
       router.push(`/students/profile/${student.id}`)
       onViewDetails(student.id)
-    }
+    } 
   }
 
   const handleEdit = () => {

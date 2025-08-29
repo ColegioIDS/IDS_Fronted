@@ -295,7 +295,11 @@ export function UserForm({ isEditMode = false, userId }: UserFormProps) {
                             date > new Date() || date < new Date("1900-01-01")
                           }
                           initialFocus
+                          captionLayout="dropdown"   // 👈 habilita selects de mes y año
+                          fromYear={1900}            // 👈 año mínimo
+                          toYear={new Date().getFullYear()} // 👈 año máximo
                         />
+
                       </PopoverContent>
                     </Popover>
                     <FormMessage />

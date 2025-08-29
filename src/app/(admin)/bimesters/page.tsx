@@ -1,25 +1,28 @@
 //src\app\(admin)\bimesters\page.tsx
-'use client';
-import dynamic from 'next/dynamic';
-import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
-import Breadcrumb from '@/components/common/Breadcrumb';
+"use client";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SchoolCycleProvider } from '@/context/SchoolCycleContext';
+import { BimesterProvider } from '@/context/newBimesterContext';
+import BimesterContent from '@/components/bimester/content';
 
-const BimesterContent = dynamic(() => import('@/components/bimester/content'), {
-  loading: () => <ProfileSkeleton type="meta" />
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 3 * 60 * 1000,
+      refetchOnWindowFocus: true,
+      refetchInterval: 5 * 60 * 1000,
+    },
+  },
 });
 
-export default function BimesterPage() {
+export default function CyclePageWrapper() {
   return (
-    <div className="space-y-6">
-      <Breadcrumb
-        pageTitle=""
-        items={[
-          { label: "Inicio", href: "/dashboard" },
-          { label: "Ciclos Escolares", href: "/cycles" },
-          { label: "Bimestres", href: "#" },
-        ]}
-      />
-      <BimesterContent />
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <SchoolCycleProvider>
+        <BimesterProvider>
+          <BimesterContent />
+        </BimesterProvider>
+      </SchoolCycleProvider>
+    </QueryClientProvider>
   );
 }

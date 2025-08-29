@@ -121,7 +121,6 @@ function teacherReducer(state: TeacherState, action: TeacherAction): TeacherStat
       return { ...state, error: action.payload };
       
     case 'SET_TEACHERS':
-      console.log('🏫 Setting teachers:', action.payload);
       return {
         ...state,
         teachers: action.payload,
@@ -222,7 +221,6 @@ interface TeacherProviderProps {
 export function TeacherProvider({ children }: TeacherProviderProps) {
   const [state, dispatch] = useReducer(teacherReducer, initialState);
 
-  console.log('🔍 TeacherProvider State:', state);
 
   // Función auxiliar para manejar errores
   const handleError = useCallback((error: any, fallbackMessage: string) => {
@@ -250,10 +248,8 @@ export function TeacherProvider({ children }: TeacherProviderProps) {
         assignedSchedules: (user as any).assignedSchedules || []
       }));
       
-      console.log('🎯 Processed teachers:', teachers);
       dispatch({ type: 'SET_TEACHERS', payload: teachers });
     } catch (error) {
-      console.error('💥 fetchAllTeachers error:', error);
       handleError(error, 'Error al cargar los profesores');
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });

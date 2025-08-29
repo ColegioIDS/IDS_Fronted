@@ -1,13 +1,11 @@
 "use client";
 
-// contexts/BimesterContext.tsx
+// context/newBimesterContext.tsx
 import React, { createContext, useContext, useCallback, useMemo } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   useBimestersByCycle,
   useActiveBimester,
-  useCreateBimester,
-  useUpdateBimester,
   bimesterKeys
 } from '@/hooks/useBimesters';
 import {
@@ -15,6 +13,11 @@ import {
   SchoolBimesterPayload
 } from '@/types/SchoolBimesters';
 import { useCurrentSchoolCycle } from '@/context/SchoolCycleContext';
+// ✅ IMPORTAR LOS SERVICIOS DIRECTAMENTE
+import { 
+  createBimester as createBimesterService,
+  updateBimester as updateBimesterService 
+} from '@/services/useSchoolBimester';
 
 // ==================== TIPOS DEL CONTEXT ====================
 interface BimesterContextValue {
@@ -94,8 +97,16 @@ export const BimesterProvider: React.FC<BimesterProviderProps> = ({
   const activeBimester = useActiveBimester(cycleId);
 
   // ========== MUTATIONS ==========
-  const createBimesterMutation = useCreateBimester();
-  const updateBimesterMutation = useUpdateBimester();
+  // ✅ USAR SERVICIOS DIRECTAMENTE en lugar de hooks
+  const createBimesterMutation = useMutation({
+    mutationFn: ({ cycleId, data }: { cycleId: number; data: SchoolBimesterPayload }) =>
+      createBimesterService(cycleId, data),
+  });
+  
+  const updateBimesterMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<SchoolBimesterPayload> }) =>
+      updateBimesterService(id, data),
+  });
 
   // ========== COMPUTED STATES ==========
   const isCreating = createBimesterMutation.isPending;
@@ -273,15 +284,92 @@ export const useCurrentBimester = () => {
   return getActiveBimesterInfo();
 };
 
-// Hook para obtener bimestres de un ciclo específico
+// ✅ MEJORADO: Hook para obtener bimestres de un ciclo específico
 export const useCycleBimesters = (targetCycleId?: number) => {
-  const { bimesters, cycleId, isLoading } = useBimesterContext();
+  const queryClient = useQueryClient();
   
+  // ✅ Solo cargar si targetCycleId es válido
+  const {
+    data: cycleBimesters = [],
+    isLoading: isCycleLoading,
+    isError: isCycleError,
+    error: cycleError
+  } = useBimestersByCycle(targetCycleId || 0);
+
+  // ✅ USAR SERVICIOS DIRECTAMENTE
+  const createBimesterMutation = useMutation({
+    mutationFn: ({ cycleId, data }: { cycleId: number; data: SchoolBimesterPayload }) =>
+      createBimesterService(cycleId, data),
+    onSuccess: () => {
+      // Invalidar cache después del éxito
+      if (targetCycleId) {
+        queryClient.invalidateQueries({ 
+          queryKey: ['bimesters', 'cycle', targetCycleId] 
+        });
+        queryClient.invalidateQueries({ queryKey: bimesterKeys.all });
+      }
+    }
+  });
+
+  const updateBimesterMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<SchoolBimesterPayload> }) =>
+      updateBimesterService(id, data),
+    onSuccess: () => {
+      // Invalidar cache después del éxito
+      if (targetCycleId) {
+        queryClient.invalidateQueries({ 
+          queryKey: ['bimesters', 'cycle', targetCycleId] 
+        });
+        queryClient.invalidateQueries({ queryKey: bimesterKeys.all });
+      }
+    }
+  });
+
+  const createBimester = useCallback(async (data: SchoolBimesterPayload) => {
+    if (!targetCycleId) throw new Error('No cycle ID provided');
+    
+    console.log('🎯 Creando bimestre en ciclo:', targetCycleId, data);
+    
+    const result = await createBimesterMutation.mutateAsync({ 
+      cycleId: targetCycleId, 
+      data 
+    });
+    
+    return result;
+  }, [createBimesterMutation, targetCycleId]);
+
+  const updateBimester = useCallback(async (
+    id: number, 
+    data: Partial<SchoolBimesterPayload>
+  ) => {
+    console.log('🔄 Actualizando bimestre:', id, data);
+    
+    const result = await updateBimesterMutation.mutateAsync({ id, data });
+    
+    return result;
+  }, [updateBimesterMutation]);
+
   return useMemo(() => ({
-    bimesters: targetCycleId && targetCycleId !== cycleId ? [] : bimesters,
-    isLoading: targetCycleId && targetCycleId !== cycleId ? false : isLoading,
-    cycleId: targetCycleId || cycleId,
-  }), [bimesters, cycleId, targetCycleId, isLoading]);
+    bimesters: targetCycleId ? cycleBimesters : [],
+    isLoading: targetCycleId ? isCycleLoading : false,
+    isError: targetCycleId ? isCycleError : false,
+    error: targetCycleId ? cycleError : null,
+    cycleId: targetCycleId,
+    // ✅ Acciones específicas del ciclo
+    createBimester,
+    updateBimester,
+    isMutating: createBimesterMutation.isPending || updateBimesterMutation.isPending,
+  }), [
+    cycleBimesters, 
+    isCycleLoading, 
+    isCycleError, 
+    cycleError, 
+    targetCycleId,
+    createBimester,
+    updateBimester,
+    createBimesterMutation.isPending,
+    updateBimesterMutation.isPending
+  ]);
 };
 
 // Hook para estadísticas de bimestres

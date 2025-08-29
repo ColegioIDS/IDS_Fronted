@@ -144,7 +144,6 @@ export const useUpdateSchoolCycle = () => {
       // Invalidar listas generales
       queryClient.invalidateQueries({ queryKey: schoolCycleKeys.lists() });
       
-      toast.success('Ciclo escolar actualizado exitosamente');
     },
     onError: (error: any) => {
       const message = error.message || 'Error al actualizar el ciclo escolar';

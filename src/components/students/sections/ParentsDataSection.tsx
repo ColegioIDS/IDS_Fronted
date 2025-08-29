@@ -94,65 +94,86 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
     (rel: RelationshipOption) => !usedRelationships.includes(rel.value)
   );
 
-  // ✅ NUEVO: Manejar cambio de DPI con el context
-  const handleDpiChange = async (index: number, dpi: string) => {
-    if (dpi.length >= 13) { // DPI completo
-      const currentDpi = form.getValues(`parents.${index}.newParent.dpi`);
+ const handleDpiChange = async (index: number, dpi: string) => {
+  console.log("handleDpiChange llamado:", { index, dpi, length: dpi.length });
+  
+  if (dpi.length >= 13) { // DPI completo
+    const currentDpi = form.getValues(`parents.${index}.newParent.dpi`);
+    console.log("DPI actual vs nuevo:", { currentDpi, newDpi: dpi });
 
-      // Si estamos en modo edición y el DPI no cambió, no hacer nada
-      if (isEditMode && dpi === currentDpi) {
-        return;
-      }
+    // ✅ IMPORTANTE: Limpiar información previa antes de buscar
+    clearParentDpiInfo();
 
-      try {
-        setSearchingDpiIndex(index);
-        
-        // ✅ Buscar padre por DPI usando el context
-        await searchParentByDPI(dpi);
-        
-        // El resultado estará en parentDpiInfo, procesarlo en useEffect
-      } catch (error) {
-        console.error('Error al buscar padre por DPI:', error);
-      } finally {
-        setSearchingDpiIndex(null);
-      }
+    // Si estamos en modo edición y el DPI no cambió, no hacer nada
+    if (isEditMode && dpi === currentDpi) {
+      console.log("En modo edición y DPI no cambió, saliendo...");
+      return;
     }
-  };
 
-  // ✅ NUEVO: Procesar resultado de búsqueda de DPI
-// ✅ REEMPLAZAR el useEffect completo (líneas ~120-145):
+    try {
+      console.log("Iniciando búsqueda de DPI para índice:", index);
+      setSearchingDpiIndex(index);
+      
+      // ✅ Buscar padre por DPI usando el context
+      const result = await searchParentByDPI(dpi);
+      console.log("Resultado de búsqueda:", result);
+      
+    } catch (error) {
+      console.error('Error al buscar padre por DPI:', error);
+      // ✅ Limpiar estados en caso de error
+      setSearchingDpiIndex(null);
+    }
+  }
+};
+
+
+
 useEffect(() => {
   if (parentDpiInfo && searchingDpiIndex !== null) {
-    const { user } = parentDpiInfo.data || {}; // Acceder a user dentro de data
+    const { user, parentDetails } = parentDpiInfo.data || {};
     
     if (user) {
-      // Solo llenar campos si no están llenos (en modo creación) o si estamos actualizando
-      const currentGivenNames = form.getValues(`parents.${searchingDpiIndex}.newParent.givenNames`);
+      console.log("Llenando campos para índice:", searchingDpiIndex);
+      console.log("Datos del usuario:", user);
+      console.log("Detalles del padre:", parentDetails);
       
-      if (!currentGivenNames || !isEditMode) {
-        // ✅ CORREGIDO: Usar firstName/lastName de la respuesta del API
-        setValue(`parents.${searchingDpiIndex}.newParent.givenNames`, user.firstName);
-        setValue(`parents.${searchingDpiIndex}.newParent.lastNames`, user.lastName);
-        setValue(`parents.${searchingDpiIndex}.newParent.phone`, user.phone || '');
-        setValue(`parents.${searchingDpiIndex}.newParent.email`, user.email || '');
+      // ✅ IMPORTANTE: Usar los nombres correctos de los campos del API
+      // firstName/lastName en lugar de givenNames/lastNames
+      setValue(`parents.${searchingDpiIndex}.newParent.givenNames`, user.firstName || '');
+      setValue(`parents.${searchingDpiIndex}.newParent.lastNames`, user.lastName || '');
+      setValue(`parents.${searchingDpiIndex}.newParent.phone`, user.phone || '');
+      setValue(`parents.${searchingDpiIndex}.newParent.email`, user.email || '');
+      
+      // ✅ Llenar datos adicionales del parentDetails si existen
+      if (parentDetails) {
+        setValue(`parents.${searchingDpiIndex}.newParent.details.dpiIssuedAt`, parentDetails.dpiIssuedAt || '');
+        setValue(`parents.${searchingDpiIndex}.newParent.details.occupation`, parentDetails.occupation || '');
+        setValue(`parents.${searchingDpiIndex}.newParent.details.workplace`, parentDetails.workplace || '');
+        setValue(`parents.${searchingDpiIndex}.newParent.details.workPhone`, parentDetails.workPhone || '');
         
-        // Datos adicionales si existen
-        if (parentDpiInfo.data?.parentDetails) {
-          setValue(`parents.${searchingDpiIndex}.newParent.details.dpiIssuedAt`, parentDpiInfo.data.parentDetails.dpiIssuedAt || '');
-          setValue(`parents.${searchingDpiIndex}.newParent.details.occupation`, parentDpiInfo.data.parentDetails.occupation || '');
-          setValue(`parents.${searchingDpiIndex}.newParent.details.workplace`, parentDpiInfo.data.parentDetails.workplace || '');
-          setValue(`parents.${searchingDpiIndex}.newParent.details.workPhone`, parentDpiInfo.data.parentDetails.workPhone || '');
+        // ✅ Si el parentDetails tiene email, usar ese en lugar del user.email
+        if (parentDetails.email) {
+          setValue(`parents.${searchingDpiIndex}.newParent.email`, parentDetails.email);
         }
       }
       
-      // Limpiar la búsqueda después de procesar
+      // ✅ NUEVO: Verificar que los valores se están estableciendo
+      setTimeout(() => {
+        const currentValues = form.getValues(`parents.${searchingDpiIndex}`);
+        console.log("Valores después del setValue:", currentValues);
+      }, 100);
+      
+      // ✅ Limpiar después de procesar
       setTimeout(() => {
         clearParentDpiInfo();
         setSearchingDpiIndex(null);
       }, 1000);
+    } else {
+      console.log("No se encontró información del usuario");
     }
   }
-}, [parentDpiInfo, searchingDpiIndex, form, setValue, isEditMode, clearParentDpiInfo]);
+}, [parentDpiInfo, searchingDpiIndex, form, setValue, clearParentDpiInfo]);
+
 
   return (
     <div className="space-y-6">

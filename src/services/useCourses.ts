@@ -86,7 +86,7 @@ export const deleteCourse = async (id: number): Promise<void> => {
 export const getCourseGrades = async (courseId: number): Promise<CourseGradeRelation[]> => {
   try {
     const { data } = await apiClient.get<ApiResponse<CourseGradeRelation[]>>(
-      `/api/courses/${courseId}/grades`
+      `/api/courses/${courseId}`
     );
     if (!data.success) throw new Error(data.message || 'Error al obtener grados del curso');
     return data.data;
@@ -139,6 +139,40 @@ export const removeCourseGrade = async (courseId: number, gradeId: number): Prom
     handleApiError(error, 'Error al remover grado del curso');
   }
 };
+
+// ==================== NUEVOS ENDPOINTS PARA COURSE ASSIGNMENTS ====================
+
+/**
+ * Obtener cursos de un grado específico (desde el módulo de cursos)
+ * Endpoint: GET /api/courses/by-grade/:gradeId
+ * Alternativa a getGradeCourses desde gradeService
+ */
+export const getCoursesByGrade = async (gradeId: number) => {
+  try {
+    const { data } = await apiClient.get(`/api/courses/by-grade/${gradeId}`);
+    if (!data.success) throw new Error(data.message || 'Error al obtener cursos del grado');
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener cursos del grado');
+  }
+};
+
+/**
+ * CORREGIR: Esta función ya existe pero está mal implementada
+ * Debe obtener cursos de UN GRADO, no de UN CURSO
+ */
+// Reemplaza tu función getCourseGrades existente con esta:
+export const getCourseGradesID = async (gradeId: number) => {
+  try {
+    // Usar el endpoint de grades que es más semánticamente correcto
+    const { data } = await apiClient.get(`/api/grades/${gradeId}/courses`);
+    if (!data.success) throw new Error(data.message || 'Error al obtener cursos del grado');
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener cursos del grado');
+  }
+};
+
 
 // ==================== UTILS ====================
 function handleApiError(error: unknown, fallbackMessage: string): never {

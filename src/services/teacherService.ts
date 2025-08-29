@@ -84,6 +84,41 @@ export const getAllTeachers = async (): Promise<User[]> => {
   }
 };
 
+// 🎯 Obtener profesores por sección específica
+// 🎯 Obtener profesores por sección específica
+export const getTeachersBySection = async (sectionId: number | string): Promise<any> => {
+  try {
+    console.log(`🌐 Fetching teachers for section ${sectionId} from /api/teachers/section/${sectionId}`);
+    
+    const response = await apiClient.get<ApiResponse<any>>(`/api/teachers/section/${sectionId}`);
+    console.log('📥 Teachers by section response:', response.data);
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || `Error al obtener profesores de la sección ${sectionId}`);
+    }
+    
+    // El endpoint devuelve una estructura con titular, all, otherTitular, specialists
+    const data = response.data.data;
+    
+    // Validación de la estructura esperada
+    if (!data || typeof data !== 'object') {
+      throw new Error('Datos de profesores inválidos - estructura incorrecta');
+    }
+    
+    // Validar que tenga las propiedades esperadas
+    if (!Array.isArray(data.all)) {
+      throw new Error('Datos de profesores inválidos - se esperaba array "all"');
+    }
+    
+    return data; // Retornar la estructura completa
+  } catch (error) {
+    console.error(`💥 Error fetching teachers for section ${sectionId}:`, error);
+    handleApiError(error, `Error al obtener profesores de la sección ${sectionId}`);
+  }
+};
+
+
+
 // 🎯 Obtener estadísticas de profesores
 export const getTeacherStats = async (): Promise<any> => {
   try {

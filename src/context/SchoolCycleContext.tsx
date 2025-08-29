@@ -1,6 +1,6 @@
 "use client";
 
-// contexts/SchoolCycleContext.tsx
+// context/SchoolCycleContext.tsx
 import React, { createContext, useContext, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -383,19 +383,74 @@ export const useSchoolCycleSelection = () => {
 
 // Hook para validaciones de ciclos
 export const useSchoolCycleValidations = () => {
-  const { validateNewCycle, stats } = useSchoolCycleContext();
+  const { validateNewCycle, stats, cycles } = useSchoolCycleContext(); // ✅ Agregamos cycles
   
   const canCreateCycle = useMemo(() => {
     return !stats.hasMultipleActive;
   }, [stats.hasMultipleActive]);
 
-  const validateCycleData = useCallback((data: SchoolCyclePayload) => {
-    const validation = validateNewCycle(data);
+  // ✅ NUEVO: validateCycleData ahora acepta excludeCycleId
+  const validateCycleData = useCallback((
+    data: SchoolCyclePayload, 
+    excludeCycleId: number | string | null = null
+  ) => {
+    console.log("🔍 validateCycleData llamado:", { data, excludeCycleId });
     
-    // Validaciones adicionales
+    // ✅ Filtrar ciclos excluyendo el que estamos editando
+    const cyclesToValidateAgainst = cycles.filter(cycle => 
+      excludeCycleId ? cycle.id.toString() !== excludeCycleId.toString() : true
+    );
+    
+    console.log("📊 Ciclos para validar:", cyclesToValidateAgainst.length, "de", cycles.length);
+    
+    // ✅ Validaciones personalizadas con ciclos filtrados
+    const errors: string[] = [];
     const warnings: string[] = [];
     
-    if (data.isActive && stats.activeCycles > 0) {
+    // 1. Validar superposición de fechas
+    const startDate = new Date(data.startDate);
+    const endDate = new Date(data.endDate);
+    
+    for (const cycle of cyclesToValidateAgainst) {
+      const cycleStart = new Date(cycle.startDate);
+      const cycleEnd = new Date(cycle.endDate);
+      
+      // Verificar superposición
+      const hasOverlap = (
+        (startDate >= cycleStart && startDate <= cycleEnd) ||
+        (endDate >= cycleStart && endDate <= cycleEnd) ||
+        (startDate <= cycleStart && endDate >= cycleEnd)
+      );
+      
+      if (hasOverlap) {
+        errors.push(`Las fechas se superponen con el ciclo "${cycle.name}"`);
+        break; // Solo mostrar el primer conflicto
+      }
+    }
+    
+    // 2. Validar ciclo activo
+    if (data.isActive) {
+      const otherActiveCycles = cyclesToValidateAgainst.filter(cycle => cycle.isActive);
+      if (otherActiveCycles.length > 0) {
+        errors.push('Ya existe un ciclo escolar activo. Desactiva el actual antes de activar otro.');
+      }
+    }
+    
+    // 3. Validar fechas básicas
+    if (startDate >= endDate) {
+      errors.push('La fecha de inicio debe ser anterior a la fecha de fin');
+    }
+    
+    // 4. Validar nombre duplicado
+    const duplicateName = cyclesToValidateAgainst.find(cycle => 
+      cycle.name.toLowerCase().trim() === data.name.toLowerCase().trim()
+    );
+    if (duplicateName) {
+      errors.push(`Ya existe un ciclo con el nombre "${data.name}"`);
+    }
+    
+    // ✅ Advertencias
+    if (data.isActive && stats.activeCycles > 0 && !excludeCycleId) {
       warnings.push('Ya existe un ciclo activo. Esto desactivará el actual.');
     }
     
@@ -410,12 +465,17 @@ export const useSchoolCycleValidations = () => {
       warnings.push('El ciclo está en el pasado.');
     }
     
-    return {
-      ...validation,
+    const result = {
+      isValid: errors.length === 0,
+      errors,
       warnings,
       canCreate: canCreateCycle
     };
-  }, [validateNewCycle, stats, canCreateCycle]);
+    
+    console.log("✅ Resultado de validación:", result);
+    return result;
+    
+  }, [cycles, stats, canCreateCycle]); // ✅ Agregamos cycles a las dependencias
 
   return {
     validateCycleData,

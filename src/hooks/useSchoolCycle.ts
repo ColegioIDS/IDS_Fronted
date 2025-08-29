@@ -99,7 +99,6 @@ const handleUpdateCycle = async (id: number, data: CyclesFormData) => {
     setIsSubmitting(true);
     try {
         await updateCycle(id, data);
-        toast.success("Ciclo escolar actualizado correctamente");
         await fetchCycles();
         return { success: true };
     } catch (error: any) {

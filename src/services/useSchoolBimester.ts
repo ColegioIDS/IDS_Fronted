@@ -1,3 +1,4 @@
+//src\services\useSchoolBimester.ts
 import axios, { AxiosError } from 'axios';
 import { API_BASE_URL } from '@/config/api';
 import { Bimester, SchoolBimesterPayload } from '@/types/SchoolBimesters';

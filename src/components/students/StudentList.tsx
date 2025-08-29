@@ -616,7 +616,7 @@ export const StudentList = () => {
                                 <StudentCard
                                     key={student.id}
                                     student={student}
-                                    onViewDetails={(id) => router.push(`/students/${id}`)}
+                                    onViewDetails={(id) => router.push(`/students/profile/${id}`)}
                                     onEdit={(id) => router.push(`/students/edit/${id}`)}
                                     onStatusChange={handleStatusChange}
                                 />
