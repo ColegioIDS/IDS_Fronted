@@ -1,171 +1,203 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getRoles, createRole as createRoleService, deleteRole as deleteRoleService, updateRole as updateRoleService } from '@/services/useRole';
-import { Role, RoleTableRow, RoleFormValues } from '@/types/role';
+// src/hooks/useRoles.ts
 
-const formatDate = (date: string | Date): string =>
-  new Date(date).toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
+import { useQuery, useMutation, useQueryClient, UseQueryResult } from '@tanstack/react-query';
+import { toast } from 'react-toastify';
+import {
+  getRoles,
+  getRoleById,
+  createRole,
+  updateRole,
+  deleteRole,
+  createRolesBulk,
+  updateRolesBulk,
+  deleteRolesBulk,
+} from '@/services/rolesService';
+import {
+  RoleWithRelations,
+  RoleFilters,
+  RoleFormValues,
+  BulkCreateRolesPayload,
+  BulkUpdateRolesPayload,
+  BulkDeleteRolesPayload,
+} from '@/types/roles';
+import { PaginatedResponse } from '@/types/api';
+import { permissionKeys } from './usePermissions';
+
+// ==================== QUERY KEYS ====================
+export const roleKeys = {
+  all: ['roles'] as const,
+  lists: () => [...roleKeys.all, 'list'] as const,
+  list: (filters?: RoleFilters) => [...roleKeys.lists(), filters] as const,
+  details: () => [...roleKeys.all, 'detail'] as const,
+  detail: (id: number) => [...roleKeys.details(), id] as const,
+};
+
+// ==================== QUERY HOOKS ====================
+
+/**
+ * Hook para obtener lista de roles con paginación
+ */
+export function useRoles(
+  filters?: RoleFilters,
+  enabled: boolean = true
+): UseQueryResult<PaginatedResponse<RoleWithRelations>, Error> {
+  return useQuery({
+    queryKey: roleKeys.list(filters),
+    queryFn: () => getRoles(filters),
+    enabled,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
-
-interface RoleState {
-  roles: RoleTableRow[];
-  isLoading: boolean;
-  isSaving: boolean;
-  error: Error | null;
 }
 
-const initialFormData: RoleFormValues = {
-  name: '',
-  description: '',
-  isActive: true,
-};
-
-export const useRoles = () => {
-  const [roleState, setRoleState] = useState<RoleState>({
-    roles: [],
-    isLoading: true,
-    isSaving: false,
-    error: null,
+/**
+ * Hook para obtener un rol por ID
+ */
+export function useRole(
+  id: number | undefined,
+  enabled?: boolean
+): UseQueryResult<RoleWithRelations, Error> {
+  return useQuery({
+    queryKey: roleKeys.detail(id!),
+    queryFn: () => getRoleById(id!),
+    enabled: enabled ?? !!id,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
+}
 
-  const [formData, setFormData] = useState<RoleFormValues>(initialFormData);
+// ==================== MUTATION HOOKS ====================
 
-  const { roles, isLoading, isSaving, error } = roleState;
+/**
+ * Hook para crear un rol
+ */
+export function useCreateRole() {
+  const queryClient = useQueryClient();
 
-  const fetchRoles = useCallback(async () => {
-    try {
-      setRoleState(prev => ({ ...prev, isLoading: true, error: null }));
-
-      const roleData = await getRoles();
-
-      const tableRows: RoleTableRow[] = roleData.map(role => ({
-        id: role.id,
-        name: role.name,
-        description: role.description || '',
-        isActive: role.isActive,
-         isSystem: role.isSystem,
-        createdAt: formatDate(role.createdAt),
-        updatedAt: formatDate(role.updatedAt),
-        createdBy: role.createdBy?.fullName || '',
-        userCount: role.userCount,
-        permissionCount: role.permissions.length,
-        permissions: role.permissions
-      }));
-      console.log('Roles obtenidos:', tableRows);
-
-      setRoleState({
-        roles: tableRows,
-        isLoading: false,
-        isSaving: false,
-        error: null,
-      });
-    } catch (err) {
-      setRoleState(prev => ({
-        ...prev,
-        roles: [],
-        isLoading: false,
-        error: err instanceof Error ? err : new Error('Error al obtener los roles'),
-      }));
-    }
-  }, []);
-
-  const updateFormData = useCallback((updates: Partial<RoleFormValues>) => {
-    setFormData(prev => ({
-      ...prev,
-      ...updates,
-    }));
-  }, []);
-
-  const createRole = useCallback(async (data?: RoleFormValues) => {
-    try {
-      setRoleState(prev => ({ ...prev, isSaving: true, error: null }));
-
-      const roleToCreate = data || formData;
-      const createdRole = await createRoleService(roleToCreate as Role);
-
-      await fetchRoles(); // Refresca la lista después de crear
-      setFormData(initialFormData); // Limpia formulario
-
-      return createdRole;
-    } catch (err) {
-
-      const error = err instanceof Error ? err : new Error('Error al crear el rol');
-      setRoleState(prev => ({ ...prev, isSaving: false }));
-      throw error;
-    }
-  }, [formData, fetchRoles]);
-
-
-
-  const deleteRole = useCallback(async (roleId: string) => {
-    try {
-      setRoleState(prev => ({ ...prev, isSaving: true, error: null }));
-
-      await deleteRoleService(roleId);
-      await fetchRoles(); // Refresca la lista después de eliminar
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Error al eliminar el rol');
-      setRoleState(prev => ({ ...prev, isSaving: false, error }));
-      throw error;
-    }
-  }, [fetchRoles]);
-
-  const updateRole = useCallback(
-    async (roleId: string, updates: Partial<RoleFormValues>) => {
-      try {
-        setRoleState(prev => ({ ...prev, isSaving: true, error: null }));
-
-        // Llama al servicio
-        const updated = await updateRoleService(roleId, updates);
-
-        // Vuelve a obtener la lista para mantener sincronizado
-        await fetchRoles();
-
-        return updated;
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error('Error al actualizar el rol');
-        setRoleState(prev => ({ ...prev, isSaving: false, error }));
-        throw error;
-      }
+  return useMutation({
+    mutationFn: (data: RoleFormValues) => createRole(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: permissionKeys.lists() });
+      toast.success('Rol creado correctamente');
     },
-    [fetchRoles]
-  );
+    onError: (error: any) => {
+      const message = error?.message || 'Error al crear el rol';
+      toast.error(message);
+    },
+  });
+}
 
-  useEffect(() => {
-    fetchRoles();
-  }, [fetchRoles]);
+/**
+ * Hook para actualizar un rol
+ */
+export function useUpdateRole() {
+  const queryClient = useQueryClient();
 
-  const activeRoles = useMemo(() => {
-  return roles.filter(role => role.isActive);
-}, [roles]);
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<RoleFormValues> }) =>
+      updateRole(id, data),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: roleKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: permissionKeys.lists() });
+      toast.success('Rol actualizado correctamente');
+    },
+    onError: (error: any) => {
+      const message = error?.message || 'Error al actualizar el rol';
+      toast.error(message);
+    },
+  });
+}
 
+/**
+ * Hook para eliminar un rol (soft delete)
+ */
+export function useDeleteRole() {
+  const queryClient = useQueryClient();
 
+  return useMutation({
+    mutationFn: (id: number) => deleteRole(id),
+    onSuccess: (_, deletedId) => {
+      queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
+      queryClient.removeQueries({ queryKey: roleKeys.detail(deletedId) });
+      queryClient.invalidateQueries({ queryKey: permissionKeys.lists() });
+      toast.success('Rol eliminado correctamente');
+    },
+    onError: (error: any) => {
+      const message = error?.message || 'Error al eliminar el rol';
+      toast.error(message);
+    },
+  });
+}
 
-  return useMemo(() => ({
-    roles,
-    activeRoles,
-    isLoading,
-    isSaving,
-    error,
-    formData,
-    updateFormData,
-    createRole,
-    refetch: fetchRoles,
-    deleteRole,
-    updateRole
-  }), [
-    roles,
-    activeRoles,
-    isLoading,
-    isSaving,
-    error,
-    formData,
-    updateFormData,
-    createRole,
-    fetchRoles,
-    deleteRole,
-    updateRole
-  ]);
-};
+// ==================== BULK MUTATION HOOKS ====================
+
+/**
+ * Hook para crear múltiples roles
+ */
+export function useCreateRolesBulk() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: BulkCreateRolesPayload) => createRolesBulk(payload),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: permissionKeys.lists() });
+      toast.success(response.message || 'Roles creados correctamente');
+    },
+    onError: (error: any) => {
+      const message = error?.message || 'Error al crear roles en lote';
+      toast.error(message);
+    },
+  });
+}
+
+/**
+ * Hook para actualizar múltiples roles
+ */
+export function useUpdateRolesBulk() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: BulkUpdateRolesPayload) => updateRolesBulk(payload),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: permissionKeys.lists() });
+      toast.success(response.message || 'Roles actualizados correctamente');
+    },
+    onError: (error: any) => {
+      const message = error?.message || 'Error al actualizar roles en lote';
+      toast.error(message);
+    },
+  });
+}
+
+/**
+ * Hook para eliminar múltiples roles
+ */
+export function useDeleteRolesBulk() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: BulkDeleteRolesPayload) => deleteRolesBulk(payload),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: permissionKeys.lists() });
+      toast.success(response.message || 'Roles eliminados correctamente');
+    },
+    onError: (error: any) => {
+      const message = error?.message || 'Error al eliminar roles en lote';
+      toast.error(message);
+    },
+  });
+}
+
+// ==================== UTILITY HOOKS ====================
+
+/**
+ * Hook especializado para selector de roles
+ */
+export function useRolesForSelector(enabled: boolean = true) {
+  return useRoles({ limit: 100, isActive: true }, enabled);
+}

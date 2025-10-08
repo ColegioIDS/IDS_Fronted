@@ -2,11 +2,16 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  email: z.string({ required_error: "El correo es obligatorio" })
-    .min(1, "El correo es obligatorio")
-    .email("Correo inválido"),
-
-  password: z.string({ required_error: "La contraseña es obligatoria" })
+  dpi: z.string().optional(),
+  email: z.string().email("Correo inválido").optional(),
+  password: z.string()
     .min(4, "La contraseña debe tener al menos 4 caracteres"),
-});
+}).refine(
+  (data) => data.dpi || data.email,
+  {
+    message: "Debe proporcionar DPI o Email",
+    path: ["email"], // Mostrar error en campo email
+  }
+);
 
+export type LoginFormData = z.infer<typeof loginSchema>;

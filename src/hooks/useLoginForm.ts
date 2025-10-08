@@ -7,35 +7,46 @@ import { signin } from "@/services/authService";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+
 type LoginFormData = z.infer<typeof loginSchema>;
+
 export const useLoginForm = () => {
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | string[]>("");
   const router = useRouter();
   const { login } = useAuth();
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (dataForm: LoginFormData) => {
     try {
+      setErrorMessage(""); // Limpiar errores previos
+      
       const user = await signin(dataForm);
-
-      login(user); // Actualiza el contexto
-      router.push("/dashboard"); 
+      login(user);
+      router.push("/dashboard");
     } catch (error: any) {
-      console.error(error);
-      setErrorMessage(error.response?.data?.message || "Ocurrió un error");
+      console.error('Login error:', error);
+      
+      // ✨ Manejar errores estructurados
+      if (error.details && Array.isArray(error.details)) {
+        setErrorMessage(error.details);
+      } else if (error.message) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("Error al iniciar sesión");
+      }
     }
   };
 
   useEffect(() => {
     if (errorMessage) {
-      const timer = setTimeout(() => setErrorMessage(""), 4000);
+      const timer = setTimeout(() => setErrorMessage(""), 6000);
       return () => clearTimeout(timer);
     }
   }, [errorMessage]);
@@ -45,5 +56,6 @@ export const useLoginForm = () => {
     handleSubmit: handleSubmit(onSubmit),
     errors,
     errorMessage,
+    isSubmitting,
   };
 };

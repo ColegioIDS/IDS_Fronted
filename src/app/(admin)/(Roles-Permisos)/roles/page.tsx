@@ -1,17 +1,45 @@
-//src\app\(admin)\(Roles-Permisos)\permissions\page.tsx
-import { Metadata } from "next";
-import RoleContent from "./RolesContent";
+// src/app/(admin)/roles/page.tsx
+"use client";
 
-export const metadata: Metadata = {
-  title: "Next.js Profile | TailAdmin - Next.js Dashboard Template",
-  description:
-    "This is Next.js Profile page for TailAdmin - Next.js Tailwind CSS Admin Dashboard Template",
-};
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import dynamic from 'next/dynamic';
+import Breadcrumb from '@/components/common/Breadcrumb';
+import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
 
-export default function Permission() {
+const RolesContent = dynamic(() => import('@/components/roles/RolesContent'), {
+  loading: () => <ProfileSkeleton type="meta" />
+});
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000,
+      gcTime: 5 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      retry: 2,
+    },
+  },
+});
+
+export default function RolesPage() {
   return (
-    <div>
-      <RoleContent />
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <div className="space-y-6">
+        <Breadcrumb
+          pageTitle="Gestión de Roles"
+          items={[
+            { label: "Inicio", href: "/dashboard" },
+            { label: "Administración", href: "#" },
+            { label: "Roles", href: "#" },
+          ]}
+        />
+        <RolesContent />
+      </div>
+      
+      {process.env.NODE_ENV === 'development' && (
+        <ReactQueryDevtools initialIsOpen={false} />
+      )}
+    </QueryClientProvider>
   );
 }

@@ -1,3 +1,4 @@
+//src\services\useCourses.ts
 import axios, { AxiosError } from 'axios';
 import { API_BASE_URL } from '@/config/api';
 import { Course, CourseFormValues, CourseFilters, CourseGradeRelation } from '@/types/courses';

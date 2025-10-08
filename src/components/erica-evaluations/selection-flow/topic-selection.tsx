@@ -459,13 +459,7 @@ const handleCreateTopic = async () => {
             No se ha encontrado un tema configurado para la semana {currentWeek?.number} en el curso {selectedCourse.name} de la sección {selectedSection.name}.
           </p>
           
-          <Button 
-            onClick={() => setShowCreateForm(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Crear Nuevo Tema
-          </Button>
+         
           
           {/* Info adicional */}
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 max-w-lg mx-auto mt-6">

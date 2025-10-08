@@ -1,3 +1,4 @@
+//src\schemas\courses.ts
 import { z } from 'zod';
 
 // Definición de áreas permitidas (ajusta según tus necesidades)

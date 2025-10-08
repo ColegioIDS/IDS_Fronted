@@ -8,12 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import {
-  Save,
-  RefreshCw,
-  Users,
-  BarChart3,
-  AlertCircle,
+import { 
+  Save, 
+  RefreshCw, 
+  Users, 
+  BarChart3, 
+  AlertCircle, 
   CheckCircle2,
   FileText,
   Calendar,
@@ -32,6 +32,8 @@ import { EricaTopic } from '@/types/erica-topics';
 import { AcademicWeek } from '@/types/academic-week.types';
 
 // Components
+import EvaluationPatterns from './evaluation-patterns';
+import EvaluationCopyTool from './evaluation-copy-tool';
 import CompactTableView from './compact-table-view';
 import GridStats from './grid-stats';
 
@@ -55,8 +57,6 @@ interface PendingChanges {
   [key: string]: EvaluationData; // key: `${enrollmentId}-${categoryId}`
 }
 
-type ViewMode = 'expanded' | 'compact';
-
 // ==================== COMPONENTE PRINCIPAL ====================
 export default function EvaluationGrid({
   selectedTeacher,
@@ -68,25 +68,24 @@ export default function EvaluationGrid({
 
   // ========== CONTEXTS ==========
   const {
-    state: {
+    state: { 
       evaluationGrid,
-      loadingGrid,
+      loadingGrid, 
       submitting,
-      error
+      error 
     },
     fetchEvaluationGrid,
     saveGrid
   } = useEricaEvaluationContext();
 
   // ========== ESTADO LOCAL ==========
-  const [viewMode, setViewMode] = useState<ViewMode>('expanded');
   const [pendingChanges, setPendingChanges] = useState<PendingChanges>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   // ========== EFECTOS ==========
-
+  
   // Cargar grid inicial
   useEffect(() => {
     if (selectedTopic?.id) {
@@ -108,7 +107,7 @@ export default function EvaluationGrid({
   }, [autoSaveEnabled, hasUnsavedChanges, pendingChanges]);
 
   // ========== COMPUTED VALUES ==========
-
+  
   const categories = useMemo(() => {
     return evaluationGrid?.categories || [];
   }, [evaluationGrid]);
@@ -131,17 +130,13 @@ export default function EvaluationGrid({
 
   const completionPercentage = useMemo(() => {
     if (!stats) return 0;
-    return stats.totalStudents > 0
-      ? (stats.fullyEvaluatedStudents / stats.totalStudents) * 100
+    return stats.totalStudents > 0 
+      ? (stats.fullyEvaluatedStudents / stats.totalStudents) * 100 
       : 0;
   }, [stats]);
 
   // ========== FUNCIONES ==========
-
-  const handleViewModeChange = useCallback((mode: ViewMode) => {
-    setViewMode(mode);
-  }, []);
-
+  
   const handleEvaluationChange = useCallback((
     enrollmentId: number,
     categoryId: number,
@@ -149,7 +144,7 @@ export default function EvaluationGrid({
     notes?: string
   ) => {
     const key = `${enrollmentId}-${categoryId}`;
-
+    
     // Si scaleCode está vacío, remover la evaluación
     if (!scaleCode) {
       setPendingChanges(prev => {
@@ -168,16 +163,70 @@ export default function EvaluationGrid({
         }
       }));
     }
-
+    
     setHasUnsavedChanges(true);
   }, []);
+
+  const handleCopyEvaluations = useCallback((
+    sourceStudentId: number,
+    targetStudentIds: number[],
+    evaluations: Array<{
+      enrollmentId: number;
+      categoryId: number;
+      scaleCode: string;
+      notes?: string;
+    }>
+  ) => {
+    // Filtrar solo evaluaciones para celdas vacías (respetando campos llenos)
+    const filteredEvaluations = evaluations.filter(evaluation => {
+      const key = `${evaluation.enrollmentId}-${evaluation.categoryId}`;
+      
+      // Verificar si ya hay cambios pendientes
+      if (pendingChanges[key]) {
+        return false;
+      }
+      
+      // Verificar si ya existe evaluación en el grid
+      const student = students.find(s => s.enrollment.id === evaluation.enrollmentId);
+      const existingEvaluation = student?.evaluations.find(
+        e => e.categoryId === evaluation.categoryId
+      );
+      
+      // Solo aplicar si no existe evaluación previa
+      return !existingEvaluation?.evaluation;
+    });
+
+    if (filteredEvaluations.length === 0) {
+      // Las evaluaciones ya existen, no hay nada que copiar
+      return;
+    }
+
+    // Agregar evaluaciones filtradas a pendingChanges
+    const newPendingChanges: PendingChanges = {};
+    filteredEvaluations.forEach(evaluation => {
+      const key = `${evaluation.enrollmentId}-${evaluation.categoryId}`;
+      newPendingChanges[key] = {
+        enrollmentId: evaluation.enrollmentId,
+        categoryId: evaluation.categoryId,
+        scaleCode: evaluation.scaleCode,
+        notes: evaluation.notes
+      };
+    });
+
+    setPendingChanges(prev => ({
+      ...prev,
+      ...newPendingChanges
+    }));
+
+    setHasUnsavedChanges(true);
+  }, [pendingChanges, students]);
 
   const handleSaveChanges = useCallback(async () => {
     if (Object.keys(pendingChanges).length === 0) return;
 
     try {
       const evaluationsToSave = Object.values(pendingChanges);
-
+      
       const result = await saveGrid({
         topicId: selectedTopic.id,
         teacherId: selectedTeacher.id,
@@ -188,7 +237,7 @@ export default function EvaluationGrid({
         setPendingChanges({});
         setHasUnsavedChanges(false);
         setLastSaved(new Date());
-
+        
         // Refrescar el grid para mostrar los cambios guardados
         await fetchEvaluationGrid(selectedTopic.id, true);
       }
@@ -208,8 +257,60 @@ export default function EvaluationGrid({
     setHasUnsavedChanges(false);
   }, []);
 
-  // ========== RENDERIZADO CONDICIONAL ==========
 
+
+  const handleApplyPattern = useCallback((
+  studentIds: number[],
+  evaluations: Array<{
+    enrollmentId: number;
+    categoryId: number;
+    scaleCode: string;
+  }>
+) => {
+  // Filtrar solo evaluaciones para celdas vacías
+  const filteredEvaluations = evaluations.filter(evaluation => {
+    const key = `${evaluation.enrollmentId}-${evaluation.categoryId}`;
+    
+    // Verificar si ya hay cambios pendientes
+    if (pendingChanges[key]) {
+      return false;
+    }
+    
+    // Verificar si ya existe evaluación en el grid
+    const student = students.find(s => s.enrollment.id === evaluation.enrollmentId);
+    const existingEvaluation = student?.evaluations.find(
+      e => e.categoryId === evaluation.categoryId
+    );
+    
+    // Solo aplicar si no existe evaluación previa
+    return !existingEvaluation?.evaluation;
+  });
+
+  if (filteredEvaluations.length === 0) {
+    return;
+  }
+
+  // Agregar evaluaciones filtradas a pendingChanges
+  const newPendingChanges: PendingChanges = {};
+  filteredEvaluations.forEach(evaluation => {
+    const key = `${evaluation.enrollmentId}-${evaluation.categoryId}`;
+    newPendingChanges[key] = {
+      enrollmentId: evaluation.enrollmentId,
+      categoryId: evaluation.categoryId,
+      scaleCode: evaluation.scaleCode
+    };
+  });
+
+  setPendingChanges(prev => ({
+    ...prev,
+    ...newPendingChanges
+  }));
+
+  setHasUnsavedChanges(true);
+}, [pendingChanges, students]);
+
+  // ========== RENDERIZADO CONDICIONAL ==========
+  
   if (loadingGrid) {
     return (
       <div className="space-y-6">
@@ -263,7 +364,7 @@ export default function EvaluationGrid({
   // ========== RENDER PRINCIPAL ==========
   return (
     <div className="space-y-6">
-
+      
       {/* ========== HEADER CON INFORMACIÓN DEL TEMA ========== */}
       <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/50 dark:to-purple-950/50 border-indigo-200 dark:border-indigo-800">
         <CardContent className="p-6">
@@ -301,7 +402,7 @@ export default function EvaluationGrid({
         </CardContent>
       </Card>
 
-      {/* ========== TABS DE VISTA Y BARRA DE PROGRESO ========== */}
+      {/* ========== BARRA DE PROGRESO Y ACCIONES ========== */}
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -365,7 +466,7 @@ export default function EvaluationGrid({
                   </Button>
                 </>
               )}
-
+              
               <Button
                 onClick={handleRefreshGrid}
                 variant="outline"
@@ -381,26 +482,37 @@ export default function EvaluationGrid({
 
       {/* ========== ESTADÍSTICAS ========== */}
       {stats && (
-        <GridStats
+        <GridStats 
           stats={stats}
           categories={categories}
           totalStudents={students.length}
         />
       )}
 
-      {/* ========== GRID DE EVALUACIÓN CON VISTA CONDICIONAL ========== */}
+      {/* ========== HERRAMIENTAS DE EVALUACIÓN EFICIENTE ========== */}
+      <EvaluationPatterns
+        students={students}
+        categories={categories}
+        scales={scales}
+        onApplyPattern={handleApplyPattern}
+      />
+
+      <EvaluationCopyTool
+        students={students}
+        categories={categories}
+        pendingChanges={pendingChanges}
+        onCopyEvaluations={handleCopyEvaluations}
+      />
+
+      {/* ========== GRID DE EVALUACIÓN ========== */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             Matriz de Evaluación ERICA
-            <Badge variant="outline" className="ml-2 text-xs">
-              {viewMode === 'expanded' ? 'Vista Detallada' : 'Vista Compacta'}
-            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-
           <CompactTableView
             students={students}
             categories={categories}
@@ -408,7 +520,6 @@ export default function EvaluationGrid({
             onEvaluationChange={handleEvaluationChange}
             pendingChanges={pendingChanges}
           />
-
 
           {/* Footer con leyenda de escalas */}
           <div className="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
@@ -418,8 +529,8 @@ export default function EvaluationGrid({
             <div className="flex flex-wrap gap-4">
               {scales.map((scale: any) => (
                 <div key={scale.id} className="flex items-center gap-2">
-                  <Badge
-                    variant="outline"
+                  <Badge 
+                    variant="outline" 
                     className={`
                       text-xs font-medium
                       ${scale.code === 'E' ? 'bg-green-100 text-green-800 border-green-300' : ''}
@@ -445,9 +556,9 @@ export default function EvaluationGrid({
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          <strong>Sistema ERICA:</strong> Evalúe cada estudiante en las 5 competencias usando las escalas.
-          Los cambios se guardan automáticamente cada 30 segundos o manualmente con el botón "Guardar".
-          Use los tabs arriba para alternar entre vista detallada y compacta.
+          <strong>Sistema ERICA:</strong> Use los patrones predefinidos para evaluar múltiples estudiantes rápidamente. 
+          Los patrones solo se aplican a evaluaciones vacías, preservando evaluaciones existentes.
+          Los cambios se guardan automáticamente cada 30 segundos.
         </AlertDescription>
       </Alert>
     </div>
