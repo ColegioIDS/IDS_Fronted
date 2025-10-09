@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Shield, Loader2, Calendar, Users, Key, AlertCircle } from 'lucide-react';
-import  { Permission } from '@/types/permissions';
+import { Permission } from '@/types/permissions';
 
 interface RoleDetailDialogProps {
   roleId: number;
@@ -35,7 +35,7 @@ export default function RoleDetailDialog({ roleId, open, onClose }: RoleDetailDi
     return colors[action.toLowerCase()] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
   };
 
-   const groupedPermissions = (role?.permissions ?? []).reduce((acc, permission) => {
+  const groupedPermissions = (role?.permissions ?? []).reduce((acc, permission) => {
     const module = permission.module;
     if (!acc[module]) {
       acc[module] = [];
@@ -84,7 +84,7 @@ export default function RoleDetailDialog({ roleId, open, onClose }: RoleDetailDi
                     >
                       {role.isActive ? 'Activo' : 'Inactivo'}
                     </Badge>
-                    
+
                     {role.isSystem ? (
                       <Badge
                         variant="secondary"

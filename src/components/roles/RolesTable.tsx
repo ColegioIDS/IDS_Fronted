@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/context/AuthContext'; // ✅ Importar useAuth (NO ProtectedContent)
 import { Eye, Edit, Trash2, MoreHorizontal } from 'lucide-react';
 import { RoleWithRelations } from '@/types/roles';
 import RoleDetailDialog from './RoleDetailDialog';
@@ -41,6 +42,13 @@ export default function RolesTable({
   onDelete,
 }: RolesTableProps) {
   const [detailRoleId, setDetailRoleId] = useState<number | undefined>();
+  const { hasPermission } = useAuth(); // ✅ Hook de auth
+
+  // ✅ Verificar permisos
+  const canReadOne = hasPermission('role', 'read-one');
+  const canUpdate = hasPermission('role', 'update');
+  const canDelete = hasPermission('role', 'delete');
+  const canDeleteBulk = hasPermission('role', 'delete-bulk');
 
   const nonSystemRoles = roles.filter((r) => !r.isSystem);
   const allSelected = nonSystemRoles.length > 0 && nonSystemRoles.every((r) => selectedIds.includes(r.id));
@@ -53,12 +61,15 @@ export default function RolesTable({
           <TableHeader>
             <TableRow className="bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-50 dark:hover:bg-gray-900/50">
               <TableHead className="w-12">
-                <Checkbox
-                  checked={allSelected}
-                  onCheckedChange={onSelectAll}
-                  aria-label="Seleccionar todos"
-                  className={someSelected ? 'data-[state=checked]:bg-purple-600' : ''}
-                />
+                {/* ✅ Checkbox solo si tiene permiso */}
+                {canDeleteBulk && (
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={onSelectAll}
+                    aria-label="Seleccionar todos"
+                    className={someSelected ? 'data-[state=checked]:bg-purple-600' : ''}
+                  />
+                )}
               </TableHead>
               <TableHead>Rol</TableHead>
               <TableHead>Descripción</TableHead>
@@ -76,7 +87,8 @@ export default function RolesTable({
                 className="hover:bg-gray-50 dark:hover:bg-gray-900/30"
               >
                 <TableCell>
-                  {!role.isSystem && (
+                  {/* ✅ Checkbox solo si tiene permiso Y no es sistema */}
+                  {!role.isSystem && canDeleteBulk && (
                     <Checkbox
                       checked={selectedIds.includes(role.id)}
                       onCheckedChange={(checked) => onSelectRole(role.id, checked as boolean)}
@@ -88,9 +100,7 @@ export default function RolesTable({
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
                     <div
-                      className={`w-2 h-2 rounded-full ${
-                        role.isSystem ? 'bg-purple-500' : 'bg-blue-500'
-                      }`}
+                      className={`w-2 h-2 rounded-full ${role.isSystem ? 'bg-purple-500' : 'bg-blue-500'}`}
                     />
                     <span className="text-gray-900 dark:text-gray-100">{role.name}</span>
                   </div>
@@ -129,48 +139,52 @@ export default function RolesTable({
 
                 <TableCell className="text-center">
                   {role.isSystem ? (
-  <Badge
-    variant="secondary"
-    className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
-  >
-    Sistema
-  </Badge>
-) : (
-  <Badge
-    variant="outline"
-    className="bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
-  >
-    Personalizado
-  </Badge>
-)}
-
+                    <Badge
+                      variant="secondary"
+                      className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+                    >
+                      Sistema
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
+                    >
+                      Personalizado
+                    </Badge>
+                  )}
                 </TableCell>
 
                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  {/* ✅ Mostrar dropdown solo si tiene al menos un permiso */}
+                  {(canReadOne || (!role.isSystem && (canUpdate || canDelete))) ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-48 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                       >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      className="w-48 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                    >
-                      <DropdownMenuItem
-                        onClick={() => setDetailRoleId(role.id)}
-                        className="hover:bg-gray-100 dark:hover:bg-gray-700"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Ver Detalle
-                      </DropdownMenuItem>
+                        {/* Ver Detalle */}
+                        {canReadOne && (
+                          <DropdownMenuItem
+                            onClick={() => setDetailRoleId(role.id)}
+                            className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Detalle
+                          </DropdownMenuItem>
+                        )}
 
-                      {!role.isSystem && (
-                        <>
+                        {/* Editar */}
+                        {!role.isSystem && canUpdate && (
                           <DropdownMenuItem
                             onClick={() => onEdit(role.id)}
                             className="hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -178,7 +192,10 @@ export default function RolesTable({
                             <Edit className="h-4 w-4 mr-2" />
                             Editar
                           </DropdownMenuItem>
+                        )}
 
+                        {/* Eliminar */}
+                        {!role.isSystem && canDelete && (
                           <DropdownMenuItem
                             onClick={() => onDelete(role.id)}
                             className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
@@ -186,10 +203,12 @@ export default function RolesTable({
                             <Trash2 className="h-4 w-4 mr-2" />
                             Eliminar
                           </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <span className="text-xs text-gray-400">Sin acciones</span>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -197,7 +216,8 @@ export default function RolesTable({
         </Table>
       </div>
 
-      {detailRoleId && (
+      {/* ✅ Modal solo si tiene permiso */}
+      {canReadOne && detailRoleId && (
         <RoleDetailDialog
           roleId={detailRoleId}
           open={!!detailRoleId}
