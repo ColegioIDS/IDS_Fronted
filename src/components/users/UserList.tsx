@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { useUserContext } from '@/context/UserContext'
 import { useSidebar } from '@/context/SidebarContext'
 import { usePagination } from '@/hooks/usePagination'
+import { useAuth } from '@/context/AuthContext' // ✨ IMPORTAR useAuth
 import { cn } from '@/lib/utils'
 import { getRoleBadgeColor } from '@/utils/RoleBadgeColor'
-import { useRouter } from 'next/navigation';
-
+import { useRouter } from 'next/navigation'
 
 // Icon Imports
 import {
@@ -61,57 +61,63 @@ import {
 import Pagination from '@/components/tables/Pagination'
 import { NoResultsFound } from '@/components/users/NoResultsFound'
 import { ModalWarningConfirm } from '@/components/ui/modal/ModalWarningConfirm'
-
+import ProtectedContent from '@/components/common/ProtectedContent';
 
 
 export const UserView = () => {
     // Imports
-    const { users, refetchUsers, toggleUserStatus } = useUserContext();
-    const { setIsExpanded } = useSidebar();
-    const router = useRouter();
-
+    const { users, refetchUsers, toggleUserStatus } = useUserContext()
+    const { setIsExpanded } = useSidebar()
+    const router = useRouter()
+    const { hasPermission } = useAuth() // ✨ Hook de auth
 
     // State declarations
-    const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
-    const [showFilters, setShowFilters] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
+    const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
+    const [showFilters, setShowFilters] = useState(false)
+    const [searchQuery, setSearchQuery] = useState("")
 
     // Filter states
-    const [selectedRole, setSelectedRole] = useState<string | null>(null);
-    const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
-    const [selectedGender, setSelectedGender] = useState<string | null>(null);
-    const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [selectedRole, setSelectedRole] = useState<string | null>(null)
+    const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null)
+    const [selectedGender, setSelectedGender] = useState<string | null>(null)
+    const [selectedStatus, setSelectedStatus] = useState<string | null>(null)
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
     // Modal state
     const [warningModal, setWarningModal] = useState({
         isOpen: false,
         userId: null as number | null,
         isActive: false,
-    });
+    })
+
+    // ✨ Verificar permisos
+    const canUpdate = hasPermission('user', 'update')
+    const canChangeStatus = hasPermission('user', 'change-status')
+    const canDelete = hasPermission('user', 'delete')
+    const canViewDetails = hasPermission('user', 'read-one')
 
     // Derived data
     const sortedUsers = [...users].sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-    });
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA
+    })
 
     const filteredUsers = sortedUsers.filter((user) => {
         const matchSearch = user.givenNames.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user.lastNames.toLowerCase().includes(searchQuery.toLowerCase());
+            user.lastNames.toLowerCase().includes(searchQuery.toLowerCase())
 
-        const matchRole = selectedRole ? user.role?.name === selectedRole : true;
-        const matchDept = selectedDepartment ? user.address?.department === selectedDepartment : true;
-        const matchGender = selectedGender ? user.gender === selectedGender : true;
+        const matchRole = selectedRole ? user.role?.name === selectedRole : true
+        const matchDept = selectedDepartment ? user.address?.department === selectedDepartment : true
+        const matchGender = selectedGender ? user.gender === selectedGender : true
         const matchStatus = selectedStatus
             ? selectedStatus === "activo"
                 ? user.isActive === true
                 : user.isActive === false
-            : true;
+            : true
 
-        return matchSearch && matchRole && matchDept && matchGender && matchStatus;
-    });
+        return matchSearch && matchRole && matchDept && matchGender && matchStatus
+    })
 
     // Pagination
     const {
@@ -120,142 +126,153 @@ export const UserView = () => {
         totalPages,
         handlePageChange,
         totalItems,
-    } = usePagination(filteredUsers, 6);
+    } = usePagination(filteredUsers, 6)
 
-    const itemsPerPage = 6;
+    const itemsPerPage = 6
 
     // Helper functions
     const getInitials = (givenNames: string, lastNames: string) => {
-        return `${givenNames.charAt(0)}${lastNames.charAt(0)}`.toUpperCase();
-    };
+        return `${givenNames.charAt(0)}${lastNames.charAt(0)}`.toUpperCase()
+    }
 
     const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
+        const date = new Date(dateString)
         return date.toLocaleDateString('es-GT', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
-        });
-    };
+        })
+    }
 
     // Handler functions
     const handleOpenFilters = () => {
-        setShowFilters(true);
-        setIsExpanded(false);
-    };
+        setShowFilters(true)
+        setIsExpanded(false)
+    }
 
     const handleResetFilters = () => {
-        setSearchQuery("");
-        setSelectedRole(null);
-        setSelectedDepartment(null);
-        setSelectedGender(null);
-        setSelectedStatus(null);
-    };
+        setSearchQuery("")
+        setSelectedRole(null)
+        setSelectedDepartment(null)
+        setSelectedGender(null)
+        setSelectedStatus(null)
+    }
 
     const openStatusModal = (userId: number, isActive: boolean) => {
+        if (!canChangeStatus) return // ✨ Verificar permiso
+
         setWarningModal({
             isOpen: true,
             userId,
             isActive,
-        });
-    };
+        })
+    }
 
     const confirmToggleStatus = async () => {
         if (warningModal.userId !== null) {
-            await toggleUserStatus(warningModal.userId, warningModal.isActive);
-            setWarningModal({ isOpen: false, userId: null, isActive: false });
+            await toggleUserStatus(warningModal.userId, warningModal.isActive)
+            setWarningModal({ isOpen: false, userId: null, isActive: false })
         }
-    };
+    }
 
+    // ✨ Función para manejar edición
+    const handleEdit = (userId: number) => {
+        if (!canUpdate) return
+        router.push(`/users/edit/${userId}`)
+    }
 
+    // ✨ Función para ver detalles
+    const handleViewDetails = (userId: number) => {
+        if (!canViewDetails) return
+        console.log("Ver detalles", userId)
+        // router.push(`/users/${userId}`)
+    }
 
     return (
 
-        <div className="flex relative transition-all duration-300">
-            <div className={`flex-1 transition-all duration-300 ${showFilters ? 'mr-80' : ''}`}>
+        <ProtectedContent
+            requiredPermission={{ module: 'user', action: 'read' }}
+        >
+            <div className="flex relative transition-all duration-300">
+                <div className={`flex-1 transition-all duration-300 ${showFilters ? 'mr-80' : ''}`}>
+                    <div className="space-y-4">
+                        <div className="space-y-4 mb-4">
+                            {/* Primera fila: título + controles */}
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <h2 className="flex items-center text-xl font-bold ml-1 sm:ml-5">
+                                    <CiBoxList className="mr-2" />
+                                    {filteredUsers.length === users.length
+                                        ? `Total de usuarios: ${users.length}`
+                                        : `Usuarios encontrados: ${filteredUsers.length}`}
+                                </h2>
 
+                                <div className="flex items-center gap-2 ml-1 sm:ml-0">
+                                    <div className="inline-flex rounded-md shadow-sm" role="group">
+                                        <Button
+                                            variant={viewMode === 'cards' ? 'default' : 'outline'}
+                                            onClick={() => setViewMode('cards')}
+                                            className="rounded-r-none"
+                                        >
+                                            <FiGrid className="mr-2 h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant={viewMode === 'table' ? 'default' : 'outline'}
+                                            onClick={() => setViewMode('table')}
+                                            className="rounded-l-none"
+                                        >
+                                            <FiList className="mr-2 h-4 w-4" />
+                                        </Button>
+                                    </div>
 
-                <div className="space-y-4">
-                    <div className="space-y-4 mb-4">
-                        {/* Primera fila: título + controles */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <h2 className="flex items-center text-xl font-bold ml-1 sm:ml-5">
-                                <CiBoxList className="mr-2" />
-                                {filteredUsers.length === users.length
-                                    ? `Total de usuarios: ${users.length}`
-                                    : `Usuarios encontrados: ${filteredUsers.length}`}
-                            </h2>
-
-                            <div className="flex items-center gap-2 ml-1 sm:ml-0">
-                                <div className="inline-flex rounded-md shadow-sm" role="group">
-                                    <Button
-                                        variant={viewMode === 'cards' ? 'default' : 'outline'}
-                                        onClick={() => setViewMode('cards')}
-                                        className="rounded-r-none"
-                                    >
-                                        <FiGrid className="mr-2 h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant={viewMode === 'table' ? 'default' : 'outline'}
-                                        onClick={() => setViewMode('table')}
-                                        className="rounded-l-none"
-                                    >
-                                        <FiList className="mr-2 h-4 w-4" />
+                                    <Button variant="outline" onClick={handleOpenFilters}>
+                                        Filtrar
                                     </Button>
                                 </div>
+                            </div>
 
-                                <Button variant="outline" onClick={handleOpenFilters}>
-                                    Filtrar
-                                </Button>
+                            {/* Segunda fila: búsqueda + ordenamiento */}
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ml-1 sm:ml-5">
+                                <div className="relative max-w-sm w-full">
+                                    <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                                    <Input
+                                        type="text"
+                                        placeholder="Buscar usuario..."
+                                        className="pl-10"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+
+                                {/* Botones de orden */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-muted-foreground">Ordenar por fecha:</span>
+                                    <Button
+                                        size="icon"
+                                        variant={sortOrder === 'asc' ? 'default' : 'outline'}
+                                        onClick={() => setSortOrder('asc')}
+                                    >
+                                        <FiCalendar className="h-4 w-4" />
+                                        <span className="sr-only">Ascendente</span>
+                                    </Button>
+                                    <Button
+                                        size="icon"
+                                        variant={sortOrder === 'desc' ? 'default' : 'outline'}
+                                        onClick={() => setSortOrder('desc')}
+                                    >
+                                        <FiCalendar className="rotate-180 h-4 w-4" />
+                                        <span className="sr-only">Descendente</span>
+                                    </Button>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Segunda fila: búsqueda + ordenamiento */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ml-1 sm:ml-5">
-                            <div className="relative max-w-sm w-full">
-                                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    type="text"
-                                    placeholder="Buscar usuario..."
-                                    className="pl-10"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-
-                            {/* Botones de orden */}
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm text-muted-foreground">Ordenar por fecha:</span>
-                                <Button
-                                    size="icon"
-                                    variant={sortOrder === 'asc' ? 'default' : 'outline'}
-                                    onClick={() => setSortOrder('asc')}
-                                >
-                                    <FiCalendar className="h-4 w-4" />
-                                    <span className="sr-only">Ascendente</span>
-                                </Button>
-                                <Button
-                                    size="icon"
-                                    variant={sortOrder === 'desc' ? 'default' : 'outline'}
-                                    onClick={() => setSortOrder('desc')}
-                                >
-                                    <FiCalendar className="rotate-180 h-4 w-4" />
-                                    <span className="sr-only">Descendente</span>
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-
-
-                    {filteredUsers.length === 0 ? (
-                        <NoResultsFound
-                            onResetFilters={handleResetFilters}
-                            message="No se encontraron usuarios"
-                            suggestion="Prueba cambiando los filtros o términos de búsqueda"
-                        />
-                    ) :
-
-                        viewMode === 'cards' ? (
+                        {filteredUsers.length === 0 ? (
+                            <NoResultsFound
+                                onResetFilters={handleResetFilters}
+                                message="No se encontraron usuarios"
+                                suggestion="Prueba cambiando los filtros o términos de búsqueda"
+                            />
+                        ) : viewMode === 'cards' ? (
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {paginatedData.map((user) => (
                                     <Card
@@ -265,8 +282,7 @@ export const UserView = () => {
                                             !user.isActive && "opacity-60 grayscale-[0.3]"
                                         )}
                                     >
-
-                                        <CardHeader className="flex flex-row items-start justify-between pb-0 ">
+                                        <CardHeader className="flex flex-row items-start justify-between pb-0">
                                             <div className="flex flex-row items-center space-x-4">
                                                 <div className="relative">
                                                     <Avatar className="h-14 w-14 ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all">
@@ -276,7 +292,6 @@ export const UserView = () => {
                                                                 `https://api.dicebear.com/7.x/initials/svg?seed=${user.givenNames} ${user.lastNames}`
                                                             }
                                                         />
-
                                                         <AvatarFallback className="text-base">
                                                             {getInitials(user.givenNames, user.lastNames)}
                                                         </AvatarFallback>
@@ -287,7 +302,6 @@ export const UserView = () => {
                                                             user.isActive ? "bg-green-500" : "bg-red-500"
                                                         )}
                                                     />
-
                                                 </div>
 
                                                 <div className="space-y-1">
@@ -304,7 +318,6 @@ export const UserView = () => {
                                                             </Badge>
                                                         )}
 
-
                                                         {user.isActive ? (
                                                             <Badge
                                                                 variant="outline"
@@ -317,61 +330,68 @@ export const UserView = () => {
                                                                 Inactivo
                                                             </Badge>
                                                         )}
-
-
                                                     </div>
-
                                                 </div>
                                             </div>
 
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 rounded-lg hover:bg-primary/10"
-                                                    >
-                                                        <FiMoreVertical className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-
-                                                <DropdownMenuContent align="end" className="w-48">
-                                                    {user.isActive ? (
-                                                        <>
-                                                            <DropdownMenuItem onClick={() => console.log("Ver", user.id)}>
-                                                                <FiEye className="mr-2 h-4 w-4" />
-                                                                <span>Ver detalles</span>
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => router.push(`/users/edit/${user.id}`)}>
-
-                                                                <FiEdit className="mr-2 h-4 w-4" />
-                                                                <span>Editar</span>
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem
-                                                                onClick={() => openStatusModal(user.id, user.isActive)}
-                                                                className="text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
-                                                            >
-                                                                <CgPlayListRemove className="mr-2 h-4 w-4" />
-                                                                <span>Desactivar cuenta</span>
-                                                            </DropdownMenuItem>
-                                                        </>
-                                                    ) : (
-                                                        <DropdownMenuItem
-                                                            onClick={() => openStatusModal(user.id, user.isActive)}
-                                                            className="text-green-600 focus:bg-green-50 dark:focus:bg-green-900/20"
+                                            {/* ✨ Menú de acciones - Solo si tiene algún permiso */}
+                                            {(canViewDetails || canUpdate || canChangeStatus) && (
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 rounded-lg hover:bg-primary/10"
                                                         >
-                                                            <CgPlayListRemove className="mr-2 h-4 w-4" />
-                                                            <span>Activar cuenta</span>
-                                                        </DropdownMenuItem>
-                                                    )}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                                            <FiMoreVertical className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
 
-
+                                                    <DropdownMenuContent align="end" className="w-48">
+                                                        {user.isActive ? (
+                                                            <>
+                                                                {canViewDetails && (
+                                                                    <DropdownMenuItem onClick={() => handleViewDetails(user.id)}>
+                                                                        <FiEye className="mr-2 h-4 w-4" />
+                                                                        <span>Ver detalles</span>
+                                                                    </DropdownMenuItem>
+                                                                )}
+                                                                {canUpdate && (
+                                                                    <DropdownMenuItem onClick={() => handleEdit(user.id)}>
+                                                                        <FiEdit className="mr-2 h-4 w-4" />
+                                                                        <span>Editar</span>
+                                                                    </DropdownMenuItem>
+                                                                )}
+                                                                {canChangeStatus && (
+                                                                    <>
+                                                                        <DropdownMenuSeparator />
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => openStatusModal(user.id, user.isActive)}
+                                                                            className="text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                                                                        >
+                                                                            <CgPlayListRemove className="mr-2 h-4 w-4" />
+                                                                            <span>Desactivar cuenta</span>
+                                                                        </DropdownMenuItem>
+                                                                    </>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            canChangeStatus && (
+                                                                <DropdownMenuItem
+                                                                    onClick={() => openStatusModal(user.id, user.isActive)}
+                                                                    className="text-green-600 focus:bg-green-50 dark:focus:bg-green-900/20"
+                                                                >
+                                                                    <CgPlayListRemove className="mr-2 h-4 w-4" />
+                                                                    <span>Activar cuenta</span>
+                                                                </DropdownMenuItem>
+                                                            )
+                                                        )}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            )}
                                         </CardHeader>
 
-                                        <CardContent className="pt-4 pb-2  rounded-b-xl ">
+                                        <CardContent className="pt-4 pb-2 rounded-b-xl">
                                             <div className="space-y-3 text-sm">
                                                 {[
                                                     { icon: <FiMail className="h-4 w-4" />, text: user.email, label: "Correo" },
@@ -397,33 +417,32 @@ export const UserView = () => {
                                             </div>
                                         </CardContent>
 
-                                        <CardFooter className="pt-0 pb-4">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="rounded-full ml-auto border-primary/30 hover:border-primary/50 group transition-all"
-                                                onClick={() => console.log("Ver perfil", user.id)}
-                                            >
-                                                <FiUser className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
-                                                Ver perfil completo
-                                            </Button>
-                                        </CardFooter>
+                                        {/* ✨ Footer - Solo si puede ver detalles */}
+                                        {canViewDetails && (
+                                            <CardFooter className="pt-0 pb-4">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="rounded-full ml-auto border-primary/30 hover:border-primary/50 group transition-all"
+                                                    onClick={() => handleViewDetails(user.id)}
+                                                >
+                                                    <FiUser className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
+                                                    Ver perfil completo
+                                                </Button>
+                                            </CardFooter>
+                                        )}
                                     </Card>
-
-
                                 ))}
                             </div>
                         ) : (
+                            // Vista de tabla
                             <div className="grid grid-cols-1 gap-4 scroll-custom">
-
                                 <div
                                     className={cn(
                                         "shadow-2xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:border-primary/20 rounded-xl border group dark:border-gray-800 dark:bg-white/[0.03]",
                                         "bg-white"
                                     )}
                                 >
-
-
                                     <Table>
                                         <TableHeader className="bg-muted/50">
                                             <TableRow>
@@ -432,15 +451,15 @@ export const UserView = () => {
                                                 <TableHead className="px-6 py-3 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Rol</TableHead>
                                                 <TableHead className="px-6 py-3 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Departamento</TableHead>
                                                 <TableHead className="px-6 py-3 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Nacimiento</TableHead>
-                                                <TableHead className="px-6 py-3 text-right text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-                                                    Acciones
-                                                </TableHead>
-
+                                                {/* ✨ Solo mostrar columna de acciones si tiene algún permiso */}
+                                                {(canViewDetails || canUpdate || canChangeStatus) && (
+                                                    <TableHead className="px-6 py-3 text-right text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                                                        Acciones
+                                                    </TableHead>
+                                                )}
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-
-
                                             {paginatedData.map((user) => (
                                                 <TableRow
                                                     key={user.id}
@@ -536,212 +555,209 @@ export const UserView = () => {
                                                         )}
                                                     </TableCell>
 
-                                                    <TableCell className="px-6 py-4 text-right space-x-2">
-                                                        {/* Ver perfil */}
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="rounded-full border-primary/30 hover:border-primary/50 group"
-                                                            onClick={() => console.log("Ver perfil", user.id)}
-                                                        >
-                                                            <FiUser className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
-                                                            Ver perfil
-                                                        </Button>
-
-                                                        {/* Menú de acciones */}
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
+                                                    {/* ✨ Acciones - Solo si tiene algún permiso */}
+                                                    {(canViewDetails || canUpdate || canChangeStatus) && (
+                                                        <TableCell className="px-6 py-4 text-right space-x-2">
+                                                            {canViewDetails && (
                                                                 <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-8 w-8 rounded-lg hover:bg-primary/10"
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="rounded-full border-primary/30 hover:border-primary/50 group"
+                                                                    onClick={() => handleViewDetails(user.id)}
                                                                 >
-                                                                    <FiMoreVertical className="h-4 w-4" />
+                                                                    <FiUser className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
+                                                                    Ver perfil
                                                                 </Button>
-                                                            </DropdownMenuTrigger>
+                                                            )}
 
-                                                            <DropdownMenuContent align="end" className="w-48">
-                                                                {user.isActive ? (
-                                                                    <>
-                                                                        <DropdownMenuItem onClick={() => console.log("Ver", user.id)}>
-                                                                            <FiEye className="mr-2 h-4 w-4" />
-                                                                            <span>Ver detalles</span>
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={() => console.log("Editar", user.id)}>
-                                                                            <FiEdit className="mr-2 h-4 w-4" />
-                                                                            <span>Editar</span>
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuSeparator />
-                                                                        <DropdownMenuItem
-                                                                            onClick={() => openStatusModal(user.id, user.isActive)}
-                                                                            className="text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                                                            {(canUpdate || canChangeStatus) && (
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="h-8 w-8 rounded-lg hover:bg-primary/10"
                                                                         >
-                                                                            <CgPlayListRemove className="mr-2 h-4 w-4" />
-                                                                            <span>Desactivar cuenta</span>
-                                                                        </DropdownMenuItem>
-                                                                    </>
-                                                                ) : (
-                                                                    <DropdownMenuItem
-                                                                        onClick={() => openStatusModal(user.id, user.isActive)}
-                                                                        className="text-green-600 focus:bg-green-50 dark:focus:bg-green-900/20"
-                                                                    >
-                                                                        <CgPlayListRemove className="mr-2 h-4 w-4" />
-                                                                        <span>Activar cuenta</span>
-                                                                    </DropdownMenuItem>
-                                                                )}
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </TableCell>
-                                                </TableRow>
+                                                                            <FiMoreVertical className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
 
+                                                                    <DropdownMenuContent align="end" className="w-48">
+                                                                        {user.isActive ? (
+                                                                            <>
+                                                                                {canViewDetails && (
+                                                                                    <DropdownMenuItem onClick={() => handleViewDetails(user.id)}>
+                                                                                        <FiEye className="mr-2 h-4 w-4" />
+                                                                                        <span>Ver detalles</span>
+                                                                                    </DropdownMenuItem>
+                                                                                )}
+                                                                                {canUpdate && (
+                                                                                    <DropdownMenuItem onClick={() => handleEdit(user.id)}>
+                                                                                        <FiEdit className="mr-2 h-4 w-4" />
+                                                                                        <span>Editar</span>
+                                                                                    </DropdownMenuItem>
+                                                                                )}
+                                                                                {canChangeStatus && (
+                                                                                    <>
+                                                                                        <DropdownMenuSeparator />
+                                                                                        <DropdownMenuItem
+                                                                                            onClick={() => openStatusModal(user.id, user.isActive)}
+                                                                                            className="text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                                                                                        >
+                                                                                            <CgPlayListRemove className="mr-2 h-4 w-4" />
+                                                                                            <span>Desactivar cuenta</span>
+                                                                                        </DropdownMenuItem>
+                                                                                    </>
+                                                                                )}
+                                                                            </>
+                                                                        ) : (
+                                                                            canChangeStatus && (
+                                                                                <DropdownMenuItem
+                                                                                    onClick={() => openStatusModal(user.id, user.isActive)}
+                                                                                    className="text-green-600 focus:bg-green-50 dark:focus:bg-green-900/20"
+                                                                                >
+                                                                                    <CgPlayListRemove className="mr-2 h-4 w-4" />
+                                                                                    <span>Activar cuenta</span>
+                                                                                </DropdownMenuItem>
+                                                                            )
+                                                                        )}
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            )}
+                                                        </TableCell>
+                                                    )}
+                                                </TableRow>
                                             ))}
                                         </TableBody>
                                     </Table>
-
                                 </div>
                             </div>
                         )}
 
-
-                    <div className="flex items-center justify-between px-5 py-4 border-t border-border">
-                        <div className="text-sm text-muted-foreground">
-                            Mostrando {(currentPage - 1) * itemsPerPage + 1} a{" "}
-                            {Math.min(currentPage * itemsPerPage, totalItems)} de {totalItems} usuarios
+                        <div className="flex items-center justify-between px-5 py-4 border-t border-border">
+                            <div className="text-sm text-muted-foreground">
+                                Mostrando {(currentPage - 1) * itemsPerPage + 1} a{" "}
+                                {Math.min(currentPage * itemsPerPage, totalItems)} de {totalItems} usuarios
+                            </div>
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={handlePageChange}
+                            />
                         </div>
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={handlePageChange}
-                        />
+
+                        {showFilters && (
+                            <div className="fixed top-0 right-0 h-full w-80 bg-white dark:bg-gray-900 shadow-lg z-90001 flex flex-col border-l border-border">
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                                    <h3 className="text-lg font-semibold">Filtros</h3>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setShowFilters(false)}
+                                    >
+                                        <IoClose className="h-5 w-5" />
+                                    </Button>
+                                </div>
+
+                                <div className="p-4 space-y-4 overflow-y-auto">
+                                    {/* Rol */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Rol</label>
+                                        <Select
+                                            onValueChange={(value) => setSelectedRole(value === "all" ? null : value)}
+                                            value={selectedRole ?? "all"}
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Seleccionar rol" />
+                                            </SelectTrigger>
+                                            <SelectContent className="z-[90002]">
+                                                <SelectItem value="all">Todos los roles</SelectItem>
+                                                <SelectItem value="admin">Admin</SelectItem>
+                                                <SelectItem value="Docente">Docente</SelectItem>
+                                                <SelectItem value="Tutor">Tutor</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Departamento */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Departamento</label>
+                                        <Select
+                                            onValueChange={(value) => setSelectedDepartment(value === "all" ? null : value)}
+                                            value={selectedDepartment ?? "all"}
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Seleccionar departamento" />
+                                            </SelectTrigger>
+                                            <SelectContent className="z-[90002]">
+                                                <SelectItem value="all">Todos los departamentos</SelectItem>
+                                                <SelectItem value="Guatemala">Guatemala</SelectItem>
+                                                <SelectItem value="Sacatepéquez">Sacatepéquez</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Género */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Género</label>
+                                        <Select
+                                            onValueChange={(value) => setSelectedGender(value === "all" ? null : value)}
+                                            value={selectedGender ?? "all"}
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Seleccionar género" />
+                                            </SelectTrigger>
+                                            <SelectContent className="z-[90002]">
+                                                <SelectItem value="all">Todos los géneros</SelectItem>
+                                                <SelectItem value="Masculino">Masculino</SelectItem>
+                                                <SelectItem value="Femenino">Femenino</SelectItem>
+                                                <SelectItem value="other">Otro</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Estado */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Estado</label>
+                                        <Select
+                                            onValueChange={(value) => setSelectedStatus(value === "all" ? null : value)}
+                                            value={selectedStatus ?? "all"}
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Seleccionar estado" />
+                                            </SelectTrigger>
+                                            <SelectContent className="z-[90002]">
+                                                <SelectItem value="all">Todos los estados</SelectItem>
+                                                <SelectItem value="activo">Activo</SelectItem>
+                                                <SelectItem value="inactivo">Inactivo</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-
-                    {showFilters && (
-                        <div className="fixed top-0 right-0 h-full w-80 bg-white dark:bg-gray-900 shadow-lg z-90001 flex flex-col border-l border-border">
-                            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                                <h3 className="text-lg font-semibold">Filtros</h3>
-
-
-
-
-
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setShowFilters(false)}
-                                >
-                                    <IoClose className="h-5 w-5" />
-                                </Button>
-                            </div>
-
-                            <div className="p-4 space-y-4 overflow-y-auto">
-
-                                {/* Rol */}
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Rol</label>
-                                    <Select
-                                        onValueChange={(value) => setSelectedRole(value === "all" ? null : value)}
-                                        value={selectedRole ?? "all"}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Seleccionar rol" />
-                                        </SelectTrigger>
-                                        <SelectContent className="z-[90002]">
-                                            <SelectItem value="all">Todos los roles</SelectItem>
-                                            <SelectItem value="admin">Admin</SelectItem>
-                                            <SelectItem value="Docente">Docente</SelectItem>
-                                            <SelectItem value="Tutor">Tutor</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {/* Departamento */}
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Departamento</label>
-                                    <Select
-                                        onValueChange={(value) => setSelectedDepartment(value === "all" ? null : value)}
-                                        value={selectedDepartment ?? "all"}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Seleccionar departamento" />
-                                        </SelectTrigger>
-                                        <SelectContent className="z-[90002]">
-                                            <SelectItem value="all">Todos los departamentos</SelectItem>
-                                            <SelectItem value="Guatemala">Guatemala</SelectItem>
-                                            <SelectItem value="Sacatepéquez">Sacatepéquez</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {/* Género */}
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Género</label>
-                                    <Select
-                                        onValueChange={(value) => setSelectedGender(value === "all" ? null : value)}
-                                        value={selectedGender ?? "all"}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Seleccionar género" />
-                                        </SelectTrigger>
-                                        <SelectContent className="z-[90002]">
-                                            <SelectItem value="all">Todos los géneros</SelectItem>
-                                            <SelectItem value="Masculino">Masculino</SelectItem>
-                                            <SelectItem value="Femenino">Femenino</SelectItem>
-                                            <SelectItem value="other">Otro</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {/* Estado */}
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Estado</label>
-                                    <Select
-                                        onValueChange={(value) => setSelectedStatus(value === "all" ? null : value)}
-                                        value={selectedStatus ?? "all"}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Seleccionar estado" />
-                                        </SelectTrigger>
-                                        <SelectContent className="z-[90002]">
-                                            <SelectItem value="all">Todos los estados</SelectItem>
-                                            <SelectItem value="activo">Activo</SelectItem>
-                                            <SelectItem value="inactivo">Inactivo</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-
-
-
-
-
-                            </div>
-                        </div>
-                    )}
-
+                    <ModalWarningConfirm
+                        isOpen={warningModal.isOpen}
+                        onClose={() => setWarningModal({ isOpen: false, userId: null, isActive: false })}
+                        onConfirm={confirmToggleStatus}
+                        title={`${warningModal.isActive ? 'Desactivar' : 'Activar'} cuenta`}
+                        confirmText='Si, Desactivar'
+                        description={
+                            <>
+                                ¿Estás seguro de que deseas {warningModal.isActive ? 'desactivar' : 'activar'} esta cuenta?
+                                <br />
+                                {warningModal.isActive
+                                    ? 'El usuario no podrá acceder a la plataforma hasta que se reactive.'
+                                    : 'El usuario podrá acceder a la plataforma nuevamente.'}
+                            </>
+                        }
+                    />
                 </div>
-
-
-
-
-                <ModalWarningConfirm
-                    isOpen={warningModal.isOpen}
-                    onClose={() => setWarningModal({ isOpen: false, userId: null, isActive: false })}
-                    onConfirm={confirmToggleStatus}
-                    title={`${warningModal.isActive ? 'Desactivar' : 'Activar'} cuenta`}
-                    confirmText='Si, Desactivar'
-                    description={
-                        <>
-                            ¿Estás seguro de que deseas {warningModal.isActive ? 'desactivar' : 'activar'} esta cuenta?
-                            <br />
-                            {warningModal.isActive
-                                ? 'El usuario no podrá acceder a la plataforma hasta que se reactive.'
-                                : 'El usuario podrá acceder a la plataforma nuevamente.'}
-                        </>
-                    }
-                />
-
             </div>
-        </div>
+
+        </ProtectedContent>
+
     )
 }
