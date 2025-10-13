@@ -1,3 +1,4 @@
+// src/components/cycles/datatable.tsx
 "use client"
 
 import {
@@ -50,10 +51,10 @@ import {
 } from "lucide-react"
 
 // Importamos los hooks del context
-import { 
-  useSchoolCycleContext, 
-  useSchoolCycleActions, 
-  useSchoolCycleStats 
+import {
+  useSchoolCycleContext,
+  useSchoolCycleActions,
+  useSchoolCycleStats
 } from '@/context/SchoolCycleContext'
 import { toast } from "sonner"
 import {
@@ -66,6 +67,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+
+import { useAuth } from '@/context/AuthContext';
+
 
 interface CycleDataTableProps {
   onEdit?: (cycle: SchoolCycle) => void;
@@ -114,11 +118,11 @@ export const getColumns = (
         const startDate = new Date(row.original.startDate);
         const endDate = new Date(row.original.endDate);
         const now = new Date();
-        
+
         // Calculamos si está en curso
         const isCurrentPeriod = startDate <= now && now <= endDate;
         const daysDiff = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        
+
         return (
           <div className="space-y-1">
             <p className="text-sm font-medium">{formatDate(row.original.startDate)}</p>
@@ -140,12 +144,12 @@ export const getColumns = (
         const now = new Date();
         const startDate = new Date(cycle.startDate);
         const endDate = new Date(cycle.endDate);
-        
+
         // Determinamos el estado temporal
         let temporalStatus = "future";
         if (startDate <= now && now <= endDate) temporalStatus = "current";
         else if (endDate < now) temporalStatus = "past";
-        
+
         return (
           <div className="flex gap-2 flex-wrap">
             {/* Estado activo */}
@@ -160,7 +164,7 @@ export const getColumns = (
                 Inactivo
               </Badge>
             )}
-            
+
             {/* Estado cerrado */}
             {cycle.isClosed && (
               <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
@@ -168,7 +172,7 @@ export const getColumns = (
                 Cerrado
               </Badge>
             )}
-            
+
             {/* Estado temporal */}
             {temporalStatus === "current" && (
               <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
@@ -189,13 +193,13 @@ export const getColumns = (
         );
       },
       filterFn: (row, id, value) => {
-  const { isActive = false, isClosed = false } = row.original;
-  if (value === "active") return isActive;
-  if (value === "inactive") return !isActive;
-  if (value === "closed") return isClosed;
-  if (value === "open") return !isClosed;
-  return true;
-},
+        const { isActive = false, isClosed = false } = row.original;
+        if (value === "active") return isActive;
+        if (value === "inactive") return !isActive;
+        if (value === "closed") return isClosed;
+        if (value === "open") return !isClosed;
+        return true;
+      },
 
     },
     {
@@ -235,16 +239,16 @@ export const getColumns = (
                     Ver detalles
                   </DropdownMenuItem>
                 )}
-                
+
                 {onEdit && (
                   <DropdownMenuItem onClick={() => onEdit(cycle)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Editar
                   </DropdownMenuItem>
                 )}
-                
+
                 <DropdownMenuSeparator />
-                
+
                 {onToggleActive && (
                   <DropdownMenuItem onClick={() => onToggleActive(cycle)}>
                     {cycle.isActive ? (
@@ -260,7 +264,7 @@ export const getColumns = (
                     )}
                   </DropdownMenuItem>
                 )}
-                
+
                 {onToggleClosed && (
                   <DropdownMenuItem onClick={() => onToggleClosed(cycle)}>
                     {cycle.isClosed ? (
@@ -276,7 +280,7 @@ export const getColumns = (
                     )}
                   </DropdownMenuItem>
                 )}
-                
+
                 {onDelete && (
                   <>
                     <DropdownMenuSeparator />
@@ -312,20 +316,25 @@ export function CycleDataTable({
   pageSize = 10,
   title = "Ciclos Escolares"
 }: CycleDataTableProps) {
-  
+
   // Hooks del context
-  const { 
-    cycles, 
-    isLoading, 
-    refetchAll 
+  const {
+    cycles,
+    isLoading,
+    refetchAll
   } = useSchoolCycleContext();
-  
-  const { 
-    updateCycle, 
-    isUpdating 
+
+  const {
+    updateCycle,
+    isUpdating
   } = useSchoolCycleActions();
-  
+
   const stats = useSchoolCycleStats();
+
+  const { hasPermission } = useAuth();
+  const canActivate = hasPermission('school-cycle', 'activate');
+  const canUpdate = hasPermission('school-cycle', 'update');
+  const canDelete = hasPermission('school-cycle', 'delete');
 
   // Estados locales
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -335,12 +344,19 @@ export function CycleDataTable({
     pageIndex: 0,
     pageSize,
   });
-  
+
   // Estado para confirmación de eliminación
   const [cycleToDelete, setCycleToDelete] = useState<SchoolCycle | null>(null);
 
   // Funciones para manejar acciones
-  const handleToggleActive = async (cycle: SchoolCycle) => {
+ 
+
+    const handleToggleActive = async (cycle: SchoolCycle) => {
+    if (!canActivate) {
+      toast.error('No tienes permiso para activar/desactivar ciclos');
+      return;
+    }
+    
     try {
       await updateCycle(cycle.id, {
         name: cycle.name,
@@ -360,6 +376,11 @@ export function CycleDataTable({
   };
 
   const handleToggleClosed = async (cycle: SchoolCycle) => {
+    if (!canUpdate) {
+      toast.error('No tienes permiso para cerrar/abrir ciclos');
+      return;
+    }
+    
     try {
       await updateCycle(cycle.id, {
         name: cycle.name,
@@ -390,14 +411,15 @@ export function CycleDataTable({
   };
 
   // Configuración de columnas
-  const columns = getColumns(
-    onEdit,
+ const columns = getColumns(
+    canUpdate && onEdit ? onEdit : undefined,
     onView,
-    handleDelete,
-    handleToggleActive,
-    handleToggleClosed,
+    canDelete && onDelete ? handleDelete : undefined,
+    canActivate ? handleToggleActive : undefined,
+    canUpdate ? handleToggleClosed : undefined,
     showActions
   );
+
 
   // Configuración de la tabla
   const table = useReactTable({
@@ -439,7 +461,7 @@ export function CycleDataTable({
           <div className="space-y-1">
             <h2 className="text-2xl font-bold">{title}</h2>
             <p className="text-sm text-muted-foreground">
-              {stats.totalCycles} ciclos total • {stats.activeCycles} activos • 
+              {stats.totalCycles} ciclos total • {stats.activeCycles} activos •
               {stats.currentCycles} en curso
             </p>
           </div>
@@ -477,7 +499,7 @@ export function CycleDataTable({
           </div>
           <Select
             value={(table.getColumn("status")?.getFilterValue() as string) ?? "all"}
-            onValueChange={(value) => 
+            onValueChange={(value) =>
               table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value)
             }
           >
@@ -563,9 +585,9 @@ export function CycleDataTable({
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -601,8 +623,8 @@ export function CycleDataTable({
                     )}
                   </div>
                 </TableCell>
-              
-            </TableRow>
+
+              </TableRow>
             )}
           </TableBody>
         </Table>

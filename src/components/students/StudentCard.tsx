@@ -3,24 +3,24 @@ import { getInitials } from "@/utils/getInitials"
 import { Student } from "@/types/student"
 import { useRouter } from "next/navigation"
 import { FaMale, FaFemale } from "react-icons/fa"
-import { 
-  FiUsers, 
-  FiActivity, 
-  FiHeart, 
-  FiBook, 
-  FiFeather, 
-  FiStar, 
-  FiCalendar, 
-  FiUser, 
-  FiEye, 
-  FiEdit, 
+import {
+  FiUsers,
+  FiActivity,
+  FiHeart,
+  FiBook,
+  FiFeather,
+  FiStar,
+  FiCalendar,
+  FiUser,
+  FiEye,
+  FiEdit,
   FiMoreVertical,
   FiMapPin,
   FiPhone,
   FiMail,
   FiHome
 } from "react-icons/fi"
-import { 
+import {
   HiOutlineAcademicCap,
   HiOutlineSparkles,
   HiOutlineHeart,
@@ -50,6 +50,8 @@ import {
   TooltipContent
 } from '@/components/ui/tooltip'
 
+import { useAuth } from '@/context/AuthContext'
+
 interface StudentCardProps {
   student: Student
   className?: string
@@ -61,11 +63,17 @@ interface StudentCardProps {
 export function StudentCard({
   student,
   className,
-  onViewDetails = () => {},
-  onEdit = () => {},
-  onStatusChange = () => {},
+  onViewDetails = () => { },
+  onEdit = () => { },
+  onStatusChange = () => { },
 }: StudentCardProps) {
   const router = useRouter()
+
+  // Contexto de autenticación para permisos
+
+    const { hasPermission } = useAuth()
+  const canUpdate = hasPermission('student', 'update')
+  const canChangeStatus = hasPermission('student', 'change-status')
 
   // Obtener el enrollment activo del estudiante
   const activeEnrollment = student.enrollments?.find(e => e.status === 'active') || student.enrollments?.[0]
@@ -80,10 +88,10 @@ export function StudentCard({
   const currentSection = currentSectionId ? `${currentSectionId}` : ''
 
   const handleViewDetails = () => {
-     if (student.id) {
+    if (student.id) {
       router.push(`/students/profile/${student.id}`)
       onViewDetails(student.id)
-    } 
+    }
   }
 
   const handleEdit = () => {
@@ -214,7 +222,7 @@ export function StudentCard({
                   </p>
                 )}
               </div>
-              
+
               {/* Badges mejorados */}
               <div className="flex items-center gap-2 flex-wrap">
                 {isActive ? (
@@ -228,8 +236,8 @@ export function StudentCard({
                   </Badge>
                 )}
                 {currentGrade !== 'Sin asignar' && (
-                  <Badge 
-                    variant="outline" 
+                  <Badge
+                    variant="outline"
                     className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800"
                   >
                     <HiOutlineAcademicCap className="w-3 h-3 mr-1" />
@@ -243,9 +251,9 @@ export function StudentCard({
           {/* Menú de opciones */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-8 w-8 rounded-lg hover:bg-primary/10 transition-all duration-300"
               >
                 <FiMoreVertical className="h-4 w-4" />
@@ -256,10 +264,16 @@ export function StudentCard({
                 <FiEye className="mr-2 h-4 w-4" />
                 Ver detalles
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleEdit} className="cursor-pointer">
-                <FiEdit className="mr-2 h-4 w-4" />
-                Editar
-              </DropdownMenuItem>
+              {canUpdate && (
+            <DropdownMenuItem onClick={handleEdit} className="cursor-pointer">
+              <FiEdit className="mr-2 h-4 w-4" />
+              Editar
+            </DropdownMenuItem>
+          )}
+              <DropdownMenuSeparator />
+             
+                       {canChangeStatus && (
+            <>
               <DropdownMenuSeparator />
               {isActive ? (
                 <DropdownMenuItem
@@ -278,6 +292,21 @@ export function StudentCard({
                   Activar estudiante
                 </DropdownMenuItem>
               )}
+            </>
+          )}
+
+           {/* ✅ Mensaje si no tiene permisos */}
+          {!canUpdate && !canChangeStatus && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                Sin permisos adicionales
+              </DropdownMenuItem>
+            </>
+          )}
+ 
+
+
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -306,11 +335,11 @@ export function StudentCard({
           <div className="group/item flex items-center gap-2 p-2.5 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 hover:shadow-md transition-all duration-300">
             <div className={cn(
               "p-2 rounded-lg text-white shadow-sm",
-              student.gender === 'Masculino' 
-                ? "bg-gradient-to-br from-blue-400 to-blue-600" 
+              student.gender === 'Masculino'
+                ? "bg-gradient-to-br from-blue-400 to-blue-600"
                 : student.gender === 'Femenino'
-                ? "bg-gradient-to-br from-pink-400 to-pink-600"
-                : "bg-gradient-to-br from-gray-400 to-gray-600"
+                  ? "bg-gradient-to-br from-pink-400 to-pink-600"
+                  : "bg-gradient-to-br from-gray-400 to-gray-600"
             )}>
               {student.gender === 'Masculino' ? (
                 <FaMale className="h-4 w-4" />
@@ -385,7 +414,7 @@ export function StudentCard({
 
             {student.favoriteColor && (
               <div className="flex items-center gap-2 p-2 rounded-lg bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20">
-                <div 
+                <div
                   className="h-4 w-4 rounded-full border-2 border-gray-300 dark:border-gray-600 shadow-sm"
                   style={{ backgroundColor: student.favoriteColor }}
                 />

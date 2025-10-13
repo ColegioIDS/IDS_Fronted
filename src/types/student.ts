@@ -1,5 +1,5 @@
 //src\types\student.ts
-// Enums y tipos base
+
 export type EnrollmentStatus = 'active' | 'inactive' | 'graduated' | 'transferred';
 export type Gender = 'Masculino' | 'Femenino' | 'Otro' | null;
 export type RelationshipType = 'Madre' | 'Padre' | 'Tutor' | 'Abuelo' | 'Tío' | 'Otro';
@@ -305,8 +305,16 @@ export interface Section {
   capacity: number;
   gradeId: number;
   teacherId?: number | null;
+  teacher?: {
+    id: number;
+    givenNames: string;
+    lastNames: string;
+  } | null;
+  // ✅ NUEVO: Campos de disponibilidad
+  enrolledCount?: number;
+  availableSpots?: number;
+  isFull?: boolean;
 }
-
 export interface SchoolCycle {
   id: number;
   name: string;
@@ -314,4 +322,32 @@ export interface SchoolCycle {
   endDate: string;
   isActive: boolean;
   isClosed: boolean;
+}
+export interface EnrollmentFormData {
+  activeCycle: {
+    id: number;
+    name: string;
+    startDate: string;
+    endDate: string;
+    isActive: boolean;
+  };
+  availableGrades: Grade[];
+  totalGrades: number;
+}
+
+export interface GradeWithSections {
+  cycleId: number;
+  cycleName: string;
+  grades: Grade[];
+  totalGrades: number;
+}
+
+export interface SectionsAvailability {
+  cycleId: number;
+  cycleName: string;
+  gradeId: number;
+  gradeName: string;
+  sections: Section[]; // Section ya tiene los campos de disponibilidad
+  totalSections: number;
+  availableSections: number;
 }

@@ -6,6 +6,8 @@ import {
   getAcademicWeeks,
   getAcademicWeekById,
   getAcademicWeeksByBimester,
+  getRegularWeeksByBimester, // ✅ NUEVO
+  getEvaluationWeekByBimester, // ✅ NUEVO
   getAcademicWeekByNumber,
   getCurrentWeek,
   createAcademicWeek,
@@ -30,6 +32,8 @@ export const academicWeekKeys = {
   details: () => [...academicWeekKeys.all, 'detail'] as const,
   detail: (id: number) => [...academicWeekKeys.details(), id] as const,
   bimester: (bimesterId: number) => [...academicWeekKeys.all, 'bimester', bimesterId] as const,
+  bimesterRegular: (bimesterId: number) => [...academicWeekKeys.all, 'bimester', bimesterId, 'regular'] as const, // ✅ NUEVO
+  bimesterEvaluation: (bimesterId: number) => [...academicWeekKeys.all, 'bimester', bimesterId, 'evaluation'] as const, // ✅ NUEVO
   weekNumber: (bimesterId: number, number: number) => 
     [...academicWeekKeys.all, 'week-number', bimesterId, number] as const,
   current: () => [...academicWeekKeys.all, 'current'] as const,
@@ -61,6 +65,26 @@ export const useAcademicWeeksByBimester = (bimesterId: number, enabled: boolean 
   return useQuery({
     queryKey: academicWeekKeys.bimester(bimesterId),
     queryFn: () => getAcademicWeeksByBimester(bimesterId),
+    enabled: enabled && bimesterId > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// ✅ NUEVO: Hook para obtener solo semanas regulares de un bimestre
+export const useRegularWeeksByBimester = (bimesterId: number, enabled: boolean = true) => {
+  return useQuery({
+    queryKey: academicWeekKeys.bimesterRegular(bimesterId),
+    queryFn: () => getRegularWeeksByBimester(bimesterId),
+    enabled: enabled && bimesterId > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// ✅ NUEVO: Hook para obtener semana de evaluación de un bimestre
+export const useEvaluationWeekByBimester = (bimesterId: number, enabled: boolean = true) => {
+  return useQuery({
+    queryKey: academicWeekKeys.bimesterEvaluation(bimesterId),
+    queryFn: () => getEvaluationWeekByBimester(bimesterId),
     enabled: enabled && bimesterId > 0,
     staleTime: 5 * 60 * 1000,
   });
@@ -102,6 +126,8 @@ export const useCreateAcademicWeek = () => {
       // Invalidar y refetch de listas
       queryClient.invalidateQueries({ queryKey: academicWeekKeys.lists() });
       queryClient.invalidateQueries({ queryKey: academicWeekKeys.bimester(newWeek.bimesterId) });
+      queryClient.invalidateQueries({ queryKey: academicWeekKeys.bimesterRegular(newWeek.bimesterId) }); // ✅ NUEVO
+      queryClient.invalidateQueries({ queryKey: academicWeekKeys.bimesterEvaluation(newWeek.bimesterId) }); // ✅ NUEVO
       queryClient.invalidateQueries({ queryKey: academicWeekKeys.current() });
       
       toast.success('Semana académica creada exitosamente');
@@ -127,6 +153,8 @@ export const useUpdateAcademicWeek = () => {
       // Invalidar listas relacionadas
       queryClient.invalidateQueries({ queryKey: academicWeekKeys.lists() });
       queryClient.invalidateQueries({ queryKey: academicWeekKeys.bimester(updatedWeek.bimesterId) });
+      queryClient.invalidateQueries({ queryKey: academicWeekKeys.bimesterRegular(updatedWeek.bimesterId) }); // ✅ NUEVO
+      queryClient.invalidateQueries({ queryKey: academicWeekKeys.bimesterEvaluation(updatedWeek.bimesterId) }); // ✅ NUEVO
       queryClient.invalidateQueries({ queryKey: academicWeekKeys.current() });
       
       toast.success('Semana académica actualizada exitosamente');
@@ -172,6 +200,8 @@ export const useGenerateWeeks = () => {
       // Invalidar todas las consultas relacionadas
       queryClient.invalidateQueries({ queryKey: academicWeekKeys.lists() });
       queryClient.invalidateQueries({ queryKey: academicWeekKeys.bimester(variables.bimesterId) });
+      queryClient.invalidateQueries({ queryKey: academicWeekKeys.bimesterRegular(variables.bimesterId) }); // ✅ NUEVO
+      queryClient.invalidateQueries({ queryKey: academicWeekKeys.bimesterEvaluation(variables.bimesterId) }); // ✅ NUEVO
       queryClient.invalidateQueries({ queryKey: academicWeekKeys.current() });
       
       toast.success(`${generatedWeeks.length} semanas académicas generadas exitosamente`);
@@ -191,6 +221,8 @@ export const useAcademicWeekManagement = (bimesterId?: number) => {
 
   const weeks = useAcademicWeeks();
   const weeksByBimester = useAcademicWeeksByBimester(bimesterId || 0, !!bimesterId);
+  const regularWeeks = useRegularWeeksByBimester(bimesterId || 0, !!bimesterId); // ✅ NUEVO
+  const evaluationWeek = useEvaluationWeekByBimester(bimesterId || 0, !!bimesterId); // ✅ NUEVO
   const currentWeek = useCurrentWeek();
   
   const createWeek = useCreateAcademicWeek();
@@ -212,6 +244,8 @@ export const useAcademicWeekManagement = (bimesterId?: number) => {
     // Datos
     weeks: weeks.data || [],
     weeksByBimester: weeksByBimester.data || [],
+    regularWeeks: regularWeeks.data || [], // ✅ NUEVO
+    evaluationWeek: evaluationWeek.data || null, // ✅ NUEVO
     currentWeek: currentWeek.data,
     
     // Estados de carga
@@ -258,12 +292,22 @@ export const useAcademicWeeksWithStats = (bimesterId: number) => {
     const completedWeeks = weeks.filter(week => new Date(week.endDate) < now);
     const upcomingWeeks = weeks.filter(week => new Date(week.startDate) > now);
     
+    // ✅ NUEVO: Estadísticas por tipo
+    const regularWeeks = weeks.filter(week => week.weekType === 'REGULAR');
+    const evaluationWeeks = weeks.filter(week => week.weekType === 'EVALUATION');
+    const reviewWeeks = weeks.filter(week => week.weekType === 'REVIEW');
+    
     return {
       total: weeks.length,
       completed: completedWeeks.length,
       upcoming: upcomingWeeks.length,
       current: currentWeek || null,
       progress: weeks.length > 0 ? (completedWeeks.length / weeks.length) * 100 : 0,
+      byType: { // ✅ NUEVO
+        regular: regularWeeks.length,
+        evaluation: evaluationWeeks.length,
+        review: reviewWeeks.length,
+      }
     };
   }, [weeks]);
   

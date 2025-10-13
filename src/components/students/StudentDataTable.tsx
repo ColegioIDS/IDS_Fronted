@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
+import { useRouter } from 'next/navigation' // ✅ AGREGADO
+import { useAuth } from '@/context/AuthContext' // ✅ AGREGADO
 import { 
   FiChevronLeft, 
   FiChevronRight, 
@@ -54,7 +56,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-export const columns: ColumnDef<Student>[] = [
+// Columnas base (sin la columna de acciones)
+const baseColumns: ColumnDef<Student>[] = [
   {
     accessorKey: "name",
     header: () => (
@@ -68,7 +71,6 @@ export const columns: ColumnDef<Student>[] = [
       const activeEnrollment = student.enrollments?.find(e => e.status === 'active')
       const isActive = activeEnrollment?.status === 'active'
       
-      // Función para obtener color basado en el nombre
       const getGradientFromName = (name: string) => {
         const gradients = [
           'from-violet-400 to-purple-600',
@@ -200,7 +202,7 @@ export const columns: ColumnDef<Student>[] = [
       )
     }
   },
-  {
+ {
     accessorKey: "enrollment",
     header: () => (
       <div className="flex items-center gap-2">
@@ -297,7 +299,28 @@ export const columns: ColumnDef<Student>[] = [
       )
     }
   },
-  {
+]
+
+interface StudentDataTableProps {
+  data: Student[]
+}
+
+export function StudentDataTable({ data }: StudentDataTableProps) {
+  // ✅ AGREGADO: Obtener permisos y router
+  const { hasPermission } = useAuth()
+  const router = useRouter()
+  const canUpdate = hasPermission('student', 'update')
+  const canChangeStatus = hasPermission('student', 'change-status')
+
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  })
+
+  // ✅ AGREGADO: Columna de acciones con permisos
+  const actionsColumn: ColumnDef<Student> = {
     id: "actions",
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => {
@@ -317,60 +340,71 @@ export const columns: ColumnDef<Student>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
+            {/* Ver detalles - siempre visible */}
             <DropdownMenuItem 
-              onClick={() => console.log("Ver", student.id)}
+              onClick={() => router.push(`/students/profile/${student.id}`)}
               className="cursor-pointer"
             >
               <FiEye className="mr-2 h-4 w-4" />
               <span>Ver detalles</span>
             </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => console.log("Editar", student.id)}
-              className="cursor-pointer"
-            >
-              <FiEdit className="mr-2 h-4 w-4" />
-              <span>Editar</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {isActive ? (
-              <DropdownMenuItem
-                onClick={() => console.log("Desactivar", student.id)}
-                className="text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20 cursor-pointer"
+            
+            {/* ✅ Editar - solo si tiene permiso */}
+            {canUpdate && (
+              <DropdownMenuItem 
+                onClick={() => router.push(`/students/edit/${student.id}`)}
+                className="cursor-pointer"
               >
-                <CgPlayListRemove className="mr-2 h-4 w-4" />
-                <span>Desactivar estudiante</span>
+                <FiEdit className="mr-2 h-4 w-4" />
+                <span>Editar</span>
               </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem
-                onClick={() => console.log("Activar", student.id)}
-                className="text-green-600 focus:bg-green-50 dark:focus:bg-green-900/20 cursor-pointer"
-              >
-                <FiActivity className="mr-2 h-4 w-4" />
-                <span>Activar estudiante</span>
-              </DropdownMenuItem>
+            )}
+            
+            {/* ✅ Cambiar estado - solo si tiene permiso */}
+            {canChangeStatus && (
+              <>
+                <DropdownMenuSeparator />
+                {isActive ? (
+                  <DropdownMenuItem
+                    onClick={() => console.log("Desactivar", student.id)}
+                    className="text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20 cursor-pointer"
+                  >
+                    <CgPlayListRemove className="mr-2 h-4 w-4" />
+                    <span>Desactivar estudiante</span>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    onClick={() => console.log("Activar", student.id)}
+                    className="text-green-600 focus:bg-green-50 dark:focus:bg-green-900/20 cursor-pointer"
+                  >
+                    <FiActivity className="mr-2 h-4 w-4" />
+                    <span>Activar estudiante</span>
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
+            
+            {/* ✅ Mensaje si no tiene permisos adicionales */}
+            {!canUpdate && !canChangeStatus && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled className="text-xs text-muted-foreground justify-center">
+                  Solo lectura
+                </DropdownMenuItem>
+              </>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
       )
     },
-  },
-]
+  }
 
-interface StudentDataTableProps {
-  data: Student[]
-}
-
-export function StudentDataTable({ data }: StudentDataTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  })
+  // ✅ MODIFICADO: Combinar columnas base con columna de acciones
+  const columns = [...baseColumns, actionsColumn]
 
   const table = useReactTable({
     data,
-    columns,
+    columns, // ✅ Usar columnas con permisos
     state: {
       sorting,
       columnFilters,

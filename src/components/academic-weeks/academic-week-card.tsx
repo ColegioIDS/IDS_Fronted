@@ -11,7 +11,8 @@ import {
   Trash2, 
   MoreVertical,
   Target,
-  BookOpen
+  BookOpen,
+  Lock
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +24,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAcademicWeekActions } from '@/context/AcademicWeeksContext';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useAuth } from '@/context/AuthContext';
+
 import { AcademicWeek } from '@/types/academic-week.types';
 import { EditWeekDialog } from './edit-week-dialog';
 import { DeleteWeekDialog } from './delete-week-dialog';
@@ -42,6 +51,12 @@ interface AcademicWeekCardProps {
 export function AcademicWeekCard({ week }: AcademicWeekCardProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  
+  // ✅ Permisos
+const { hasPermission } = useAuth();
+  const canUpdate = hasPermission('academic-week', 'update');
+  const canDelete = hasPermission('academic-week', 'delete');
+  const hasAnyAction = canUpdate || canDelete;
   
   const now = new Date();
   const startDate = parseUTCAsLocal(week.startDate);
@@ -71,7 +86,6 @@ export function AcademicWeekCard({ week }: AcademicWeekCardProps) {
 
   const statusInfo = getStatusInfo();
   
-  // Usar las funciones utilitarias
   const weekProgress = calculateWeekProgress(startDate, endDate);
   const daysRemaining = calculateDaysRemaining(endDate);
   const totalDays = calculateTotalDays(startDate, endDate);
@@ -117,34 +131,55 @@ export function AcademicWeekCard({ week }: AcademicWeekCardProps) {
               )}
             </div>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-9 w-9 p-0 hover:bg-white/80 dark:hover:bg-background/80 shadow-sm border border-white/50 dark:border-border/50 group-hover:opacity-100 transition-opacity"
-                >
-                  <MoreVertical className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem 
-                  onClick={() => setIsEditOpen(true)}
-                  className="cursor-pointer"
-                >
-                  <Edit2 className="h-4 w-4 mr-2" />
-                  Editar semana
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => setIsDeleteOpen(true)}
-                  className="text-red-600 focus:text-red-600 cursor-pointer"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Eliminar semana
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* ✅ Menú de acciones con permisos */}
+            {hasAnyAction ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-9 w-9 p-0 hover:bg-white/80 dark:hover:bg-background/80 shadow-sm border border-white/50 dark:border-border/50 group-hover:opacity-100 transition-opacity"
+                  >
+                    <MoreVertical className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {canUpdate && (
+                    <DropdownMenuItem 
+                      onClick={() => setIsEditOpen(true)}
+                      className="cursor-pointer"
+                    >
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Editar semana
+                    </DropdownMenuItem>
+                  )}
+                  {canUpdate && canDelete && <DropdownMenuSeparator />}
+                  {canDelete && (
+                    <DropdownMenuItem 
+                      onClick={() => setIsDeleteOpen(true)}
+                      className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400 cursor-pointer"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Eliminar semana
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              // ✅ Indicador de solo lectura
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center justify-center h-9 w-9 rounded-md bg-slate-100 dark:bg-slate-800">
+                      <Lock className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Solo lectura</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
         </CardHeader>
 
@@ -221,17 +256,22 @@ export function AcademicWeekCard({ week }: AcademicWeekCardProps) {
         </CardContent>
       </Card>
 
-      <EditWeekDialog 
-        week={week}
-        open={isEditOpen}
-        onOpenChange={setIsEditOpen}
-      />
+      {/* ✅ Diálogos solo si tiene permisos */}
+      {canUpdate && (
+        <EditWeekDialog 
+          week={week}
+          open={isEditOpen}
+          onOpenChange={setIsEditOpen}
+        />
+      )}
       
-      <DeleteWeekDialog 
-        week={week}
-        open={isDeleteOpen}
-        onOpenChange={setIsDeleteOpen}
-      />
+      {canDelete && (
+        <DeleteWeekDialog 
+          week={week}
+          open={isDeleteOpen}
+          onOpenChange={setIsDeleteOpen}
+        />
+      )}
     </>
   );
 }

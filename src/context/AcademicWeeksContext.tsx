@@ -9,7 +9,9 @@ import {
   useUpdateAcademicWeek,
   useDeleteAcademicWeek,
   useGenerateWeeks,
-  academicWeekKeys
+  academicWeekKeys,
+  useRegularWeeksByBimester, // ✅ NUEVO
+  useEvaluationWeekByBimester, // ✅ NUEVO
 } from '@/hooks/useAcademicWeeks';
 import {
   AcademicWeek,
@@ -22,6 +24,12 @@ import {
 
 // ==================== TIPOS DEL CONTEXT ====================
 interface AcademicWeekContextValue {
+   canFillErica: (week: AcademicWeek) => boolean;
+  isEvaluationWeek: (week: AcademicWeek) => boolean;
+  getRegularWeeks: (bimesterId: number) => AcademicWeek[];
+  getEvaluationWeek: (bimesterId: number) => AcademicWeek | null;
+
+
   // Datos principales
   weeks: AcademicWeek[];
   currentWeek: CurrentWeekResponse | undefined;
@@ -74,6 +82,7 @@ interface AcademicWeekProviderProps {
   defaultFilters?: AcademicWeekFilters;
 }
 
+
 // ==================== CONTEXT ====================
 const AcademicWeekContext = createContext<AcademicWeekContextValue | undefined>(undefined);
 
@@ -86,25 +95,48 @@ export const AcademicWeekProvider: React.FC<AcademicWeekProviderProps> = ({
   const [filters, setFiltersState] = React.useState<AcademicWeekFilters>(defaultFilters);
 
   // ========== QUERIES ==========
-  const {
-    data: weeks = [],
-    isLoading: isLoadingWeeks,
-    isError: isErrorWeeks,
-    error: errorWeeks
-  } = useAcademicWeeks(filters);
+const {
+  data: weeks = [],
+  isLoading: isLoadingWeeks,
+  isError: isErrorWeeks,
+  error: errorWeeks
+} = useAcademicWeeks(filters);
 
-  const {
-    data: currentWeek,
-    isLoading: isLoadingCurrent,
-    isError: isErrorCurrent,
-    error: errorCurrent
-  } = useCurrentWeek();
+const {
+  data: currentWeek,
+  isLoading: isLoadingCurrent,
+  isError: isErrorCurrent,
+  error: errorCurrent
+} = useCurrentWeek();
 
   // ========== MUTATIONS ==========
-  const createWeekMutation = useCreateAcademicWeek();
-  const updateWeekMutation = useUpdateAcademicWeek();
-  const deleteWeekMutation = useDeleteAcademicWeek();
-  const generateWeeksMutation = useGenerateWeeks();
+const createWeekMutation = useCreateAcademicWeek();
+const updateWeekMutation = useUpdateAcademicWeek();
+const deleteWeekMutation = useDeleteAcademicWeek();
+const generateWeeksMutation = useGenerateWeeks();
+
+
+  // ========== FUNCIONES DE VERIFICACIÓN ==========
+const canFillErica = useCallback((week: AcademicWeek): boolean => {
+  return week.weekType === 'REGULAR'; // ✅ Cambiar 'type' por 'weekType'
+}, []);
+
+const isEvaluationWeek = useCallback((week: AcademicWeek): boolean => {
+  return week.weekType === 'EVALUATION'; // ✅ Cambiar 'type' por 'weekType'
+}, []);
+
+
+const getRegularWeeks = useCallback((bimesterId: number): AcademicWeek[] => {
+  return weeks.filter(week => week.bimesterId === bimesterId && week.weekType === 'REGULAR');
+}, [weeks]);
+
+const getEvaluationWeek = useCallback((bimesterId: number): AcademicWeek | null => {
+  const evaluationWeek = weeks.find(
+    week => week.bimesterId === bimesterId && week.weekType === 'EVALUATION'
+  );
+  return evaluationWeek || null;
+}, [weeks]);
+
 
   // ========== COMPUTED STATES ==========
   const isLoading = isLoadingWeeks || isLoadingCurrent;
@@ -226,6 +258,11 @@ export const AcademicWeekProvider: React.FC<AcademicWeekProviderProps> = ({
 
   // ========== CONTEXT VALUE ==========
   const contextValue: AcademicWeekContextValue = useMemo(() => ({
+
+      canFillErica,
+  isEvaluationWeek,
+  getRegularWeeks,
+  getEvaluationWeek,
     // Datos principales
     weeks,
     currentWeek,
@@ -261,30 +298,34 @@ export const AcademicWeekProvider: React.FC<AcademicWeekProviderProps> = ({
     
     // Estadísticas
     stats,
-  }), [
-    weeks,
-    currentWeek,
-    isLoading,
-    isError,
-    error,
-    filters,
-    setFilters,
-    clearFilters,
-    createWeek,
-    updateWeek,
-    deleteWeek,
-    generateWeeks,
-    isCreating,
-    isUpdating,
-    isDeleting,
-    isGenerating,
-    getWeeksByBimester,
-    getWeekByNumber,
-    getCurrentWeekInfo,
-    refetchAll,
-    clearCache,
-    stats,
-  ]);
+}), [
+  canFillErica,
+  isEvaluationWeek,
+  getRegularWeeks,
+  getEvaluationWeek,
+  weeks,
+  currentWeek,
+  isLoading,
+  isError,
+  error,
+  filters,
+  setFilters,
+  clearFilters,
+  createWeek,
+  updateWeek,
+  deleteWeek,
+  generateWeeks,
+  isCreating,
+  isUpdating,
+  isDeleting,
+  isGenerating,
+  getWeeksByBimester,
+  getWeekByNumber,
+  getCurrentWeekInfo,
+  refetchAll,
+  clearCache,
+  stats,
+]);
 
   return (
     <AcademicWeekContext.Provider value={contextValue}>

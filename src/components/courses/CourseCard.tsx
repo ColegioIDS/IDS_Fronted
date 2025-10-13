@@ -10,6 +10,7 @@ import { Course, CourseWithRelations } from '@/types/courses';
 import { useCourseForm, useCourseList } from '@/context/CourseContext';
 import { CourseForm } from './CourseForm';
 import { toast } from 'react-toastify';
+import { useAuth } from '@/context/AuthContext';
 
 interface CourseCardProps {
   course: CourseWithRelations;
@@ -21,6 +22,11 @@ export function CourseCard({ course }: CourseCardProps) {
   // Hooks del Context
   const { startEdit } = useCourseForm();
   const { handleDelete } = useCourseList();
+
+
+    const { hasPermission } = useAuth();
+  const canUpdate = hasPermission('course', 'update');
+  const canDelete = hasPermission('course', 'delete');
 
   const getAreaColor = (area: string | null | undefined): string => {
     if (!area) return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
@@ -88,17 +94,23 @@ export function CourseCard({ course }: CourseCardProps) {
             >
               <BookOpen className="h-5 w-5" />
             </div>
+              {(canUpdate || canDelete ) &&  (
+
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent 
                 align="end" 
                 className="w-48 bg-white/95 backdrop-blur-sm dark:bg-gray-800/95 border-gray-200 dark:border-gray-700"
               >
                
+
+               {canUpdate && (
                 <DropdownMenuItem 
                   onClick={handleEdit}
                   className="hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -106,6 +118,10 @@ export function CourseCard({ course }: CourseCardProps) {
                   <Edit className="h-4 w-4 mr-2" />
                   Editar
                 </DropdownMenuItem>
+                )}
+
+                {canDelete && (
+
                 <DropdownMenuItem
                   className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
                   onClick={handleDeleteCourse}
@@ -113,9 +129,14 @@ export function CourseCard({ course }: CourseCardProps) {
                   <Trash2 className="h-4 w-4 mr-2" />
                   Eliminar
                 </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
+
+
             </DropdownMenu>
+              )}
           </div>
+
           <div>
             <CardTitle className="text-lg leading-tight text-gray-900 dark:text-gray-100">
               {course.name}

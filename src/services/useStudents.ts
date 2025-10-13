@@ -1,7 +1,11 @@
 //src\services\useStudents.ts
 import axios, { AxiosError } from 'axios';
 import { API_BASE_URL } from '@/config/api';
-import { Student, CreateStudentPayload, ParentDpiResponse, StudentTransferPayload, Enrollment } from '@/types/student';
+import { Student, CreateStudentPayload, ParentDpiResponse, StudentTransferPayload, Enrollment,
+  EnrollmentFormData, 
+  GradeWithSections,
+  SectionsAvailability 
+ } from '@/types/student';
 import { ApiResponse } from '@/types/api';
 
 const apiClient = axios.create({
@@ -145,6 +149,68 @@ export const deleteStudent = async (studentId: number): Promise<void> => {
     handleApiError(error, 'Error al eliminar el estudiante');
   }
 };
+
+
+// ✅ NUEVO: Obtener datos completos para el formulario de inscripción
+export const getEnrollmentData = async (): Promise<EnrollmentFormData> => {
+  try {
+    const { data } = await apiClient.get<ApiResponse<EnrollmentFormData>>('/api/students/enrollment/data');
+
+    if (!data.success) {
+      throw new Error(data.message || 'Error al obtener datos de inscripción');
+    }
+
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener datos de inscripción');
+  }
+};
+
+// ✅ NUEVO: Obtener grados disponibles para un ciclo específico
+export const getGradesByCycle = async (cycleId: number): Promise<GradeWithSections> => {
+  try {
+    const { data } = await apiClient.get<ApiResponse<GradeWithSections>>(
+      `/api/students/enrollment/cycles/${cycleId}/grades`
+    );
+
+    if (!data.success) {
+      throw new Error(data.message || 'Error al obtener grados del ciclo');
+    }
+
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener grados del ciclo');
+  }
+};
+
+// ✅ NUEVO: Obtener secciones disponibles de un grado en un ciclo
+export const getSectionsByGradeAndCycle = async (
+  cycleId: number, 
+  gradeId: number
+): Promise<SectionsAvailability> => {
+  try {
+    const { data } = await apiClient.get<ApiResponse<SectionsAvailability>>(
+      `/api/students/enrollment/cycles/${cycleId}/grades/${gradeId}/sections`
+    );
+
+    if (!data.success) {
+      throw new Error(data.message || 'Error al obtener secciones');
+    }
+
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener secciones');
+  }
+};
+
+// Exportar todo junto
+export const studentEnrollmentService = {
+  getEnrollmentData,
+  getGradesByCycle,
+  getSectionsByGradeAndCycle,
+};
+
+
 
 // Función reutilizable para manejar errores
 function handleApiError(error: unknown, fallbackMessage: string): never {

@@ -8,19 +8,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { NoResultsFound } from "@/components/noresult/NoData";
 import { BimestersTable } from "@/components/bimester/bimesters-table";
-
-// ✅ NUEVO: Importar el Dialog en lugar del modal anterior
 import BimesterDialog from './BimesterDialog';
+
+// ✅ NUEVO: Importar contexto de autenticación
+import { useAuth } from '@/context/AuthContext';
 
 // Contextos actualizados
 import { useBimesterContext, useCycleBimesters } from '@/context/newBimesterContext';
 import { useSchoolCycleContext } from '@/context/SchoolCycleContext';
 
 import { Bimester } from "@/types/SchoolBimesters";
-import { SchoolCycle } from '@/types/SchoolCycle';
-import { PlusCircle, Calendar, CalendarDays, Clock } from 'lucide-react';
+import { PlusCircle, Calendar, CalendarDays, Clock, Lock } from 'lucide-react'; // ✅ Agregado Lock
 
 export default function BimesterTableContainer() {
+  // ✅ NUEVO: Hook de autenticación y permisos
+  const { hasPermission } = useAuth();
+  const canRead = hasPermission('bimester', 'read');
+  const canCreate = hasPermission('bimester', 'create');
+
   // Estados locales
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [bimesterToEdit, setBimesterToEdit] = useState<Bimester | null>(null);
@@ -44,7 +49,6 @@ export default function BimesterTableContainer() {
   const {
     bimesters: selectedBimesters,
     isLoading: isLoadingSelectedBimesters,
-    cycleId: currentCycleId
   } = useCycleBimesters(selectedCycleId || undefined);
 
   // Determinar qué datos mostrar
@@ -62,8 +66,11 @@ export default function BimesterTableContainer() {
     }
   }, [activeCycle, selectedCycleId]);
 
-  // ✅ ACTUALIZADO: Funciones para el dialog
+  // ✅ ACTUALIZADO: Funciones para el dialog con verificación de permisos
   const handleCreateBimester = () => {
+    if (!canCreate) {
+      return; // ✅ Doble verificación de permisos
+    }
     setBimesterToEdit(null);
     setIsDialogOpen(true);
   };
@@ -86,6 +93,46 @@ export default function BimesterTableContainer() {
       year: 'numeric'
     });
   };
+
+  // ✅ NUEVO: Si no tiene permiso de lectura, mostrar pantalla de acceso denegado
+  if (!canRead) {
+    return (
+      <div className="min-h-[600px] flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-red-200 dark:border-red-800 p-8">
+          <div className="flex flex-col items-center text-center space-y-6">
+            <div className="relative w-32 h-32">
+              <div className="absolute inset-0 bg-red-500/20 dark:bg-red-400/20 rounded-full blur-2xl animate-pulse"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative bg-red-100 dark:bg-red-900/30 rounded-full p-6 shadow-lg">
+                  <Lock 
+                    className="w-16 h-16 text-red-600 dark:text-red-400" 
+                    strokeWidth={2.5}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                Acceso Denegado
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                No tienes permisos para ver los bimestres académicos
+              </p>
+              <div className="pt-4 space-y-2">
+                <p className="text-sm text-gray-500 dark:text-gray-500">
+                  Permiso requerido:
+                </p>
+                <code className="inline-block px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-md text-xs font-mono border border-red-200 dark:border-red-800">
+                  bimester:read
+                </code>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Estado de carga
   if (isLoadingCycles) {
@@ -114,14 +161,17 @@ export default function BimesterTableContainer() {
             </p>
           </div>
 
-          <Button
-            onClick={handleCreateBimester}
-            className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-            disabled={!currentCycle}
-          >
-            <PlusCircle className="h-4 w-4" />
-            Crear Bimestre
-          </Button>
+          {/* ✅ ACTUALIZADO: Botón crear solo si tiene permiso */}
+          {canCreate && (
+            <Button
+              onClick={handleCreateBimester}
+              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+              disabled={!currentCycle}
+            >
+              <PlusCircle className="h-4 w-4" />
+              Crear Bimestre
+            </Button>
+          )}
         </div>
 
         <Separator className="bg-border" />
@@ -214,14 +264,17 @@ export default function BimesterTableContainer() {
                 message="No se encontraron bimestres registrados"
                 suggestion="Comienza creando un nuevo bimestre para este ciclo escolar"
               />
-              <Button
-                onClick={handleCreateBimester}
-                variant="outline"
-                className="gap-2 border-dashed border-2 hover:border-primary hover:bg-primary/5"
-              >
-                <PlusCircle className="h-4 w-4" />
-                Crear primer bimestre
-              </Button>
+              {/* ✅ ACTUALIZADO: Botón solo si tiene permiso de crear */}
+              {canCreate && (
+                <Button
+                  onClick={handleCreateBimester}
+                  variant="outline"
+                  className="gap-2 border-dashed border-2 hover:border-primary hover:bg-primary/5"
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Crear primer bimestre
+                </Button>
+              )}
             </div>
           ) : (
             <BimestersTable
@@ -233,7 +286,7 @@ export default function BimesterTableContainer() {
         </CardContent>
       </Card>
 
-      {/* ✅ NUEVO: Dialog Component */}
+      {/* Dialog Component */}
       <BimesterDialog
         isOpen={isDialogOpen}
         onClose={handleCloseDialog}

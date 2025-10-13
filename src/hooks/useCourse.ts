@@ -116,7 +116,7 @@ export function useCourse(isEditMode: boolean = false, id?: number) {
         setIsSubmitting(true);
         try {
             const updatedCourse = await updateCourse(id, data);
-            toast.success("Curso actualizado correctamente");
+            //toast.success("Curso actualizado correctamente");
             await fetchCourses();
             return { success: true, data: updatedCourse };
         } catch (error: any) {

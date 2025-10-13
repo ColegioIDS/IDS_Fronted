@@ -10,6 +10,7 @@ import { Course, CourseWithRelations } from '@/types/courses';
 import { useCourseForm, useCourseList } from '@/context/CourseContext';
 import { CourseForm } from './CourseForm';
 import { toast } from 'react-toastify';
+import { useAuth } from '@/context/AuthContext';
 
 interface CourseTableRowProps {
   course: CourseWithRelations;
@@ -18,6 +19,10 @@ interface CourseTableRowProps {
 
 export function CourseTableRow({ course, className }: CourseTableRowProps) {
   const [showEditForm, setShowEditForm] = useState(false);
+
+      const { hasPermission } = useAuth();
+  const canUpdate = hasPermission('course', 'update');
+  const canDelete = hasPermission('course', 'delete');
 
   // Hooks del Context
   const { startEdit } = useCourseForm();
@@ -157,18 +162,22 @@ export function CourseTableRow({ course, className }: CourseTableRowProps) {
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
+            {(canUpdate || canDelete) && (
             <DropdownMenuContent 
               align="end" 
               className="w-48 bg-white/95 backdrop-blur-sm dark:bg-gray-800/95 border-gray-200 dark:border-gray-700"
             >
-              
+                {canUpdate && (   
               <DropdownMenuItem 
                 onClick={handleEdit}
                 className="hover:bg-gray-100 dark:hover:bg-gray-700"
               >
+                
                 <Edit className="h-4 w-4 mr-2" />
                 Editar
               </DropdownMenuItem>
+                )}
+            {canDelete && (
               <DropdownMenuItem 
                 className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
                 onClick={handleDeleteCourse}
@@ -176,7 +185,9 @@ export function CourseTableRow({ course, className }: CourseTableRowProps) {
                 <Trash2 className="h-4 w-4 mr-2" />
                 Eliminar
               </DropdownMenuItem>
+                )}
             </DropdownMenuContent>
+            )}
           </DropdownMenu>
         </TableCell>
       </TableRow>

@@ -8,7 +8,9 @@ import {
   CreateStudentPayload,
   ParentDpiResponse,
   StudentTransferPayload,
-  Enrollment
+  Enrollment,
+  EnrollmentFormData, // ✅ NUEVO
+  SectionsAvailability // ✅ NUEVO
 } from '@/types/student';
 import {
   getStudents,
@@ -18,12 +20,12 @@ import {
   deleteStudent,
   getUserByDPI,
   getActiveEnrollment,
-  transferStudent
+  transferStudent,
+  studentEnrollmentService // ✅ NUEVO
 } from '@/services/useStudents';
 
 import { uploadImageToCloudinary } from '@/lib/cloudinary';
 import { deleteImageFromCloudinary } from '@/services/useCloudinary';
-
 
 // Interfaces para filtros y paginación
 interface StudentFilters {
@@ -44,6 +46,10 @@ interface StudentState {
   parentDpiInfo: ParentDpiResponse | null;
   activeEnrollment: Enrollment | null;
   
+  // ✅ NUEVO: Datos de inscripción
+  enrollmentData: EnrollmentFormData | null;
+  availableSections: SectionsAvailability | null;
+  
   // Meta información
   meta: {
     total: number;
@@ -57,6 +63,8 @@ interface StudentState {
   submitting: boolean;
   loadingDpi: boolean;
   loadingEnrollment: boolean;
+  loadingEnrollmentData: boolean; // ✅ NUEVO
+  loadingSections: boolean; // ✅ NUEVO
   
   // Estados de error
   error: string | null;
@@ -75,6 +83,8 @@ type StudentAction =
   | { type: 'SET_SUBMITTING'; payload: boolean }
   | { type: 'SET_LOADING_DPI'; payload: boolean }
   | { type: 'SET_LOADING_ENROLLMENT'; payload: boolean }
+  | { type: 'SET_LOADING_ENROLLMENT_DATA'; payload: boolean } // ✅ NUEVO
+  | { type: 'SET_LOADING_SECTIONS'; payload: boolean } // ✅ NUEVO
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_STUDENTS'; payload: { data: Student[]; meta: StudentState['meta'] } }
   | { type: 'ADD_STUDENT'; payload: Student }
@@ -83,6 +93,8 @@ type StudentAction =
   | { type: 'SET_CURRENT_STUDENT'; payload: Student | null }
   | { type: 'SET_PARENT_DPI_INFO'; payload: ParentDpiResponse | null }
   | { type: 'SET_ACTIVE_ENROLLMENT'; payload: Enrollment | null }
+  | { type: 'SET_ENROLLMENT_DATA'; payload: EnrollmentFormData | null } // ✅ NUEVO
+  | { type: 'SET_AVAILABLE_SECTIONS'; payload: SectionsAvailability | null } // ✅ NUEVO
   | { type: 'SET_FILTERS'; payload: StudentFilters }
   | { type: 'SET_FORM_MODE'; payload: { mode: 'create' | 'edit' | 'transfer' | null; editingId?: number } }
   | { type: 'RESET_STATE' };
@@ -93,6 +105,8 @@ const initialState: StudentState = {
   currentStudent: null,
   parentDpiInfo: null,
   activeEnrollment: null,
+  enrollmentData: null, // ✅ NUEVO
+  availableSections: null, // ✅ NUEVO
   meta: {
     total: 0,
     page: 1,
@@ -103,6 +117,8 @@ const initialState: StudentState = {
   submitting: false,
   loadingDpi: false,
   loadingEnrollment: false,
+  loadingEnrollmentData: false, // ✅ NUEVO
+  loadingSections: false, // ✅ NUEVO
   error: null,
   filters: {},
   formMode: null,
@@ -123,6 +139,14 @@ function studentReducer(state: StudentState, action: StudentAction): StudentStat
       
     case 'SET_LOADING_ENROLLMENT':
       return { ...state, loadingEnrollment: action.payload };
+      
+    // ✅ NUEVO
+    case 'SET_LOADING_ENROLLMENT_DATA':
+      return { ...state, loadingEnrollmentData: action.payload };
+      
+    // ✅ NUEVO
+    case 'SET_LOADING_SECTIONS':
+      return { ...state, loadingSections: action.payload };
       
     case 'SET_ERROR':
       return { ...state, error: action.payload };
@@ -176,6 +200,14 @@ function studentReducer(state: StudentState, action: StudentAction): StudentStat
     case 'SET_ACTIVE_ENROLLMENT':
       return { ...state, activeEnrollment: action.payload, loadingEnrollment: false };
       
+    // ✅ NUEVO
+    case 'SET_ENROLLMENT_DATA':
+      return { ...state, enrollmentData: action.payload, loadingEnrollmentData: false };
+      
+    // ✅ NUEVO
+    case 'SET_AVAILABLE_SECTIONS':
+      return { ...state, availableSections: action.payload, loadingSections: false };
+      
     case 'SET_FILTERS':
       return { ...state, filters: action.payload };
       
@@ -204,6 +236,8 @@ interface StudentContextType {
   fetchStudentById: (id: number) => Promise<void>;
   fetchParentByDPI: (dpi: string) => Promise<void>;
   fetchActiveEnrollment: (studentId: number, cycleId: number) => Promise<void>;
+  fetchEnrollmentData: () => Promise<void>; // ✅ NUEVO
+  fetchSectionsByGradeAndCycle: (cycleId: number, gradeId: number) => Promise<void>; // ✅ NUEVO
   
   // Acciones CRUD
   createStudent: (data: CreateStudentPayload) => Promise<{ success: boolean; message?: string; details?: any[] }>;
@@ -216,6 +250,7 @@ interface StudentContextType {
   setFormMode: (mode: 'create' | 'edit' | 'transfer' | null, editingId?: number) => void;
   clearError: () => void;
   clearParentDpiInfo: () => void;
+  clearAvailableSections: () => void; // ✅ NUEVO
   resetState: () => void;
   
   // Utilidades
@@ -242,7 +277,7 @@ export function StudentProvider({ children }: StudentProviderProps) {
     return message;
   }, []);
 
-  // Simular meta información (ya que el servicio actual no la proporciona)
+  // Simular meta información
   const createMockMeta = useCallback((data: Student[], filters: StudentFilters = {}): StudentState['meta'] => {
     const limit = filters.limit || 10;
     const page = filters.page || 1;
@@ -252,7 +287,7 @@ export function StudentProvider({ children }: StudentProviderProps) {
     return { total, page, limit, totalPages };
   }, []);
 
-  // Acciones de datos
+  // Acciones de datos existentes (sin cambios)
   const fetchStudents = useCallback(async (filters?: StudentFilters) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
@@ -318,68 +353,98 @@ export function StudentProvider({ children }: StudentProviderProps) {
     }
   }, [handleError]);
 
-  // Acciones CRUD
-const createStudentAction = useCallback(async (data: CreateStudentPayload) => {
-  let uploadedPicture: { publicId: string; kind: string; url: string; description: string } | undefined;
-  
-  try {
-    dispatch({ type: 'SET_SUBMITTING', payload: true });
-    dispatch({ type: 'SET_ERROR', payload: null });
-    
-    if (data.profileImage instanceof File) {
-      console.log('📸 Procesando imagen de perfil...');
-      try {
-        console.log('📸 Subiendo imagen a Cloudinary...');
-        const result = await uploadImageToCloudinary(data.profileImage);
-        uploadedPicture = {
-          publicId: result.publicId,
-          kind: 'profile',
-          url: result.url,
-          description: 'Foto de perfil del estudiante',
-        };
-        console.log('✅ Imagen subida exitosamente:', result.url);
-      } catch (imageError) {
-        console.error('❌ Error al subir imagen:', imageError);
-        toast.error('No se pudo subir la imagen');
-        throw new Error('Error al subir la imagen');
-      }
+  // ✅ NUEVO: Obtener datos de inscripción (ciclo activo + grados)
+  const fetchEnrollmentData = useCallback(async () => {
+    try {
+      dispatch({ type: 'SET_LOADING_ENROLLMENT_DATA', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+      
+      const data = await studentEnrollmentService.getEnrollmentData();
+      dispatch({ type: 'SET_ENROLLMENT_DATA', payload: data });
+    } catch (error) {
+      handleError(error, 'Error al cargar datos de inscripción');
+      dispatch({ type: 'SET_ENROLLMENT_DATA', payload: null });
+    } finally {
+      dispatch({ type: 'SET_LOADING_ENROLLMENT_DATA', payload: false });
     }
+  }, [handleError]);
 
-    // ✅ PREPARAR payload final
-    const studentPayload = {
-      ...data,
-      pictures: uploadedPicture 
-        ? [...(data.pictures || []), uploadedPicture] 
-        : data.pictures,
-      profileImage: undefined, // Remover File del payload
-    };
-    
-    const newStudent = await createStudent(studentPayload);
-    dispatch({ type: 'ADD_STUDENT', payload: newStudent });
-    
-    toast.success("Estudiante creado correctamente");
-    return { success: true };
-  } catch (error: any) {
-    // ✅ AHORA uploadedPicture está disponible aquí
-    if (uploadedPicture?.publicId) {
-      try {
-        console.log('🗑️ Eliminando imagen por error en registro...');
-        await deleteImageFromCloudinary(uploadedPicture.publicId);
-      } catch (deleteError) {
-        console.warn("No se pudo eliminar la imagen:", deleteError);
-      }
+  // ✅ NUEVO: Obtener secciones disponibles por grado y ciclo
+  const fetchSectionsByGradeAndCycle = useCallback(async (cycleId: number, gradeId: number) => {
+    try {
+      dispatch({ type: 'SET_LOADING_SECTIONS', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+      
+      const data = await studentEnrollmentService.getSectionsByGradeAndCycle(cycleId, gradeId);
+      dispatch({ type: 'SET_AVAILABLE_SECTIONS', payload: data });
+    } catch (error) {
+      handleError(error, 'Error al cargar secciones disponibles');
+      dispatch({ type: 'SET_AVAILABLE_SECTIONS', payload: null });
+    } finally {
+      dispatch({ type: 'SET_LOADING_SECTIONS', payload: false });
     }
+  }, [handleError]);
+
+  // Acciones CRUD (sin cambios)
+  const createStudentAction = useCallback(async (data: CreateStudentPayload) => {
+    let uploadedPicture: { publicId: string; kind: string; url: string; description: string } | undefined;
     
-    const message = handleError(error, 'Error al crear el estudiante');
-    return {
-      success: false,
-      message,
-      details: error.details || []
-    };
-  } finally {
-    dispatch({ type: 'SET_SUBMITTING', payload: false });
-  }
-}, [handleError]);
+    try {
+      dispatch({ type: 'SET_SUBMITTING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+      
+      if (data.profileImage instanceof File) {
+        console.log('📸 Procesando imagen de perfil...');
+        try {
+          console.log('📸 Subiendo imagen a Cloudinary...');
+          const result = await uploadImageToCloudinary(data.profileImage);
+          uploadedPicture = {
+            publicId: result.publicId,
+            kind: 'profile',
+            url: result.url,
+            description: 'Foto de perfil del estudiante',
+          };
+          console.log('✅ Imagen subida exitosamente:', result.url);
+        } catch (imageError) {
+          console.error('❌ Error al subir imagen:', imageError);
+          toast.error('No se pudo subir la imagen');
+          throw new Error('Error al subir la imagen');
+        }
+      }
+
+      const studentPayload = {
+        ...data,
+        pictures: uploadedPicture 
+          ? [...(data.pictures || []), uploadedPicture] 
+          : data.pictures,
+        profileImage: undefined,
+      };
+      
+      const newStudent = await createStudent(studentPayload);
+      dispatch({ type: 'ADD_STUDENT', payload: newStudent });
+      
+      toast.success("Estudiante creado correctamente");
+      return { success: true };
+    } catch (error: any) {
+      if (uploadedPicture?.publicId) {
+        try {
+          console.log('🗑️ Eliminando imagen por error en registro...');
+          await deleteImageFromCloudinary(uploadedPicture.publicId);
+        } catch (deleteError) {
+          console.warn("No se pudo eliminar la imagen:", deleteError);
+        }
+      }
+      
+      const message = handleError(error, 'Error al crear el estudiante');
+      return {
+        success: false,
+        message,
+        details: error.details || []
+      };
+    } finally {
+      dispatch({ type: 'SET_SUBMITTING', payload: false });
+    }
+  }, [handleError]);
 
   const updateStudentAction = useCallback(async (id: number, data: Partial<Student>) => {
     try {
@@ -455,6 +520,11 @@ const createStudentAction = useCallback(async (data: CreateStudentPayload) => {
     dispatch({ type: 'SET_PARENT_DPI_INFO', payload: null });
   }, []);
 
+  // ✅ NUEVO
+  const clearAvailableSections = useCallback(() => {
+    dispatch({ type: 'SET_AVAILABLE_SECTIONS', payload: null });
+  }, []);
+
   const resetState = useCallback(() => {
     dispatch({ type: 'RESET_STATE' });
   }, []);
@@ -477,6 +547,8 @@ const createStudentAction = useCallback(async (data: CreateStudentPayload) => {
     fetchStudentById,
     fetchParentByDPI,
     fetchActiveEnrollment,
+    fetchEnrollmentData, // ✅ NUEVO
+    fetchSectionsByGradeAndCycle, // ✅ NUEVO
     
     // Acciones CRUD
     createStudent: createStudentAction,
@@ -489,6 +561,7 @@ const createStudentAction = useCallback(async (data: CreateStudentPayload) => {
     setFormMode,
     clearError,
     clearParentDpiInfo,
+    clearAvailableSections, // ✅ NUEVO
     resetState,
     
     // Utilidades
@@ -503,7 +576,7 @@ const createStudentAction = useCallback(async (data: CreateStudentPayload) => {
   );
 }
 
-// Hook para usar el contexto
+// Hook para usar el contexto (sin cambios)
 export function useStudentContext() {
   const context = useContext(StudentContext);
   if (context === undefined) {
@@ -512,16 +585,30 @@ export function useStudentContext() {
   return context;
 }
 
-// Hook especializado para formularios
+// ✅ MODIFICADO: Hook especializado para formularios
 export function useStudentForm() {
   const {
-    state: { submitting, formMode, editingId, currentStudent, parentDpiInfo, loadingDpi },
+    state: { 
+      submitting, 
+      formMode, 
+      editingId, 
+      currentStudent, 
+      parentDpiInfo, 
+      loadingDpi,
+      enrollmentData, // ✅ NUEVO
+      availableSections, // ✅ NUEVO
+      loadingEnrollmentData, // ✅ NUEVO
+      loadingSections // ✅ NUEVO
+    },
     createStudent,
     updateStudent,
     setFormMode,
     fetchStudentById,
     fetchParentByDPI,
-    clearParentDpiInfo
+    clearParentDpiInfo,
+    fetchEnrollmentData, // ✅ NUEVO
+    fetchSectionsByGradeAndCycle, // ✅ NUEVO
+    clearAvailableSections // ✅ NUEVO
   } = useStudentContext();
 
   const handleSubmit = useCallback(async (data: CreateStudentPayload | Partial<Student>) => {
@@ -549,11 +636,17 @@ export function useStudentForm() {
   const cancelForm = useCallback(() => {
     setFormMode(null);
     clearParentDpiInfo();
-  }, [setFormMode, clearParentDpiInfo]);
+    clearAvailableSections(); // ✅ NUEVO
+  }, [setFormMode, clearParentDpiInfo, clearAvailableSections]);
 
   const searchParentByDPI = useCallback(async (dpi: string) => {
     await fetchParentByDPI(dpi);
   }, [fetchParentByDPI]);
+
+  // ✅ NUEVO: Cargar secciones cuando cambia el grado
+  const loadSectionsByGrade = useCallback(async (cycleId: number, gradeId: number) => {
+    await fetchSectionsByGradeAndCycle(cycleId, gradeId);
+  }, [fetchSectionsByGradeAndCycle]);
 
   return {
     submitting,
@@ -562,17 +655,24 @@ export function useStudentForm() {
     currentStudent,
     parentDpiInfo,
     loadingDpi,
+    enrollmentData, // ✅ NUEVO
+    availableSections, // ✅ NUEVO
+    loadingEnrollmentData, // ✅ NUEVO
+    loadingSections, // ✅ NUEVO
     handleSubmit,
     startEdit,
     startCreate,
     startTransfer,
     cancelForm,
     searchParentByDPI,
-    clearParentDpiInfo
+    clearParentDpiInfo,
+    fetchEnrollmentData, // ✅ NUEVO
+    loadSectionsByGrade, // ✅ NUEVO
+    clearAvailableSections // ✅ NUEVO
   };
 }
 
-// Hook especializado para listas
+// Hook especializado para listas (sin cambios)
 export function useStudentList() {
   const {
     state: { students, meta, loading, error, filters },
@@ -605,7 +705,7 @@ export function useStudentList() {
   };
 }
 
-// Hook especializado para transferencias
+// Hook especializado para transferencias (sin cambios)
 export function useStudentTransfer() {
   const {
     state: { submitting, currentStudent, activeEnrollment, loadingEnrollment },

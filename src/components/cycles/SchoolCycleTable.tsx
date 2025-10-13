@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
+import ProtectedContent from '@/components/common/ProtectedContent';
 
-// Importamos el nuevo context y componentes adaptados
+// Context y componentes
 import {
   useSchoolCycleContext,
   useSchoolCycleStats,
@@ -49,12 +49,20 @@ import {
   Alert,
   AlertDescription,
 } from "@/components/ui/alert";
+import { Badge } from '@/components/ui/badge';
 
 export default function SchoolCycleTable() {
-  // Hooks del context
+  // Hooks del context y auth
   const { cycles, isLoading, isError, error } = useSchoolCycleContext();
   const stats = useSchoolCycleStats();
   const { refetchAll } = useSchoolCycleActions();
+  const { hasPermission } = useAuth();
+
+  // ✨ Verificar permisos
+  const canCreate = hasPermission('school-cycle', 'create');
+  const canUpdate = hasPermission('school-cycle', 'update');
+  const canDelete = hasPermission('school-cycle', 'delete');
+  const canReadOne = hasPermission('school-cycle', 'read-one');
 
   // Estados locales
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -64,16 +72,28 @@ export default function SchoolCycleTable() {
 
   // ========== HANDLERS ==========
   const openCreateModal = () => {
+    if (!canCreate) {
+      toast.error('No tienes permiso para crear ciclos escolares');
+      return;
+    }
     setCycleToEdit(null);
     setIsFormModalOpen(true);
   };
 
   const openEditModal = (cycle: SchoolCycle) => {
+    if (!canUpdate) {
+      toast.error('No tienes permiso para editar ciclos escolares');
+      return;
+    }
     setCycleToEdit(cycle);
     setIsFormModalOpen(true);
   };
 
   const openViewModal = (cycle: SchoolCycle) => {
+    if (!canReadOne) {
+      toast.error('No tienes permiso para ver detalles');
+      return;
+    }
     setCycleToView(cycle);
     setIsViewModalOpen(true);
   };
@@ -90,7 +110,10 @@ export default function SchoolCycleTable() {
   };
 
   const handleDelete = async (cycle: SchoolCycle) => {
-    // Por ahora solo mostramos un toast, pero aquí iría la lógica de eliminación
+    if (!canDelete) {
+      toast.error('No tienes permiso para eliminar ciclos escolares');
+      return;
+    }
     toast.success(`Funcionalidad de eliminar "${cycle.name}" no implementada aún`);
   };
 
@@ -104,10 +127,51 @@ export default function SchoolCycleTable() {
     setCycleToView(null);
   };
 
-  // ========== RENDERIZADO DE ESTADOS DE ERROR/CARGA ==========
+  // ========== RENDERIZADO ==========
   if (isError) {
     return (
+      <ProtectedContent requiredPermission={{ module: 'school-cycle', action: 'read' }}>
+        <div className="space-y-6">
+          <div className="flex flex-col space-y-2">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">Gestión de Ciclos Escolares</h1>
+                <p className="text-muted-foreground">
+                  Administra los periodos académicos de la institución
+                </p>
+              </div>
+            </div>
+            <Separator />
+          </div>
+
+          <Card className="shadow-2xl hover:shadow-2xl hover:border-primary/20 rounded-xl bg-white dark:bg-white/[0.03] dark:border-gray-800">
+            <CardContent className="p-6">
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Error al cargar los ciclos escolares: {error?.message || 'Error desconocido'}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 ml-2"
+                    onClick={refetchAll}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Reintentar
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+        </div>
+      </ProtectedContent>
+    );
+  }
+
+  return (
+    <ProtectedContent requiredPermission={{ module: 'school-cycle', action: 'read' }}>
       <div className="space-y-6">
+        {/* Header */}
         <div className="flex flex-col space-y-2">
           <div className="flex justify-between items-center">
             <div>
@@ -116,269 +180,234 @@ export default function SchoolCycleTable() {
                 Administra los periodos académicos de la institución
               </p>
             </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={refetchAll}
+                disabled={isLoading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                Actualizar
+              </Button>
+              {canCreate && (
+                <Button onClick={openCreateModal} className="gap-2">
+                  <PlusCircle className="h-4 w-4" />
+                  Crear Ciclo Escolar
+                </Button>
+              )}
+            </div>
           </div>
           <Separator />
         </div>
 
-        <Card className="shadow-2xl hover:shadow-2xl hover:border-primary/20 rounded-xl bg-white dark:bg-white/[0.03] dark:border-gray-800">
-          <CardContent className="p-6">
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                Error al cargar los ciclos escolares: {error?.message || 'Error desconocido'}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2 ml-2"
-                  onClick={refetchAll}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Reintentar
-                </Button>
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col space-y-2">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Gestión de Ciclos Escolares</h1>
-            <p className="text-muted-foreground">
-              Administra los periodos académicos de la institución
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={refetchAll}
-              disabled={isLoading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Actualizar
-            </Button>
-            <Button onClick={openCreateModal} className="gap-2">
-              <PlusCircle className="h-4 w-4" />
-              Crear Ciclo Escolar
-            </Button>
-          </div>
-        </div>
-        <Separator />
-      </div>
-
-      {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-blue-600" />
-            <div>
-              <p className="text-sm text-muted-foreground">Total</p>
-              <p className="text-2xl font-bold">{stats.totalCycles}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            <div>
-              <p className="text-sm text-muted-foreground">Activos</p>
-              <div className="flex items-center gap-2">
-                <p className="text-2xl font-bold">{stats.activeCycles}</p>
-                {stats.hasMultipleActive && (
-                  <Badge variant="destructive" className="text-xs">
-                    Múltiples
-                  </Badge>
-                )}
+        {/* Estadísticas rápidas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="p-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Total</p>
+                <p className="text-2xl font-bold">{stats.totalCycles}</p>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-orange-600" />
-            <div>
-              <p className="text-sm text-muted-foreground">En curso</p>
-              <p className="text-2xl font-bold">{stats.currentCycles}</p>
+          <Card className="p-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Activos</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl font-bold">{stats.activeCycles}</p>
+                  {stats.hasMultipleActive && (
+                    <Badge variant="destructive" className="text-xs">
+                      Múltiples
+                    </Badge>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-purple-600" />
-            <div>
-              <p className="text-sm text-muted-foreground">Próximos</p>
-              <p className="text-2xl font-bold">{stats.futureCycles}</p>
+          <Card className="p-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-orange-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">En curso</p>
+                <p className="text-2xl font-bold">{stats.currentCycles}</p>
+              </div>
             </div>
-          </div>
-        </Card>
-      </div>
+          </Card>
 
-      {/* Advertencia de múltiples activos */}
-      {stats.hasMultipleActive && (
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Tienes múltiples ciclos activos. Se recomienda mantener solo uno activo para evitar confusiones.
-          </AlertDescription>
-        </Alert>
-      )}
+          <Card className="p-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-purple-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Próximos</p>
+                <p className="text-2xl font-bold">{stats.futureCycles}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
 
-      {/* ✅ Información del ciclo activo con dark mode completo */}
-      {stats.hasActiveCycle && (
-        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200/60 
-    dark:from-blue-950/20 dark:to-indigo-950/20 dark:border-blue-800/40 
-    backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                {/* Header del ciclo */}
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 animate-pulse"></div>
-                  <p className="text-sm text-blue-600 dark:text-blue-300 font-medium">
-                    Ciclo Activo Actual
+        {/* Advertencia de múltiples activos */}
+        {stats.hasMultipleActive && (
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Tienes múltiples ciclos activos. Se recomienda mantener solo uno activo para evitar confusiones.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Información del ciclo activo */}
+        {stats.hasActiveCycle && (
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200/60 
+            dark:from-blue-950/20 dark:to-indigo-950/20 dark:border-blue-800/40 
+            backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 animate-pulse"></div>
+                    <p className="text-sm text-blue-600 dark:text-blue-300 font-medium">
+                      Ciclo Activo Actual
+                    </p>
+                  </div>
+
+                  <p className="text-lg font-bold text-blue-900 dark:text-blue-100 truncate">
+                    {stats.academicYear}
                   </p>
+
+                  {stats.activeCycle.progress > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center gap-3 text-sm">
+                        <span className="text-blue-700 dark:text-blue-300">
+                          Progreso: <span className="font-medium">{Math.round(stats.activeCycle.progress)}%</span>
+                        </span>
+                        <span className="text-blue-600 dark:text-blue-400">
+                          {stats.activeCycle.daysRemaining} días restantes
+                        </span>
+                      </div>
+
+                      <div className="w-full bg-blue-100 dark:bg-blue-900/30 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-400 dark:to-indigo-400 transition-all duration-500 ease-out"
+                          style={{ width: `${Math.round(stats.activeCycle.progress)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Nombre del ciclo */}
-                <p className="text-lg font-bold text-blue-900 dark:text-blue-100 truncate">
-                  {stats.academicYear}
-                </p>
-
-                {/* Información de progreso */}
-                {stats.activeCycle.progress > 0 && (
-                  <div className="mt-2 space-y-1">
-                    <div className="flex items-center gap-3 text-sm">
-                      <span className="text-blue-700 dark:text-blue-300">
-                        Progreso: <span className="font-medium">{Math.round(stats.activeCycle.progress)}%</span>
-                      </span>
-                      <span className="text-blue-600 dark:text-blue-400">
-                        {stats.activeCycle.daysRemaining} días restantes
-                      </span>
-                    </div>
-
-                    {/* Barra de progreso */}
-                    <div className="w-full bg-blue-100 dark:bg-blue-900/30 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-400 dark:to-indigo-400 transition-all duration-500 ease-out"
-                        style={{ width: `${Math.round(stats.activeCycle.progress)}%` }}
-                      />
-                    </div>
+                {stats.activeCycle.cycle && canReadOne && (
+                  <div className="ml-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openViewModal(stats.activeCycle.cycle!)}
+                      className="
+                        border-blue-300 bg-white/50 text-blue-700 
+                        hover:bg-blue-50 hover:border-blue-400 hover:text-blue-800
+                        dark:border-blue-600 dark:bg-blue-950/30 dark:text-blue-300
+                        dark:hover:bg-blue-900/40 dark:hover:border-blue-500 dark:hover:text-blue-200
+                        backdrop-blur-sm transition-all duration-200
+                      "
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Ver detalles
+                    </Button>
                   </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+        )}
 
-              {/* Botón de acción */}
-              {stats.activeCycle.cycle && (
-                <div className="ml-4">
+        {/* Tabla principal */}
+        <Card className="shadow-2xl hover:shadow-2xl hover:border-primary/20 rounded-xl bg-white dark:bg-white/[0.03] dark:border-gray-800 pl-5 pr-5">
+          <CardHeader>
+            <CardTitle className="text-xl">Listado de Ciclos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+                <span>Cargando ciclos escolares...</span>
+              </div>
+            ) : cycles.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <NoResultsFound
+                  message="No se encontraron ciclos escolares registrados"
+                  suggestion="Comienza creando un nuevo ciclo escolar"
+                />
+                {canCreate && (
                   <Button
+                    onClick={openCreateModal}
                     variant="outline"
-                    size="sm"
-                    onClick={() => openViewModal(stats.activeCycle.cycle!)}
-                    className="
-                border-blue-300 bg-white/50 text-blue-700 
-                hover:bg-blue-50 hover:border-blue-400 hover:text-blue-800
-                dark:border-blue-600 dark:bg-blue-950/30 dark:text-blue-300
-                dark:hover:bg-blue-900/40 dark:hover:border-blue-500 dark:hover:text-blue-200
-                backdrop-blur-sm transition-all duration-200
-              "
+                    className="mt-4 gap-2"
                   >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Ver detalles
+                    <PlusCircle className="h-4 w-4" />
+                    Crear primer ciclo
                   </Button>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            ) : (
+              <CycleDataTable
+                onEdit={canUpdate ? openEditModal : undefined}
+                onView={canReadOne ? openViewModal : undefined}
+                onDelete={canDelete ? handleDelete : undefined}
+                onCreate={canCreate ? openCreateModal : undefined}
+                showActions={canReadOne || canUpdate || canDelete}
+                showToolbar={false}
+                showSearch={true}
+                showPagination={true}
+              />
+            )}
           </CardContent>
         </Card>
-      )}
 
-      {/* Tabla principal */}
-      <Card className="shadow-2xl hover:shadow-2xl hover:border-primary/20 rounded-xl bg-white dark:bg-white/[0.03] dark:border-gray-800 pl-5 pr-5">
-        <CardHeader>
-          <CardTitle className="text-xl">
-            Listado de Ciclos
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <RefreshCw className="h-6 w-6 animate-spin mr-2" />
-              <span>Cargando ciclos escolares...</span>
-            </div>
-          ) : cycles.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <NoResultsFound
-                message="No se encontraron ciclos escolares registrados"
-                suggestion="Comienza creando un nuevo ciclo escolar"
+        {/* Modal del formulario */}
+        {(canCreate || canUpdate) && (
+          <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {cycleToEdit ? 'Editar Ciclo Escolar' : 'Crear Nuevo Ciclo Escolar'}
+                </DialogTitle>
+              </DialogHeader>
+              <CycleForm
+                editingCycle={cycleToEdit}
+                onSuccess={handleFormSuccess}
+                onError={handleFormError}
+                onCancel={closeForm}
               />
-              <Button
-                onClick={openCreateModal}
-                variant="outline"
-                className="mt-4 gap-2"
-              >
-                <PlusCircle className="h-4 w-4" />
-                Crear primer ciclo
-              </Button>
-            </div>
-          ) : (
-            <CycleDataTable
-              onEdit={openEditModal}
-              onView={openViewModal}
-              onDelete={handleDelete}
-              onCreate={openCreateModal}
-              showActions={true}
-              showToolbar={false} // Ya tenemos nuestro propio toolbar
-              showSearch={true}
-              showPagination={true}
-            />
-          )}
-        </CardContent>
-      </Card>
+            </DialogContent>
+          </Dialog>
+        )}
 
-      {/* Modal del formulario */}
-      <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {cycleToEdit ? 'Editar Ciclo Escolar' : 'Crear Nuevo Ciclo Escolar'}
-            </DialogTitle>
-          </DialogHeader>
-          <CycleForm
-            editingCycle={cycleToEdit}
-            onSuccess={handleFormSuccess}
-            onError={handleFormError}
-            onCancel={closeForm}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Sheet para ver detalles */}
-      <Sheet open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Detalles del Ciclo Escolar</SheetTitle>
-          </SheetHeader>
-          {cycleToView && (
-            <CycleDetailsView
-              cycle={cycleToView}
-              onEdit={() => {
-                setIsViewModalOpen(false);
-                openEditModal(cycleToView);
-              }}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
-    </div>
+        {/* Sheet para ver detalles */}
+        {canReadOne && (
+          <Sheet open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+            <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle>Detalles del Ciclo Escolar</SheetTitle>
+              </SheetHeader>
+              <hr />
+              {cycleToView && (
+                <CycleDetailsView
+                  cycle={cycleToView}
+                  onEdit={() => {
+                    setIsViewModalOpen(false);
+                    openEditModal(cycleToView);
+                  }}
+                />
+              )}
+            </SheetContent>
+          </Sheet>
+        )}
+      </div>
+    </ProtectedContent>
   );
 }
 
@@ -388,12 +417,16 @@ interface CycleDetailsViewProps {
   onEdit: () => void;
 }
 
+// Reemplaza la función CycleDetailsView completa en SchoolCycleTable.tsx
+
 function CycleDetailsView({ cycle, onEdit }: CycleDetailsViewProps) {
+  const { hasPermission } = useAuth();
+  const canUpdate = hasPermission('school-cycle', 'update');
+
   const now = new Date();
   const startDate = new Date(cycle.startDate);
   const endDate = new Date(cycle.endDate);
 
-  // Calculamos información adicional
   const isCurrentPeriod = startDate <= now && now <= endDate;
   const isPastPeriod = endDate < now;
   const isFuturePeriod = startDate > now;
@@ -413,133 +446,203 @@ function CycleDetailsView({ cycle, onEdit }: CycleDetailsViewProps) {
   };
 
   return (
-    <div className="space-y-6 py-6">
-      {/* Header */}
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold">{cycle.name}</h2>
+    <div className="space-y-6 py-6 px-6">
+      {/* Header con nombre y badges */}
+      <div className="space-y-3">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {cycle.name}
+        </h2>
+        {/* Badges de estado */}
         <div className="flex gap-2 flex-wrap">
           {cycle.isActive && (
-            <Badge className="bg-green-100 text-green-800">
+            <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
               <CheckCircle className="h-3 w-3 mr-1" />
               Activo
             </Badge>
           )}
           {cycle.isClosed && (
-            <Badge className="bg-red-100 text-red-800">
+            <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
               Cerrado
             </Badge>
           )}
           {isCurrentPeriod && (
-            <Badge className="bg-blue-100 text-blue-800">
+            <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
               En curso
             </Badge>
           )}
           {isFuturePeriod && (
-            <Badge className="bg-yellow-100 text-yellow-800">
+            <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
               Próximo
             </Badge>
           )}
           {isPastPeriod && (
-            <Badge variant="outline">
+            <Badge variant="outline" className="dark:border-gray-700">
               Finalizado
             </Badge>
           )}
         </div>
       </div>
 
-      {/* Información básica */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Información General</CardTitle>
+      {/* Información General */}
+      <Card className="dark:bg-gray-800/50 dark:border-gray-700">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg text-gray-900 dark:text-gray-100">
+            Información General
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Fecha de inicio</p>
-            <p className="font-medium">{formatDate(cycle.startDate)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Fecha de finalización</p>
-            <p className="font-medium">{formatDate(cycle.endDate)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Duración total</p>
-            <p className="font-medium">{totalDays} días</p>
-          </div>
-          {cycle.createdAt && (
-            <div>
-              <p className="text-sm text-muted-foreground">Fecha de creación</p>
-              <p className="font-medium">{formatDate(cycle.createdAt)}</p>
+          <div className="grid grid-cols-1 gap-4">
+            {/* Fecha de inicio */}
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Fecha de inicio
+              </p>
+              <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                {formatDate(cycle.startDate)}
+              </p>
             </div>
-          )}
+
+            {/* Fecha de finalización */}
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Fecha de finalización
+              </p>
+              <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                {formatDate(cycle.endDate)}
+              </p>
+            </div>
+
+            {/* Duración */}
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Duración total
+              </p>
+              <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                {totalDays} días
+              </p>
+            </div>
+
+            {/* Fecha de creación */}
+            {cycle.createdAt && (
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Fecha de creación
+                </p>
+                <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                  {formatDate(cycle.createdAt)}
+                </p>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Progreso (solo si está en curso) */}
+      {/* Progreso - solo si está en curso */}
       {isCurrentPeriod && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Progreso del Ciclo</CardTitle>
+        <Card className="dark:bg-gray-800/50 dark:border-gray-700">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg text-gray-900 dark:text-gray-100">
+              Progreso del Ciclo
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-muted-foreground">Progreso</span>
-                <span className="text-sm font-medium">{Math.round(progress)}%</span>
+            {/* Barra de progreso */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Progreso
+                </span>
+                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                  {Math.round(progress)}%
+                </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Días transcurridos</p>
-                <p className="font-medium">{Math.max(0, elapsedDays)} días</p>
+
+            {/* Días transcurridos y restantes */}
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Días transcurridos
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {Math.max(0, elapsedDays)}
+                </p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Días restantes</p>
-                <p className="font-medium">{Math.max(0, remainingDays)} días</p>
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Días restantes
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {Math.max(0, remainingDays)}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Estadísticas adicionales */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Estadísticas</CardTitle>
+      {/* Estadísticas */}
+      <Card className="dark:bg-gray-800/50 dark:border-gray-700">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg text-gray-900 dark:text-gray-100">
+            Estadísticas
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Estado del ciclo</p>
-            <p className="font-medium">
-              {isCurrentPeriod ? 'En curso' :
-                isFuturePeriod ? 'Próximo a iniciar' :
-                  'Finalizado'}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Año académico</p>
-            <p className="font-medium">{startDate.getFullYear()}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Semestre</p>
-            <p className="font-medium">
-              {startDate.getMonth() < 6 ? 'Primer semestre' : 'Segundo semestre'}
-            </p>
+          <div className="grid grid-cols-1 gap-4">
+            {/* Estado del ciclo */}
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Estado del ciclo
+              </p>
+              <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                {isCurrentPeriod ? 'En curso' :
+                  isFuturePeriod ? 'Próximo a iniciar' :
+                    'Finalizado'}
+              </p>
+            </div>
+
+            {/* Año académico */}
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Año académico
+              </p>
+              <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                {startDate.getFullYear()}
+              </p>
+            </div>
+
+            {/* Semestre */}
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Semestre
+              </p>
+              <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                {startDate.getMonth() < 6 ? 'Primer semestre' : 'Segundo semestre'}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Acciones */}
-      <div className="flex gap-2">
-        <Button onClick={onEdit} className="flex-1">
-          Editar Ciclo
-        </Button>
-      </div>
+      {/* Botón de acción */}
+      {canUpdate && (
+        <div className="pt-2">
+          <Button 
+            onClick={onEdit} 
+            className="w-full"
+            size="lg"
+          >
+            Editar Ciclo
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

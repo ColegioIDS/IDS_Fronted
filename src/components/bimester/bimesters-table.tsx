@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Calendar, CheckCircle, Edit, Eye, MoreHorizontal, Plus, Search, Trash2, Users, XCircle, Clock } from "lucide-react"
+import { Calendar, CheckCircle, Edit, Eye, MoreHorizontal, Search, Trash2, XCircle, Clock } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useAuth } from '@/context/AuthContext'
+
 interface BimestersTableProps {
   data: Bimester[];
   onEdit: (bimester: Bimester) => void;
@@ -20,12 +21,21 @@ interface BimestersTableProps {
 
 export function BimestersTable({ data, onEdit, onDelete, onCreate }: BimestersTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
+  
+  // ✅ Verificar permisos
+  const { hasPermission } = useAuth()
+  const canUpdate = hasPermission('bimester', 'update')
+  const canDelete = hasPermission('bimester', 'delete')
+  const canReadOne = hasPermission('bimester', 'read-one')
+
+  // ✅ Determinar si tiene alguna acción disponible
+  const hasAnyAction = canReadOne || canUpdate || canDelete
 
   const filteredBimesters = data.filter((bimester) => {
     return bimester.name.toLowerCase().includes(searchTerm.toLowerCase())
   })
 
-const getBimesterColor = (number: number) => {
+  const getBimesterColor = (number: number) => {
     const colors = {
       1: "bg-gradient-to-r from-blue-500 to-blue-600 text-white dark:from-blue-600 dark:to-blue-700",
       2: "bg-gradient-to-r from-green-500 to-green-600 text-white dark:from-green-600 dark:to-green-700",
@@ -58,36 +68,31 @@ const getBimesterColor = (number: number) => {
             className="pl-10 bg-white/50 border-gray-200/50 focus:bg-white"
           />
         </div>
-
       </div>
 
-   {/* Bimesters Grid */}
+      {/* Bimesters Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {filteredBimesters.map((bimester) => {
-          // ✅ Calcular progreso real basado en fechas
+          // Calcular progreso real basado en fechas
           const now = new Date();
           const startDate = new Date(bimester.startDate);
           const endDate = new Date(bimester.endDate);
           
-          // Calcular progreso temporal
           const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
           const elapsedDays = Math.max(0, Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
           const progressPercentage = Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100));
           
-          // Calcular semanas transcurridas
           const weeksPassed = Math.max(0, Math.floor(elapsedDays / 7));
           const totalWeeks = bimester.weeksCount || 8;
           
-          // Determinar estado del bimestre
           const isUpcoming = now < startDate;
           const isCompleted = now > endDate;
           const isCurrent = !isUpcoming && !isCompleted;
           
-          // Días restantes
           const daysRemaining = isCompleted ? 0 : Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-          
-          // Estudiantes simulados (puedes reemplazar con datos reales)
-          const studentCount = Math.floor(Math.random() * 30) + 15; // 15-45 estudiantes
+
+          // ✅ Determinar si mostrar acciones según permisos
+          const hasAnyAction = canReadOne || canUpdate || canDelete;
 
           return (
             <div
@@ -117,7 +122,6 @@ const getBimesterColor = (number: number) => {
                     </Badge>
                   )}
                   
-                  {/* Estado del bimestre */}
                   {isUpcoming && (
                     <Badge variant="outline" className="text-xs border-blue-300 text-blue-700 dark:border-blue-600 dark:text-blue-300">
                       Próximo
@@ -150,12 +154,6 @@ const getBimesterColor = (number: number) => {
                     {formatDate(bimester.startDate)} - {formatDate(bimester.endDate)}
                   </span>
                 </div>
-
-                {/* Estudiantes */}
-                {/* <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                  <span>{studentCount} estudiantes</span>
-                </div> */}
 
                 {/* Información temporal */}
                 {isCurrent && (
@@ -219,27 +217,33 @@ const getBimesterColor = (number: number) => {
                   </div>
                 )}
 
-                {/* Acciones rápidas */}
-                <div className="flex justify-between items-center pt-3 border-t border-gray-200/50 dark:border-gray-700/50">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEdit(bimester)}
-                    className="h-7 text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
-                  >
-                    <Edit className="h-3 w-3 mr-1" />
-                    Editar
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
-                  >
-                    <Eye className="h-3 w-3 mr-1" />
-                    Ver
-                  </Button>
-                </div>
+                {/* Acciones rápidas - Solo si tiene permisos */}
+                {hasAnyAction && (
+                  <div className="flex justify-between items-center pt-3 border-t border-gray-200/50 dark:border-gray-700/50">
+                    {canUpdate && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(bimester)}
+                        className="h-7 text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Editar
+                      </Button>
+                    )}
+                    
+                    {canReadOne && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        Ver
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -255,8 +259,10 @@ const getBimesterColor = (number: number) => {
               <TableHead className="font-semibold text-gray-700 dark:text-gray-300">Período</TableHead>
               <TableHead className="font-semibold text-gray-700 dark:text-gray-300">Progreso</TableHead>
               <TableHead className="font-semibold text-gray-700 dark:text-gray-300">Estado</TableHead>
-              <TableHead className="font-semibold text-gray-700 dark:text-gray-300 text-center">Acciones</TableHead>
-
+              {/* ✅ Solo mostrar columna de acciones si tiene algún permiso */}
+              {hasAnyAction && (
+                <TableHead className="font-semibold text-gray-700 dark:text-gray-300 text-center">Acciones</TableHead>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -269,7 +275,7 @@ const getBimesterColor = (number: number) => {
                     </Badge>
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-gray-100">{bimester.name}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{"0"} estudiantes</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{bimester.weeksCount || 8} semanas</p>
                     </div>
                   </div>
                 </TableCell>
@@ -283,28 +289,38 @@ const getBimesterColor = (number: number) => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  {bimester.weeksCount && (
-                    <div className="space-y-2 min-w-32">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-300">Semanas</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {0}/{bimester.weeksCount}
-                        </span>
+                  {bimester.weeksCount && (() => {
+                    const now = new Date();
+                    const startDate = new Date(bimester.startDate);
+                    const endDate = new Date(bimester.endDate);
+                    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                    const elapsedDays = Math.max(0, Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+                    const progressPercentage = Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100));
+                    const weeksPassed = Math.max(0, Math.floor(elapsedDays / 7));
+                    const isUpcoming = now < startDate;
+                    
+                    return (
+                      <div className="space-y-2 min-w-32">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-300">Semanas</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {isUpcoming ? 0 : Math.min(weeksPassed, bimester.weeksCount)}/{bimester.weeksCount}
+                          </span>
+                        </div>
+                        <Progress
+                          value={isUpcoming ? 0 : Math.round(progressPercentage)}
+                          className="h-2"
+                        />
+                        <p className="text-xs text-gray-500">
+                          {isUpcoming ? 0 : Math.round(progressPercentage)}% completado
+                        </p>
                       </div>
-                      <Progress
-                        value={Math.round((0 / bimester.weeksCount) * 100)}
-                        className="h-2"
-                      />
-                      <p className="text-xs text-gray-500">
-                        {Math.round((0 / bimester.weeksCount) * 100)}% completado
-                      </p>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </TableCell>
                 <TableCell>
                   {bimester.isActive ? (
                     <Badge className="bg-green-100 text-green-800 dark:bg-green-200/10 dark:text-green-400 hover:bg-green-100">
-
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Activo
                     </Badge>
@@ -315,36 +331,44 @@ const getBimesterColor = (number: number) => {
                     </Badge>
                   )}
                 </TableCell>
-                <TableCell>
-                  <div className="flex justify-center">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem>
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver detalles
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onEdit(bimester)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Editar
-                        </DropdownMenuItem>
-                        {onDelete && (
-                          <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={() => onDelete(bimester)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Eliminar
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableCell>
+                
+                {/* ✅ Acciones con control de permisos */}
+                {hasAnyAction && (
+                  <TableCell>
+                    <div className="flex justify-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          {canReadOne && (
+                            <DropdownMenuItem>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver detalles
+                            </DropdownMenuItem>
+                          )}
+                          {canUpdate && (
+                            <DropdownMenuItem onClick={() => onEdit(bimester)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                          )}
+                          {canDelete && onDelete && (
+                            <DropdownMenuItem
+                              className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"
+                              onClick={() => onDelete(bimester)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Eliminar
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

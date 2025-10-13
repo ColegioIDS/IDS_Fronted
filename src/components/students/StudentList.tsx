@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSidebar } from '@/context/SidebarContext'
 // ✅ CORREGIDO: Usar el nuevo hook del context
@@ -53,6 +53,9 @@ import { ModalWarningConfirm } from '@/components/ui/modal/ModalWarningConfirm'
 import { StudentDataTable } from '@/components/students/StudentDataTable'
 import { StudentCard } from '@/components/students/StudentCard'
 import Loading from '@/components/loading/loading'
+import { useAuth } from '@/context/AuthContext'
+import ProtectedContent from '@/components/common/ProtectedContent'
+
 
 type ViewMode = 'cards' | 'table'
 type SortOrder = 'asc' | 'desc'
@@ -74,7 +77,6 @@ interface Filters {
 }
 
 export const StudentList = () => {
-    // ✅ CORREGIDO: Usar el nuevo hook del context
     const {
         students,
         meta,
@@ -88,11 +90,20 @@ export const StudentList = () => {
 
     const router = useRouter()
     const { setIsExpanded } = useSidebar()
+    const hasInitiallyFetched = useRef(false)
 
-    // UI States
     const [viewMode, setViewMode] = useState<ViewMode>('cards')
     const [itemsPerPage, setItemsPerPage] = useState(12)
     const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+
+
+    // ✅ NUEVO: Obtener el rol del usuario autenticado
+    const { hasPermission } = useAuth()
+    const canRead = hasPermission('student', 'read')
+    const canCreate = hasPermission('student', 'create')
+    const canUpdate = hasPermission('student', 'update')
+    const canDelete = hasPermission('student', 'delete')
+    const canChangeStatus = hasPermission('student', 'change-status')
 
     // Local Filter States (para UI, luego se sincronizan con el context)
     const [localFilters, setLocalFilters] = useState<Filters>({
@@ -116,10 +127,11 @@ export const StudentList = () => {
 
     // ✅ NUEVO: Cargar estudiantes al montar el componente
     useEffect(() => {
-        if (students.length === 0 && !loading) {
+        if (canRead && !hasInitiallyFetched.current && students.length === 0 && !loading) {
+            hasInitiallyFetched.current = true
             refetch()
         }
-    }, [students.length, loading, refetch])
+    }, [canRead, students.length, loading, refetch])
 
     // ✅ NUEVO: Sincronizar filtros locales con el context
     useEffect(() => {
@@ -130,7 +142,7 @@ export const StudentList = () => {
                 // Agregar más filtros según lo que soporte el context
                 status: localFilters.status !== 'all' ? localFilters.status : undefined,
             }
-            
+
             handleFilterChange(contextFiltersUpdate)
         }, 300) // Debounce de 300ms
 
@@ -172,7 +184,6 @@ export const StudentList = () => {
         return age
     }
 
-    // ✅ CORREGIDO: Filtros y ordenamiento locales (complementando los del context)
     const processedStudents = students
         .filter(student => {
             // Gender filter (local)
@@ -195,7 +206,7 @@ export const StudentList = () => {
 
             // Transport filter (local)
             const hasTransport = student.busService?.hasService || false
-            const matchesTransport = localFilters.hasTransport === 'all' || 
+            const matchesTransport = localFilters.hasTransport === 'all' ||
                 (localFilters.hasTransport === 'yes' && hasTransport) ||
                 (localFilters.hasTransport === 'no' && !hasTransport)
 
@@ -227,7 +238,7 @@ export const StudentList = () => {
             }
 
             if (localFilters.sortBy === 'name') {
-                return localFilters.sortOrder === 'asc' 
+                return localFilters.sortOrder === 'asc'
                     ? valueA.localeCompare(valueB)
                     : valueB.localeCompare(valueA)
             } else {
@@ -277,387 +288,393 @@ export const StudentList = () => {
             .filter(Boolean)
     )).sort((a, b) => (a || 0) - (b || 0))
 
-    // ✅ LOADING: Mostrar loading mientras carga
-    if (loading && students.length === 0) {
-        return (
-            <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                        <Users className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold">Estudiantes</h1>
-                        <p className="text-sm text-muted-foreground">Cargando...</p>
-                    </div>
-                </div>
-                <Loading variant="spinner" size="lg" text="Cargando estudiantes..." />
-            </div>
-        )
-    }
+    
 
-    // ✅ ERROR: Mostrar error si hay uno
-    if (error) {
-        return (
-            <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                        <Users className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold">Estudiantes</h1>
-                        <p className="text-sm text-red-600">{error}</p>
-                    </div>
-                </div>
-                <Card>
-                    <CardContent className="p-8 text-center">
-                        <p className="text-red-600 mb-4">Error al cargar estudiantes</p>
-                        <Button onClick={refetch}>
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Reintentar
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
-        )
-    }
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                        <Users className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold">Estudiantes</h1>
-                        <p className="text-sm text-muted-foreground">
-                            {processedStudents.length === students.length
-                                ? `${students.length} estudiantes en total`
-                                : `${processedStudents.length} de ${students.length} estudiantes`}
-                        </p>
-                    </div>
-                </div>
 
-                <div className="flex items-center gap-2">
-                    <Button onClick={() => router.push('/students/create')}>
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Nuevo Estudiante
-                    </Button>
-                    <Button variant="outline" onClick={refetch} disabled={loading}>
-                        <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-                    </Button>
-                </div>
-            </div>
+        <ProtectedContent requiredPermission={{ module: "student", action: "read" }}>
+            <div className="space-y-6">
 
-            {/* Search and Quick Controls */}
-            <Card>
-                <CardContent className="p-4">
-                    <div className="flex flex-col gap-4">
-                        <div className="flex flex-col lg:flex-row gap-4">
-                            {/* Search */}
-                            <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Buscar por nombre o código SIRE..."
-                                    value={localFilters.search}
-                                    onChange={(e) => updateLocalFilter('search', e.target.value)}
-                                    className="pl-10"
-                                />
+        {/* Loading State */}
+                {loading && students.length === 0 ? (
+                    <>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-lg">
+                                <Users className="h-5 w-5 text-primary" />
                             </div>
-
-                            {/* Quick Filters */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                                {/* Status Quick Filter */}
-                                <Select
-                                    value={localFilters.status}
-                                    onValueChange={(value: FilterStatus) => updateLocalFilter('status', value)}
-                                >
-                                    <SelectTrigger className="w-32">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">Todos</SelectItem>
-                                        <SelectItem value="active">Activos</SelectItem>
-                                        <SelectItem value="inactive">Inactivos</SelectItem>
-                                        <SelectItem value="graduated">Graduados</SelectItem>
-                                        <SelectItem value="transferred">Transferidos</SelectItem>
-                                    </SelectContent>
-                                </Select>
-
-                                {/* View Mode Toggle */}
-                                <div className="flex rounded-lg border">
-                                    <Button
-                                        variant={viewMode === 'cards' ? 'default' : 'ghost'}
-                                        size="sm"
-                                        onClick={() => setViewMode('cards')}
-                                        className="rounded-r-none"
-                                    >
-                                        <Grid3X3 className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant={viewMode === 'table' ? 'default' : 'ghost'}
-                                        size="sm"
-                                        onClick={() => setViewMode('table')}
-                                        className="rounded-l-none"
-                                    >
-                                        <List className="h-4 w-4" />
-                                    </Button>
-                                </div>
-
-                                {/* Advanced Filters Toggle */}
-                                <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-                                    <CollapsibleTrigger asChild>
-                                        <Button variant="outline" size="sm">
-                                            <Filter className="h-4 w-4 mr-2" />
-                                            Filtros
-                                            {activeFiltersCount > 0 && (
-                                                <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
-                                                    {activeFiltersCount}
-                                                </Badge>
-                                            )}
-                                            {isFiltersOpen ? (
-                                                <ChevronUp className="h-4 w-4 ml-2" />
-                                            ) : (
-                                                <ChevronDown className="h-4 w-4 ml-2" />
-                                            )}
-                                        </Button>
-                                    </CollapsibleTrigger>
-                                </Collapsible>
+                            <div>
+                                <h1 className="text-2xl font-bold">Estudiantes</h1>
+                                <p className="text-sm text-muted-foreground">Cargando...</p>
                             </div>
                         </div>
+                        <Loading variant="spinner" size="lg" text="Cargando estudiantes..." />
+                    </>
+                ) : error ? (
+                    // ✅ Error State (dentro de ProtectedContent)
+                    <>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-lg">
+                                <Users className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold">Estudiantes</h1>
+                                <p className="text-sm text-red-600">{error}</p>
+                            </div>
+                        </div>
+                        <Card>
+                            <CardContent className="p-8 text-center">
+                                <p className="text-red-600 mb-4">Error al cargar estudiantes</p>
+                                <Button onClick={refetch}>
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                    Reintentar
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </>
+                ) : (
 
-                        {/* Advanced Filters Section */}
-                        <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-                            <CollapsibleContent className="space-y-4">
-                                <div className="border-t pt-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                                        {/* Gender Filter */}
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Género</label>
-                                            <Select
-                                                value={localFilters.gender}
-                                                onValueChange={(value: FilterGender) => updateLocalFilter('gender', value)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">Todos</SelectItem>
-                                                    <SelectItem value="Masculino">Masculino</SelectItem>
-                                                    <SelectItem value="Femenino">Femenino</SelectItem>
-                                                    <SelectItem value="other">Otro</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                      <>
 
-                                        {/* Age Range Filter */}
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Edad</label>
-                                            <Select
-                                                value={localFilters.ageRange}
-                                                onValueChange={(value: AgeRange) => updateLocalFilter('ageRange', value)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">Todas las edades</SelectItem>
-                                                    <SelectItem value="3-5">3-5 años</SelectItem>
-                                                    <SelectItem value="6-8">6-8 años</SelectItem>
-                                                    <SelectItem value="9-11">9-11 años</SelectItem>
-                                                    <SelectItem value="12-14">12-14 años</SelectItem>
-                                                    <SelectItem value="15+">15+ años</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
 
-                                        {/* Grade Filter */}
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Grado</label>
-                                            <Select
-                                                value={localFilters.grade}
-                                                onValueChange={(value) => updateLocalFilter('grade', value)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">Todos los grados</SelectItem>
-                                                    {availableGrades.map((grade) => (
-                                                        <SelectItem key={grade} value={grade!.toString()}>
-                                                            Grado {grade}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                            <Users className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold">Estudiantes</h1>
+                            <p className="text-sm text-muted-foreground">
+                                {processedStudents.length === students.length
+                                    ? `${students.length} estudiantes en total`
+                                    : `${processedStudents.length} de ${students.length} estudiantes`}
+                            </p>
+                        </div>
+                    </div>
 
-                                        {/* Transport Filter */}
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Transporte</label>
-                                            <Select
-                                                value={localFilters.hasTransport}
-                                                onValueChange={(value) => updateLocalFilter('hasTransport', value)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">Todos</SelectItem>
-                                                    <SelectItem value="yes">Con transporte</SelectItem>
-                                                    <SelectItem value="no">Sin transporte</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                    <div className="flex items-center gap-2">
+                        <Button onClick={() => router.push('/students/create')}>
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Nuevo Estudiante
+                        </Button>
+                        <Button variant="outline" onClick={refetch} disabled={loading}>
+                            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+                        </Button>
+                    </div>
+                </div>
 
-                                        {/* Medical Info Filter */}
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Info. Médica</label>
-                                            <Select
-                                                value={localFilters.hasMedicalInfo}
-                                                onValueChange={(value) => updateLocalFilter('hasMedicalInfo', value)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">Todos</SelectItem>
-                                                    <SelectItem value="yes">Con info médica</SelectItem>
-                                                    <SelectItem value="no">Sin info médica</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                {/* Search and Quick Controls */}
+                <Card>
+                    <CardContent className="p-4">
+                        <div className="flex flex-col gap-4">
+                            <div className="flex flex-col lg:flex-row gap-4">
+                                {/* Search */}
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Buscar por nombre o código SIRE..."
+                                        value={localFilters.search}
+                                        onChange={(e) => updateLocalFilter('search', e.target.value)}
+                                        className="pl-10"
+                                    />
+                                </div>
 
-                                        {/* Sort Options */}
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Ordenar por</label>
-                                            <div className="flex gap-2">
+                                {/* Quick Filters */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {/* Status Quick Filter */}
+                                    <Select
+                                        value={localFilters.status}
+                                        onValueChange={(value: FilterStatus) => updateLocalFilter('status', value)}
+                                    >
+                                        <SelectTrigger className="w-32">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">Todos</SelectItem>
+                                            <SelectItem value="active">Activos</SelectItem>
+                                            <SelectItem value="inactive">Inactivos</SelectItem>
+                                            <SelectItem value="graduated">Graduados</SelectItem>
+                                            <SelectItem value="transferred">Transferidos</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+
+                                    {/* View Mode Toggle */}
+                                    <div className="flex rounded-lg border">
+                                        <Button
+                                            variant={viewMode === 'cards' ? 'default' : 'ghost'}
+                                            size="sm"
+                                            onClick={() => setViewMode('cards')}
+                                            className="rounded-r-none"
+                                        >
+                                            <Grid3X3 className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant={viewMode === 'table' ? 'default' : 'ghost'}
+                                            size="sm"
+                                            onClick={() => setViewMode('table')}
+                                            className="rounded-l-none"
+                                        >
+                                            <List className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+
+                                    {/* Advanced Filters Toggle */}
+                                    <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                                        <CollapsibleTrigger asChild>
+                                            <Button variant="outline" size="sm">
+                                                <Filter className="h-4 w-4 mr-2" />
+                                                Filtros
+                                                {activeFiltersCount > 0 && (
+                                                    <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
+                                                        {activeFiltersCount}
+                                                    </Badge>
+                                                )}
+                                                {isFiltersOpen ? (
+                                                    <ChevronUp className="h-4 w-4 ml-2" />
+                                                ) : (
+                                                    <ChevronDown className="h-4 w-4 ml-2" />
+                                                )}
+                                            </Button>
+                                        </CollapsibleTrigger>
+                                    </Collapsible>
+                                </div>
+                            </div>
+
+                            {/* Advanced Filters Section */}
+                            <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                                <CollapsibleContent className="space-y-4">
+                                    <div className="border-t pt-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                                            {/* Gender Filter */}
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Género</label>
                                                 <Select
-                                                    value={localFilters.sortBy}
-                                                    onValueChange={(value: SortBy) => updateLocalFilter('sortBy', value)}
+                                                    value={localFilters.gender}
+                                                    onValueChange={(value: FilterGender) => updateLocalFilter('gender', value)}
                                                 >
-                                                    <SelectTrigger className="flex-1">
+                                                    <SelectTrigger>
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="date">Fecha</SelectItem>
-                                                        <SelectItem value="name">Nombre</SelectItem>
-                                                        <SelectItem value="age">Edad</SelectItem>
+                                                        <SelectItem value="all">Todos</SelectItem>
+                                                        <SelectItem value="Masculino">Masculino</SelectItem>
+                                                        <SelectItem value="Femenino">Femenino</SelectItem>
+                                                        <SelectItem value="other">Otro</SelectItem>
                                                     </SelectContent>
                                                 </Select>
-                                                <Button
-                                                    variant="outline"
-                                                    size="icon"
-                                                    onClick={() => updateLocalFilter('sortOrder', localFilters.sortOrder === 'asc' ? 'desc' : 'asc')}
+                                            </div>
+
+                                            {/* Age Range Filter */}
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Edad</label>
+                                                <Select
+                                                    value={localFilters.ageRange}
+                                                    onValueChange={(value: AgeRange) => updateLocalFilter('ageRange', value)}
                                                 >
-                                                    {localFilters.sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
-                                                </Button>
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">Todas las edades</SelectItem>
+                                                        <SelectItem value="3-5">3-5 años</SelectItem>
+                                                        <SelectItem value="6-8">6-8 años</SelectItem>
+                                                        <SelectItem value="9-11">9-11 años</SelectItem>
+                                                        <SelectItem value="12-14">12-14 años</SelectItem>
+                                                        <SelectItem value="15+">15+ años</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            {/* Grade Filter */}
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Grado</label>
+                                                <Select
+                                                    value={localFilters.grade}
+                                                    onValueChange={(value) => updateLocalFilter('grade', value)}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">Todos los grados</SelectItem>
+                                                        {availableGrades.map((grade) => (
+                                                            <SelectItem key={grade} value={grade!.toString()}>
+                                                                Grado {grade}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            {/* Transport Filter */}
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Transporte</label>
+                                                <Select
+                                                    value={localFilters.hasTransport}
+                                                    onValueChange={(value) => updateLocalFilter('hasTransport', value)}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">Todos</SelectItem>
+                                                        <SelectItem value="yes">Con transporte</SelectItem>
+                                                        <SelectItem value="no">Sin transporte</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            {/* Medical Info Filter */}
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Info. Médica</label>
+                                                <Select
+                                                    value={localFilters.hasMedicalInfo}
+                                                    onValueChange={(value) => updateLocalFilter('hasMedicalInfo', value)}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">Todos</SelectItem>
+                                                        <SelectItem value="yes">Con info médica</SelectItem>
+                                                        <SelectItem value="no">Sin info médica</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            {/* Sort Options */}
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Ordenar por</label>
+                                                <div className="flex gap-2">
+                                                    <Select
+                                                        value={localFilters.sortBy}
+                                                        onValueChange={(value: SortBy) => updateLocalFilter('sortBy', value)}
+                                                    >
+                                                        <SelectTrigger className="flex-1">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="date">Fecha</SelectItem>
+                                                            <SelectItem value="name">Nombre</SelectItem>
+                                                            <SelectItem value="age">Edad</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="icon"
+                                                        onClick={() => updateLocalFilter('sortOrder', localFilters.sortOrder === 'asc' ? 'desc' : 'asc')}
+                                                    >
+                                                        {localFilters.sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Filter Actions */}
+                                        <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                                            <div className="flex items-center gap-2">
+                                                {activeFiltersCount > 0 && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={resetFilters}
+                                                    >
+                                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                                        Limpiar filtros
+                                                    </Button>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm text-muted-foreground">Elementos por página:</span>
+                                                <Select
+                                                    value={itemsPerPage.toString()}
+                                                    onValueChange={(value) => {
+                                                        setItemsPerPage(Number(value))
+                                                        handlePageChange(1)
+                                                    }}
+                                                >
+                                                    <SelectTrigger className="w-20">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {[6, 12, 24, 48].map((size) => (
+                                                            <SelectItem key={size} value={size.toString()}>
+                                                                {size}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Filter Actions */}
-                                    <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                                        <div className="flex items-center gap-2">
-                                            {activeFiltersCount > 0 && (
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={resetFilters}
-                                                >
-                                                    <RefreshCw className="h-4 w-4 mr-2" />
-                                                    Limpiar filtros
-                                                </Button>
-                                            )}
-                                        </div>
-
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm text-muted-foreground">Elementos por página:</span>
-                                            <Select
-                                                value={itemsPerPage.toString()}
-                                                onValueChange={(value) => {
-                                                    setItemsPerPage(Number(value))
-                                                    handlePageChange(1)
-                                                }}
-                                            >
-                                                <SelectTrigger className="w-20">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {[6, 12, 24, 48].map((size) => (
-                                                        <SelectItem key={size} value={size.toString()}>
-                                                            {size}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CollapsibleContent>
-                        </Collapsible>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Content */}
-            {processedStudents.length === 0 ? (
-                <NoResultsFound
-                    onResetFilters={resetFilters}
-                    message="No se encontraron estudiantes"
-                    suggestion="Intenta ajustar los filtros o términos de búsqueda"
-                />
-            ) : (
-                <div className="space-y-4">
-                    {viewMode === 'cards' ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-                            {paginatedData.map((student) => (
-                                <StudentCard
-                                    key={student.id}
-                                    student={student}
-                                    onViewDetails={(id) => router.push(`/students/profile/${id}`)}
-                                    onEdit={(id) => router.push(`/students/edit/${id}`)}
-                                    onStatusChange={handleStatusChange}
-                                />
-                            ))}
+                                </CollapsibleContent>
+                            </Collapsible>
                         </div>
-                    ) : (
-                        <Card>
-                            <StudentDataTable data={paginatedData} />
-                        </Card>
-                    )}
+                    </CardContent>
+                </Card>
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <Card>
-                            <CardContent className="p-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="text-sm text-muted-foreground">
-                                        Mostrando {(currentPage - 1) * itemsPerPage + 1} a{" "}
-                                        {Math.min(currentPage * itemsPerPage, totalItems)} de {totalItems} estudiantes
-                                    </div>
-                                    <Pagination
-                                        currentPage={currentPage}
-                                        totalPages={totalPages}
-                                        onPageChange={handlePageChange}
+                {/* Content */}
+                {processedStudents.length === 0 ? (
+                    <NoResultsFound
+                        onResetFilters={resetFilters}
+                        message="No se encontraron estudiantes"
+                        suggestion="Intenta ajustar los filtros o términos de búsqueda"
+                    />
+                ) : (
+                    <div className="space-y-4">
+                        {viewMode === 'cards' ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+                                {paginatedData.map((student) => (
+                                    <StudentCard
+                                        key={student.id}
+                                        student={student}
+                                        onViewDetails={(id) => router.push(`/students/profile/${id}`)}
+                                        onEdit={(id) => router.push(`/students/edit/${id}`)}
+                                        onStatusChange={handleStatusChange}
                                     />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
-            )}
+                                ))}
+                            </div>
+                        ) : (
+                            <Card>
+                                <StudentDataTable data={paginatedData} />
+                            </Card>
+                        )}
 
-            {/* Warning Modal */}
-            <ModalWarningConfirm
-                isOpen={warningModal.isOpen}
-                onClose={() => setWarningModal({ isOpen: false, userId: null, isActive: false })}
-                onConfirm={confirmStatusChange}
-                title={warningModal.isActive ? "Desactivar estudiante" : "Activar estudiante"}
-                description={`¿Estás seguro de que deseas ${warningModal.isActive ? 'desactivar' : 'activar'} este estudiante?`}
-                confirmText={warningModal.isActive ? "Desactivar" : "Activar"}
-            />
-        </div>
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <Card>
+                                <CardContent className="p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="text-sm text-muted-foreground">
+                                            Mostrando {(currentPage - 1) * itemsPerPage + 1} a{" "}
+                                            {Math.min(currentPage * itemsPerPage, totalItems)} de {totalItems} estudiantes
+                                        </div>
+                                        <Pagination
+                                            currentPage={currentPage}
+                                            totalPages={totalPages}
+                                            onPageChange={handlePageChange}
+                                        />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+                )}
+
+                {/* Warning Modal */}
+                <ModalWarningConfirm
+                    isOpen={warningModal.isOpen}
+                    onClose={() => setWarningModal({ isOpen: false, userId: null, isActive: false })}
+                    onConfirm={confirmStatusChange}
+                    title={warningModal.isActive ? "Desactivar estudiante" : "Activar estudiante"}
+                    description={`¿Estás seguro de que deseas ${warningModal.isActive ? 'desactivar' : 'activar'} este estudiante?`}
+                    confirmText={warningModal.isActive ? "Desactivar" : "Activar"}
+                />
+                 </>
+                )}
+            </div>
+        </ProtectedContent>
     )
 }

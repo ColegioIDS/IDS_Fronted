@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Search, ChevronLeft, ChevronRight, Shield, Loader2 } from 'lucide-react';
 import PermissionModuleCard from './PermissionModuleCard';
-import ProtectedContent from '@/components/common/ProtectedContent'; // ✅ Importar
+  import ProtectedContent from '@/components/common/ProtectedContent'; 
 
 export default function PermissionsContent() {
   const [filters, setFilters] = useState<PermissionFilters>({
