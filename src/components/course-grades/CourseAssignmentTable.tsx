@@ -35,16 +35,15 @@ import {
   AlertCircle,
   Info
 } from 'lucide-react';
-import { useCourse } from '@/hooks/useCourse';
-import { useGrade } from '@/hooks/useGrade';
 import { useCourseGrade } from '@/hooks/useCourseGrade';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
 interface CourseAssignment {
   courseId: number;
   isAssigned: boolean;
   isCore: boolean;
-  wasOriginallyAssigned: boolean; // Para trackear estado original
+  wasOriginallyAssigned: boolean;
 }
 
 interface CourseAssignmentTableProps {
@@ -58,7 +57,8 @@ interface CourseAssignmentTableProps {
  * - Shows existing assignments with switches activated
  * - Visual indicators for assigned/unassigned courses
  * - Improved filtering and search
- * - Better visual presentation with colors and icons
+ * - Permission-based UI
+ * - Dark mode support
  */
 export function CourseAssignmentTable({
   gradeId,
@@ -69,22 +69,41 @@ export function CourseAssignmentTable({
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [assignments, setAssignments] = useState<Record<number, CourseAssignment>>({});
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const { courses, isLoadingCourses } = useCourse();
-  const { grades } = useGrade();
-  const { fetchByGrade, createCourseGrade } = useCourseGrade();
+  // ✅ Hooks actualizados
+  const { hasPermission } = useAuth();
+  const {
+    courseGrades,
+    formData,
+    isLoading,
+    isLoadingFormData,
+    fetchFormData,
+    fetchByGrade,
+    createCourseGradeItem
+  } = useCourseGrade(false);
 
+  // ✅ Permisos
+  const canCreate = hasPermission('course-grade', 'create');
+  const canUpdate = hasPermission('course-grade', 'update');
+
+  // ✅ Obtener cursos y grados del formData
+  const courses = formData?.courses || [];
+  const grades = formData?.grades || [];
   const currentGrade = grades.find(g => g.id === gradeId);
 
-  // Load existing assignments when component mounts or gradeId changes
+  // ✅ Cargar datos del formulario
+  useEffect(() => {
+    fetchFormData();
+  }, [fetchFormData]);
+
+  // ✅ Load existing assignments when component mounts or gradeId changes
   useEffect(() => {
     const loadExistingAssignments = async () => {
       if (!gradeId || courses.length === 0) return;
       
-      setIsLoading(true);
       try {
-        const existingRelations = await fetchByGrade(gradeId);
+        await fetchByGrade(gradeId);
+        const existingRelations = courseGrades;
         const newAssignments: Record<number, CourseAssignment> = {};
         
         courses.forEach(course => {
@@ -95,7 +114,7 @@ export function CourseAssignmentTable({
             courseId: course.id,
             isAssigned,
             isCore: existing?.isCore ?? true,
-            wasOriginallyAssigned: isAssigned, // Track original state
+            wasOriginallyAssigned: isAssigned,
           };
         });
         
@@ -103,13 +122,11 @@ export function CourseAssignmentTable({
       } catch (error) {
         console.error('Error loading assignments:', error);
         toast.error('Error al cargar las asignaciones existentes');
-      } finally {
-        setIsLoading(false);
       }
     };
 
     loadExistingAssignments();
-  }, [gradeId, courses.length]);
+  }, [gradeId, courses.length, fetchByGrade]);
 
   // Get unique areas for filter
   const uniqueAreas = useMemo(() => {
@@ -123,8 +140,6 @@ export function CourseAssignmentTable({
   // Filter courses based on search term, area, and status
   const filteredCourses = useMemo(() => {
     return courses.filter(course => {
-      if (!course.isActive) return false;
-      
       const assignment = assignments[course.id];
       
       // Search filter
@@ -150,6 +165,11 @@ export function CourseAssignmentTable({
   }, [courses, searchTerm, areaFilter, statusFilter, assignments]);
 
   const handleAssignmentChange = (courseId: number, isAssigned: boolean) => {
+    if (!canUpdate) {
+      toast.error('No tienes permisos para modificar asignaciones');
+      return;
+    }
+
     setAssignments(prev => ({
       ...prev,
       [courseId]: {
@@ -163,6 +183,11 @@ export function CourseAssignmentTable({
   };
 
   const handleCoreChange = (courseId: number, isCore: boolean) => {
+    if (!canUpdate) {
+      toast.error('No tienes permisos para modificar asignaciones');
+      return;
+    }
+
     setAssignments(prev => ({
       ...prev,
       [courseId]: {
@@ -173,9 +198,13 @@ export function CourseAssignmentTable({
   };
 
   const handleSave = async () => {
+    if (!canCreate) {
+      toast.error('No tienes permisos para crear asignaciones');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      // Get courses that are newly assigned (not originally assigned)
       const newlyAssignedCourses = Object.values(assignments).filter(
         a => a.isAssigned && !a.wasOriginallyAssigned
       );
@@ -187,7 +216,7 @@ export function CourseAssignmentTable({
 
       // Create new course-grade relationships
       for (const assignment of newlyAssignedCourses) {
-        await createCourseGrade({
+        await createCourseGradeItem({
           courseId: assignment.courseId,
           gradeId,
           isCore: assignment.isCore,
@@ -224,27 +253,27 @@ export function CourseAssignmentTable({
     if (assignment.wasOriginallyAssigned && assignment.isAssigned) {
       return 'bg-blue-50 dark:bg-blue-950/20 border-l-4 border-l-blue-500';
     }
-    return '';
+    return 'hover:bg-gray-50 dark:hover:bg-gray-800/50';
   };
 
-  if (isLoadingCourses || isLoading) {
+  if (isLoadingFormData || isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin" />
+      <Card className="border-gray-200 dark:border-gray-700">
+        <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+            <Loader2 className="h-5 w-5 animate-spin text-indigo-600 dark:text-indigo-400" />
             Cargando cursos y asignaciones...
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center space-x-4">
-                <Skeleton className="h-6 w-12" />
-                <Skeleton className="h-8 w-8 rounded-lg" />
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-6 w-12 bg-gray-200 dark:bg-gray-700" />
+                <Skeleton className="h-8 w-8 rounded-lg bg-gray-200 dark:bg-gray-700" />
+                <Skeleton className="h-4 w-32 bg-gray-200 dark:bg-gray-700" />
+                <Skeleton className="h-6 w-20 bg-gray-200 dark:bg-gray-700" />
+                <Skeleton className="h-6 w-16 bg-gray-200 dark:bg-gray-700" />
               </div>
             ))}
           </div>
@@ -254,32 +283,32 @@ export function CourseAssignmentTable({
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="border-gray-200 dark:border-gray-700 shadow-lg">
+      <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-indigo-600" />
+            <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+              <BookOpen className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               Asignar Cursos a{' '}
-              <span className="text-indigo-600">{currentGrade?.name}</span>
+              <span className="text-indigo-600 dark:text-indigo-400">{currentGrade?.name}</span>
             </CardTitle>
             
             {/* Statistics */}
             <div className="flex flex-wrap gap-2 mt-3">
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
                 <Info className="h-3 w-3 mr-1" />
                 {originallyAssigned} ya asignados
               </Badge>
               {newlyAssigned > 0 && (
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <Badge variant="outline" className="bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
                   <Check className="h-3 w-3 mr-1" />
                   {newlyAssigned} nuevos
                 </Badge>
               )}
-              <Badge variant="default" className="bg-indigo-100 text-indigo-800 border-indigo-200">
+              <Badge variant="default" className="bg-indigo-100 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-200 border-indigo-200 dark:border-indigo-800">
                 {coreCount} principales
               </Badge>
-              <Badge variant="secondary">
+              <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
                 {electiveCount} electivas
               </Badge>
             </div>
@@ -290,19 +319,24 @@ export function CourseAssignmentTable({
               variant="outline"
               onClick={resetFilters}
               size="sm"
+              className="border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
               Limpiar Filtros
             </Button>
-            <Button 
-              onClick={handleSave} 
-              disabled={isSaving || newlyAssigned === 0}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Save className="mr-2 h-4 w-4" />
-              Guardar {newlyAssigned > 0 ? `(${newlyAssigned})` : ''}
-            </Button>
+            
+            {/* ✅ Solo mostrar botón si tiene permiso */}
+            {canCreate && (
+              <Button 
+                onClick={handleSave} 
+                disabled={isSaving || newlyAssigned === 0}
+                className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+              >
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Save className="mr-2 h-4 w-4" />
+                Guardar {newlyAssigned > 0 ? `(${newlyAssigned})` : ''}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -310,10 +344,10 @@ export function CourseAssignmentTable({
         {originallyAssigned > 0 && (
           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
             <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
-              <div className="text-sm text-blue-800 dark:text-blue-200">
-                <p className="font-medium">Cursos ya asignados</p>
-                <p className="text-blue-600 dark:text-blue-300">
+              <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-blue-800 dark:text-blue-200">Cursos ya asignados</p>
+                <p className="text-blue-600 dark:text-blue-300 mt-1">
                   Los cursos marcados en azul ya están asignados a este grado. 
                   Los nuevos cursos que asignes aparecerán en verde.
                 </p>
@@ -323,26 +357,26 @@ export function CourseAssignmentTable({
         )}
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-6">
         {/* Filters */}
         <div className="grid gap-4 md:grid-cols-4">
           {/* Search */}
           <div className="relative md:col-span-2">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
             <Input
               placeholder="Buscar por nombre, código o área..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
+              className="pl-9 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
             />
           </div>
 
           {/* Area Filter */}
           <Select value={areaFilter} onValueChange={setAreaFilter}>
-            <SelectTrigger>
+            <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
               <SelectValue placeholder="Todas las áreas" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
               <SelectItem value="all">Todas las áreas</SelectItem>
               <SelectItem value="no-area">Sin área</SelectItem>
               {uniqueAreas.map((area) => (
@@ -355,10 +389,10 @@ export function CourseAssignmentTable({
 
           {/* Status Filter */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger>
+            <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
               <SelectValue placeholder="Todos los estados" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="assigned">Asignados</SelectItem>
               <SelectItem value="unassigned">No asignados</SelectItem>
@@ -369,7 +403,7 @@ export function CourseAssignmentTable({
         </div>
 
         {/* Legend */}
-        <div className="flex flex-wrap gap-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm">
+        <div className="flex flex-wrap gap-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <div className="w-4 h-1 bg-blue-500 rounded"></div>
             <span className="text-gray-600 dark:text-gray-300">Ya asignado</span>
@@ -379,21 +413,21 @@ export function CourseAssignmentTable({
             <span className="text-gray-600 dark:text-gray-300">Nuevo</span>
           </div>
           <div className="flex items-center gap-2">
-            <Switch disabled  />
+            <Switch disabled />
             <span className="text-gray-600 dark:text-gray-300">Toggle para asignar/desasignar</span>
           </div>
         </div>
 
         {/* Table */}
-        <div className="rounded-md border">
+        <div className="rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-16">Asignar</TableHead>
-                <TableHead>Curso</TableHead>
-                <TableHead>Área</TableHead>
-                <TableHead className="w-32">Tipo</TableHead>
-                <TableHead className="w-32">Estado</TableHead>
+              <TableRow className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+                <TableHead className="w-16 text-gray-700 dark:text-gray-300">Asignar</TableHead>
+                <TableHead className="text-gray-700 dark:text-gray-300">Curso</TableHead>
+                <TableHead className="text-gray-700 dark:text-gray-300">Área</TableHead>
+                <TableHead className="w-32 text-gray-700 dark:text-gray-300">Tipo</TableHead>
+                <TableHead className="w-32 text-gray-700 dark:text-gray-300">Estado</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -416,6 +450,7 @@ export function CourseAssignmentTable({
                         onCheckedChange={(checked) =>
                           handleAssignmentChange(course.id, checked)
                         }
+                        disabled={!canUpdate}
                       />
                     </TableCell>
                     
@@ -433,7 +468,7 @@ export function CourseAssignmentTable({
                           <div className="font-medium text-gray-900 dark:text-gray-100">
                             {course.name}
                           </div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
                             {course.code}
                           </div>
                         </div>
@@ -444,8 +479,8 @@ export function CourseAssignmentTable({
                       <Badge 
                         variant="outline"
                         className={course.area 
-                          ? "bg-gray-50 text-gray-700 border-gray-200" 
-                          : "bg-orange-50 text-orange-700 border-orange-200"
+                          ? "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600" 
+                          : "bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800"
                         }
                       >
                         {course.area || 'Sin área'}
@@ -460,30 +495,30 @@ export function CourseAssignmentTable({
                             onCheckedChange={(checked) =>
                               handleCoreChange(course.id, checked)
                             }
-                          
+                            disabled={!canUpdate}
                           />
-                          <span className="text-sm font-medium">
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             {assignment.isCore ? 'Principal' : 'Electiva'}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
+                        <span className="text-sm text-gray-400 dark:text-gray-500">—</span>
                       )}
                     </TableCell>
                     
                     <TableCell>
                       {assignment.wasOriginallyAssigned && assignment.isAssigned ? (
-                        <div className="flex items-center gap-1 text-blue-600">
+                        <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
                           <Info className="h-4 w-4" />
                           <span className="text-sm font-medium">Existente</span>
                         </div>
                       ) : assignment.isAssigned && !assignment.wasOriginallyAssigned ? (
-                        <div className="flex items-center gap-1 text-green-600">
+                        <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
                           <Check className="h-4 w-4" />
                           <span className="text-sm font-medium">Nuevo</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1 text-muted-foreground">
+                        <div className="flex items-center gap-1 text-gray-400 dark:text-gray-500">
                           <X className="h-4 w-4" />
                           <span className="text-sm">No asignado</span>
                         </div>
@@ -500,15 +535,19 @@ export function CourseAssignmentTable({
         {filteredCourses.length === 0 && (
           <div className="py-12 text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-              <Filter className="h-6 w-6 text-gray-400" />
+              <Filter className="h-6 w-6 text-gray-400 dark:text-gray-500" />
             </div>
             <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
               No se encontraron cursos
             </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
               Intenta ajustar los filtros para ver más resultados.
             </p>
-            <Button variant="outline" onClick={resetFilters} className="mt-4">
+            <Button 
+              variant="outline" 
+              onClick={resetFilters} 
+              className="mt-4 border-gray-300 dark:border-gray-600"
+            >
               Limpiar filtros
             </Button>
           </div>

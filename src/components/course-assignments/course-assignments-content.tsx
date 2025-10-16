@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -17,25 +17,35 @@ import {
   ArrowLeft,
   Settings
 } from 'lucide-react';
-import { useSchoolCycleContext } from '@/context/SchoolCycleContext';
-import { useCourseAssignmentContext } from '@/context/CourseAssignmentContext';
-
+import { useAuth } from '@/context/AuthContext'; // ✅ NUEVO
+import ProtectedContent from '@/components/common/ProtectedContent'; // ✅ NUEVO
+import { useCourseAssignment } from '@/hooks/useCourseAssignment';
 import GradeSectionSelector from './components/grade-section-selector';
 import CourseTeacherTable from './components/course-teacher-table';
 
 export default function CourseAssignmentsContent() {
-  const { activeCycle, getActiveCycleInfo } = useSchoolCycleContext();
+  // ✅ NUEVO: Verificar permisos
+  const { hasPermission } = useAuth();
+  const canRead = hasPermission('course-assignment', 'read');
+  const canCreate = hasPermission('course-assignment', 'create');
+  const canUpdate = hasPermission('course-assignment', 'update');
+  const canBulkUpdate = hasPermission('course-assignment', 'bulk-update');
+
+  // Hook principal
   const { 
-    state: { selectedGradeId, selectedSectionId, error, loading },
-    setSelectedGrade,
-    setSelectedSection,
-    clearError
-  } = useCourseAssignmentContext();
+    formData, 
+    isLoadingFormData, 
+    error, 
+    clearError,
+    loadFormData 
+  } = useCourseAssignment({ 
+    autoLoadFormData: true 
+  });
 
-  console.log("Error:", error);
-
+  // Estados locales para navegación
+  const [selectedGradeId, setSelectedGradeId] = useState<number | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
   const [currentStep, setCurrentStep] = useState<'selection' | 'assignment'>('selection');
-  const activeCycleInfo = getActiveCycleInfo();
 
   // Determinar el paso actual basado en las selecciones
   useEffect(() => {
@@ -48,23 +58,84 @@ export default function CourseAssignmentsContent() {
 
   // Manejar cuando se completa la selección de grado-sección
   const handleSelectionComplete = (gradeId: number, sectionId: number) => {
+    setSelectedGradeId(gradeId);
+    setSelectedSectionId(sectionId);
     setCurrentStep('assignment');
   };
 
   // Volver al paso de selección
   const handleBackToSelection = () => {
-    setSelectedGrade(null);
-    setSelectedSection(null);
+    setSelectedGradeId(null);
+    setSelectedSectionId(null);
     setCurrentStep('selection');
   };
 
-  // Refrescar todo
+  // Refrescar datos
   const handleRefresh = () => {
-    window.location.reload();
+    loadFormData();
+    if (selectedSectionId) {
+      setSelectedSectionId(null);
+      setSelectedGradeId(null);
+      setCurrentStep('selection');
+    }
   };
 
+  // Helper para calcular info del ciclo
+  const getActiveCycleInfo = () => {
+    if (!formData?.activeCycle) return null;
+
+    const start = new Date(formData.activeCycle.startDate);
+    const end = new Date(formData.activeCycle.endDate);
+    const now = new Date();
+    
+    const totalDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const daysElapsed = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = Math.floor((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const progress = (daysElapsed / totalDays) * 100;
+
+    return {
+      academicYear: formData.activeCycle.name,
+      daysRemaining: Math.max(0, daysRemaining),
+      progress: Math.min(100, Math.max(0, progress))
+    };
+  };
+
+  const activeCycleInfo = getActiveCycleInfo();
+
+  // ✅ NUEVO: Si no tiene permiso de lectura, mostrar ProtectedContent
+  if (!canRead) {
+    return (
+      <ProtectedContent requiredPermission={{ module: 'course-assignment', action: 'read' }}>
+        <>
+        </>
+      </ProtectedContent>
+
+    );
+  }
+
+  // Loading state
+  if (isLoadingFormData) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <Card className="bg-white dark:bg-gray-800">
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+              <div className="space-y-3 mt-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Si no hay ciclo activo
-  if (!activeCycle) {
+  if (!formData?.activeCycle) {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <div className="text-center space-y-4">
@@ -80,7 +151,7 @@ export default function CourseAssignmentsContent() {
             </p>
           </div>
           <Button asChild>
-            <a href="/admin/grade-cycles">
+            <a href="/admin/school-cycles">
               <Settings className="h-4 w-4 mr-2" />
               Configurar Ciclo Escolar
             </a>
@@ -128,15 +199,17 @@ export default function CourseAssignmentsContent() {
       </div>
 
       {/* Información del Ciclo Activo */}
-      <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
-        <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-        <AlertDescription className="text-green-800 dark:text-green-200">
-          <strong>Ciclo Activo:</strong> {activeCycleInfo.academicYear} 
-          <span className="ml-2 text-sm">
-            ({activeCycleInfo.daysRemaining} días restantes, {Math.round(activeCycleInfo.progress)}% completado)
-          </span>
-        </AlertDescription>
-      </Alert>
+      {activeCycleInfo && (
+        <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <AlertDescription className="text-green-800 dark:text-green-200">
+            <strong>Ciclo Activo:</strong> {activeCycleInfo.academicYear} 
+            <span className="ml-2 text-sm">
+              ({activeCycleInfo.daysRemaining} días restantes, {Math.round(activeCycleInfo.progress)}% completado)
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Error Global */}
       {error && (
@@ -241,7 +314,10 @@ export default function CourseAssignmentsContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <GradeSectionSelector onSelectionComplete={handleSelectionComplete} />
+                <GradeSectionSelector 
+                  grades={formData.grades}
+                  onSelectionComplete={handleSelectionComplete} 
+                />
               </CardContent>
             </Card>
           </div>
@@ -256,27 +332,16 @@ export default function CourseAssignmentsContent() {
               </h2>
             </div>
 
+            {/* ✅ NUEVO: Pasar permisos al componente hijo */}
             <CourseTeacherTable 
               gradeId={selectedGradeId} 
-              sectionId={selectedSectionId} 
+              sectionId={selectedSectionId}
+              canUpdate={canUpdate}
+              canBulkUpdate={canBulkUpdate}
             />
           </div>
         )}
       </div>
-
-      {/* Loading overlay */}
-      {loading && (
-        <div className="fixed inset-0 bg-black/20 dark:bg-black/40 flex items-center justify-center z-50">
-          <Card className="bg-white dark:bg-gray-800 shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <p className="text-gray-700 dark:text-gray-300">Procesando...</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }

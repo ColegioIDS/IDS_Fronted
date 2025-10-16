@@ -1,40 +1,29 @@
-// src/app/(admin)/course-teachers/page.tsx
+// src/app/(admin)/course-assignments/page.tsx
 "use client";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SchoolCycleProvider } from '@/context/SchoolCycleContext';
-import { GradeProvider } from '@/context/GradeContext';
-import { SectionProvider } from '@/context/SectionsContext';
-import { CourseProvider } from '@/context/CourseContext';          // ✅ AGREGAR DE VUELTA
-import { TeacherProvider } from '@/context/newTeachersContext';
-import { CourseAssignmentProvider } from '@/context/CourseAssignmentContext';
-import ContentCourseAssignments from '@/components/course-assignments/course-assignments-content';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,
-      refetchOnWindowFocus: true,
-      refetchInterval: 15 * 60 * 1000,
-    },
-  },
-});
+import dynamic from 'next/dynamic';
+import Breadcrumb from '@/components/common/Breadcrumb';
+import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
 
-export default function CourseTeachersPage() {
+const CourseAssignmentsContent = dynamic(
+  () => import('@/components/course-assignments/course-assignments-content'),
+  {
+    loading: () => <ProfileSkeleton type="meta" />
+  }
+);
+
+export default function CourseAssignmentsPage() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <SchoolCycleProvider>
-        <GradeProvider>
-          <SectionProvider>
-            <CourseProvider>                      {/* ✅ AGREGAR */}
-              <TeacherProvider>
-                <CourseAssignmentProvider>
-                  <ContentCourseAssignments />
-                </CourseAssignmentProvider>
-              </TeacherProvider>
-            </CourseProvider>                     {/* ✅ AGREGAR */}
-          </SectionProvider>
-        </GradeProvider>
-      </SchoolCycleProvider>
-    </QueryClientProvider>
+    <div className="space-y-6">
+      <Breadcrumb
+        pageTitle="Asignación de Cursos y Maestros"
+        items={[
+          { label: "Inicio", href: "/dashboard" },
+          { label: "Académico", href: "#" },
+          { label: "Asignaciones", href: "#" },
+        ]}
+      />
+      <CourseAssignmentsContent />
+    </div>
   );
 }

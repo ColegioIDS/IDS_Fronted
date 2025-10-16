@@ -1,223 +1,337 @@
 // src/hooks/useCourseGrade.ts
-import { useState, useEffect } from 'react';
-import { 
-  CourseGradeWithRelations,
-  CourseGradeFormValues
-} from '@/types/course-grade.types';
-import { 
-  getCourseGrades, 
-  createCourseGrade, 
-  updateCourseGrade, 
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner'; // o 'react-toastify' según uses
+import {
+  getCourseGrades,
   getCourseGradeById,
+  createCourseGrade,
+  updateCourseGrade,
+  deleteCourseGrade,
+  getCourseGradeFormData,
   getCourseGradesByCourse,
-  getCourseGradesByGrade,
-  deleteCourseGrade
+  getCourseGradesByGrade
 } from '@/services/course-grade';
-import { courseGradeSchema, defaultValues } from "@/schemas/courseGradeSchema";
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { toast } from 'react-toastify';
+import {
+  CourseGradeWithRelations,
+  CourseGradeFilters,
+  CourseGradeFormData as CourseGradeApiFormData
+} from '@/types/course-grade.types';
+import { CourseGradeFormData } from '@/schemas/courseGradeSchema';
 
-type CourseGradeFormData = z.infer<typeof courseGradeSchema>;
+interface UseCourseGradeReturn {
+  // Data
+  courseGrades: CourseGradeWithRelations[];
+  currentCourseGrade: CourseGradeWithRelations | null;
+  formData: CourseGradeApiFormData | null;
 
-export function useCourseGrade(isEditMode: boolean = false, id?: number) {
-    const [courseGrades, setCourseGrades] = useState<CourseGradeWithRelations[]>([]);
-    const [isLoadingCourseGrades, setIsLoadingCourseGrades] = useState(true);
-    const [courseGradesError, setCourseGradesError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [currentCourseGrade, setCurrentCourseGrade] = useState<CourseGradeWithRelations | null>(null);
+  // Loading states
+  isLoading: boolean;
+  isLoadingFormData: boolean;
+  isSubmitting: boolean;
 
-    const form = useForm<CourseGradeFormData>({
-        resolver: zodResolver(courseGradeSchema),
-        defaultValues,
-    });
+  // Error states
+  error: string | null;
 
-    // Load course grade data when in edit mode
-    useEffect(() => {
-        if (isEditMode && id) {
-            const loadCourseGradeData = async () => {
-                try {
-                    const courseGrade = await getCourseGradeById(id);
-                    setCurrentCourseGrade(courseGrade);
-                    form.reset({
-                        courseId: courseGrade.courseId,
-                        gradeId: courseGrade.gradeId,
-                        isCore: courseGrade.isCore,
-                    });
-                } catch (error) {
-                    console.error('Error loading course grade data:', error);
-                    toast.error('Error al cargar los datos de la relación curso-grado');
-                }
-            };
-            loadCourseGradeData();
-        }
-    }, [isEditMode, id, form]);
+  // CRUD operations
+  fetchCourseGrades: (filters?: CourseGradeFilters) => Promise<void>;
+  fetchCourseGradeById: (id: number) => Promise<void>;
+  fetchFormData: () => Promise<void>;
+  fetchByCourse: (courseId: number) => Promise<void>;
+  fetchByGrade: (gradeId: number) => Promise<void>;
+  createCourseGradeItem: (data: CourseGradeFormData) => Promise<CourseGradeWithRelations | null>;
+  updateCourseGradeItem: (id: number, data: Partial<CourseGradeFormData>) => Promise<CourseGradeWithRelations | null>;
+  deleteCourseGradeItem: (id: number) => Promise<boolean>;
 
-    const fetchCourseGrades = async (filters?: { courseId?: number; gradeId?: number; isCore?: boolean }) => {
-        setIsLoadingCourseGrades(true);
-        setCourseGradesError(null);
-        try {
-            const response = await getCourseGrades(filters);
-            setCourseGrades(response);
-        } catch (error) {
-            setCourseGradesError('Error al cargar las relaciones curso-grado');
-            console.error(error);
-            toast.error('Error al cargar las relaciones curso-grado');
-        } finally {
-            setIsLoadingCourseGrades(false);
-        }
-    };
+  // UI helpers
+  clearError: () => void;
+  clearCurrentCourseGrade: () => void;
+}
 
-    const fetchByCourse = async (courseId: number) => {
-        try {
-            const response = await getCourseGradesByCourse(courseId);
-            return response;
-        } catch (error) {
-            console.error(error);
-            toast.error('Error al cargar las relaciones por curso');
-            throw error;
-        }
-    };
+export function useCourseGrade(
+  autoFetch: boolean = true,
+  initialFilters?: CourseGradeFilters
+): UseCourseGradeReturn {
+  // States
+  const [courseGrades, setCourseGrades] = useState<CourseGradeWithRelations[]>([]);
+  const [currentCourseGrade, setCurrentCourseGrade] = useState<CourseGradeWithRelations | null>(null);
+  const [formData, setFormData] = useState<CourseGradeApiFormData | null>(null);
 
-    const fetchByGrade = async (gradeId: number) => {
-        try {
-            const response = await getCourseGradesByGrade(gradeId);
-            return response;
-        } catch (error) {
-            console.error(error);
-            toast.error('Error al cargar las relaciones por grado');
-            throw error;
-        }
-    };
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingFormData, setIsLoadingFormData] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const handleCreateCourseGrade = async (data: CourseGradeFormData) => {
+  // ==================== FETCH OPERATIONS ====================
+
+  /**
+   * Obtiene todas las relaciones curso-grado
+   */
+  const fetchCourseGrades = useCallback(async (filters?: CourseGradeFilters) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await getCourseGrades(filters);
+      setCourseGrades(data);
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al cargar relaciones curso-grado';
+      setError(errorMessage);
+      console.error('Error fetching course grades:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
+   * Obtiene una relación curso-grado por ID
+   */
+  const fetchCourseGradeById = useCallback(async (id: number) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await getCourseGradeById(id);
+      setCurrentCourseGrade(data);
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al cargar relación curso-grado';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      console.error('Error fetching course grade by id:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
+   * Obtiene datos del formulario (cursos y grados del ciclo activo)
+   */
+  const fetchFormData = useCallback(async () => {
+    try {
+      setIsLoadingFormData(true);
+      setError(null);
+      const data = await getCourseGradeFormData();
+      setFormData(data);
+
+      // Validaciones y notificaciones
+      if (data.grades.length === 0) {
+        toast.warning(
+          `No hay grados disponibles para el ciclo ${data.activeCycle.name}`,
+          {
+            description: 'Por favor, crea grados para este ciclo antes de continuar.',
+          }
+        );
+      }
+
+      if (data.courses.length === 0) {
+        toast.warning(
+          'No hay cursos activos disponibles',
+          {
+            description: 'Por favor, crea cursos activos antes de continuar.',
+          }
+        );
+      }
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al cargar datos del formulario';
+      setError(errorMessage);
+
+      if (err.response?.status === 404) {
+        toast.error(
+          'No hay ciclo escolar activo',
+          {
+            description: 'Por favor, activa un ciclo escolar antes de crear relaciones.',
+          }
+        );
+      } else {
+        toast.error(errorMessage);
+      }
+      console.error('Error fetching form data:', err);
+    } finally {
+      setIsLoadingFormData(false);
+    }
+  }, []);
+
+  /**
+   * Obtiene relaciones por curso
+   */
+  const fetchByCourse = useCallback(async (courseId: number) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await getCourseGradesByCourse(courseId);
+      setCourseGrades(data);
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al cargar relaciones por curso';
+      setError(errorMessage);
+      console.error('Error fetching course grades by course:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
+   * Obtiene relaciones por grado
+   */
+  const fetchByGrade = useCallback(async (gradeId: number) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await getCourseGradesByGrade(gradeId);
+      setCourseGrades(data);
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al cargar relaciones por grado';
+      setError(errorMessage);
+      console.error('Error fetching course grades by grade:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // ==================== CREATE ====================
+
+  /**
+   * Crea una nueva relación curso-grado
+   */
+  const createCourseGradeItem = useCallback(
+    async (data: CourseGradeFormData): Promise<CourseGradeWithRelations | null> => {
+      try {
         setIsSubmitting(true);
-        try {
-            await createCourseGrade(data);
-            toast.success("Relación curso-grado creada correctamente");
-            await fetchCourseGrades();
-            form.reset();
-            return { success: true };
-        } catch (error: any) {
-            console.log("Error completo:", error);
-            console.log("Datos de respuesta:", error.response?.data);
-            
-            if (error.response?.data) {
-                return { 
-                    success: false,
-                    message: error.response.data.message || "Error de validación",
-                    details: error.response.data.details || []
-                };
-            }
-            
-            toast.error(error.message || "Error al crear la relación curso-grado");
-            return { 
-                success: false, 
-                message: error.message || "Error desconocido",
-                details: []
-            };
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+        setError(null);
+        const newCourseGrade = await createCourseGrade(data);
+        
+        // Actualizar la lista localmente
+        setCourseGrades(prev => [...prev, newCourseGrade]);
+        
+        toast.success('Relación curso-grado creada correctamente');
+        return newCourseGrade;
+      } catch (err: any) {
+        const errorMessage = err.message || 'Error al crear relación curso-grado';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        console.error('Error creating course grade:', err);
+        return null;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    []
+  );
 
-    const handleUpdateCourseGrade = async (id: number, data: CourseGradeFormData) => {
-        if (!id) return;
+  // ==================== UPDATE ====================
 
+  /**
+   * Actualiza una relación curso-grado
+   */
+  const updateCourseGradeItem = useCallback(
+    async (
+      id: number,
+      data: Partial<CourseGradeFormData>
+    ): Promise<CourseGradeWithRelations | null> => {
+      try {
         setIsSubmitting(true);
-        try {
-            await updateCourseGrade(id, data);
-            toast.success("Relación curso-grado actualizada correctamente");
-            await fetchCourseGrades();
-            return { success: true };
-        } catch (error: any) {
-            if (error.response?.data) {
-                return error.response.data; 
-            }
-            toast.error("Error al actualizar la relación curso-grado");
-            console.error(error);
-            return { success: false, message: "Error desconocido" };
-        } finally {
-            setIsSubmitting(false);
+        setError(null);
+        const updatedCourseGrade = await updateCourseGrade(id, data);
+        
+        // Actualizar la lista localmente
+        setCourseGrades(prev =>
+          prev.map(item => (item.id === id ? updatedCourseGrade : item))
+        );
+        
+        // Actualizar currentCourseGrade si es el mismo
+        if (currentCourseGrade?.id === id) {
+          setCurrentCourseGrade(updatedCourseGrade);
         }
-    };
+        
+        toast.success('Relación curso-grado actualizada correctamente');
+        return updatedCourseGrade;
+      } catch (err: any) {
+        const errorMessage = err.message || 'Error al actualizar relación curso-grado';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        console.error('Error updating course grade:', err);
+        return null;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [currentCourseGrade]
+  );
 
+  // ==================== DELETE ====================
 
-      const handleDeleteCourseGrade = async (id: number) => {
-        try {
-            await deleteCourseGrade(id);
-            toast.success("Relación curso-grado eliminada correctamente");
-            
-            // Actualizamos la lista después de eliminar
-            await fetchCourseGrades();
-            
-            return { success: true };
-        } catch (error: any) {
-            console.error("Error al eliminar:", error);
-            
-            if (error.response?.data) {
-                toast.error(error.response.data.message || "Error al eliminar");
-                return {
-                    success: false,
-                    message: error.response.data.message,
-                    details: error.response.data.details || []
-                };
-            }
-            
-            toast.error(error.message || "Error al eliminar la relación");
-            return {
-                success: false,
-                message: error.message || "Error desconocido",
-                details: []
-            };
-        }
-    };
+  /**
+   * Elimina una relación curso-grado
+   */
+  const deleteCourseGradeItem = useCallback(async (id: number): Promise<boolean> => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      await deleteCourseGrade(id);
+      
+      // Actualizar la lista localmente
+      setCourseGrades(prev => prev.filter(item => item.id !== id));
+      
+      // Limpiar currentCourseGrade si es el mismo
+      if (currentCourseGrade?.id === id) {
+        setCurrentCourseGrade(null);
+      }
+      
+      toast.success('Relación curso-grado eliminada correctamente');
+      return true;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al eliminar relación curso-grado';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      console.error('Error deleting course grade:', err);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [currentCourseGrade]);
 
-    // Función para eliminar múltiples relaciones
-    const handleDeleteMultiple = async (ids: number[]) => {
-        try {
-            // Podrías implementar un endpoint batch delete en el servicio
-            // o hacer múltiples llamadas individuales
-            const results = await Promise.all(
-                ids.map(id => deleteCourseGrade(id))
-            );
-            
-            toast.success(`${ids.length} relaciones eliminadas correctamente`);
-            await fetchCourseGrades();
-            
-            return { success: true };
-        } catch (error) {
-            console.error("Error eliminando múltiples:", error);
-            toast.error("Error al eliminar algunas relaciones");
-            return { success: false };
-        }
-    };
+  // ==================== HELPERS ====================
 
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
 
+  const clearCurrentCourseGrade = useCallback(() => {
+    setCurrentCourseGrade(null);
+  }, []);
 
+  // ==================== AUTO FETCH ====================
 
-    const handleSubmit = isEditMode ? handleUpdateCourseGrade : handleCreateCourseGrade;
+  useEffect(() => {
+    if (autoFetch) {
+      fetchCourseGrades(initialFilters);
+    }
+  }, [autoFetch, fetchCourseGrades, initialFilters]);
 
-    useEffect(() => {
-        fetchCourseGrades();
-    }, []);
+  // ==================== RETURN ====================
 
-    return {
-        courseGrades,
-        currentCourseGrade,
-        isLoadingCourseGrades,
-        courseGradesError,
-        isSubmitting,
-        form,
-        fetchCourseGrades,
-        fetchByCourse,
-        fetchByGrade,
-        createCourseGrade: handleCreateCourseGrade,
-        updateCourseGrade: handleUpdateCourseGrade,
-        resetForm: () => form.reset(defaultValues),
+  return {
+    // Data
+    courseGrades,
+    currentCourseGrade,
+    formData,
 
-          deleteCourseGrade: handleDeleteCourseGrade,
-        deleteMultipleCourseGrades: handleDeleteMultiple
-    };
+    // Loading states
+    isLoading,
+    isLoadingFormData,
+    isSubmitting,
+
+    // Error states
+    error,
+
+    // CRUD operations
+    fetchCourseGrades,
+    fetchCourseGradeById,
+    fetchFormData,
+    fetchByCourse,
+    fetchByGrade,
+    createCourseGradeItem,
+    updateCourseGradeItem,
+    deleteCourseGradeItem,
+
+    // UI helpers
+    clearError,
+    clearCurrentCourseGrade,
+  };
 }

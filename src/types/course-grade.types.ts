@@ -1,7 +1,8 @@
-// types/schedules.types.ts
+//src/types/course-grade.types.ts
 import type { Schedule, DayOfWeek, ScheduleFormValues } from "@/types/schedules";
 import type { User as Teacher } from "@/types/user";
 import type { Course } from "@/types/courses";
+import type { Grade } from "./grades";
 
 // Tipos para drag and drop
 export interface DragItem {
@@ -199,3 +200,61 @@ export const PRESET_CONFIGS = {
     ]
   }
 } as const;
+
+
+
+// ✅ Tipo base CourseGrade
+export interface CourseGrade {
+  id: number;
+  courseId: number;
+  gradeId: number;
+  isCore: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// ✅ CourseGrade con relaciones
+export interface CourseGradeWithRelations extends CourseGrade {
+  course: Course;
+  grade: Grade;
+}
+
+// ✅ Tipo para formulario
+export interface CourseGradeFormValues {
+  courseId: number;
+  gradeId: number;
+  isCore: boolean;
+}
+
+// ✅ Tipo para filtros
+export interface CourseGradeFilters {
+  search?: string;
+  level?: string;
+  type?: 'all' | 'core' | 'elective';
+  gradeId?: number;
+  courseId?: number;
+  isCore?: boolean;
+}
+
+// ✅ NUEVO: Tipo para los datos del formulario
+export interface CourseGradeFormData {
+  courses: Array<{
+    id: number;
+    code: string;
+    name: string;
+    color: string | null;
+    area: string | null;
+  }>;
+  grades: Array<{
+    id: number;
+    name: string;
+    level: string;
+    order: number;
+  }>;
+  activeCycle: {
+    id: number;
+    name: string;
+    startDate: Date;
+    endDate: Date;
+  };
+}

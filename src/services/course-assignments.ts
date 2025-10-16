@@ -1,4 +1,3 @@
-// ==================== SERVICES ====================
 // services/course-assignments.ts
 
 import axios from 'axios';
@@ -13,7 +12,9 @@ import {
   CourseAssignmentFilters,
   CourseAssignmentResponse,
   CourseAssignmentStats,
-  AssignmentType  
+  AssignmentType,
+  CourseAssignmentFormData,      // ✅ NUEVO
+  SectionAssignmentData          // ✅ NUEVO
 } from '@/types/course-assignments';
 import { ApiResponse } from '@/types/api';
 
@@ -24,6 +25,34 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// ==================== NUEVOS ENDPOINTS CONSOLIDADOS ====================
+
+// ✅ NUEVO: Obtener datos consolidados del formulario (ciclo, grados, secciones, maestros)
+export const getCourseAssignmentFormData = async (): Promise<CourseAssignmentFormData> => {
+  try {
+    const { data } = await apiClient.get<ApiResponse<CourseAssignmentFormData>>(
+      '/api/course-assignments/form-data'
+    );
+    if (!data.success) throw new Error(data.message || 'Error al obtener datos del formulario');
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener datos del formulario');
+  }
+};
+
+// ✅ NUEVO: Obtener datos completos de una sección (cursos, asignaciones, maestros)
+export const getSectionAssignmentData = async (sectionId: number): Promise<SectionAssignmentData> => {
+  try {
+    const { data } = await apiClient.get<ApiResponse<SectionAssignmentData>>(
+      `/api/course-assignments/section/${sectionId}/data`
+    );
+    if (!data.success) throw new Error(data.message || 'Error al obtener datos de la sección');
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener datos de la sección');
+  }
+};
 
 // ==================== COURSE ASSIGNMENTS ====================
 
@@ -202,7 +231,6 @@ export const getCourseAssignmentStats = async (): Promise<CourseAssignmentStats>
     if (!data.success) throw new Error(data.message || 'Error al obtener estadísticas');
     return data.data;
   } catch (error) {
-    // Si no existe el endpoint de stats, generar estadísticas básicas
     try {
       const assignments = await getCourseAssignments();
       const assignmentsArray = Array.isArray(assignments) ? assignments : assignments.data;

@@ -1,10 +1,12 @@
+// src/services/course-grade.ts
 import axios, { AxiosError } from 'axios';
 import { API_BASE_URL } from '@/config/api';
 import { 
-  CourseGrade, 
+  CourseGrade,
   CourseGradeWithRelations,
   CourseGradeFormValues,
-  CourseGradeFilters
+  CourseGradeFilters,
+  CourseGradeFormData // ✅ NUEVO
 } from '@/types/course-grade.types';
 import { ApiResponse } from '@/types/api';
 
@@ -20,7 +22,6 @@ const apiClient = axios.create({
 
 /**
  * Obtiene todas las relaciones curso-grado
- * @param filters Filtros opcionales (courseId, gradeId, isCore)
  */
 export const getCourseGrades = async (
   filters?: CourseGradeFilters
@@ -40,6 +41,21 @@ export const getCourseGrades = async (
     return data.data;
   } catch (error) {
     handleApiError(error, 'Error al obtener relaciones curso-grado');
+  }
+};
+
+/**
+ * ✅ NUEVO: Obtiene datos del formulario (cursos, grados del ciclo activo)
+ */
+export const getCourseGradeFormData = async (): Promise<CourseGradeFormData> => {
+  try {
+    const { data } = await apiClient.get<ApiResponse<CourseGradeFormData>>(
+      '/api/course-grades/form-data'
+    );
+    if (!data.success) throw new Error(data.message || 'Error al obtener datos del formulario');
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener datos del formulario');
   }
 };
 

@@ -8,21 +8,20 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BookOpen, AlertCircle, CheckCircle, UserCheck, Users } from 'lucide-react';
-import { useCourseContext } from '@/context/CourseContext';
-import { useSectionContext } from '@/context/SectionsContext';
-import { useCourseAssignmentContext } from '@/context/CourseAssignmentContext';
-import { useTeachersBySection, TeacherOption } from '@/context/newTeachersContext';
+import { useCourseAssignmentSection } from '@/hooks/useCourseAssignment';
 import BulkSaveActions from './bulk-save-actions';
 import AssignmentSummary from './assignment-summary';
 
 interface CourseTeacherTableProps {
   gradeId: number;
   sectionId: number;
+  canUpdate?: boolean;     // ✅ NUEVO
+  canBulkUpdate?: boolean; // ✅ NUEVO
 }
-
 interface CourseAssignmentRow {
   courseId: number;
   courseName: string;
+  courseCode: string;
   courseArea?: string | null;
   courseColor?: string | null;
   currentTeacherId?: number | null;
@@ -31,131 +30,83 @@ interface CourseAssignmentRow {
   isModified: boolean;
 }
 
-export default function CourseTeacherTable({ gradeId, sectionId }: CourseTeacherTableProps) {
-  const { state: courseState, fetchCourses } = useCourseContext();
-  const { state: sectionState } = useSectionContext();
+export default function CourseTeacherTable({ 
+  gradeId, 
+  sectionId,
+  canUpdate = false,      // ✅ NUEVO
+  canBulkUpdate = false   // ✅ NUEVO
+}: CourseTeacherTableProps) {
+// ✅ NUEVO: Usar el hook especializado para sección
   const { 
-    fetchSectionAssignments, 
-    state: assignmentState,
-    bulkUpdateAssignments,
-    setSelectedSection
-  } = useCourseAssignmentContext();
-
-  // USAR EL NUEVO HOOK DE TEACHERS
-  const {
-    categorized,
-    raw: teachersData,
-    loading: teachersLoading,
-    error: teachersError,
-    getTeacherById,
-    defaultTeacher
-  } = useTeachersBySection(sectionId);
+    sectionData, 
+    isLoading, 
+    isSubmitting,
+    error, 
+    bulkUpdate 
+  } = useCourseAssignmentSection(sectionId);
 
   const [assignmentRows, setAssignmentRows] = useState<CourseAssignmentRow[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Obtener la sección actual del contexto
-  const currentSection = sectionState.sections.find(s => s.id === sectionId);
+  // Helper para categorizar maestros
+  const categorizedTeachers = useMemo(() => {
+    if (!sectionData) return { titular: [], specialists: [], otherTitular: [] };
 
-  // DEBUG: Agregar logs para ver qué está pasando
-  console.log('🔍 Teachers data:', teachersData);
-  console.log('🔍 Categorized teachers:', categorized);
-  console.log('🔍 Default teacher:', defaultTeacher);
-  console.log('🔍 Current section:', currentSection);
-  console.log('🔍 Categorized titular:', categorized.titular);
-  console.log('🔍 Categorized specialists:', categorized.specialists);
-  console.log('🔍 Categorized otherTitular:', categorized.otherTitular);
-
-  // Obtener todos los maestros disponibles en formato simple para el select
-  const availableTeachers = useMemo(() => {
-    const allOptions = [
-      ...categorized.titular,
-      ...categorized.specialists,
-      ...categorized.otherTitular
-    ];
+    const teachers = sectionData.teachers;
     
-    return allOptions.map(teacher => ({
-      value: teacher.value,
-      label: teacher.label,
-      email: teacher.email || '',
-      type: teacher.type,
-      sections: teacher.sections,
-      teacher: teacher.teacher
-    }));
-  }, [categorized]);
+    return {
+      titular: teachers.filter(t => t.isTitular),
+      specialists: teachers.filter(t => !t.isTitular && t.sections.length === 0),
+      otherTitular: teachers.filter(t => !t.isTitular && t.sections.length > 0)
+    };
+  }, [sectionData]);
 
-  // Cargar datos iniciales
-  useEffect(() => {
-    if (courseState.courses.length === 0 && !courseState.loading) {
-      fetchCourses();
-    }
-  }, [fetchCourses, courseState.courses.length, courseState.loading]);
-
-  useEffect(() => {
-    if (sectionId) {
-      setSelectedSection(sectionId);
-      fetchSectionAssignments(sectionId);
-    }
-  }, [sectionId, setSelectedSection, fetchSectionAssignments]);
+  // Helper para obtener maestro por ID
+  const getTeacherById = (teacherId: number) => {
+    if (!sectionData) return null;
+    return sectionData.teachers.find(t => t.id === teacherId);
+  };
 
   // Construir filas de la tabla cuando cambien los datos
   useEffect(() => {
-    if (courseState.courses.length > 0 && defaultTeacher && !courseState.loading) {
-      // Obtener cursos activos (idealmente filtrados por grado)
-      const gradeCourses = courseState.courses.filter(course => course.isActive);
+    if (!sectionData) return;
 
-      const rows: CourseAssignmentRow[] = gradeCourses.map(course => {
-        // Buscar si ya existe una asignación para este curso-sección
-        const existingAssignment = assignmentState.assignments.find(
-          a => a.courseId === course.id && a.sectionId === sectionId
-        );
+    const rows: CourseAssignmentRow[] = sectionData.courses.map(course => {
+      // Buscar si ya existe una asignación para este curso
+      const existingAssignment = sectionData.assignments.find(
+        a => a.courseId === course.id
+      );
 
-        // Por defecto, asignar al maestro titular de la sección
-        let defaultTeacherId = defaultTeacher.id;
-        let defaultTeacherName = `${defaultTeacher.givenNames} ${defaultTeacher.lastNames}`;
-        let defaultAssignmentType: 'titular' | 'specialist' = 'titular';
+      // Por defecto, asignar al maestro titular de la sección
+      let defaultTeacherId = sectionData.section.teacherId;
+      let defaultTeacherName = sectionData.section.teacher 
+        ? `${sectionData.section.teacher.givenNames} ${sectionData.section.teacher.lastNames}`
+        : undefined;
+      let defaultAssignmentType: 'titular' | 'specialist' = 'titular';
 
-        // Si ya existe una asignación, usar esos datos
-        if (existingAssignment) {
-          defaultTeacherId = existingAssignment.teacherId;
-          const assignedTeacher = getTeacherById(existingAssignment.teacherId);
-          defaultTeacherName = assignedTeacher 
-            ? `${assignedTeacher.givenNames} ${assignedTeacher.lastNames}` 
-            : '';
-          defaultAssignmentType = existingAssignment.assignmentType;
-        }
+      // Si ya existe una asignación, usar esos datos
+      if (existingAssignment) {
+        defaultTeacherId = existingAssignment.teacherId;
+        defaultTeacherName = existingAssignment.teacherName;
+        defaultAssignmentType = existingAssignment.assignmentType;
+      }
 
-        return {
-          courseId: course.id,
-          courseName: course.name,
-          courseArea: course.area || null,
-          courseColor: course.color || null,
-          currentTeacherId: defaultTeacherId,
-          currentTeacherName: defaultTeacherName,
-          assignmentType: defaultAssignmentType,
-          isModified: false
-        };
-      });
+      return {
+        courseId: course.id,
+        courseName: course.name,
+        courseCode: course.code,
+        courseArea: course.area,
+        courseColor: course.color,
+        currentTeacherId: defaultTeacherId,
+        currentTeacherName: defaultTeacherName,
+        assignmentType: defaultAssignmentType,
+        isModified: false
+      };
+    });
 
-      // Solo actualizar si hay cambios reales
-      setAssignmentRows(prevRows => {
-        const hasChangedRows = JSON.stringify(prevRows) !== JSON.stringify(rows);
-        if (hasChangedRows) {
-          setHasChanges(false);
-          return rows;
-        }
-        return prevRows;
-      });
-    }
-  }, [
-    courseState.courses, 
-    courseState.loading,
-    assignmentState.assignments, 
-    defaultTeacher,
-    gradeId, 
-    sectionId, 
-    getTeacherById
-  ]);
+    setAssignmentRows(rows);
+    setHasChanges(false);
+  }, [sectionData]);
 
   // Manejar cambio de maestro en una fila
   const handleTeacherChange = (courseId: number, teacherId: number) => {
@@ -163,7 +114,7 @@ export default function CourseTeacherTable({ gradeId, sectionId }: CourseTeacher
       prev.map(row => {
         if (row.courseId === courseId) {
           const selectedTeacher = getTeacherById(teacherId);
-          const isDefaultTeacher = defaultTeacher?.id === teacherId;
+          const isDefaultTeacher = sectionData?.section.teacherId === teacherId;
           
           return {
             ...row,
@@ -188,60 +139,54 @@ export default function CourseTeacherTable({ gradeId, sectionId }: CourseTeacher
       .map(row => ({
         sectionId,
         courseId: row.courseId,
-        teacherId: row.currentTeacherId!,
-        assignmentType: row.assignmentType
+        teacherId: row.currentTeacherId!
       }));
 
-    try {
-      const result = await bulkUpdateAssignments({
-        gradeId,
-        assignments: assignments.map(assignment => ({
-          ...assignment,
-          sectionId // Mover sectionId dentro de cada assignment
-        }))
-      });
-      
-      if (result.success) {
-        setHasChanges(false);
-        setAssignmentRows(prev => 
-          prev.map(row => ({ ...row, isModified: false }))
-        );
-      }
-    } catch (error) {
-      console.error('Error saving assignments:', error);
+    const success = await bulkUpdate({
+      gradeId,
+      assignments
+    });
+    
+    if (success) {
+      setHasChanges(false);
+      setAssignmentRows(prev => 
+        prev.map(row => ({ ...row, isModified: false }))
+      );
     }
   };
 
   // Resetear cambios
   const handleResetChanges = () => {
-    fetchSectionAssignments(sectionId);
+    if (!sectionData) return;
+    
+    // Reconstruir filas desde sectionData
+    const rows: CourseAssignmentRow[] = sectionData.courses.map(course => {
+      const existingAssignment = sectionData.assignments.find(
+        a => a.courseId === course.id
+      );
+
+      return {
+        courseId: course.id,
+        courseName: course.name,
+        courseCode: course.code,
+        courseArea: course.area,
+        courseColor: course.color,
+        currentTeacherId: existingAssignment?.teacherId || sectionData.section.teacherId,
+        currentTeacherName: existingAssignment?.teacherName || 
+          (sectionData.section.teacher 
+            ? `${sectionData.section.teacher.givenNames} ${sectionData.section.teacher.lastNames}`
+            : undefined),
+        assignmentType: existingAssignment?.assignmentType || 'titular',
+        isModified: false
+      };
+    });
+
+    setAssignmentRows(rows);
     setHasChanges(false);
   };
 
-  // Estados de error o carga
-  if (teachersError) {
-    return (
-      <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
-        <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-        <AlertDescription className="text-red-800 dark:text-red-200">
-          {teachersError}
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!defaultTeacher) {
-    return (
-      <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950">
-        <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-        <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-          No se encontró un maestro titular para esta sección. Asigne un maestro titular primero.
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (courseState.loading || teachersLoading || assignmentState.loading) {
+  // Loading state
+  if (isLoading) {
     return (
       <Card className="bg-white dark:bg-gray-800">
         <CardHeader>
@@ -262,6 +207,42 @@ export default function CourseTeacherTable({ gradeId, sectionId }: CourseTeacher
     );
   }
 
+  // Error state
+  if (error) {
+    return (
+      <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+        <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+        <AlertDescription className="text-red-800 dark:text-red-200">
+          {error}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // No data
+  if (!sectionData) {
+    return (
+      <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950">
+        <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+        <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+          No se encontraron datos de la sección.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // Sin maestro titular
+  if (!sectionData.section.teacher) {
+    return (
+      <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950">
+        <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+        <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+          No se encontró un maestro titular para esta sección. Asigne un maestro titular primero.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header con información de la selección */}
@@ -272,10 +253,10 @@ export default function CourseTeacherTable({ gradeId, sectionId }: CourseTeacher
             Asignación de Cursos y Maestros
           </CardTitle>
           <CardDescription className="text-blue-700 dark:text-blue-300">
-            {currentSection?.grade?.name} - Sección {currentSection?.name}
-            {defaultTeacher && (
+            {sectionData.section.gradeName} - Sección {sectionData.section.name}
+            {sectionData.section.teacher && (
               <span className="ml-2">
-                • Maestro Titular: {defaultTeacher.givenNames} {defaultTeacher.lastNames}
+                • Maestro Titular: {sectionData.section.teacher.givenNames} {sectionData.section.teacher.lastNames}
               </span>
             )}
           </CardDescription>
@@ -283,12 +264,12 @@ export default function CourseTeacherTable({ gradeId, sectionId }: CourseTeacher
       </Card>
 
       {/* Acciones de guardado si hay cambios */}
-      {hasChanges && (
+  {hasChanges && canBulkUpdate && ( // ✅ MODIFICADO
         <BulkSaveActions
           onSave={handleSaveAll}
           onReset={handleResetChanges}
           hasChanges={hasChanges}
-          isSubmitting={assignmentState.submitting}
+          isSubmitting={isSubmitting}
           modifiedCount={assignmentRows.filter(row => row.isModified).length}
         />
       )}
@@ -336,175 +317,174 @@ export default function CourseTeacherTable({ gradeId, sectionId }: CourseTeacher
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {assignmentRows.map((row) => {
-                    return (
-                      <TableRow 
-                        key={row.courseId}
-                        className={`transition-colors ${
-                          row.isModified 
-                            ? 'bg-orange-50 dark:bg-orange-950 border-l-4 border-l-orange-400 dark:border-l-orange-600' 
-                            : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
-                      >
-                        {/* Columna: Curso */}
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-3">
-                            <div 
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: row.courseColor || '#6B7280' }}
-                            />
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-gray-100">
-                                {row.courseName}
+                  {assignmentRows.map((row) => (
+                    <TableRow 
+                      key={row.courseId}
+                      className={`transition-colors ${
+                        row.isModified 
+                          ? 'bg-orange-50 dark:bg-orange-950 border-l-4 border-l-orange-400 dark:border-l-orange-600' 
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      {/* Columna: Curso */}
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: row.courseColor || '#6B7280' }}
+                          />
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                              {row.courseName}
+                            </p>
+                            {row.courseArea && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {row.courseArea}
                               </p>
-                              {row.courseArea && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                  {row.courseArea}
-                                </p>
-                              )}
-                            </div>
+                            )}
                           </div>
-                        </TableCell>
+                        </div>
+                      </TableCell>
 
-                        {/* Columna: Profesor */}
-                        <TableCell>
-                          <Select
-                            value={row.currentTeacherId?.toString() || ''}
-                            onValueChange={(value) => handleTeacherChange(row.courseId, parseInt(value))}
-                          >
-                            <SelectTrigger className={`w-full ${
-                              row.isModified 
-                                ? 'border-orange-300 dark:border-orange-700' 
-                                : ''
-                            }`}>
-                              <SelectValue placeholder="Seleccionar maestro" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {/* Maestro Titular de esta sección */}
-                              {categorized.titular.length > 0 && (
-                                <>
-                                  <div className="px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950">
-                                    Maestro Titular
-                                  </div>
-                                  {categorized.titular.map((teacher: TeacherOption) => (
-                                    <SelectItem key={teacher.value} value={teacher.value.toString()}>
-                                      <div className="flex items-center gap-2 w-full">
-                                        <UserCheck className="h-3 w-3 text-blue-500" />
-                                        <div className="flex-1">
-                                          <p className="font-medium">{teacher.label}</p>
-                                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            Maestro titular
-                                          </p>
-                                        </div>
-                                        <Badge variant="default" className="text-xs bg-blue-600">
-                                          Titular
-                                        </Badge>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </>
-                              )}
-
-                              {/* Maestros Especialistas */}
-                              {categorized.specialists.length > 0 && (
-                                <>
-                                  <div className="px-2 py-1 text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950">
-                                    Maestros Especialistas
-                                  </div>
-                                  {categorized.specialists.map((teacher: TeacherOption) => (
-                                    <SelectItem key={teacher.value} value={teacher.value.toString()}>
-                                      <div className="flex items-center gap-2 w-full">
-                                        <Users className="h-3 w-3 text-purple-500" />
-                                        <div className="flex-1">
-                                          <p className="font-medium">{teacher.label}</p>
-                                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            Especialista
-                                          </p>
-                                        </div>
-                                        <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
-                                          Especialista
-                                        </Badge>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </>
-                              )}
-
-                              {/* Otros Maestros Titulares */}
-                              {categorized.otherTitular.length > 0 && (
-                                <>
-                                  <div className="px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900">
-                                    Otros Maestros Titulares
-                                  </div>
-                                  {categorized.otherTitular.map((teacher: TeacherOption) => (
-                                    <SelectItem key={teacher.value} value={teacher.value.toString()}>
-                                      <div className="flex items-center gap-2 w-full">
-                                        <UserCheck className="h-3 w-3 text-gray-500" />
-                                        <div className="flex-1">
-                                          <p className="font-medium">{teacher.label}</p>
-                                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            {teacher.sections.length > 0 
-                                              ? `${teacher.sections[0].name}` 
-                                              : 'Otra sección'
-                                            }
-                                          </p>
-                                        </div>
-                                        <Badge variant="outline" className="text-xs">
-                                          Titular
-                                        </Badge>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </>
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-
-                        {/* Columna: Tipo de Asignación */}
-                        <TableCell className="text-center">
-                          <Badge 
-                            variant={row.assignmentType === 'titular' ? 'default' : 'secondary'}
-                            className={`text-xs ${
-                              row.assignmentType === 'titular'
-                                ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                                : 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
-                            }`}
-                          >
-                            {row.assignmentType === 'titular' ? (
+                      {/* Columna: Profesor */}
+                      <TableCell>
+                        <Select
+                          value={row.currentTeacherId?.toString() || ''}
+                          onValueChange={(value) => handleTeacherChange(row.courseId, parseInt(value))}
+                           disabled={!canUpdate}
+                        >
+                          <SelectTrigger className={`w-full ${
+                            row.isModified 
+                              ? 'border-orange-300 dark:border-orange-700' 
+                              : ''
+                          }`}>
+                            <SelectValue placeholder="Seleccionar maestro" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {/* Maestro Titular de esta sección */}
+                            {categorizedTeachers.titular.length > 0 && (
                               <>
-                                <UserCheck className="h-3 w-3 mr-1" />
-                                Titular
-                              </>
-                            ) : (
-                              <>
-                                <Users className="h-3 w-3 mr-1" />
-                                Especialista
+                                <div className="px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950">
+                                  Maestro Titular
+                                </div>
+                                {categorizedTeachers.titular.map((teacher) => (
+                                  <SelectItem key={teacher.id} value={teacher.id.toString()}>
+                                    <div className="flex items-center gap-2 w-full">
+                                      <UserCheck className="h-3 w-3 text-blue-500" />
+                                      <div className="flex-1">
+                                        <p className="font-medium">{teacher.fullName}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                          Maestro titular
+                                        </p>
+                                      </div>
+                                      <Badge variant="default" className="text-xs bg-blue-600">
+                                        Titular
+                                      </Badge>
+                                    </div>
+                                  </SelectItem>
+                                ))}
                               </>
                             )}
-                          </Badge>
-                        </TableCell>
 
-                        {/* Columna: Estado */}
-                        <TableCell className="text-center">
-                          {row.isModified ? (
-                            <Badge variant="outline" className="text-xs bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800">
-                              Modificado
-                            </Badge>
-                          ) : row.currentTeacherId ? (
-                            <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Asignado
-                            </Badge>
+                            {/* Maestros Especialistas */}
+                            {categorizedTeachers.specialists.length > 0 && (
+                              <>
+                                <div className="px-2 py-1 text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950">
+                                  Maestros Especialistas
+                                </div>
+                                {categorizedTeachers.specialists.map((teacher) => (
+                                  <SelectItem key={teacher.id} value={teacher.id.toString()}>
+                                    <div className="flex items-center gap-2 w-full">
+                                      <Users className="h-3 w-3 text-purple-500" />
+                                      <div className="flex-1">
+                                        <p className="font-medium">{teacher.fullName}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                          Especialista
+                                        </p>
+                                      </div>
+                                      <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+                                        Especialista
+                                      </Badge>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </>
+                            )}
+
+                            {/* Otros Maestros Titulares */}
+                            {categorizedTeachers.otherTitular.length > 0 && (
+                              <>
+                                <div className="px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900">
+                                  Otros Maestros Titulares
+                                </div>
+                                {categorizedTeachers.otherTitular.map((teacher) => (
+                                  <SelectItem key={teacher.id} value={teacher.id.toString()}>
+                                    <div className="flex items-center gap-2 w-full">
+                                      <UserCheck className="h-3 w-3 text-gray-500" />
+                                      <div className="flex-1">
+                                        <p className="font-medium">{teacher.fullName}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                          {teacher.sections.length > 0 
+                                            ? `${teacher.sections[0].name}` 
+                                            : 'Otra sección'
+                                          }
+                                        </p>
+                                      </div>
+                                      <Badge variant="outline" className="text-xs">
+                                        Titular
+                                      </Badge>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+
+                      {/* Columna: Tipo de Asignación */}
+                      <TableCell className="text-center">
+                        <Badge 
+                          variant={row.assignmentType === 'titular' ? 'default' : 'secondary'}
+                          className={`text-xs ${
+                            row.assignmentType === 'titular'
+                              ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+                              : 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
+                          }`}
+                        >
+                          {row.assignmentType === 'titular' ? (
+                            <>
+                              <UserCheck className="h-3 w-3 mr-1" />
+                              Titular
+                            </>
                           ) : (
-                            <Badge variant="outline" className="text-xs bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">
-                              Sin asignar
-                            </Badge>
+                            <>
+                              <Users className="h-3 w-3 mr-1" />
+                              Especialista
+                            </>
                           )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                        </Badge>
+                      </TableCell>
+
+                      {/* Columna: Estado */}
+                      <TableCell className="text-center">
+                        {row.isModified ? (
+                          <Badge variant="outline" className="text-xs bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800">
+                            Modificado
+                          </Badge>
+                        ) : row.currentTeacherId ? (
+                          <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Asignado
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+                            Sin asignar
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>

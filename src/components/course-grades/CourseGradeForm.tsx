@@ -1,12 +1,12 @@
 // components/course-grade/CourseGradeForm.tsx
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Form,
   FormControl,
@@ -24,18 +24,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Loader2 } from 'lucide-react';
-import { useCourse } from '@/hooks/useCourse';
-import { useGrade } from '@/hooks/useGrade';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useCourseGrade } from '@/hooks/useCourseGrade';
-
-const formSchema = z.object({
-  courseId: z.number().min(1, 'Selecciona un curso'),
-  gradeId: z.number().min(1, 'Selecciona un grado'),
-  isCore: z.boolean()
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { courseGradeSchema, defaultValues, CourseGradeFormData as FormValues } from '@/schemas/courseGradeSchema';
 
 interface CourseGradeFormProps {
   editingId?: number | null;
@@ -45,34 +36,48 @@ interface CourseGradeFormProps {
 
 /**
  * Form component for creating/editing course-grade relationships
- * Features: validation, async course/grade loading, edit mode
+ * Features: validation, form data from API, edit mode, cycle info
  */
 export function CourseGradeForm({
   editingId,
   onSubmit,
   onCancel,
 }: CourseGradeFormProps) {
-  const { courses, fetchCourses } = useCourse();
-  const { grades, fetchGrades } = useGrade();
+  const [isSubmittingForm, setIsSubmittingForm] = useState(false);
+
+  // ✅ Hook con todas las funcionalidades necesarias
   const { 
-    currentCourseGrade, 
-    isSubmitting 
-  } = useCourseGrade(!!editingId, editingId || undefined);
+    formData,
+    currentCourseGrade,
+    isLoadingFormData,
+    fetchFormData,
+    fetchCourseGradeById
+  } = useCourseGrade(false); // autoFetch = false
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      courseId: 0,
-      gradeId: 0,
-      isCore: true,
-    },
+    resolver: zodResolver(courseGradeSchema),
+    defaultValues: defaultValues,
   });
 
+  // ✅ Cargar datos del formulario al montar
   useEffect(() => {
-    fetchCourses();
-    fetchGrades();
-  }, []);
+    fetchFormData();
+  }, [fetchFormData]);
 
+  // ✅ Cargar datos de edición si existe editingId
+  useEffect(() => {
+    const loadEditData = async () => {
+      if (editingId && formData) {
+        await fetchCourseGradeById(editingId);
+      } else {
+        form.reset(defaultValues);
+      }
+    };
+
+    loadEditData();
+  }, [editingId, formData, fetchCourseGradeById, form]);
+
+  // ✅ Actualizar formulario cuando se carga el courseGrade actual
   useEffect(() => {
     if (currentCourseGrade && editingId) {
       form.reset({
@@ -80,31 +85,42 @@ export function CourseGradeForm({
         gradeId: currentCourseGrade.gradeId,
         isCore: currentCourseGrade.isCore,
       });
-    } else {
-      form.reset({
-        courseId: 0,
-        gradeId: 0,
-        isCore: true,
-      });
     }
   }, [currentCourseGrade, editingId, form]);
 
   const handleSubmit = async (data: FormValues) => {
     try {
+      setIsSubmittingForm(true);
       await onSubmit(data);
     } catch (error) {
       console.error('Form submission error:', error);
+    } finally {
+      setIsSubmittingForm(false);
     }
   };
 
-  // Group grades by level
-  const gradesByLevel = grades.reduce((acc, grade) => {
+  // ✅ Agrupar grados por nivel
+  const gradesByLevel = formData?.grades.reduce((acc, grade) => {
     if (!acc[grade.level]) {
       acc[grade.level] = [];
     }
     acc[grade.level].push(grade);
     return acc;
-  }, {} as Record<string, typeof grades>);
+  }, {} as Record<string, typeof formData.grades>) || {};
+
+  // ✅ Mostrar loading mientras carga datos del formulario
+  if (isLoadingFormData) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center p-8">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+            <p className="text-sm text-muted-foreground">Cargando datos del formulario...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -112,10 +128,58 @@ export function CourseGradeForm({
         <CardTitle>
           {editingId ? 'Editar Relación' : 'Nueva Relación Curso-Grado'}
         </CardTitle>
+        {/* ✅ Mostrar ciclo activo */}
+        {formData?.activeCycle && (
+          <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              Ciclo: {formData.activeCycle.name}
+            </Badge>
+            <span className="text-xs">
+              {new Date(formData.activeCycle.startDate).toLocaleDateString()} - {new Date(formData.activeCycle.endDate).toLocaleDateString()}
+            </span>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {/* ✅ Alerta si no hay grados disponibles */}
+            {formData && formData.grades.length === 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-medium text-amber-900">
+                      No hay grados disponibles
+                    </h4>
+                    <p className="mt-1 text-sm text-amber-700">
+                      No se encontraron grados asignados al ciclo activo{' '}
+                      <strong>{formData.activeCycle.name}</strong>. 
+                      Por favor, crea grados para este ciclo antes de continuar.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ✅ Alerta si no hay cursos disponibles */}
+            {formData && formData.courses.length === 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-medium text-amber-900">
+                      No hay cursos disponibles
+                    </h4>
+                    <p className="mt-1 text-sm text-amber-700">
+                      No se encontraron cursos activos. 
+                      Por favor, crea cursos activos antes de continuar.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Course Selection */}
             <FormField
               control={form.control}
@@ -126,6 +190,7 @@ export function CourseGradeForm({
                   <Select
                     onValueChange={(value) => field.onChange(parseInt(value))}
                     value={field.value?.toString()}
+                    disabled={!formData || formData.courses.length === 0}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -133,9 +198,7 @@ export function CourseGradeForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {courses
-                        .filter(course => course.isActive)
-                        .map((course) => (
+                      {formData?.courses.map((course) => (
                         <SelectItem key={course.id} value={course.id.toString()}>
                           <div className="flex items-center gap-2">
                             <div 
@@ -166,6 +229,7 @@ export function CourseGradeForm({
                   <Select
                     onValueChange={(value) => field.onChange(parseInt(value))}
                     value={field.value?.toString()}
+                    disabled={!formData || formData.grades.length === 0}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -179,7 +243,6 @@ export function CourseGradeForm({
                             {level}
                           </div>
                           {levelGrades
-                            .filter(grade => grade.isActive)
                             .sort((a, b) => a.order - b.order)
                             .map((grade) => (
                             <SelectItem key={grade.id} value={grade.id.toString()}>
@@ -191,7 +254,7 @@ export function CourseGradeForm({
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Selecciona el grado a relacionar con el curso
+                    Grados del ciclo activo: {formData?.activeCycle.name}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -227,10 +290,15 @@ export function CourseGradeForm({
             <div className="flex gap-4 pt-4">
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={
+                  isSubmittingForm || 
+                  !formData || 
+                  formData.courses.length === 0 || 
+                  formData.grades.length === 0
+                }
                 className="flex-1"
               >
-                {isSubmitting && (
+                {isSubmittingForm && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
                 {editingId ? 'Actualizar' : 'Crear'} Relación

@@ -1,3 +1,4 @@
+// src/schemas/courseGradeSchema.ts
 import { z } from 'zod';
 
 export const courseGradeSchema = z.object({

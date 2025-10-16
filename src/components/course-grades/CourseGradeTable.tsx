@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { CourseGradeWithRelations } from '@/types/course-grade.types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/context/AuthContext';
 
 interface CourseGradeTableProps {
   data: CourseGradeWithRelations[];
@@ -61,7 +62,7 @@ interface CourseGradeTableProps {
 
 /**
  * Enhanced table component with pagination and improved visual design
- * Features: sorting, selection, actions, pagination, loading states
+ * Features: sorting, selection, actions, pagination, loading states, permissions, dark mode
  */
 export function CourseGradeTable({
   data,
@@ -82,11 +83,18 @@ export function CourseGradeTable({
     direction: 'asc' | 'desc';
   } | null>(null);
 
+  // ✅ Permisos
+  const { hasPermission } = useAuth();
+  const canUpdate = hasPermission('course-grade', 'update');
+  const canDelete = hasPermission('course-grade', 'delete');
+
   const handleSelectAll = (checked: boolean) => {
+    if (!canDelete) return; // Solo permitir selección si puede eliminar
     onSelectionChange(checked ? data.map(item => item.id) : []);
   };
 
   const handleSelectItem = (id: number, checked: boolean) => {
+    if (!canDelete) return; // Solo permitir selección si puede eliminar
     if (checked) {
       onSelectionChange([...selectedIds, id]);
     } else {
@@ -129,12 +137,13 @@ export function CourseGradeTable({
 
   const getLevelColor = (level: string) => {
     const colors: Record<string, string> = {
-      'Preescolar': 'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900 dark:text-pink-300',
-      'Primaria': 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-300',
-      'Secundaria': 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300',
-      'Bachillerato': 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900 dark:text-purple-300',
+      'Kinder': 'bg-pink-100 dark:bg-pink-950/30 text-pink-800 dark:text-pink-300 border-pink-200 dark:border-pink-800',
+      'Preescolar': 'bg-pink-100 dark:bg-pink-950/30 text-pink-800 dark:text-pink-300 border-pink-200 dark:border-pink-800',
+      'Primaria': 'bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+      'Secundaria': 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800',
+      'Bachillerato': 'bg-purple-100 dark:bg-purple-950/30 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800',
     };
-    return colors[level] || 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300';
+    return colors[level] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700';
   };
 
   // Pagination component
@@ -143,14 +152,14 @@ export function CourseGradeTable({
     const endItem = Math.min(currentPage * pageSize, totalItems);
 
     return (
-      <div className="flex items-center justify-between px-4 py-4 border-t bg-gray-50/50 dark:bg-gray-900/50">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center justify-between px-4 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <span>Mostrando</span>
-          <span className="font-medium text-foreground">{startItem}</span>
+          <span className="font-medium text-gray-900 dark:text-gray-100">{startItem}</span>
           <span>a</span>
-          <span className="font-medium text-foreground">{endItem}</span>
+          <span className="font-medium text-gray-900 dark:text-gray-100">{endItem}</span>
           <span>de</span>
-          <span className="font-medium text-foreground">{totalItems}</span>
+          <span className="font-medium text-gray-900 dark:text-gray-100">{totalItems}</span>
           <span>resultados</span>
         </div>
 
@@ -160,7 +169,7 @@ export function CourseGradeTable({
             size="sm"
             onClick={() => onPageChange(1)}
             disabled={currentPage === 1}
-            className="shadow-sm"
+            className="shadow-sm border-gray-300 dark:border-gray-600"
           >
             <ChevronsLeft className="h-4 w-4" />
           </Button>
@@ -169,7 +178,7 @@ export function CourseGradeTable({
             size="sm"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="shadow-sm"
+            className="shadow-sm border-gray-300 dark:border-gray-600"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -195,8 +204,8 @@ export function CourseGradeTable({
                   onClick={() => onPageChange(pageNum)}
                   className={`w-8 h-8 p-0 shadow-sm ${
                     currentPage === pageNum 
-                      ? 'bg-indigo-600 hover:bg-indigo-700' 
-                      : ''
+                      ? 'bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600' 
+                      : 'border-gray-300 dark:border-gray-600'
                   }`}
                 >
                   {pageNum}
@@ -210,7 +219,7 @@ export function CourseGradeTable({
             size="sm"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="shadow-sm"
+            className="shadow-sm border-gray-300 dark:border-gray-600"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -219,7 +228,7 @@ export function CourseGradeTable({
             size="sm"
             onClick={() => onPageChange(totalPages)}
             disabled={currentPage === totalPages}
-            className="shadow-sm"
+            className="shadow-sm border-gray-300 dark:border-gray-600"
           >
             <ChevronsRight className="h-4 w-4" />
           </Button>
@@ -230,45 +239,45 @@ export function CourseGradeTable({
 
   if (loading) {
     return (
-      <div className="rounded-lg border shadow-sm">
+      <div className="rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50">
+            <TableRow className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
               <TableHead className="w-12">
-                <Skeleton className="h-4 w-4" />
+                <Skeleton className="h-4 w-4 bg-gray-200 dark:bg-gray-700" />
               </TableHead>
-              <TableHead>Curso</TableHead>
-              <TableHead>Grado</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead className="w-20">Acciones</TableHead>
+              <TableHead className="text-gray-700 dark:text-gray-300">Curso</TableHead>
+              <TableHead className="text-gray-700 dark:text-gray-300">Grado</TableHead>
+              <TableHead className="text-gray-700 dark:text-gray-300">Tipo</TableHead>
+              <TableHead className="w-20 text-gray-700 dark:text-gray-300">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {Array.from({ length: pageSize }).map((_, i) => (
-              <TableRow key={i}>
+              <TableRow key={i} className="border-b border-gray-100 dark:border-gray-800">
                 <TableCell>
-                  <Skeleton className="h-4 w-4" />
+                  <Skeleton className="h-4 w-4 bg-gray-200 dark:bg-gray-700" />
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <Skeleton className="h-10 w-10 rounded-lg" />
+                    <Skeleton className="h-10 w-10 rounded-lg bg-gray-200 dark:bg-gray-700" />
                     <div className="space-y-2">
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-3 w-16" />
+                      <Skeleton className="h-4 w-32 bg-gray-200 dark:bg-gray-700" />
+                      <Skeleton className="h-3 w-16 bg-gray-200 dark:bg-gray-700" />
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-4 w-24 bg-gray-200 dark:bg-gray-700" />
+                    <Skeleton className="h-5 w-20 bg-gray-200 dark:bg-gray-700" />
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-6 w-16 bg-gray-200 dark:bg-gray-700" />
                 </TableCell>
                 <TableCell>
-                  <Skeleton className="h-8 w-8 rounded" />
+                  <Skeleton className="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700" />
                 </TableCell>
               </TableRow>
             ))}
@@ -281,16 +290,20 @@ export function CourseGradeTable({
 
   if (data.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed shadow-sm">
+      <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 shadow-sm">
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-            <Search className="h-8 w-8 text-muted-foreground" />
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+            <Search className="h-8 w-8 text-gray-400 dark:text-gray-500" />
           </div>
-          <h3 className="mt-4 text-lg font-semibold">No hay relaciones</h3>
-          <p className="mb-6 mt-2 text-sm text-muted-foreground max-w-sm">
+          <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">No hay relaciones</h3>
+          <p className="mb-6 mt-2 text-sm text-gray-600 dark:text-gray-400 max-w-sm">
             No se encontraron relaciones curso-grado que coincidan con los filtros aplicados.
           </p>
-          <Button variant="outline" onClick={() => window.location.reload()}>
+          <Button 
+            variant="outline" 
+            onClick={() => window.location.reload()}
+            className="border-gray-300 dark:border-gray-600"
+          >
             Refrescar página
           </Button>
         </div>
@@ -300,21 +313,24 @@ export function CourseGradeTable({
 
   return (
     <>
-      <div className="rounded-lg border shadow-sm overflow-hidden">
+      <div className="rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/30 hover:bg-muted/50">
+            <TableRow className="bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
               <TableHead className="w-12">
-                <Checkbox
-  checked={data.length > 0 && selectedIds.length === data.length}
-  onCheckedChange={handleSelectAll}
-/>
+                {/* ✅ Solo mostrar checkbox si tiene permiso de eliminar */}
+                {canDelete && (
+                  <Checkbox
+                    checked={data.length > 0 && selectedIds.length === data.length}
+                    onCheckedChange={handleSelectAll}
+                  />
+                )}
               </TableHead>
               <TableHead>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 lg:px-3 hover:bg-muted font-semibold"
+                  className="h-8 px-2 lg:px-3 hover:bg-gray-200 dark:hover:bg-gray-700 font-semibold text-gray-700 dark:text-gray-300"
                   onClick={() => handleSort('course.name')}
                 >
                   Curso
@@ -325,30 +341,33 @@ export function CourseGradeTable({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 lg:px-3 hover:bg-muted font-semibold"
+                  className="h-8 px-2 lg:px-3 hover:bg-gray-200 dark:hover:bg-gray-700 font-semibold text-gray-700 dark:text-gray-300"
                   onClick={() => handleSort('grade.name')}
                 >
                   Grado
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>
-              <TableHead className="font-semibold">Tipo</TableHead>
-              <TableHead className="w-20 font-semibold">Acciones</TableHead>
+              <TableHead className="font-semibold text-gray-700 dark:text-gray-300">Tipo</TableHead>
+              <TableHead className="w-20 font-semibold text-gray-700 dark:text-gray-300">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedData.map((item, index) => (
+            {sortedData.map((item) => (
               <TableRow 
                 key={item.id}
-                className="hover:bg-muted/30 transition-colors border-b border-gray-100 dark:border-gray-800"
+                className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800"
               >
                 <TableCell>
-                  <Checkbox
-                    checked={selectedIds.includes(item.id)}
-                    onCheckedChange={(checked) => 
-                      handleSelectItem(item.id, checked as boolean)
-                    }
-                  />
+                  {/* ✅ Solo mostrar checkbox si tiene permiso de eliminar */}
+                  {canDelete && (
+                    <Checkbox
+                      checked={selectedIds.includes(item.id)}
+                      onCheckedChange={(checked) => 
+                        handleSelectItem(item.id, checked as boolean)
+                      }
+                    />
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -364,20 +383,15 @@ export function CourseGradeTable({
                       <div className="font-semibold text-gray-900 dark:text-gray-100 truncate">
                         {item.course.name}
                       </div>
-                      <div className="text-sm text-muted-foreground font-mono">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 font-mono">
                         {item.course.code}
                       </div>
-                     {item.course.code && (
-                <Badge variant="outline" className="mt-1 text-xs bg-gray-50 text-gray-700 border-gray-200">
-                  Código: {item.course.code}
-                </Badge>
-              )}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                    <GraduationCap className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                     <div>
                       <div className="font-medium text-gray-900 dark:text-gray-100">
                         {item.grade.name}
@@ -395,42 +409,49 @@ export function CourseGradeTable({
                   <Badge 
                     variant={item.isCore ? "default" : "secondary"}
                     className={item.isCore 
-                      ? "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900 dark:text-indigo-300" 
-                      : "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900 dark:text-amber-300"
+                      ? "bg-indigo-100 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800" 
+                      : "bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800"
                     }
                   >
                     {item.isCore ? 'Principal' : 'Electiva'}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-8 w-8 p-0 hover:bg-muted"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Abrir menú</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem 
-                        onClick={() => onEdit(item.id)}
-                        className="cursor-pointer"
-                      >
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Editar relación
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => setDeleteId(item.id)}
-                        className="text-destructive focus:text-destructive cursor-pointer"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Eliminar relación
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  {/* ✅ Solo mostrar menú si tiene algún permiso */}
+                  {(canUpdate || canDelete) && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Abrir menú</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                        {canUpdate && (
+                          <DropdownMenuItem 
+                            onClick={() => onEdit(item.id)}
+                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Editar relación
+                          </DropdownMenuItem>
+                        )}
+                        {canDelete && (
+                          <DropdownMenuItem 
+                            onClick={() => setDeleteId(item.id)}
+                            className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 cursor-pointer hover:bg-red-50 dark:hover:bg-red-950/30"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Eliminar relación
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -443,19 +464,21 @@ export function CourseGradeTable({
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Trash2 className="h-5 w-5 text-destructive" />
+            <AlertDialogTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+              <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
               ¿Eliminar relación?
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-gray-600 dark:text-gray-400">
               Esta acción no se puede deshacer. Se eliminará permanentemente la 
               relación entre el curso y el grado seleccionado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="border-gray-300 dark:border-gray-600">
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (deleteId) {
@@ -463,7 +486,7 @@ export function CourseGradeTable({
                   setDeleteId(null);
                 }
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
             >
               Eliminar
             </AlertDialogAction>
