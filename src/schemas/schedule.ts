@@ -1,7 +1,9 @@
-import { z } from 'zod';
-import {DayOfWeek} from '@/types/schedules'; // Asegúrate de que este tipo esté definido en tu proyecto
+// src/schemas/schedule.schema.ts
 
-// Definir DayOfWeek como tipo Zod primero
+import { z } from 'zod';
+import { DayOfWeek } from '@/types/schedules';
+
+// Definir DayOfWeek como tipo Zod
 const dayOfWeekSchema = z.number().int().min(1).max(7) as z.ZodType<DayOfWeek>;
 
 // Esquema para validación de hora HH:MM
@@ -10,17 +12,19 @@ const timeSchema = z.string()
     message: 'Formato de hora inválido, debe ser HH:MM'
   });
 
-export const scheduleSchema = z.object({
+// ✅ Base schema SIN refine
+const baseScheduleSchema = z.object({
   sectionId: z.number().int().positive("Sección inválida"),
   courseId: z.number().int().positive("Curso inválido"),
-  teacherId: z.number().int().positive("Profesor inválido").nullable(),
-  dayOfWeek: dayOfWeekSchema, // Usamos el schema con tipo específico
+  teacherId: z.number().int().positive("Profesor inválido").optional().nullable(),
+  dayOfWeek: dayOfWeekSchema,
   startTime: timeSchema,
   endTime: timeSchema,
   classroom: z.string().max(50, "Máximo 50 caracteres").optional(),
-})
-.refine(data => {
-  // Convertir horas a minutos para comparación
+});
+
+// ✅ Schema principal CON refine (para crear)
+export const scheduleSchema = baseScheduleSchema.refine(data => {
   const [startH, startM] = data.startTime.split(':').map(Number);
   const [endH, endM] = data.endTime.split(':').map(Number);
   
@@ -33,14 +37,26 @@ export const scheduleSchema = z.object({
   path: ['endTime']
 });
 
+// ✅ Schema para actualización (desde el base, sin refine)
+export const updateScheduleSchema = baseScheduleSchema.partial();
+
+// ✅ Schema para batch operations
+export const batchScheduleSchema = z.object({
+  schedules: z.array(scheduleSchema).min(1, "Debe proporcionar al menos un horario")
+});
+
 export type ScheduleFormValues = z.infer<typeof scheduleSchema>;
+export type UpdateScheduleFormValues = z.infer<typeof updateScheduleSchema>;
+export type BatchScheduleFormValues = z.infer<typeof batchScheduleSchema>;
 
 export const defaultValues: ScheduleFormValues = {
   sectionId: 0,
   courseId: 0,
   teacherId: null,
-  dayOfWeek: 1, // Lunes por defecto
+  dayOfWeek: 1,
   startTime: '08:00',
   endTime: '09:00',
   classroom: '',
 };
+
+export const defaultUpdateValues: Partial<ScheduleFormValues> = {};

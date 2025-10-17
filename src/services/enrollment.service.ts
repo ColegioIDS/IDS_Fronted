@@ -8,7 +8,8 @@ import {
   EnrollmentFilterDto,
   EnrollmentStatsResponse,
   EnrollmentQueryParams,
-  EnrollmentStatsQueryParams
+  EnrollmentStatsQueryParams,
+  EnrollmentFormDataResponse 
 } from '@/types/enrollment.types';
 import { ApiResponse } from '@/types/api';
 
@@ -294,6 +295,24 @@ export const bulkTransferEnrollments = async (ids: number[]): Promise<Enrollment
     handleApiError(error, 'Error en transferencia masiva');
   }
 };
+
+// ==================== FORM DATA CONSOLIDADO ====================
+
+/**
+ * Obtiene todos los datos necesarios para el formulario de matrícula
+ */
+export const getEnrollmentFormData = async (): Promise<EnrollmentFormDataResponse> => {
+  try {
+    const { data } = await apiClient.get<ApiResponse<EnrollmentFormDataResponse>>(
+      '/api/enrollment/form-data'
+    );
+    
+    if (!data.success) throw new Error(data.message || 'Error al obtener datos del formulario');
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener datos del formulario de matrícula');
+  }
+}
 
 // ==================== UTILS ====================
 

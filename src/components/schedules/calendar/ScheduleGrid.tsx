@@ -1,6 +1,7 @@
 // components/schedules/calendar/ScheduleGrid.tsx
 "use client";
 
+import { useTheme } from "next-themes"; // ✅ AGREGAR
 import { Card, CardContent } from "@/components/ui/card";
 import type { Schedule, DayOfWeek } from "@/types/schedules";
 import type { TimeSlot, DragItem, TempSchedule, ScheduleChange } from "@/types/schedules.types";
@@ -10,8 +11,8 @@ import { DEFAULT_TIME_SLOTS, ALL_DAYS_OF_WEEK } from "@/types/schedules.types";
 interface ScheduleGridProps {
   scheduleGrid: { [key: string]: (Schedule | TempSchedule)[] };
   pendingChanges: ScheduleChange[];
-  timeSlots?: TimeSlot[]; // NUEVO: timeSlots dinámicos
-  workingDays?: typeof ALL_DAYS_OF_WEEK[0][]; // NUEVO: días dinámicos
+  timeSlots?: TimeSlot[];
+  workingDays?: typeof ALL_DAYS_OF_WEEK[0][];
   onDrop: (item: DragItem, day: DayOfWeek, timeSlot: TimeSlot) => void;
   onScheduleEdit: (schedule: Schedule | TempSchedule) => void;
   onScheduleDelete: (id: string | number) => void;
@@ -26,10 +27,10 @@ export function ScheduleGrid({
   onScheduleEdit,
   onScheduleDelete
 }: ScheduleGridProps) {
-  // Usar timeSlots dinámicos o fallback a default
+  const { theme } = useTheme(); // ✅ AGREGAR
+  const isDark = theme === 'dark'; // ✅ AGREGAR
+
   const currentTimeSlots = timeSlots || DEFAULT_TIME_SLOTS;
-  
-  // Usar días dinámicos o fallback a Lun-Vie
   const currentWorkingDays = workingDays || ALL_DAYS_OF_WEEK.slice(0, 5);
 
   console.log('🟢 ScheduleGrid renderizando con:', {
@@ -39,32 +40,48 @@ export function ScheduleGrid({
   });
 
   return (
-    <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl overflow-hidden">
+    <Card className={`backdrop-blur-sm border-0 shadow-xl overflow-hidden ${
+      isDark ? 'bg-gray-800/95' : 'bg-white/95'
+    }`}>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <div className="min-w-[900px]">
-            {/* Encabezado con días de la semana - DINÁMICO */}
-            <div className={`grid border-b bg-gradient-to-r from-gray-50 to-gray-100`} 
+            {/* ✅ MODIFICADO: Encabezado con dark mode */}
+            <div className={`grid border-b ${
+              isDark 
+                ? 'bg-gradient-to-r from-gray-800 to-gray-700 border-gray-700' 
+                : 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200'
+            }`} 
                  style={{ gridTemplateColumns: `120px repeat(${currentWorkingDays.length}, 1fr)` }}>
-              <div className="p-4 font-semibold text-gray-700 border-r flex items-center justify-center">
+              <div className={`p-4 font-semibold border-r flex items-center justify-center ${
+                isDark 
+                  ? 'text-gray-300 border-gray-700' 
+                  : 'text-gray-700 border-gray-200'
+              }`}>
                 <span className="text-sm uppercase tracking-wide">Horario</span>
               </div>
               {currentWorkingDays.map((day, index) => (
                 <div
                   key={day.value}
-                  className={`p-4 font-semibold text-center border-r ${
-                    index === currentWorkingDays.length - 1 ? '' : 'border-r'
+                  className={`p-4 font-semibold text-center ${
+                    index !== currentWorkingDays.length - 1 
+                      ? isDark ? 'border-r border-gray-700' : 'border-r border-gray-200'
+                      : ''
                   }`}
                 >
-                  <div className="text-gray-800 font-bold">{day.shortLabel}</div>
-                  <div className="text-xs font-normal text-gray-500 mt-1">
+                  <div className={isDark ? 'text-gray-200' : 'text-gray-800'}>
+                    {day.shortLabel}
+                  </div>
+                  <div className={`text-xs font-normal mt-1 ${
+                    isDark ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
                     {day.label}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Filas de horarios - DINÁMICAS */}
+            {/* ✅ MODIFICADO: Filas con dark mode */}
             {currentTimeSlots.map((timeSlot, index) => {
               const isBreakTime = timeSlot.isBreak || 
                                  timeSlot.label.includes("RECREO") || 
@@ -73,17 +90,28 @@ export function ScheduleGrid({
               return (
                 <div 
                   key={`${timeSlot.start}-${timeSlot.end}`}
-                  className={`grid border-b last:border-b-0 ${
-                    index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
+                  className={`grid ${
+                    isDark 
+                      ? 'border-b border-gray-700 last:border-b-0' 
+                      : 'border-b last:border-b-0'
+                  } ${
+                    index % 2 === 0 
+                      ? isDark ? 'bg-gray-800' : 'bg-white'
+                      : isDark ? 'bg-gray-750' : 'bg-gray-50/50'
                   }`}
                   style={{ gridTemplateColumns: `120px repeat(${currentWorkingDays.length}, 1fr)` }}
                 >
-                  {/* Columna de horario */}
+                  {/* ✅ MODIFICADO: Columna de horario con dark mode */}
                   <div className={`
                     p-3 text-sm font-medium border-r flex items-center justify-center
+                    ${isDark ? 'border-gray-700' : 'border-gray-200'}
                     ${isBreakTime 
-                      ? 'bg-gradient-to-r from-gray-100 to-gray-50 text-gray-600' 
-                      : 'text-gray-700 bg-white'
+                      ? isDark 
+                        ? 'bg-gradient-to-r from-gray-800 to-gray-700 text-gray-400' 
+                        : 'bg-gradient-to-r from-gray-100 to-gray-50 text-gray-600'
+                      : isDark 
+                        ? 'text-gray-300 bg-gray-800' 
+                        : 'text-gray-700 bg-white'
                     }
                   `}>
                     <div className="text-center">
@@ -91,12 +119,14 @@ export function ScheduleGrid({
                         {!isBreakTime && (
                           <>
                             <span className="block">{timeSlot.start}</span>
-                            <span className="text-gray-400">-</span>
+                            <span className={isDark ? 'text-gray-600' : 'text-gray-400'}>-</span>
                             <span className="block">{timeSlot.end}</span>
                           </>
                         )}
                         {isBreakTime && (
-                          <span className="font-sans font-semibold text-gray-500">
+                          <span className={`font-sans font-semibold ${
+                            isDark ? 'text-gray-400' : 'text-gray-500'
+                          }`}>
                             {timeSlot.label}
                           </span>
                         )}
@@ -104,12 +134,11 @@ export function ScheduleGrid({
                     </div>
                   </div>
 
-                  {/* Celdas de horario para cada día - DINÁMICAS */}
-                  {currentWorkingDays.map((day, dayIndex) => {
+                  {/* Celdas de horario para cada día */}
+                  {currentWorkingDays.map((day) => {
                     const key = `${day.value}-${timeSlot.start}`;
                     let daySchedules = scheduleGrid[key] || [];
                     
-                    // Filtrar horarios eliminados
                     daySchedules = daySchedules.filter(schedule => {
                       const deleteChange = pendingChanges.find(
                         change => change.action === 'delete' && change.schedule.id === schedule.id
@@ -117,7 +146,6 @@ export function ScheduleGrid({
                       return !deleteChange;
                     });
                     
-                    // Aplicar cambios de actualización
                     daySchedules = daySchedules.map(schedule => {
                       const updateChange = pendingChanges.find(
                         change => change.action === 'update' && change.schedule.id === schedule.id
@@ -149,9 +177,13 @@ export function ScheduleGrid({
           </div>
         </div>
 
-        {/* Footer con información de configuración */}
+        {/* ✅ MODIFICADO: Footer con dark mode */}
         {(timeSlots || workingDays) && (
-          <div className="px-4 py-2 bg-gray-50 border-t text-xs text-gray-600">
+          <div className={`px-4 py-2 border-t text-xs ${
+            isDark 
+              ? 'bg-gray-800 border-gray-700 text-gray-400' 
+              : 'bg-gray-50 border-gray-200 text-gray-600'
+          }`}>
             <div className="flex flex-wrap gap-4 items-center justify-between">
               <div className="flex gap-4">
                 <span>📅 <strong>{currentWorkingDays.length}</strong> días laborales</span>
@@ -159,7 +191,9 @@ export function ScheduleGrid({
                 <span>📚 <strong>{currentTimeSlots.filter(s => !s.isBreak).length}</strong> períodos de clase</span>
                 <span>☕ <strong>{currentTimeSlots.filter(s => s.isBreak).length}</strong> recreos</span>
               </div>
-              <div className="text-green-600 font-medium">
+              <div className={`font-medium ${
+                isDark ? 'text-green-400' : 'text-green-600'
+              }`}>
                 ✅ Configuración personalizada
               </div>
             </div>

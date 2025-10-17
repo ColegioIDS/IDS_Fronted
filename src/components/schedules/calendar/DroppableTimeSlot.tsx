@@ -1,14 +1,15 @@
 // components/schedules/calendar/DroppableTimeSlot.tsx
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Plus } from "lucide-react";
+import { useTheme } from "next-themes"; // ✅ AGREGAR
 import { cn } from "@/lib/utils";
 import type { Schedule, DayOfWeek } from "@/types/schedules";
 import type { TimeSlot, DragItem, TempSchedule } from "@/types/schedules.types";
 import { DraggableSchedule } from "../draggable/DraggableSchedule";
 import { useDragManager } from "@/hooks/useDragManager";
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge";
 
 interface DroppableTimeSlotProps {
   day: DayOfWeek;
@@ -32,8 +33,9 @@ export function DroppableTimeSlot({
   const [isHovered, setIsHovered] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
   const { getDragState } = useDragManager();
+  const { theme } = useTheme(); // ✅ AGREGAR
+  const isDark = theme === 'dark'; // ✅ AGREGAR
 
-  // Verificar si es tiempo de recreo/almuerzo
   const isRecreation = isBreakTime || 
     timeSlot.label.includes("RECREO") || 
     timeSlot.label.includes("ALMUERZO");
@@ -57,52 +59,59 @@ export function DroppableTimeSlot({
     }
   }, [day, timeSlot, isHovered, isRecreation, onDrop, getDragState]);
 
-  // Función mejorada para manejar la eliminación
   const handleScheduleDelete = useCallback((scheduleId: string | number) => {
     console.log('Eliminando schedule:', scheduleId, 'del slot:', day, timeSlot.label);
     onScheduleDelete(scheduleId);
   }, [onScheduleDelete, day, timeSlot.label]);
 
-  // Función mejorada para manejar la edición
   const handleScheduleEdit = useCallback((schedule: Schedule | TempSchedule) => {
     console.log('Editando schedule:', schedule.id, 'del slot:', day, timeSlot.label);
     onScheduleEdit(schedule);
   }, [onScheduleEdit, day, timeSlot.label]);
 
-  // Renderizado para tiempos de recreo/almuerzo
+  // ✅ MODIFICADO: Renderizado para tiempos de recreo con dark mode
   if (isRecreation) {
     return (
       <div
         ref={dropRef}
         className={cn(
           "min-h-[80px] p-2 border transition-all",
-          "bg-gradient-to-br from-gray-100 to-gray-50",
-          "border-gray-300",
-          "flex items-center justify-center"
+          "flex items-center justify-center",
+          isDark
+            ? "bg-gradient-to-br from-gray-800 to-gray-700 border-gray-600"
+            : "bg-gradient-to-br from-gray-100 to-gray-50 border-gray-300"
         )}
       >
-        <div className="text-gray-500 text-sm font-medium">
+        <div className={cn(
+          "text-sm font-medium",
+          isDark ? "text-gray-400" : "text-gray-500"
+        )}>
           {timeSlot.label}
         </div>
       </div>
     );
   }
 
-  // Renderizado normal para slots disponibles
+  // ✅ MODIFICADO: Renderizado normal con dark mode
   return (
     <div
       ref={dropRef}
       className={cn(
         "min-h-[80px] p-2 border transition-all relative",
-        isHovered && "bg-blue-50 border-blue-300 border-dashed border-2",
-        !isHovered && "bg-gray-50 border-gray-200 hover:bg-white"
+        isHovered && (isDark
+          ? "bg-blue-900/30 border-blue-600 border-dashed border-2"
+          : "bg-blue-50 border-blue-300 border-dashed border-2"
+        ),
+        !isHovered && (isDark
+          ? "bg-gray-800 border-gray-700 hover:bg-gray-750"
+          : "bg-gray-50 border-gray-200 hover:bg-white"
+        )
       )}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onMouseUp={handleMouseUp}
     >
       <div className="space-y-1">
-        {/* Renderizar horarios existentes con key más específica */}
         {schedules.map((schedule) => (
           <DraggableSchedule
             key={`${schedule.id}-${day}-${timeSlot.start}-${timeSlot.end}`}
@@ -113,20 +122,28 @@ export function DroppableTimeSlot({
           />
         ))}
         
-        {/* Indicador de drop cuando está vacío */}
+        {/* ✅ MODIFICADO: Indicador de drop con dark mode */}
         {schedules.length === 0 && isHovered && (
-          <div className="flex items-center justify-center h-12 text-blue-500 text-sm animate-pulse">
+          <div className={cn(
+            "flex items-center justify-center h-12 text-sm animate-pulse",
+            isDark ? "text-blue-400" : "text-blue-500"
+          )}>
             <Plus className="h-4 w-4 mr-1" />
             <span>Soltar aquí</span>
           </div>
         )}
         
-        {/* Indicador de múltiples horarios */}
+        {/* ✅ MODIFICADO: Badge con dark mode */}
         {schedules.length > 1 && (
           <div className="absolute top-1 right-1">
             <Badge 
               variant="secondary" 
-              className="text-[10px] h-4 px-1 bg-yellow-100 text-yellow-700"
+              className={cn(
+                "text-[10px] h-4 px-1",
+                isDark
+                  ? "bg-yellow-900/50 text-yellow-300"
+                  : "bg-yellow-100 text-yellow-700"
+              )}
             >
               {schedules.length} clases
             </Badge>

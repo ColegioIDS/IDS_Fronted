@@ -1,7 +1,8 @@
+// src/components/enrollments/EnrollmentTable.tsx
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useEnrollmentContext, useEnrollmentStatus } from '@/context/EnrollmentContext';
+import { useTheme } from 'next-themes';
 import {
   MoreHorizontal,
   Eye,
@@ -11,7 +12,6 @@ import {
   RefreshCw,
   Trash2,
   User,
-  Calendar,
   MapPin,
   ChevronLeft,
   ChevronRight,
@@ -39,27 +39,28 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { EnrollmentStatus } from '@/types/enrollment.types';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
-// Utility functions
-const getStatusColor = (status: EnrollmentStatus) => {
+// ==================== UTILITY FUNCTIONS ====================
+
+const getStatusColor = (status: string) => {
   switch (status) {
-    case EnrollmentStatus.ACTIVE:
+    case 'active':
       return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
-    case EnrollmentStatus.GRADUATED:
+    case 'graduated':
       return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400";
-    case EnrollmentStatus.TRANSFERRED:
+    case 'transferred':
       return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
     default:
       return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
   }
 };
 
-const getStatusText = (status: EnrollmentStatus) => {
+const getStatusText = (status: string) => {
   switch (status) {
-    case EnrollmentStatus.ACTIVE: return "Activo";
-    case EnrollmentStatus.GRADUATED: return "Graduado";
-    case EnrollmentStatus.TRANSFERRED: return "Transferido";
+    case 'active': return "Activo";
+    case 'graduated': return "Graduado";
+    case 'transferred': return "Transferido";
     default: return status;
   }
 };
@@ -83,38 +84,45 @@ const calculateAge = (birthDate: string) => {
   return age;
 };
 
+// ==================== INTERFACES ====================
+
 interface EnrollmentTableProps {
+  enrollments: any[]; // ✅ Recibe enrollments como prop
+  isLoading?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
   selectedItems?: number[];
   onSelectionChange?: (selectedIds: number[]) => void;
+  onEdit?: (enrollment: any) => void;
+  onDelete?: (id: number) => void;
+  onGraduate?: (id: number) => void;
+  onTransfer?: (id: number) => void;
+  onReactivate?: (id: number) => void;
 }
 
-export default function EnrollmentTable({
-  selectedItems = [],
-  onSelectionChange
-}: EnrollmentTableProps) {
-  const {
-    state: {
-      enrollments,
-      loading: isLoadingEnrollments,
-      submitting,
-      error
-    },
-    removeEnrollment,
-    refreshEnrollments,
-    setFormMode
-  } = useEnrollmentContext();
+// ==================== COMPONENT ====================
 
-  const {
-    handleGraduate,
-    handleTransfer,
-    handleReactivate
-  } = useEnrollmentStatus();
+export function EnrollmentTable({
+  enrollments,
+  isLoading = false,
+  canUpdate = false,
+  canDelete = false,
+  selectedItems = [],
+  onSelectionChange,
+  onEdit,
+  onDelete,
+  onGraduate,
+  onTransfer,
+  onReactivate
+}: EnrollmentTableProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
 
-  // Use real data from context
+  // ✅ Usar enrollments directamente (viene de formData.enrollments)
   const displayEnrollments = enrollments || [];
 
   // Pagination logic
@@ -145,137 +153,114 @@ export default function EnrollmentTable({
     }
   };
 
-  const isAllSelected = paginatedData.length > 0 && paginatedData.every(enrollment => selectedItems.includes(enrollment.id));
+  const isAllSelected = paginatedData.length > 0 && 
+    paginatedData.every(enrollment => selectedItems.includes(enrollment.id));
   const isSomeSelected = paginatedData.some(enrollment => selectedItems.includes(enrollment.id));
 
-  // Action handlers with proper error handling and refresh
-  const handleAction = async (action: string, enrollmentId: number, studentName?: string) => {
+  // Action handlers
+  const handleAction = async (action: string, enrollmentId: number, studentName: string) => {
     try {
-      let result;
       switch (action) {
         case 'graduate':
-          result = await handleGraduate(enrollmentId, studentName);
+          onGraduate?.(enrollmentId);
           break;
         case 'transfer':
-          result = await handleTransfer(enrollmentId, studentName);
+          onTransfer?.(enrollmentId);
           break;
         case 'reactivate':
-          result = await handleReactivate(enrollmentId, studentName);
+          onReactivate?.(enrollmentId);
           break;
         case 'delete':
           const confirmed = window.confirm(
-            `¿Estás seguro de que deseas eliminar la matrícula de ${studentName || 'este estudiante'}?`
+            `¿Estás seguro de que deseas eliminar la matrícula de ${studentName}?`
           );
-          if (!confirmed) {
-            return;
+          if (confirmed) {
+            onDelete?.(enrollmentId);
           }
-          result = await removeEnrollment(enrollmentId);
           break;
         case 'edit':
-          setFormMode('edit', enrollmentId);
-          return;
+          const enrollment = displayEnrollments.find(e => e.id === enrollmentId);
+          if (enrollment) {
+            onEdit?.(enrollment);
+          }
+          break;
         case 'view':
-          // Implementar navegación a vista de perfil
           toast.info('Funcionalidad de vista de perfil en desarrollo');
-          return;
-      }
-
-      // Remove from selection if deleted and action was successful
-      if (result?.success && action === 'delete' && onSelectionChange) {
-        onSelectionChange(selectedItems.filter(id => id !== enrollmentId));
+          break;
       }
     } catch (error) {
       console.error(`Error performing ${action}:`, error);
-      toast.error(`Error al ${action === 'graduate' ? 'graduar' :
-        action === 'transfer' ? 'transferir' :
-          action === 'reactivate' ? 'reactivar' :
-            action === 'delete' ? 'eliminar' : 'procesar'} la matrícula`);
+      toast.error(`Error al procesar la acción`);
     }
   };
 
-  // Get student profile picture or create fallback
-  const getStudentAvatar = (student: any) => {
-    // Check if student has pictures array
-    const profilePicture = student.pictures?.find((pic: any) => pic.kind === 'profile');
-
-    if (profilePicture?.url) {
-      return profilePicture.url;
+  // Get student initials for avatar fallback
+  const getStudentInitials = (studentName: string) => {
+    const names = studentName.split(' ');
+    if (names.length >= 2) {
+      return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
     }
-
-    return null; // Will use fallback initials
+    return studentName.charAt(0).toUpperCase();
   };
 
-  // Generate fallback initials
-  const getStudentInitials = (student: any) => {
-    const firstInitial = student.givenNames?.charAt(0) || '';
-    const lastInitial = student.lastNames?.charAt(0) || '';
-    return `${firstInitial}${lastInitial}`.toUpperCase();
-  };
+  // ==================== LOADING STATE ====================
 
-  // Loading state
-  if (isLoadingEnrollments) {
+  if (isLoading) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
         <div className="flex items-center gap-2">
           <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
-          <span className="text-gray-600 dark:text-gray-400">Cargando matrículas...</span>
+          <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>
+            Cargando matrículas...
+          </span>
         </div>
       </div>
     );
   }
 
-  console.log('Matrículas cargadas:', enrollments);
+  // ==================== EMPTY STATE ====================
 
-  // Error state
-  if (error) {
-    return (
-      <div className="w-full h-64 flex items-center justify-center bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-        <div className="text-center space-y-3">
-          <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl w-fit mx-auto">
-            <User className="h-8 w-8 text-red-600" />
-          </div>
-          <div>
-            <p className="text-lg font-medium text-red-900 dark:text-red-100">Error al cargar</p>
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refreshEnrollments()}
-              className="mt-2"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reintentar
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show empty state if no enrollments
   if (displayEnrollments.length === 0) {
     return (
-      <div className="w-full h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div className={`w-full h-64 flex items-center justify-center rounded-lg border ${
+        isDark 
+          ? 'bg-gray-800 border-gray-700' 
+          : 'bg-gray-50 border-gray-200'
+      }`}>
         <div className="text-center space-y-3">
-          <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-xl w-fit mx-auto">
+          <div className={`p-3 rounded-xl w-fit mx-auto ${
+            isDark ? 'bg-gray-700' : 'bg-gray-100'
+          }`}>
             <User className="h-8 w-8 text-gray-400" />
           </div>
           <div>
-            <p className="text-lg font-medium text-gray-900 dark:text-white">No hay matrículas</p>
-            <p className="text-sm text-gray-500">No se encontraron matrículas registradas</p>
+            <p className={`text-lg font-medium ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>
+              No hay matrículas
+            </p>
+            <p className="text-sm text-gray-500">
+              No se encontraron matrículas registradas
+            </p>
           </div>
         </div>
       </div>
     );
   }
+
+  // ==================== TABLE ====================
 
   return (
     <div className="space-y-4">
       {/* Table */}
-      <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
+      <div className={`rounded-lg border overflow-hidden ${
+        isDark 
+          ? 'border-gray-700 bg-gray-800' 
+          : 'border-gray-200 bg-white'
+      }`}>
         <Table>
-          <TableHeader className="bg-gray-50 dark:bg-gray-900">
-            <TableRow className="border-gray-200 dark:border-gray-700">
+          <TableHeader className={isDark ? 'bg-gray-900' : 'bg-gray-50'}>
+            <TableRow className={isDark ? 'border-gray-700' : 'border-gray-200'}>
               <TableHead className="w-12">
                 <Checkbox
                   checked={isAllSelected}
@@ -290,87 +275,104 @@ export default function EnrollmentTable({
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
-              <TableHead className="font-medium text-gray-900 dark:text-gray-100">
+              <TableHead className={`font-medium ${
+                isDark ? 'text-gray-100' : 'text-gray-900'
+              }`}>
                 Estudiante
               </TableHead>
-              <TableHead className="font-medium text-gray-900 dark:text-gray-100">
+              <TableHead className={`font-medium ${
+                isDark ? 'text-gray-100' : 'text-gray-900'
+              }`}>
                 Código SIRE
               </TableHead>
-              <TableHead className="font-medium text-gray-900 dark:text-gray-100">
+              <TableHead className={`font-medium ${
+                isDark ? 'text-gray-100' : 'text-gray-900'
+              }`}>
                 Grado/Sección
               </TableHead>
-              <TableHead className="font-medium text-gray-900 dark:text-gray-100">
-                Ciclo
-              </TableHead>
-              <TableHead className="font-medium text-gray-900 dark:text-gray-100">
+              <TableHead className={`font-medium ${
+                isDark ? 'text-gray-100' : 'text-gray-900'
+              }`}>
                 Estado
               </TableHead>
-              <TableHead className="font-medium text-gray-900 dark:text-gray-100">
+              <TableHead className={`font-medium ${
+                isDark ? 'text-gray-100' : 'text-gray-900'
+              }`}>
                 Edad
               </TableHead>
-              <TableHead className="font-medium text-gray-900 dark:text-gray-100 text-right">
+              <TableHead className={`font-medium text-right ${
+                isDark ? 'text-gray-100' : 'text-gray-900'
+              }`}>
                 Acciones
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedData.map((enrollment) => {
-              const studentName = `${enrollment.student.givenNames} ${enrollment.student.lastNames}`;
-
               return (
                 <TableRow
                   key={enrollment.id}
-                  className={`border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors ${selectedItems.includes(enrollment.id)
-                      ? 'bg-blue-50 dark:bg-blue-900/20'
+                  className={`transition-colors ${
+                    isDark 
+                      ? 'border-gray-700 hover:bg-gray-900/50' 
+                      : 'border-gray-200 hover:bg-gray-50'
+                  } ${
+                    selectedItems.includes(enrollment.id)
+                      ? isDark ? 'bg-blue-900/20' : 'bg-blue-50'
                       : ''
-                    }`}
+                  }`}
                 >
                   <TableCell>
                     <Checkbox
                       checked={selectedItems.includes(enrollment.id)}
-                      onCheckedChange={(checked) => handleSelectItem(enrollment.id, checked as boolean)}
+                      onCheckedChange={(checked) => 
+                        handleSelectItem(enrollment.id, checked as boolean)
+                      }
                     />
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10">
                         <AvatarImage
-                          src={getStudentAvatar(enrollment.student)}
-                          alt={studentName}
+                          src={enrollment.studentProfilePicture || ''}
+                          alt={enrollment.studentName}
                         />
                         <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold">
-                          {getStudentInitials(enrollment.student)}
+                          {getStudentInitials(enrollment.studentName)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium text-gray-900 dark:text-white">
-                          {studentName}
-                        </div>
-                        <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
-                          <MapPin className="h-3 w-3" />
-                          {enrollment.student.birthPlace || 'Guatemala'}
+                        <div className={`font-medium ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          {enrollment.studentName}
                         </div>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="font-mono text-sm text-gray-900 dark:text-white">
-                      {enrollment.student.codeSIRE || 'N/A'}
+                    <div className={`font-mono text-sm ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      {enrollment.studentId || 'N/A'}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400">
-                        {enrollment.section?.grade?.name || `Grado ${enrollment.gradeId}`}
+                      <Badge 
+                        variant="outline" 
+                        className={isDark
+                          ? 'bg-blue-900/30 text-blue-400 border-blue-800'
+                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                        }
+                      >
+                        {enrollment.gradeName}
                       </Badge>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        Sección {enrollment.section?.name || 'N/A'}
+                      <div className={`text-xs ${
+                        isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        Sección {enrollment.sectionName}
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm text-gray-900 dark:text-white">
-                      {enrollment.cycle?.name || 'N/A'}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -379,55 +381,83 @@ export default function EnrollmentTable({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm text-gray-900 dark:text-white">
-                      {calculateAge(enrollment.student.birthDate)} años
+                    <div className={`text-sm ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      {/* Edad no disponible en enrollments simplificados */}
+                      -
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={submitting}>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                        >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48 bg-white/90 dark:bg-gray-900/90 backdrop-blur">
+                      <DropdownMenuContent 
+                        align="end" 
+                        className={`w-48 backdrop-blur ${
+                          isDark ? 'bg-gray-900/90' : 'bg-white/90'
+                        }`}
+                      >
                         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleAction('view', enrollment.id, studentName)}>
+                        <DropdownMenuItem 
+                          onClick={() => handleAction('view', enrollment.id, enrollment.studentName)}
+                        >
                           <Eye className="h-4 w-4 mr-2" />
                           Ver perfil completo
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleAction('edit', enrollment.id, studentName)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Editar matrícula
-                        </DropdownMenuItem>
+                        {canUpdate && (
+                          <DropdownMenuItem 
+                            onClick={() => handleAction('edit', enrollment.id, enrollment.studentName)}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar matrícula
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
-                        {enrollment.status === EnrollmentStatus.ACTIVE && (
+                        {enrollment.status === 'active' && canUpdate && (
                           <>
-                            <DropdownMenuItem onClick={() => handleAction('graduate', enrollment.id, studentName)}>
+                            <DropdownMenuItem 
+                              onClick={() => handleAction('graduate', enrollment.id, enrollment.studentName)}
+                            >
                               <GraduationCap className="h-4 w-4 mr-2" />
                               Graduar estudiante
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleAction('transfer', enrollment.id, studentName)}>
+                            <DropdownMenuItem 
+                              onClick={() => handleAction('transfer', enrollment.id, enrollment.studentName)}
+                            >
                               <ArrowRightLeft className="h-4 w-4 mr-2" />
                               Transferir estudiante
                             </DropdownMenuItem>
                           </>
                         )}
-                        {enrollment.status !== EnrollmentStatus.ACTIVE && (
-                          <DropdownMenuItem onClick={() => handleAction('reactivate', enrollment.id, studentName)}>
+                        {enrollment.status !== 'active' && canUpdate && (
+                          <DropdownMenuItem 
+                            onClick={() => handleAction('reactivate', enrollment.id, enrollment.studentName)}
+                          >
                             <RefreshCw className="h-4 w-4 mr-2" />
                             Reactivar matrícula
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-red-600 focus:text-red-600"
-                          onClick={() => handleAction('delete', enrollment.id, studentName)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Eliminar matrícula
-                        </DropdownMenuItem>
+                        {canDelete && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-red-600 focus:text-red-600"
+                              onClick={() => handleAction('delete', enrollment.id, enrollment.studentName)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Eliminar matrícula
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -440,17 +470,25 @@ export default function EnrollmentTable({
 
       {/* Pagination */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+        <div className={`flex items-center gap-2 text-sm ${
+          isDark ? 'text-gray-400' : 'text-gray-600'
+        }`}>
           <span>Mostrando</span>
-          <span className="font-medium text-gray-900 dark:text-white">
+          <span className={`font-medium ${
+            isDark ? 'text-white' : 'text-gray-900'
+          }`}>
             {((currentPage - 1) * pageSize) + 1}
           </span>
           <span>a</span>
-          <span className="font-medium text-gray-900 dark:text-white">
+          <span className={`font-medium ${
+            isDark ? 'text-white' : 'text-gray-900'
+          }`}>
             {Math.min(currentPage * pageSize, displayEnrollments.length)}
           </span>
           <span>de</span>
-          <span className="font-medium text-gray-900 dark:text-white">
+          <span className={`font-medium ${
+            isDark ? 'text-white' : 'text-gray-900'
+          }`}>
             {displayEnrollments.length}
           </span>
           <span>estudiantes</span>

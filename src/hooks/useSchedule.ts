@@ -1,216 +1,509 @@
 // src/hooks/useSchedule.ts
-import { useState, useEffect } from 'react';
-import { Schedule, ScheduleFormValues } from '@/types/schedules';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { toast } from 'sonner'; // o tu librería de toasts
 import { 
-  getSchedules, 
-  createSchedule, 
-  updateSchedule, 
-  getScheduleById,
-  getSchedulesBySection,
-  getSchedulesByTeacher,
+  getScheduleFormData,
+  getTeacherAvailability,
+  getSchedules,
+  createSchedule,
+  updateSchedule,
+  deleteSchedule,
   batchSaveSchedules,
   deleteSchedulesBySection
 } from '@/services/schedule';
-import { scheduleSchema, defaultValues } from "@/schemas/schedule";
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { toast } from 'react-toastify';
+import { 
+  Schedule,
+  ScheduleFormData,
+  ScheduleFormValues,
+  TeacherAvailability
+} from '@/types/schedules';
 
-type ScheduleFormData = z.infer<typeof scheduleSchema>;
+// ==================== TIPOS DEL HOOK ====================
 
-export function useSchedule(isEditMode: boolean = false, id?: number) {
-    const [schedules, setSchedules] = useState<Schedule[]>([]);
-    const [isLoadingSchedules, setIsLoadingSchedules] = useState(true);
-    const [schedulesError, setSchedulesError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [currentSchedule, setCurrentSchedule] = useState<Schedule | null>(null);
+interface UseScheduleOptions {
+  autoLoadFormData?: boolean;
+  autoLoadAvailability?: boolean;
+  onSuccess?: (message: string) => void;
+  onError?: (error: string) => void;
+}
 
-    const form = useForm<ScheduleFormData>({
-        resolver: zodResolver(scheduleSchema),
-        defaultValues,
-    });
+interface UseScheduleReturn {
+  // Data states
+  formData: ScheduleFormData | null;
+  schedules: Schedule[];
+  teacherAvailability: TeacherAvailability | null;
+  
+  // Loading states
+  isLoading: boolean;
+  isLoadingFormData: boolean;
+  isLoadingAvailability: boolean;
+  isSubmitting: boolean;
+  
+  // Error state
+  error: string | null;
+  
+  // Actions
+  loadFormData: () => Promise<void>;
+  loadAvailability: () => Promise<void>;
+  fetchSchedules: (filters?: {
+    sectionId?: number;
+    courseId?: number;
+    teacherId?: number;
+    dayOfWeek?: number;
+  }) => Promise<void>;
+  createScheduleItem: (data: ScheduleFormValues) => Promise<Schedule | null>;
+  updateScheduleItem: (id: number, data: Partial<ScheduleFormValues>) => Promise<Schedule | null>;
+  deleteScheduleItem: (id: number) => Promise<boolean>;
+  batchSave: (schedules: ScheduleFormValues[]) => Promise<boolean>;
+  deleteBySection: (sectionId: number, keepIds?: number[]) => Promise<boolean>;
+  
+  // Helpers
+  clearError: () => void;
+  reset: () => void;
+}
 
-    // Load schedule data when in edit mode
-    useEffect(() => {
-        if (isEditMode && id) {
-            const loadScheduleData = async () => {
-                try {
-                    const schedule = await getScheduleById(id);
-                    setCurrentSchedule(schedule);
-                    form.reset({
-                        sectionId: schedule.sectionId,
-                        courseId: schedule.courseId,
-                        teacherId: schedule.teacherId,
-                        dayOfWeek: schedule.dayOfWeek,
-                        startTime: schedule.startTime,
-                        endTime: schedule.endTime,
-                        classroom: schedule.classroom || '',
-                    });
-                } catch (error) {
-                    console.error('Error loading schedule data:', error);
-                    toast.error('Error al cargar los datos del horario');
-                }
-            };
-            loadScheduleData();
-        }
-    }, [isEditMode, id, form]);
+// ==================== HOOK ====================
 
-    const fetchSchedules = async (filters?: {
-        sectionId?: number;
-        courseId?: number;
-        teacherId?: number;
-        dayOfWeek?: number;
-    }) => {
-        setIsLoadingSchedules(true);
-        setSchedulesError(null);
-        try {
-            const response = await getSchedules(filters);
-            setSchedules(response);
-        } catch (error) {
-            setSchedulesError('Error al cargar los horarios');
-            console.error(error);
-            toast.error('Error al cargar los horarios');
-        } finally {
-            setIsLoadingSchedules(false);
-        }
-    };
+export function useSchedule(
+  options: UseScheduleOptions = {}
+): UseScheduleReturn {
+  
+  const {
+    autoLoadFormData = false,
+    autoLoadAvailability = false,
+    onSuccess,
+    onError
+  } = options;
 
-    const fetchSchedulesBySection = async (sectionId: number) => {
-        setIsLoadingSchedules(true);
-        try {
-            const response = await getSchedulesBySection(sectionId);
-            setSchedules(response);
-        } catch (error) {
-            setSchedulesError('Error al cargar los horarios por sección');
-            console.error(error);
-            toast.error('Error al cargar los horarios por sección');
-        } finally {
-            setIsLoadingSchedules(false);
-        }
-    };
+  // ==================== STATES ====================
+  
+  const [formData, setFormData] = useState<ScheduleFormData | null>(null);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [teacherAvailability, setTeacherAvailability] = useState<TeacherAvailability | null>(null);
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingFormData, setIsLoadingFormData] = useState(false);
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [error, setError] = useState<string | null>(null);
 
-    const fetchSchedulesByTeacher = async (teacherId: number) => {
-        setIsLoadingSchedules(true);
-        try {
-            const response = await getSchedulesByTeacher(teacherId);
-            setSchedules(response);
-        } catch (error) {
-            setSchedulesError('Error al cargar los horarios por profesor');
-            console.error(error);
-            toast.error('Error al cargar los horarios por profesor');
-        } finally {
-            setIsLoadingSchedules(false);
-        }
-    };
+  // ==================== REFS ====================
+  
+  // Prevenir múltiples llamadas simultáneas
+  const isLoadingFormDataRef = useRef(false);
+  const isLoadingAvailabilityRef = useRef(false);
 
-    const handleCreateSchedule = async (data: ScheduleFormData) => {
-        setIsSubmitting(true);
-        try {
-            await createSchedule(data);
-            toast.success("Horario creado correctamente");
-            await fetchSchedules();
-            form.reset();
-            return { success: true };
-        } catch (error: any) {
-            console.log("Error completo:", error);
-            console.log("Datos de respuesta:", error.response?.data);
-            
-            if (error.response?.data) {
-                return { 
-                    success: false,
-                    message: error.response.data.message || "Error de validación",
-                    details: error.response.data.details || []
-                };
-            }
-            
-            toast.error(error.message || "Error al crear el horario");
-            return { 
-                success: false, 
-                message: error.message || "Error desconocido",
-                details: []
-            };
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+  // ==================== HELPERS ====================
+  
+  const handleSuccess = useCallback((message: string) => {
+    if (onSuccess) {
+      onSuccess(message);
+    } else {
+      toast.success(message);
+    }
+  }, [onSuccess]);
 
-    const handleUpdateSchedule = async (id: number, data: Partial<ScheduleFormData>) => {
-        if (!id) return;
+  const handleError = useCallback((errorMessage: string) => {
+    setError(errorMessage);
+    if (onError) {
+      onError(errorMessage);
+    } else {
+      toast.error(errorMessage);
+    }
+  }, [onError]);
 
-        setIsSubmitting(true);
-        try {
-            await updateSchedule(id, data);
-            toast.success("Horario actualizado correctamente");
-            await fetchSchedules();
-            return { success: true };
-        } catch (error: any) {
-            if (error.response?.data) {
-                return error.response.data; 
-            }
-            toast.error("Error al actualizar el horario");
-            console.error(error);
-            return { success: false, message: "Error desconocido" };
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
 
+  const reset = useCallback(() => {
+    setFormData(null);
+    setSchedules([]);
+    setTeacherAvailability(null);
+    setError(null);
+    setIsLoading(false);
+    setIsLoadingFormData(false);
+    setIsLoadingAvailability(false);
+    setIsSubmitting(false);
+  }, []);
 
-    // Función para guardado masivo
-const handleBatchSave = async (schedules: ScheduleFormData[]) => {
-  setIsSubmitting(true);
+  
+// ==================== LOAD FORM DATA ====================
+
+const loadFormData = useCallback(async () => {
+  if (isLoadingFormDataRef.current) {
+    console.log('loadFormData ya en progreso, saltando...');
+    return;
+  }
+
   try {
-    const savedSchedules = await batchSaveSchedules(schedules);
-    toast.success(`${savedSchedules.length} horarios guardados correctamente`);
-    await fetchSchedules();
-    return { success: true, data: savedSchedules };
-  } catch (error: any) {
-    console.error("Error en guardado masivo:", error);
+    isLoadingFormDataRef.current = true;
+    setIsLoadingFormData(true);
+    setError(null);
     
-    if (error.response?.data) {
-      return { 
-        success: false,
-        message: error.response.data.message || "Error en guardado masivo",
-        details: error.response.data.details || []
-      };
+    const data = await getScheduleFormData();
+    setFormData(data);
+    setSchedules(data.schedules.map(s => ({
+      id: s.id,
+      sectionId: s.sectionId,
+      courseId: s.courseId,
+      teacherId: s.teacherId,
+      dayOfWeek: s.dayOfWeek,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      classroom: s.classroom,
+      section: {
+        id: s.sectionId,
+        name: s.sectionName,
+        grade: {
+          id: s.gradeId,
+          name: s.gradeName
+        }
+      },
+      course: {
+        id: s.courseId,
+        name: s.courseName,
+        color: s.courseColor || undefined
+      },
+      teacher: s.teacherId && s.teacherName ? {
+        id: s.teacherId,
+        givenNames: s.teacherName.split(' ')[0] || '',
+        lastNames: s.teacherName.split(' ').slice(1).join(' ') || ''
+      } : undefined
+    })));
+    
+    if (!data.activeCycle) {
+      throw new Error('No hay ciclo escolar activo');
     }
     
-    toast.error(error.message || "Error al guardar horarios masivamente");
-    return { 
-      success: false, 
-      message: error.message || "Error desconocido",
-      details: []
-    };
+  } catch (err: any) {
+    const errorMessage = err.message || 'Error al cargar datos del formulario';
+    setError(errorMessage);
+    console.error('Error en loadFormData:', err);
   } finally {
-    setIsSubmitting(false);
+    setIsLoadingFormData(false);
+    isLoadingFormDataRef.current = false;
   }
-};
+}, []); // ← SIN dependencias
 
+// ==================== EFFECTS ====================
 
+useEffect(() => {
+  if (autoLoadFormData && !formData && !isLoadingFormDataRef.current) {
+    loadFormData();
+  }
+  // Limpiar: no llamar loadFormData más si hay error
+}, [autoLoadFormData, !!formData]); // ← Solo estas 2 dependencias
+  // ==================== LOAD AVAILABILITY ====================
+  
+const loadAvailability = useCallback(async () => {
+  if (isLoadingAvailabilityRef.current) {
+    console.log('loadAvailability ya en progreso, saltando...');
+    return;
+  }
 
-    const handleSubmit = isEditMode && id ? 
-        (data: ScheduleFormData) => handleUpdateSchedule(id, data) : 
-        handleCreateSchedule;
+  try {
+    isLoadingAvailabilityRef.current = true;
+    setIsLoadingAvailability(true);
+    setError(null);
+    
+    const data = await getTeacherAvailability();
+    setTeacherAvailability(data);
+    
+  } catch (err: any) {
+    const errorMessage = err.message || 'Error al cargar disponibilidad';
+    setError(errorMessage);
+    console.error('Error en loadAvailability:', err);
+  } finally {
+    setIsLoadingAvailability(false);
+    isLoadingAvailabilityRef.current = false;
+  }
+}, []); // ← SIN dependencias
 
-    useEffect(() => {
-        fetchSchedules();
-    }, []);
+// ==================== EFFECTS ====================
 
-    return {
-        schedules,
-        currentSchedule,
-        isLoadingSchedules,
-        schedulesError,
-        isSubmitting,
-        form,
-        fetchSchedules,
-        fetchSchedulesBySection,
-        fetchSchedulesByTeacher,
-        createSchedule: handleCreateSchedule,
-        updateSchedule: handleUpdateSchedule,
-        resetForm: () => form.reset(defaultValues),
-        handleSubmit,
-         batchSave: handleBatchSave,
-    };
+useEffect(() => {
+  if (autoLoadAvailability && !teacherAvailability && !isLoadingAvailabilityRef.current) {
+    loadAvailability();
+  }
+}, [autoLoadAvailability, !!teacherAvailability]); // ← Solo estas 2 dependencias
+
+  // ==================== FETCH SCHEDULES ====================
+  
+  const fetchSchedules = useCallback(async (filters?: {
+    sectionId?: number;
+    courseId?: number;
+    teacherId?: number;
+    dayOfWeek?: number;
+  }) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const data = await getSchedules(filters);
+      setSchedules(data);
+      
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al cargar horarios';
+      handleError(errorMessage);
+      console.error('Error en fetchSchedules:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [handleError]);
+
+  // ==================== CREATE SCHEDULE ====================
+  
+  const createScheduleItem = useCallback(async (
+    data: ScheduleFormValues
+  ): Promise<Schedule | null> => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      const newSchedule = await createSchedule(data);
+      
+      // Actualizar lista local
+      setSchedules(prev => [...prev, newSchedule]);
+      
+      // Refrescar disponibilidad
+      await loadAvailability();
+      
+      handleSuccess('Horario creado exitosamente');
+      return newSchedule;
+      
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al crear horario';
+      handleError(errorMessage);
+      console.error('Error en createScheduleItem:', err);
+      return null;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [loadAvailability, handleSuccess, handleError]);
+
+  // ==================== UPDATE SCHEDULE ====================
+  
+  const updateScheduleItem = useCallback(async (
+    id: number,
+    data: Partial<ScheduleFormValues>
+  ): Promise<Schedule | null> => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      const updatedSchedule = await updateSchedule(id, data);
+      
+      // Actualizar lista local
+      setSchedules(prev => 
+        prev.map(item => item.id === id ? updatedSchedule : item)
+      );
+      
+      // Refrescar disponibilidad
+      await loadAvailability();
+      
+      handleSuccess('Horario actualizado exitosamente');
+      return updatedSchedule;
+      
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al actualizar horario';
+      handleError(errorMessage);
+      console.error('Error en updateScheduleItem:', err);
+      return null;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [loadAvailability, handleSuccess, handleError]);
+
+  // ==================== DELETE SCHEDULE ====================
+  
+  const deleteScheduleItem = useCallback(async (id: number): Promise<boolean> => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      await deleteSchedule(id);
+      
+      // Actualizar lista local
+      setSchedules(prev => prev.filter(item => item.id !== id));
+      
+      // Refrescar disponibilidad
+      await loadAvailability();
+      
+      handleSuccess('Horario eliminado exitosamente');
+      return true;
+      
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al eliminar horario';
+      handleError(errorMessage);
+      console.error('Error en deleteScheduleItem:', err);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [loadAvailability, handleSuccess, handleError]);
+
+  // ==================== BATCH SAVE ====================
+  
+  const batchSave = useCallback(async (
+    schedules: ScheduleFormValues[]
+  ): Promise<boolean> => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      const savedSchedules = await batchSaveSchedules(schedules);
+      
+      // Recargar datos
+      await Promise.all([
+        loadFormData(),
+        loadAvailability()
+      ]);
+      
+      handleSuccess(`${savedSchedules.length} horarios guardados exitosamente`);
+      return true;
+      
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error en guardado masivo';
+      handleError(errorMessage);
+      console.error('Error en batchSave:', err);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [loadFormData, loadAvailability, handleSuccess, handleError]);
+
+  // ==================== DELETE BY SECTION ====================
+  
+  const deleteBySection = useCallback(async (
+    sectionId: number,
+    keepIds: number[] = []
+  ): Promise<boolean> => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      await deleteSchedulesBySection(sectionId, keepIds);
+      
+      // Actualizar lista local
+      setSchedules(prev => 
+        prev.filter(item => 
+          item.sectionId !== sectionId || keepIds.includes(item.id)
+        )
+      );
+      
+      // Refrescar disponibilidad
+      await loadAvailability();
+      
+      handleSuccess('Horarios limpiados exitosamente');
+      return true;
+      
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al limpiar horarios';
+      handleError(errorMessage);
+      console.error('Error en deleteBySection:', err);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [loadAvailability, handleSuccess, handleError]);
+
+  // ==================== EFFECTS ====================
+  
+  // Auto-load form data on mount
+  useEffect(() => {
+    if (autoLoadFormData && !formData && !isLoadingFormDataRef.current) {
+      loadFormData();
+    }
+  }, [autoLoadFormData, formData, loadFormData]);
+
+  // Auto-load availability on mount
+  useEffect(() => {
+    if (autoLoadAvailability && !teacherAvailability && !isLoadingAvailabilityRef.current) {
+      loadAvailability();
+    }
+  }, [autoLoadAvailability, teacherAvailability, loadAvailability]);
+
+  // ==================== RETURN ====================
+  
+  return {
+    // Data
+    formData,
+    schedules,
+    teacherAvailability,
+    
+    // Loading
+    isLoading,
+    isLoadingFormData,
+    isLoadingAvailability,
+    isSubmitting,
+    
+    // Error
+    error,
+    
+    // Actions
+    loadFormData,
+    loadAvailability,
+    fetchSchedules,
+    createScheduleItem,
+    updateScheduleItem,
+    deleteScheduleItem,
+    batchSave,
+    deleteBySection,
+    
+    // Helpers
+    clearError,
+    reset,
+  };
+}
+
+// ==================== VARIANTES DEL HOOK ====================
+
+/**
+ * Hook simplificado para cargar solo formData
+ */
+export function useScheduleFormData() {
+  const { formData, isLoadingFormData, error, loadFormData } = useSchedule({
+    autoLoadFormData: true
+  });
+
+  return {
+    formData,
+    isLoading: isLoadingFormData,
+    error,
+    reload: loadFormData
+  };
+}
+
+/**
+ * Hook simplificado para una sección específica
+ */
+export function useScheduleBySection(sectionId: number) {
+  const { 
+    schedules, 
+    isLoading, 
+    error, 
+    fetchSchedules,
+    batchSave,
+    deleteBySection,
+    isSubmitting
+  } = useSchedule();
+
+  useEffect(() => {
+    if (sectionId) {
+      fetchSchedules({ sectionId });
+    }
+  }, [sectionId, fetchSchedules]);
+
+  return {
+    schedules,
+    isLoading,
+    isSubmitting,
+    error,
+    reload: () => fetchSchedules({ sectionId }),
+    batchSave,
+    deleteBySection: (keepIds?: number[]) => deleteBySection(sectionId, keepIds)
+  };
 }

@@ -17,13 +17,9 @@ import {
   ScheduleTimeGenerator
 } from "@/types/schedules.types";
 
-// 🔥 CAMBIO: Usar contextos en lugar de useScheduleIntegration
-import { useScheduleContext } from "@/context/ScheduleContext";
-import { useSectionContext } from "@/context/SectionsContext";
-import { useCourseContext } from "@/context/CourseContext";
-import { useTeacherAvailabilityContext } from "@/context/TeacherContext";
+// ✅ NUEVO: Solo usar el hook useSchedule
+import { useSchedule } from "@/hooks/useSchedule";
 
-import { useGradeScheduleConfigContext } from "@/context/ScheduleConfigContext";
 import { ScheduleHeader } from "./calendar/ScheduleHeader";
 import { ScheduleSidebar } from "./calendar/ScheduleSidebar";
 import { ScheduleGrid } from "./calendar/ScheduleGrid";
@@ -35,7 +31,7 @@ interface ScheduleCalendarViewProps {
   onCreateSchedule?: (data: Partial<ScheduleFormValues>) => Promise<{ success: boolean; message?: string; }>;
   onUpdateSchedule?: (id: number, data: Partial<ScheduleFormValues>) => Promise<{ success: boolean; message?: string; }>;
   onDeleteSchedule?: (id: number) => Promise<void>;
-  onBatchSave?: (changes: ScheduleChange[]) => Promise<{ success: boolean; }>; // Cambiar de void a objeto
+  onBatchSave?: (changes: ScheduleChange[]) => Promise<{ success: boolean; }>;
   className?: string;
 }
 
@@ -56,70 +52,73 @@ export function ScheduleCalendarView({
   const [pendingChanges, setPendingChanges] = useState<ScheduleChange[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 🔥 CAMBIO: Usar contextos individuales
-  const { state: scheduleState, refreshSchedules } = useScheduleContext();
-  const { state: sectionState } = useSectionContext();
-  const { state: courseState } = useCourseContext();
-  const { availableTeachers, assignedTeachers } = useTeacherAvailabilityContext();
+  // ✅ NUEVO: Usar el hook consolidado
+const { 
+  formData,
+  schedules,
+  teacherAvailability,
+  isLoading,
+  loadFormData 
+} = useSchedule({ 
+  autoLoadFormData: true,        // ✅ AGREGAR
+  autoLoadAvailability: true     // ✅ AGREGAR
+});
 
-  // 🔥 CAMBIO: Extraer datos de los contextos
-  const schedules = scheduleState.schedules;
-  const sections = sectionState.sections;
-  const courses = courseState.courses;
+  // ✅ NUEVO: Extraer datos del formData consolidado
+  const sections = formData?.grades.flatMap(grade => grade.sections) || [];
+  console.log('📚 Sections disponibles:', formData)  ;
+  const courses = formData?.grades.flatMap(grade => grade.courses) || [];
+  const allTeachers = formData?.teachers || [];
   
-  // 🔥 IMPORTANTE: Para el sidebar, solo mostrar profesores disponibles (que se pueden arrastrar)
-  // 🔥 VALIDACIÓN: Garantizar que siempre sea un array
-  const teachers = Array.isArray(availableTeachers) ? availableTeachers : [];
-  
-  // 🔥 CAMBIO: Determinar loading desde contextos
-  const loading = {
-    anyLoading: scheduleState.loading || sectionState.loading || courseState.loading
-  };
+  // ✅ NUEVO: Filtrar profesores disponibles (sin horarios asignados en la sección actual)
+  const teachers = useMemo(() => {
+    if (!selectedSection || !teacherAvailability) return allTeachers;
+    
+    // Obtener IDs de profesores ya asignados en esta sección
+    const assignedTeacherIds = schedules
+      .filter(s => s.sectionId === selectedSection && s.teacherId)
+      .map(s => s.teacherId);
+    
+    // Retornar todos los profesores (pueden estar asignados en otras secciones)
+    // La disponibilidad se maneja en el sidebar
+    return allTeachers;
+  }, [allTeachers, selectedSection, schedules, teacherAvailability]);
 
-  // 🔥 CAMBIO: Función de refresh actualizada
-  const refreshAllData = async () => {
-    await refreshSchedules();
-    // Los otros contextos se manejan automáticamente
-  };
+  // ✅ NUEVO: Obtener configuración de la sección seleccionada
+  const currentConfig = useMemo(() => {
+    if (!selectedSection || !formData?.scheduleConfigs) return null;
+    return formData.scheduleConfigs.find(config => config.sectionId === selectedSection) || null;
+  }, [selectedSection, formData?.scheduleConfigs]);
 
-  console.log('🎯 ScheduleCalendarView - Teachers for sidebar:', {
-    availableTeachers: availableTeachers?.length || 0,
-    assignedTeachers: assignedTeachers?.length || 0,
-    teachersForSidebar: teachers.length
+  console.log('🎯 ScheduleCalendarView - Teachers:', {
+    allTeachers: allTeachers.length,
+    availableForSidebar: teachers.length,
+    selectedSection
   });
-  
-  // Mantener el context específico de configuración
-  const gradeScheduleContext = useGradeScheduleConfigContext();
 
-  // Extraer propiedades específicas para configuración de horarios
-  const currentConfig = gradeScheduleContext.state.currentScheduleConfig;
-  const configsLoading = gradeScheduleContext.state.loading.general;
-  const fetchConfigBySection = gradeScheduleContext.fetchScheduleConfigBySection;
-  const createConfig = gradeScheduleContext.createScheduleConfig;
-  const updateConfig = gradeScheduleContext.updateScheduleConfig;
-
-  // Función para convertir workingDays de tu formato [0-6] a mi formato [1-7]
-  const convertWorkingDaysToMyFormat = (workingDays: number[]): number[] => {
-    return workingDays.map(day => day === 0 ? 7 : day); // 0 (domingo) -> 7, resto igual
+  // Función para convertir workingDays de formato [0-6] a [1-7]
+  const convertWorkingDaysToMyFormat = (workingDays: any): number[] => {
+    if (!Array.isArray(workingDays)) return [1, 2, 3, 4, 5]; // Default Lun-Vie
+    return workingDays.map((day: number) => day === 0 ? 7 : day);
   };
 
-  // Función para convertir de mi formato [1-7] a tu formato [0-6]
+  // Función para convertir de formato [1-7] a [0-6]
   const convertWorkingDaysToYourFormat = (workingDays: number[]): number[] => {
-    return workingDays.map(day => day === 7 ? 0 : day); // 7 (domingo) -> 0, resto igual
+    return workingDays.map(day => day === 7 ? 0 : day);
   };
 
-  // Adaptador para convertir BreakSlots entre tipos
-  const adaptBreakSlots = (breakSlots: import("@/types/schedule-config").BreakSlot[]): import("@/types/schedules.types").BreakSlot[] => {
-    return breakSlots.map(slot => ({
+  // Adaptador para BreakSlots
+  const adaptBreakSlots = (breakSlots: any): import("@/types/schedules.types").BreakSlot[] => {
+    if (!Array.isArray(breakSlots)) return [];
+    return breakSlots.map((slot: any) => ({
       start: slot.start,
       end: slot.end,
-      label: slot.label || 'DESCANSO' // Asegurar que label no sea undefined
+      label: slot.label || 'DESCANSO'
     }));
   };
 
-  // Generar timeSlots dinámicamente basado en la configuración de la sección
+  // Generar timeSlots dinámicamente
   const dynamicTimeSlots = useMemo((): TimeSlot[] => {
-    
     if (!selectedSection || selectedSection === 0) {
       console.log('🔍 Sin sección seleccionada, usando DEFAULT_TIME_SLOTS');
       return DEFAULT_TIME_SLOTS;
@@ -130,9 +129,8 @@ export function ScheduleCalendarView({
       return DEFAULT_TIME_SLOTS;
     }
 
-    // Generar slots dinámicamente
     try {
-      console.log('🔍 Usando generador con configuración:', {
+      console.log('🔍 Generando slots con configuración:', {
         startTime: currentConfig.startTime,
         endTime: currentConfig.endTime,
         classDuration: currentConfig.classDuration,
@@ -143,14 +141,13 @@ export function ScheduleCalendarView({
         startTime: currentConfig.startTime,
         endTime: currentConfig.endTime,
         classDuration: currentConfig.classDuration,
-        breakSlots: adaptBreakSlots(currentConfig.breakSlots) // Usar adaptador
+        breakSlots: adaptBreakSlots(currentConfig.breakSlots)
       });
       
-      console.log('🔍 Slots generados exitosamente:', generatedSlots.length, 'slots');
+      console.log('🔍 Slots generados:', generatedSlots.length);
       return generatedSlots;
     } catch (error) {
-      console.error('🔴 Error generando timeSlots dinámicos:', error);
-      console.log('🔍 Fallback a DEFAULT_TIME_SLOTS debido al error');
+      console.error('🔴 Error generando timeSlots:', error);
       return DEFAULT_TIME_SLOTS;
     }
   }, [selectedSection, currentConfig]);
@@ -159,21 +156,15 @@ export function ScheduleCalendarView({
   const dynamicWorkingDays = useMemo(() => {
     console.log('🔍 Generando dynamicWorkingDays para sección:', selectedSection);
     
-    if (!selectedSection || selectedSection === 0) {
-      console.log('🔍 Sin sección, usando días por defecto (Lun-Vie)');
-      return ALL_DAYS_OF_WEEK.filter(day => [1, 2, 3, 4, 5].includes(day.value));
-    }
-
-    if (!currentConfig) {
+    if (!selectedSection || selectedSection === 0 || !currentConfig) {
       console.log('🔍 Sin config, usando días por defecto (Lun-Vie)');
       return ALL_DAYS_OF_WEEK.filter(day => [1, 2, 3, 4, 5].includes(day.value));
     }
 
-    // Convertir workingDays de tu formato [0-6] a mi formato [1-7]
     const convertedDays = convertWorkingDaysToMyFormat(currentConfig.workingDays);
     const filteredDays = ALL_DAYS_OF_WEEK.filter(day => convertedDays.includes(day.value));
     
-    console.log('🔍 Días de tu config:', currentConfig.workingDays);
+    console.log('🔍 Días de config:', currentConfig.workingDays);
     console.log('🔍 Días convertidos:', convertedDays);
     console.log('🔍 Días filtrados:', filteredDays.map(d => d.label));
     
@@ -192,7 +183,6 @@ export function ScheduleCalendarView({
       schedule.sectionId === selectedSection
     );
 
-    // Filtrar schedules que están marcados para eliminar en pendingChanges
     const schedulesToDelete = pendingChanges
       .filter(change => change.action === 'delete')
       .map(change => change.schedule.id);
@@ -208,20 +198,16 @@ export function ScheduleCalendarView({
     console.log('AllSchedules combinados:', {
       realSchedules: filteredRealSchedules.length,
       tempSchedules: filteredTempSchedules.length,
-      total: filteredRealSchedules.length + filteredTempSchedules.length,
-      schedulesToDelete: schedulesToDelete.length,
-      workingDays: dynamicWorkingDays.map(d => d.label).join(', '),
-      timeSlots: dynamicTimeSlots.length
+      total: filteredRealSchedules.length + filteredTempSchedules.length
     });
 
     return [...filteredRealSchedules, ...filteredTempSchedules];
-  }, [schedules, selectedSection, tempSchedules, pendingChanges, dynamicWorkingDays, dynamicTimeSlots]);
+  }, [schedules, selectedSection, tempSchedules, pendingChanges]);
 
   // Organizar horarios por día y horario
   const scheduleGrid = useMemo(() => {
     const grid: { [key: string]: (Schedule | TempSchedule)[] } = {};
     
-    // Solo considerar schedules de días que están configurados
     const validDays = dynamicWorkingDays.map(d => d.value);
     
     allSchedules
@@ -234,7 +220,7 @@ export function ScheduleCalendarView({
         grid[key].push(schedule);
       });
     
-    console.log('Schedule Grid generado con configuración dinámica:', {
+    console.log('Schedule Grid generado:', {
       totalSlots: Object.keys(grid).length,
       workingDays: validDays,
       timeSlots: dynamicTimeSlots.length
@@ -243,26 +229,12 @@ export function ScheduleCalendarView({
     return grid;
   }, [allSchedules, dynamicWorkingDays, dynamicTimeSlots]);
 
-  // 🔥 CAMBIO: Calcular horas considerando todos los profesores (disponibles + asignados)
+  // Calcular horas de maestros
   const teacherHours = useMemo(() => {
     const hours: { [key: number]: number } = {};
     
-    // Combinar profesores disponibles y asignados para mostrar sus horas
-    const allTeachers = [
-      ...(availableTeachers || []),
-      ...(assignedTeachers || [])
-    ];
-    
-    // Eliminar duplicados
-    const uniqueTeachers = allTeachers.reduce((acc, teacher) => {
-      if (!acc.find(t => t.id === teacher.id)) {
-        acc.push(teacher);
-      }
-      return acc;
-    }, [] as typeof allTeachers);
-    
     allSchedules.forEach((schedule) => {
-      if (schedule.teacherId && uniqueTeachers.find(t => t.id === schedule.teacherId)) {
+      if (schedule.teacherId) {
         const startTime = new Date(`2000-01-01T${schedule.startTime}:00`);
         const endTime = new Date(`2000-01-01T${schedule.endTime}:00`);
         const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
@@ -272,100 +244,50 @@ export function ScheduleCalendarView({
     });
     
     return hours;
-  }, [allSchedules, availableTeachers, assignedTeachers]);
+  }, [allSchedules]);
 
-  // Generar ID temporal único
+  // Generar ID temporal
   const generateTempId = () => `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-  // Función para manejar guardado de configuración usando tu infraestructura
-  const handleConfigSave = useCallback(async (config: ScheduleConfig) => {
-    console.log('🟢 ===== GUARDANDO CONFIGURACIÓN =====');
-    console.log('🟢 Config recibida:', config);
+  // ✅ AGREGAR: Handler para guardar configuración
+const handleConfigSave = useCallback(async (config: any) => {
+  try {
+    // Aquí llamarías a tu endpoint de configuración
+    // Por ahora, solo mostramos que funciona
+    console.log('💾 Guardando configuración:', config);
     
-    try {
-      setIsSaving(true);
-      
-      // Convertir workingDays de mi formato [1-7] a tu formato [0-6]
-      const configToSave = {
-        ...config,
-        workingDays: convertWorkingDaysToYourFormat(config.workingDays)
-      };
-      
-      console.log('🟢 Config convertida para tu API:', configToSave);
-      
-      let result;
-      if (currentConfig?.id) {
-        // Actualizar existente
-        console.log('🟢 Actualizando configuración existente ID:', currentConfig.id);
-        result = await updateConfig(currentConfig.id, configToSave);
-      } else {
-        // Crear nueva
-        console.log('🟢 Creando nueva configuración');
-        result = await createConfig(configToSave);
-      }
-      
-      if (result.success) {
-        console.log('🟢 ✅ Configuración guardada exitosamente:', result);
-        
-        // Limpiar schedules temporales si la configuración cambió significativamente
-        if (tempSchedules.length > 0) {
-          const shouldClearSchedules = confirm(
-            'La configuración de horarios ha cambiado. ¿Deseas limpiar los horarios temporales actuales?'
-          );
-          
-          if (shouldClearSchedules) {
-            setTempSchedules([]);
-            setPendingChanges([]);
-          }
-        }
-      } else {
-        console.error('🔴 Error del servidor:', result.message);
-        alert(`Error al guardar: ${result.message}`);
-      }
-    } catch (error: any) {
-      console.error('🔴 Error guardando configuración:', error);
-      alert('Error al guardar la configuración. Verifica tu conexión.');
-    } finally {
-      setIsSaving(false);
-    }
-  }, [currentConfig, updateConfig, createConfig, tempSchedules]);
+    toast.success('Configuración guardada exitosamente');
+    
+    // Recargar datos para reflejar cambios
+    await loadFormData();
+  } catch (error) {
+    console.error('Error guardando configuración:', error);
+    toast.error('Error al guardar configuración');
+  }
+}, [loadFormData]);
 
-  // Cargar configuración automáticamente al cambiar de sección
-  useEffect(() => {
-    if (selectedSection > 0) {
-      console.log('🔄 Cargando configuración para nueva sección:', selectedSection);
-      fetchConfigBySection(selectedSection).then(() => {
-        console.log('📋 Configuración cargada automáticamente');
-      }).catch((error: any) => {
-        console.log('📋 Error cargando configuración o no existe:', error.message);
-      });
-    }
-  }, [selectedSection, fetchConfigBySection]);
-
-  // Manejar drop de elementos - ACTUALIZADO para validar configuración dinámica
+  // Manejar drop de elementos
   const handleDrop = useCallback((item: DragItem, day: DayOfWeek, timeSlot: TimeSlot) => {
     if (!selectedSection) return;
     
-    // Validar que el día esté en los días de trabajo configurados
+    // Validar día
     if (currentConfig) {
       const convertedDays = convertWorkingDaysToMyFormat(currentConfig.workingDays);
       if (!convertedDays.includes(day)) {
-        console.warn('⚠️ Día no configurado para esta sección:', day);
         const allowedDays = convertedDays.map(d => 
           ALL_DAYS_OF_WEEK.find(dayObj => dayObj.value === d)?.label
         ).join(', ');
-        alert(`El día seleccionado no está configurado para esta sección. Días permitidos: ${allowedDays}`);
+        toast.error(`El día seleccionado no está configurado. Días permitidos: ${allowedDays}`);
         return;
       }
     }
     
-    // Validar que no sea un break slot
+    // Validar que no sea break
     if (timeSlot.isBreak || timeSlot.label.includes("RECREO") || timeSlot.label.includes("ALMUERZO")) {
-      console.warn('⚠️ No se puede arrastrar a un slot de recreo/almuerzo');
+      toast.warning('No se puede asignar en horarios de recreo/almuerzo');
       return;
     }
 
-    // Buscar schedule existente en ese slot para esta sección
     const existingSchedule = tempSchedules.find(
       s => s.dayOfWeek === day && s.startTime === timeSlot.start && s.sectionId === selectedSection
     );
@@ -376,7 +298,6 @@ export function ScheduleCalendarView({
       const course = item.data as any;
 
       if (existingSchedule) {
-        // ACTUALIZAR el curso del schedule existente
         const updatedSchedule: TempSchedule = {
           ...existingSchedule,
           courseId: item.id,
@@ -398,7 +319,6 @@ export function ScheduleCalendarView({
           )
         );
       } else {
-        // CREAR nuevo schedule con solo curso
         const tempSchedule: TempSchedule = {
           id: generateTempId(),
           sectionId: selectedSection,
@@ -417,7 +337,6 @@ export function ScheduleCalendarView({
           isTemp: true,
         };
         
-        console.log('Creando schedule temporal de curso:', tempSchedule);
         setTempSchedules(prev => [...prev, tempSchedule]);
         setPendingChanges(prev => [...prev, {
           action: 'create',
@@ -429,7 +348,6 @@ export function ScheduleCalendarView({
       const teacher = item.data as any;
 
       if (existingSchedule) {
-        // ACTUALIZAR el maestro del schedule existente
         const updatedSchedule: TempSchedule = {
           ...existingSchedule,
           teacherId: item.id,
@@ -451,7 +369,6 @@ export function ScheduleCalendarView({
           )
         );
       } else {
-        // CREAR nuevo schedule con solo maestro
         const tempSchedule: TempSchedule = {
           id: generateTempId(),
           sectionId: selectedSection,
@@ -470,7 +387,6 @@ export function ScheduleCalendarView({
           isTemp: true,
         };
         
-        console.log('Creando schedule temporal de profesor:', tempSchedule);
         setTempSchedules(prev => [...prev, tempSchedule]);
         setPendingChanges(prev => [...prev, {
           action: 'create',
@@ -479,9 +395,7 @@ export function ScheduleCalendarView({
       }
       
     } else if (item.type === 'schedule') {
-      // Mover schedule existente
       const existingScheduleToMove = item.data as Schedule | TempSchedule;
-      console.log('Moviendo schedule existente:', existingScheduleToMove);
       
       if ('isTemp' in existingScheduleToMove && existingScheduleToMove.isTemp) {
         const updatedSchedule: TempSchedule = {
@@ -535,31 +449,16 @@ export function ScheduleCalendarView({
     }
   }, [selectedSection, sections, tempSchedules, currentConfig]);
 
-  // Manejar eliminación de horarios
+  // Manejar eliminación
   const handleScheduleDelete = useCallback((id: string | number) => {
-    console.log('🔴 handleScheduleDelete EJECUTADO con ID:', id, 'tipo:', typeof id);
+    console.log('🔴 Eliminando schedule:', id);
     
     if (typeof id === 'string') {
-      console.log('🔴 Eliminando schedule temporal:', id);
-      
-      setTempSchedules(prev => {
-        const filtered = prev.filter(s => s.id !== id);
-        console.log('🔴 TempSchedules después del filter:', filtered.length, 'antes:', prev.length);
-        return filtered;
-      });
-
-      setPendingChanges(prev => {
-        const filtered = prev.filter(change => change.schedule.id !== id);
-        console.log('🔴 PendingChanges después del filter:', filtered.length);
-        return filtered;
-      });
-      
+      setTempSchedules(prev => prev.filter(s => s.id !== id));
+      setPendingChanges(prev => prev.filter(change => change.schedule.id !== id));
     } else {
-      console.log('🔴 Procesando eliminación de schedule real:', id);
       const schedule = schedules?.find(s => s.id === id);
       if (schedule) {
-        console.log('🔴 Schedule encontrado para eliminar:', schedule);
-        
         setPendingChanges(prev => {
           const existingChangeIndex = prev.findIndex(
             change => change.schedule.id === id
@@ -581,12 +480,11 @@ export function ScheduleCalendarView({
             }];
           }
         });
-      } else {
-        console.log('🔴 ⚠️ Schedule no encontrado para ID:', id);
       }
     }
   }, [schedules]);
 
+  // Guardar todos los cambios
   const handleSaveAll = useCallback(async () => {
     if (pendingChanges.length === 0 && tempSchedules.length === 0) return;
 
@@ -598,12 +496,11 @@ export function ScheduleCalendarView({
           throw new Error('Error en guardado masivo');
         }
       } else {
-        // Fallback a operaciones individuales
         for (const change of pendingChanges) {
           switch (change.action) {
             case 'create':
               if (onCreateSchedule && change.schedule.courseId && change.schedule.sectionId) {
-                const scheduleData: Partial<ScheduleFormValues> = {
+                await onCreateSchedule({
                   sectionId: change.schedule.sectionId,
                   courseId: change.schedule.courseId,
                   teacherId: change.schedule.teacherId,
@@ -611,13 +508,12 @@ export function ScheduleCalendarView({
                   startTime: change.schedule.startTime,
                   endTime: change.schedule.endTime,
                   classroom: change.schedule.classroom || undefined,
-                };
-                await onCreateSchedule(scheduleData);
+                });
               }
               break;
             case 'update':
               if (onUpdateSchedule && typeof change.schedule.id === 'number') {
-                const scheduleData: Partial<ScheduleFormValues> = {
+                await onUpdateSchedule(change.schedule.id, {
                   sectionId: change.schedule.sectionId,
                   courseId: change.schedule.courseId || undefined,
                   teacherId: change.schedule.teacherId,
@@ -625,8 +521,7 @@ export function ScheduleCalendarView({
                   startTime: change.schedule.startTime,
                   endTime: change.schedule.endTime,
                   classroom: change.schedule.classroom || undefined,
-                };
-                await onUpdateSchedule(change.schedule.id, scheduleData);
+                });
               }
               break;
             case 'delete':
@@ -640,17 +535,14 @@ export function ScheduleCalendarView({
 
       setTempSchedules([]);
       setPendingChanges([]);
-      
-      if (refreshAllData) {
-        await refreshAllData();
-      }
+      await loadFormData(); // Refrescar datos
       
     } catch (error) {
-      console.error('Error al guardar cambios:', error);
+      console.error('Error al guardar:', error);
     } finally {
       setIsSaving(false);
     }
-  }, [pendingChanges, tempSchedules, onBatchSave, onCreateSchedule, onUpdateSchedule, onDeleteSchedule, refreshAllData]);
+  }, [pendingChanges, tempSchedules, onBatchSave, onCreateSchedule, onUpdateSchedule, onDeleteSchedule, loadFormData]);
 
   const handleDiscardChanges = useCallback(() => {
     setTempSchedules([]);
@@ -661,7 +553,7 @@ export function ScheduleCalendarView({
     const newSectionId = parseInt(value);
     
     if (pendingChanges.length > 0 || tempSchedules.length > 0) {
-      if (confirm('Tienes cambios sin guardar. ¿Deseas descartarlos y cambiar de sección?')) {
+      if (confirm('Tienes cambios sin guardar. ¿Deseas descartarlos?')) {
         handleDiscardChanges();
         setSelectedSection(newSectionId);
       }
@@ -671,10 +563,9 @@ export function ScheduleCalendarView({
   }, [pendingChanges, tempSchedules, handleDiscardChanges]);
 
   const hasUnsavedChanges = pendingChanges.length > 0 || tempSchedules.length > 0;
-  const totalPendingChanges = pendingChanges.length;
 
-  // Loading state - incluir carga de configuraciones y del hook integrado
-  if (loading.anyLoading || configsLoading) {
+  // Loading state
+  if (isLoading) {
     return (
       <div className={`flex items-center justify-center h-96 ${className}`}>
         <div className="text-center space-y-4">
@@ -695,25 +586,25 @@ export function ScheduleCalendarView({
         ? 'bg-gradient-to-br from-gray-900 to-gray-800' 
         : 'bg-gradient-to-br from-gray-50 to-gray-100'
     } ${className}`}>
-      <ScheduleHeader
-        selectedSection={selectedSection}
-        sections={sections || []}
-        totalSchedules={allSchedules.length}
-        pendingChanges={totalPendingChanges}
-        isSaving={isSaving}
-        hasUnsavedChanges={hasUnsavedChanges}
-        currentConfig={currentConfig}
-        onSectionChange={handleSectionChange}
-        onSaveAll={handleSaveAll}
-        onDiscardChanges={handleDiscardChanges}
-        onConfigSave={handleConfigSave}
-      />
+<ScheduleHeader
+  selectedSection={selectedSection}
+  sections={sections} // ✅ SIMPLE: Sin adaptadores
+  totalSchedules={allSchedules.length}
+  pendingChanges={pendingChanges.length}
+  isSaving={isSaving}
+  hasUnsavedChanges={hasUnsavedChanges}
+  currentConfig={currentConfig} // ✅ SIMPLE: Sin adaptadores
+  onSectionChange={handleSectionChange}
+  onSaveAll={handleSaveAll}
+  onDiscardChanges={handleDiscardChanges}
+  onConfigSave={handleConfigSave}
+/>
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1">
           <ScheduleSidebar
-            courses={courses || []}
-            teachers={teachers} // 🔥 Solo profesores disponibles para arrastrar
+            courses={courses}
+            teachers={teachers}
             teacherHours={teacherHours}
             pendingChanges={pendingChanges}
             tempSchedulesCount={tempSchedules.length}

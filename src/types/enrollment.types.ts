@@ -308,3 +308,72 @@ export interface EnrollmentContextValue {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
 }
+
+
+
+// ==================== FORM DATA CONSOLIDADO ====================
+export interface EnrollmentFormDataResponse {
+  activeCycle: {
+    id: number;
+    name: string;
+    startDate: string;
+    endDate: string;
+    isActive: boolean;
+  };
+  grades: Array<{
+    id: number;
+    name: string;
+    level: string;
+    order: number;
+    sections: Array<{
+      id: number;
+      name: string;
+      capacity: number;
+      gradeId: number;
+      teacherId: number | null;
+      currentEnrollments: number;
+      availableSpots: number;
+      teacher: {
+        id: number;
+        givenNames: string;
+        lastNames: string;
+        fullName: string;
+        email: string;
+      } | null;
+    }>;
+  }>;
+  students: Array<{
+    id: number;
+    codeSIRE: string | null;
+    givenNames: string;
+    lastNames: string;
+    fullName: string;
+    birthDate: string;
+    birthPlace: string | null;
+    nationality: string | null;
+    gender: string | null;
+    profilePicture: string | null;
+    isEnrolled: boolean;
+    currentEnrollment: any | null;
+  }>;
+  enrollments: Array<{
+    id: number;
+    studentId: number;
+    studentName: string;
+    studentProfilePicture: string | null;
+    cycleId: number;
+    gradeId: number;
+    gradeName: string;
+    sectionId: number;
+    sectionName: string;
+    status: string;
+  }>;
+  stats: {
+    totalStudents: number;
+    enrolledStudents: number;
+    availableStudents: number;
+    totalCapacity: number;
+    occupiedSpots: number;
+    availableSpots: number;
+  };
+}

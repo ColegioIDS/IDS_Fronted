@@ -182,11 +182,25 @@ const navItems: NavItem[] = [
   {
     icon: <CalendarCheck className="w-5 h-5" />,
     name: "Cursos y Horarios",
+    requiredAnyPermissions: [
+      { module: 'course', action: 'read' },
+      { module: 'course-grade', action: 'read' },
+      { module: 'course-assignment', action: 'read' },
+      { module: 'schedule', action: 'read' },
+    ],
     subItems: [
-      { name: "Cursos", path: "/courses", pro: false },
-      { name: "Asignación Cursos", path: "/course-grades", pro: false },
-      { name: "Cursos Maestros", path: "/course-teachers", pro: true },
-      { name: "Horarios", path: "/schedules", pro: false },
+      { name: "Cursos", path: "/courses", 
+        requiredPermission: { module: 'course', action: 'read' }
+      },
+      { name: "Asignación Cursos", path: "/course-grades",
+        requiredPermission: { module: 'course-grade', action: 'read' }
+       },
+      { name: "Cursos Maestros", path: "/course-teachers",
+        requiredPermission: { module: 'course-assignment', action: 'read' }
+       },
+      { name: "Horarios", path: "/schedules",
+        requiredPermission: { module: 'schedule', action: 'read' }
+       },
     ]
   },
 
@@ -434,14 +448,14 @@ const AppSidebar: React.FC = () => {
             <>
               <Image
                 className="dark:hidden"
-                src="/images/logo/logo.svg"
+                src="/images/logo/logo-IDS.svg"
                 alt="Logo"
                 width={150}
                 height={40}
               />
               <Image
                 className="hidden dark:block"
-                src="/images/logo/logo-dark.svg"
+                src="/images/logo/logo-dark-IDS.svg"
                 alt="Logo"
                 width={150}
                 height={40}

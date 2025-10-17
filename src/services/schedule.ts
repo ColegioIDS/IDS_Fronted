@@ -1,7 +1,13 @@
-//src\services\schedule.ts
-import axios, { AxiosError } from 'axios';
+// src/services/schedule.ts
+
+import axios from 'axios';
 import { API_BASE_URL } from '@/config/api';
-import { Schedule, ScheduleFormValues } from '@/types/schedules';
+import { 
+  Schedule, 
+  ScheduleFormValues, 
+  ScheduleFormData,        // ✅ NUEVO
+  TeacherAvailability      // ✅ NUEVO
+} from '@/types/schedules';
 import { ApiResponse } from '@/types/api';
 
 const apiClient = axios.create({
@@ -12,7 +18,36 @@ const apiClient = axios.create({
   },
 });
 
+// ==================== NUEVOS ENDPOINTS CONSOLIDADOS ====================
+
+// ✅ NUEVO: Obtener datos consolidados del formulario
+export const getScheduleFormData = async (): Promise<ScheduleFormData> => {
+  try {
+    const { data } = await apiClient.get<ApiResponse<ScheduleFormData>>(
+      '/api/schedules/form-data'
+    );
+    if (!data.success) throw new Error(data.message || 'Error al obtener datos del formulario');
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener datos del formulario');
+  }
+};
+
+// ✅ NUEVO: Obtener disponibilidad de maestros
+export const getTeacherAvailability = async (): Promise<TeacherAvailability> => {
+  try {
+    const { data } = await apiClient.get<ApiResponse<TeacherAvailability>>(
+      '/api/schedules/teacher-availability'
+    );
+    if (!data.success) throw new Error(data.message || 'Error al obtener disponibilidad');
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener disponibilidad de maestros');
+  }
+};
+
 // ==================== SCHEDULES ====================
+
 export const getSchedules = async (filters?: {
   sectionId?: number;
   courseId?: number;
@@ -99,8 +134,6 @@ export const deleteSchedule = async (id: number): Promise<void> => {
   }
 };
 
-
-
 export const batchSaveSchedules = async (schedules: ScheduleFormValues[]): Promise<Schedule[]> => {
   try {
     const { data } = await apiClient.post<ApiResponse<Schedule[]>>('/api/schedules/batch', {
@@ -124,8 +157,6 @@ export const deleteSchedulesBySection = async (sectionId: number, keepIds: numbe
   }
 };
 
-
-
 // ==================== UTILS ====================
 function handleApiError(error: unknown, fallbackMessage: string): never {
   if (axios.isAxiosError(error)) {
@@ -133,6 +164,7 @@ function handleApiError(error: unknown, fallbackMessage: string): never {
     const details = error.response?.data?.details || [];
     const err = new Error(message);
     (err as any).details = details;
+    (err as any).response = error.response;
     throw err;
   }
   if (error instanceof Error) throw error;

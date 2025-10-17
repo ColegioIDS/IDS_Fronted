@@ -3,27 +3,30 @@
 
 import { useState } from "react";
 import { Calendar, Users, AlertCircle, Save, RotateCcw, Settings, Clock } from "lucide-react";
+import { useTheme } from "next-themes"; // ✅ AGREGAR
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Section } from "@/types/sections";
-import type { ScheduleConfig } from "@/types/schedule-config";
+import { toast } from "sonner";
+
+// ✅ CAMBIAR: Importar tipos simplificados
+import type { Section, ScheduleConfig } from "@/types/schedules";
 
 import { ScheduleConfigModal } from "./ScheduleConfigModal";
 
 interface ScheduleHeaderProps {
   selectedSection: number;
-  sections: Section[];
+  sections: Section[]; // ✅ Tipo simplificado
   totalSchedules: number;
   pendingChanges: number;
   isSaving: boolean;
   hasUnsavedChanges: boolean;
-  currentConfig?: ScheduleConfig | null; // NUEVO: configuración actual
+  currentConfig?: ScheduleConfig | null; // ✅ Tipo simplificado
   onSectionChange: (value: string) => void;
   onSaveAll: () => void;
   onDiscardChanges: () => void;
-  onConfigSave?: (config: ScheduleConfig) => Promise<void>; // NUEVO: guardar configuración
+  onConfigSave?: (config: any) => Promise<void>; // ✅ any para evitar conflictos de tipos
 }
 
 export function ScheduleHeader({
@@ -40,55 +43,43 @@ export function ScheduleHeader({
   onConfigSave
 }: ScheduleHeaderProps) {
   const [showConfigModal, setShowConfigModal] = useState(false);
-  const [shouldShowConfigOnSelect, setShouldShowConfigOnSelect] = useState(false);
+  
+  // ✅ NUEVO: Theme support
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const selectedSectionData = sections?.find(s => s.id === selectedSection);
+  console.log("sections", sections)
 
-
-  
-  // Manejar cambio de sección
   const handleSectionChange = (value: string) => {
     const newSectionId = parseInt(value);
     
     if (newSectionId > 0) {
-      // Si hay cambios sin guardar, preguntar primero
       if (hasUnsavedChanges) {
         if (confirm('Tienes cambios sin guardar. ¿Deseas descartarlos y cambiar de sección?')) {
           onDiscardChanges();
           onSectionChange(value);
-          // Mostrar modal de configuración para la nueva sección SOLO si no tiene configuración
-          setTimeout(() => {
-            const hasExistingConfig = currentConfig && selectedSection === newSectionId;
-            if (!hasExistingConfig) {
-              setShowConfigModal(true);
-            }
-          }, 100);
         }
       } else {
         onSectionChange(value);
-        // Mostrar modal de configuración para la nueva sección SOLO si no tiene configuración
-        setTimeout(() => {
-          // Note: necesitamos verificar si la NUEVA sección tiene configuración, no la actual
-          setShowConfigModal(true);
-        }, 100);
       }
     } else {
       onSectionChange(value);
     }
   };
 
-  // Manejar guardado de configuración
-  const handleConfigSave = async (config: ScheduleConfig) => {
+  const handleConfigSave = async (config: any) => {
     if (onConfigSave) {
       await onConfigSave(config);
+    } else {
+      toast.info('La configuración de horarios ahora se gestiona desde el panel de administración');
     }
     setShowConfigModal(false);
   };
 
-  // Verificar si la sección tiene configuración
   const hasConfig = currentConfig && selectedSection > 0;
   const configSummary = hasConfig ? {
-    days: currentConfig.workingDays.length,
+    days: Array.isArray(currentConfig.workingDays) ? currentConfig.workingDays.length : 0,
     duration: currentConfig.classDuration,
     startTime: currentConfig.startTime,
     endTime: currentConfig.endTime
@@ -96,27 +87,38 @@ export function ScheduleHeader({
 
   return (
     <>
-      <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl">
+      <Card className={`backdrop-blur-sm border-0 shadow-xl ${
+        isDark ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95'
+      }`}>
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-3 text-2xl">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Calendar className="h-6 w-6 text-blue-600" />
+            <div className={`p-2 rounded-lg ${
+              isDark ? 'bg-blue-900/50' : 'bg-blue-100'
+            }`}>
+              <Calendar className={`h-6 w-6 ${
+                isDark ? 'text-blue-400' : 'text-blue-600'
+              }`} />
             </div>
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <span className={`bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent ${
+              isDark ? 'opacity-90' : ''
+            }`}>
               Horario Académico
             </span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            {/* Selector de sección y estadísticas */}
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-1">
               <div className="flex gap-2 items-center">
                 <Select
                   value={selectedSection.toString()}
                   onValueChange={handleSectionChange}
                 >
-                  <SelectTrigger className="w-full sm:w-64 bg-white border-gray-200 shadow-sm">
+                  <SelectTrigger className={`w-full sm:w-64 shadow-sm ${
+                    isDark 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-200'
+                  }`}>
                     <SelectValue placeholder="Seleccionar sección" />
                   </SelectTrigger>
                   <SelectContent>
@@ -134,41 +136,58 @@ export function ScheduleHeader({
                   </SelectContent>
                 </Select>
 
-                {/* Botón de configuración */}
-                {selectedSection > 0 && (
+                {selectedSection > 0 && onConfigSave && (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setShowConfigModal(true)}
-                    className="flex items-center gap-2 border-blue-200 hover:bg-blue-50"
+                    className={`flex items-center gap-2 ${
+                      isDark
+                        ? 'border-blue-800 hover:bg-blue-900/50'
+                        : 'border-blue-200 hover:bg-blue-50'
+                    }`}
                   >
-                    <Settings className="h-4 w-4 text-blue-600" />
+                    <Settings className={`h-4 w-4 ${
+                      isDark ? 'text-blue-400' : 'text-blue-600'
+                    }`} />
                     <span className="hidden sm:inline">Configurar</span>
                   </Button>
                 )}
               </div>
               
-              {/* Estadísticas */}
               {selectedSection > 0 && (
                 <div className="flex flex-wrap gap-2">
                   <Badge 
                     variant="outline" 
-                    className="flex items-center gap-2 px-3 py-1 bg-blue-50 border-blue-200"
+                    className={`flex items-center gap-2 px-3 py-1 ${
+                      isDark
+                        ? 'bg-blue-900/30 border-blue-800'
+                        : 'bg-blue-50 border-blue-200'
+                    }`}
                   >
                     <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                    <span className="text-blue-700 font-medium">
+                    <span className={`font-medium ${
+                      isDark ? 'text-blue-300' : 'text-blue-700'
+                    }`}>
                       {totalSchedules} horarios
                     </span>
                   </Badge>
 
-                  {/* Badge de configuración */}
-                  {configSummary && (
+                  {configSummary && configSummary.days > 0 && (
                     <Badge 
                       variant="outline" 
-                      className="flex items-center gap-2 px-3 py-1 bg-green-50 border-green-200"
+                      className={`flex items-center gap-2 px-3 py-1 ${
+                        isDark
+                          ? 'bg-green-900/30 border-green-800'
+                          : 'bg-green-50 border-green-200'
+                      }`}
                     >
-                      <Clock className="h-3 w-3 text-green-600" />
-                      <span className="text-green-700 font-medium text-xs">
+                      <Clock className={`h-3 w-3 ${
+                        isDark ? 'text-green-400' : 'text-green-600'
+                      }`} />
+                      <span className={`font-medium text-xs ${
+                        isDark ? 'text-green-300' : 'text-green-700'
+                      }`}>
                         {configSummary.days}d • {configSummary.duration}min • {configSummary.startTime}-{configSummary.endTime}
                       </span>
                     </Badge>
@@ -177,10 +196,18 @@ export function ScheduleHeader({
                   {!hasConfig && selectedSection > 0 && (
                     <Badge 
                       variant="outline" 
-                      className="flex items-center gap-2 px-3 py-1 bg-yellow-50 border-yellow-200"
+                      className={`flex items-center gap-2 px-3 py-1 ${
+                        isDark
+                          ? 'bg-yellow-900/30 border-yellow-800'
+                          : 'bg-yellow-50 border-yellow-200'
+                      }`}
                     >
-                      <AlertCircle className="h-3 w-3 text-yellow-600" />
-                      <span className="text-yellow-700 font-medium text-xs">
+                      <AlertCircle className={`h-3 w-3 ${
+                        isDark ? 'text-yellow-400' : 'text-yellow-600'
+                      }`} />
+                      <span className={`font-medium text-xs ${
+                        isDark ? 'text-yellow-300' : 'text-yellow-700'
+                      }`}>
                         Sin configurar
                       </span>
                     </Badge>
@@ -189,10 +216,18 @@ export function ScheduleHeader({
                   {hasUnsavedChanges && (
                     <Badge 
                       variant="secondary" 
-                      className="flex items-center gap-2 px-3 py-1 bg-orange-100 border-orange-200"
+                      className={`flex items-center gap-2 px-3 py-1 ${
+                        isDark
+                          ? 'bg-orange-900/30 border-orange-800'
+                          : 'bg-orange-100 border-orange-200'
+                      }`}
                     >
-                      <AlertCircle className="h-3 w-3 text-orange-600" />
-                      <span className="text-orange-700 font-medium">
+                      <AlertCircle className={`h-3 w-3 ${
+                        isDark ? 'text-orange-400' : 'text-orange-600'
+                      }`} />
+                      <span className={`font-medium ${
+                        isDark ? 'text-orange-300' : 'text-orange-700'
+                      }`}>
                         {pendingChanges} cambios pendientes
                       </span>
                     </Badge>
@@ -201,7 +236,6 @@ export function ScheduleHeader({
               )}
             </div>
 
-            {/* Controles de guardado */}
             {hasUnsavedChanges && (
               <div className="flex gap-2 w-full sm:w-auto">
                 <Button
@@ -209,7 +243,11 @@ export function ScheduleHeader({
                   size="sm"
                   onClick={onDiscardChanges}
                   disabled={isSaving}
-                  className="flex-1 sm:flex-initial flex items-center gap-2 border-gray-300 hover:bg-gray-50"
+                  className={`flex-1 sm:flex-initial flex items-center gap-2 ${
+                    isDark
+                      ? 'border-gray-600 hover:bg-gray-700'
+                      : 'border-gray-300 hover:bg-gray-50'
+                  }`}
                 >
                   <RotateCcw className="h-4 w-4" />
                   <span>Descartar</span>
@@ -239,15 +277,16 @@ export function ScheduleHeader({
         </CardContent>
       </Card>
 
-      {/* Modal de Configuración */}
-      <ScheduleConfigModal
-        isOpen={showConfigModal}
-        sectionId={selectedSection}
-        sectionName={selectedSectionData?.name || ''}
-        currentConfig={currentConfig}
-        onSave={handleConfigSave}
-        onClose={() => setShowConfigModal(false)}
-      />
+      {onConfigSave && (
+        <ScheduleConfigModal
+          isOpen={showConfigModal}
+          sectionId={selectedSection}
+          sectionName={selectedSectionData?.name || ''}
+          currentConfig={currentConfig as any} // ✅ Cast para evitar conflictos
+          onSave={handleConfigSave}
+          onClose={() => setShowConfigModal(true)}
+        />
+      )}
     </>
   );
 }

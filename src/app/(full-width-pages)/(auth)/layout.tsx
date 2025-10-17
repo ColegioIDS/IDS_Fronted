@@ -27,15 +27,19 @@ export default function AuthLayout({
               <div className="flex flex-col items-center max-w-xs">
                 <Link href="/" className="block mb-4">
                   <Image
-                    width={231}
-                    height={48}
-                    src="./images/logo/auth-logo.svg"
+                    width={492}
+                    height={96}
+                    src="./images/logo/auth-logo-IDS.svg"
                     alt="Logo"
                   />
                 </Link>
-                <p className="text-center text-gray-400 dark:text-white/60">
-                  Inicia sesión con tus credenciales institucionales para acceder al panel.
-                </p>
+                <h2 className="text-center text-gray-400 dark:text-white/60 text-2xl mb-2 font-semibold">
+                  Colegio Innovacion de Soñadores
+                </h2>
+                <h3 className="text-center text-gray-400 dark:text-white/60 mb-6">
+                  Bienvenido a la plataforma administrativa
+                </h3>
+                
               </div>
             </div>
           </div>

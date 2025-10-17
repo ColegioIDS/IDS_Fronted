@@ -1,16 +1,8 @@
 // src/hooks/useEnrollment.ts
-import { useState, useEffect } from 'react';
-import { 
-  EnrollmentResponse,
-  EnrollmentDetailResponse,
-  CreateEnrollmentDto,
-  UpdateEnrollmentDto,
-  EnrollmentFilterDto,
-  EnrollmentStatsResponse,
-  EnrollmentFormData,
-  EnrollmentStatus
-} from '@/types/enrollment.types';
-import { 
+
+import { useState, useCallback } from 'react';
+import {
+  getEnrollmentFormData,
   getEnrollments,
   getEnrollmentById,
   createEnrollment,
@@ -19,335 +11,494 @@ import {
   graduateEnrollment,
   transferEnrollment,
   reactivateEnrollment,
-  getEnrollmentsByStudent,
-  getEnrollmentsByCycle,
-  getEnrollmentsBySection,
-  getActiveEnrollments,
-  getEnrollmentStats,
   bulkGraduateEnrollments,
-  bulkTransferEnrollments,
-  buildEnrollmentFilters
+  bulkTransferEnrollments
 } from '@/services/enrollment.service';
-import { enrollmentSchema, defaultEnrollmentValues } from "@/schemas/enrollment";
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { toast } from 'react-toastify';
+import type {
+  EnrollmentFormDataResponse,
+  EnrollmentResponse,
+  EnrollmentDetailResponse,
+  CreateEnrollmentDto,
+  UpdateEnrollmentDto,
+  EnrollmentQueryParams
+} from '@/types/enrollment.types';
 
-type EnrollmentFormDataSchema = z.infer<typeof enrollmentSchema>;
+interface UseEnrollmentOptions {
+  autoLoadFormData?: boolean;
+  autoLoadEnrollments?: boolean;
+  onSuccess?: (message: string) => void;
+  onError?: (error: string) => void;
+}
 
-export function useEnrollment(isEditMode: boolean = false, id?: number) {
-    const [enrollments, setEnrollments] = useState<EnrollmentResponse[]>([]);
-    const [isLoadingEnrollments, setIsLoadingEnrollments] = useState(true);
-    const [enrollmentsError, setEnrollmentsError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [currentEnrollment, setCurrentEnrollment] = useState<EnrollmentDetailResponse | null>(null);
-    const [stats, setStats] = useState<EnrollmentStatsResponse | null>(null);
-    const [isLoadingStats, setIsLoadingStats] = useState(false);
-    const [currentFilters, setCurrentFilters] = useState<EnrollmentFilterDto>({});
+interface UseEnrollmentReturn {
+  // Estado
+  formData: EnrollmentFormDataResponse | null;
+  enrollments: EnrollmentResponse[];
+  selectedEnrollment: EnrollmentDetailResponse | null;
+  isLoading: boolean;
+  isLoadingFormData: boolean;
+  isSubmitting: boolean;
+  error: string | null;
 
-    const form = useForm<EnrollmentFormDataSchema>({
-        resolver: zodResolver(enrollmentSchema),
-        defaultValues: defaultEnrollmentValues,
-    });
+  // Métodos de carga
+  loadFormData: () => Promise<void>;
+  loadEnrollments: (params?: EnrollmentQueryParams) => Promise<void>;
+  loadEnrollmentById: (id: number) => Promise<EnrollmentDetailResponse | null>;
 
-    // Load enrollment data when in edit mode
-    useEffect(() => {
-        if (isEditMode && id) {
-            const loadEnrollmentData = async () => {
-                try {
-                    const enrollment = await getEnrollmentById(id);
-                    setCurrentEnrollment(enrollment);
-                    form.reset({
-                        studentId: enrollment.studentId,
-                        cycleId: enrollment.cycleId,
-                        gradeId: enrollment.gradeId,
-                        sectionId: enrollment.sectionId,
-                        status: enrollment.status as EnrollmentStatus,
-                    });
-                } catch (error) {
-                    console.error('Error loading enrollment data:', error);
-                    toast.error('Error al cargar los datos de la matrícula');
-                }
-            };
-            loadEnrollmentData();
-        }
-    }, [isEditMode, id, form]);
+  // Métodos CRUD
+  createEnrollmentItem: (data: CreateEnrollmentDto) => Promise<EnrollmentResponse | null>;
+  updateEnrollmentItem: (id: number, data: UpdateEnrollmentDto) => Promise<EnrollmentResponse | null>;
+  deleteEnrollmentItem: (id: number) => Promise<boolean>;
 
-    const fetchEnrollments = async (filters?: EnrollmentFilterDto) => {
-        setIsLoadingEnrollments(true);
-        setEnrollmentsError(null);
-        try {
-            const queryParams = filters ? buildEnrollmentFilters(filters) : undefined;
-            const response = await getEnrollments(queryParams);
-            setEnrollments(response);
-            setCurrentFilters(filters || {});
-        } catch (error) {
-            setEnrollmentsError('Error al cargar las matrículas');
-            console.error(error);
-            toast.error('Error al cargar las matrículas');
-        } finally {
-            setIsLoadingEnrollments(false);
-        }
-    };
+  // Métodos de cambio de estado
+  graduateEnrollmentItem: (id: number) => Promise<EnrollmentResponse | null>;
+  transferEnrollmentItem: (id: number) => Promise<EnrollmentResponse | null>;
+  reactivateEnrollmentItem: (id: number) => Promise<EnrollmentResponse | null>;
 
-    const fetchEnrollmentStats = async (cycleId?: number) => {
-        setIsLoadingStats(true);
-        try {
-            const statsData = await getEnrollmentStats(cycleId ? { cycleId: cycleId.toString() } : undefined);
-            setStats(statsData);
-        } catch (error) {
-            console.error('Error loading enrollment stats:', error);
-            toast.error('Error al cargar estadísticas');
-        } finally {
-            setIsLoadingStats(false);
-        }
-    };
+  // Operaciones en lote
+  bulkGraduate: (ids: number[]) => Promise<EnrollmentResponse[]>;
+  bulkTransfer: (ids: number[]) => Promise<EnrollmentResponse[]>;
 
-    const handleCreateEnrollment = async (data: EnrollmentFormDataSchema) => {
-        setIsSubmitting(true);
-        try {
-            const enrollmentData: CreateEnrollmentDto = {
-                studentId: data.studentId,
-                cycleId: data.cycleId,
-                gradeId: data.gradeId,
-                sectionId: data.sectionId,
-                status: data.status
-            };
+  // Utilidades
+  clearError: () => void;
+  setSelectedEnrollment: (enrollment: EnrollmentDetailResponse | null) => void;
+}
 
-            const newEnrollment = await createEnrollment(enrollmentData);
-            toast.success("Matrícula creada correctamente");
-            await fetchEnrollments(currentFilters);
-            form.reset();
-            return { success: true, data: newEnrollment };
-        } catch (error: any) {
-            console.log("Error completo:", error);
-            console.log("Datos de respuesta:", error.response?.data);
-            
-            if (error.response?.data) {
-                return { 
-                    success: false,
-                    message: error.response.data.message || "Error de validación",
-                    details: error.response.data.details || []
-                };
-            }
-            
-            toast.error(error.message || "Error al crear la matrícula");
-            return { 
-                success: false, 
-                message: error.message || "Error desconocido",
-                details: []
-            };
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+export function useEnrollment(options: UseEnrollmentOptions = {}): UseEnrollmentReturn {
+  const {
+    autoLoadFormData = false,
+    autoLoadEnrollments = false,
+    onSuccess,
+    onError
+  } = options;
 
-    const handleUpdateEnrollment = async (id: number, data: Partial<EnrollmentFormDataSchema>) => {
-        if (!id) return;
+  // ==================== ESTADO ====================
+  const [formData, setFormData] = useState<EnrollmentFormDataResponse | null>(null);
+  const [enrollments, setEnrollments] = useState<EnrollmentResponse[]>([]);
+  const [selectedEnrollment, setSelectedEnrollment] = useState<EnrollmentDetailResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingFormData, setIsLoadingFormData] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-        setIsSubmitting(true);
-        try {
-            const updateData: UpdateEnrollmentDto = {};
-            if (data.studentId !== undefined) updateData.studentId = data.studentId;
-            if (data.cycleId !== undefined) updateData.cycleId = data.cycleId;
-            if (data.gradeId !== undefined) updateData.gradeId = data.gradeId;
-            if (data.sectionId !== undefined) updateData.sectionId = data.sectionId;
-            if (data.status !== undefined) updateData.status = data.status;
+  // ==================== CARGA DE DATOS ====================
 
-            const updatedEnrollment = await updateEnrollment(id, updateData);
-            toast.success("Matrícula actualizada correctamente");
-            await fetchEnrollments(currentFilters);
-            return { success: true, data: updatedEnrollment };
-        } catch (error: any) {
-            if (error.response?.data) {
-                return error.response.data; 
-            }
-            toast.error("Error al actualizar la matrícula");
-            console.error(error);
-            return { success: false, message: "Error desconocido" };
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+  /**
+   * Carga todos los datos necesarios para el formulario de matrícula
+   */
+  const loadFormData = useCallback(async () => {
+    try {
+      setIsLoadingFormData(true);
+      setError(null);
+      
+      const data = await getEnrollmentFormData();
+      setFormData(data);
+      
+      console.log('✅ Form data cargado:', data);
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al cargar datos del formulario';
+      setError(errorMessage);
+      onError?.(errorMessage);
+      console.error('❌ Error cargando form data:', err);
+    } finally {
+      setIsLoadingFormData(false);
+    }
+  }, [onError]);
 
-    const handleDeleteEnrollment = async (id: number) => {
-        try {
-            await deleteEnrollment(id);
-            toast.success("Matrícula eliminada correctamente");
-            await fetchEnrollments(currentFilters);
-            return { success: true };
-        } catch (error: any) {
-            toast.error(error.message || "Error al eliminar la matrícula");
-            return { success: false, message: error.message };
-        }
-    };
+  /**
+   * Carga lista de matrículas con filtros opcionales
+   */
+  const loadEnrollments = useCallback(async (params?: EnrollmentQueryParams) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const data = await getEnrollments(params);
+      setEnrollments(data);
+      
+      console.log('✅ Matrículas cargadas:', data.length);
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al cargar matrículas';
+      setError(errorMessage);
+      onError?.(errorMessage);
+      console.error('❌ Error cargando matrículas:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [onError]);
 
-    // Status change handlers
-    const handleGraduateEnrollment = async (id: number) => {
-        try {
-            const updatedEnrollment = await graduateEnrollment(id);
-            toast.success("Estudiante graduado correctamente");
-            await fetchEnrollments(currentFilters);
-            return { success: true, data: updatedEnrollment };
-        } catch (error: any) {
-            toast.error(error.message || "Error al graduar estudiante");
-            return { success: false, message: error.message };
-        }
-    };
+  /**
+   * Carga una matrícula específica por ID
+   */
+  const loadEnrollmentById = useCallback(async (id: number): Promise<EnrollmentDetailResponse | null> => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const data = await getEnrollmentById(id);
+      setSelectedEnrollment(data);
+      
+      console.log('✅ Matrícula cargada:', data);
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al cargar matrícula';
+      setError(errorMessage);
+      onError?.(errorMessage);
+      console.error('❌ Error cargando matrícula:', err);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [onError]);
 
-    const handleTransferEnrollment = async (id: number) => {
-        try {
-            const updatedEnrollment = await transferEnrollment(id);
-            toast.success("Estudiante transferido correctamente");
-            await fetchEnrollments(currentFilters);
-            return { success: true, data: updatedEnrollment };
-        } catch (error: any) {
-            toast.error(error.message || "Error al transferir estudiante");
-            return { success: false, message: error.message };
-        }
-    };
+  // ==================== OPERACIONES CRUD ====================
 
-    const handleReactivateEnrollment = async (id: number) => {
-        try {
-            const updatedEnrollment = await reactivateEnrollment(id);
-            toast.success("Matrícula reactivada correctamente");
-            await fetchEnrollments(currentFilters);
-            return { success: true, data: updatedEnrollment };
-        } catch (error: any) {
-            toast.error(error.message || "Error al reactivar matrícula");
-            return { success: false, message: error.message };
-        }
-    };
+  /**
+   * Crea una nueva matrícula
+   */
+  const createEnrollmentItem = useCallback(async (
+    data: CreateEnrollmentDto
+  ): Promise<EnrollmentResponse | null> => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      const newEnrollment = await createEnrollment(data);
+      
+      // Actualizar lista local
+      setEnrollments(prev => [newEnrollment, ...prev]);
+      
+      // Recargar form data para actualizar estadísticas
+      await loadFormData();
+      
+      const successMessage = 'Matrícula creada exitosamente';
+      onSuccess?.(successMessage);
+      console.log('✅ Matrícula creada:', newEnrollment);
+      
+      return newEnrollment;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al crear matrícula';
+      setError(errorMessage);
+      onError?.(errorMessage);
+      console.error('❌ Error creando matrícula:', err);
+      return null;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [loadFormData, onSuccess, onError]);
 
-    // Bulk operations
-    const handleBulkGraduate = async (ids: number[]) => {
-        try {
-            await bulkGraduateEnrollments(ids);
-            toast.success(`${ids.length} estudiantes graduados correctamente`);
-            await fetchEnrollments(currentFilters);
-            return { success: true };
-        } catch (error: any) {
-            toast.error(error.message || "Error en graduación masiva");
-            return { success: false, message: error.message };
-        }
-    };
+  /**
+   * Actualiza una matrícula existente
+   */
+  const updateEnrollmentItem = useCallback(async (
+    id: number,
+    data: UpdateEnrollmentDto
+  ): Promise<EnrollmentResponse | null> => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      const updatedEnrollment = await updateEnrollment(id, data);
+      
+      // Actualizar lista local
+      setEnrollments(prev => 
+        prev.map(item => item.id === id ? updatedEnrollment : item)
+      );
+      
+      // Actualizar selección si es la misma
+      if (selectedEnrollment?.id === id) {
+        setSelectedEnrollment(prev => prev ? { ...prev, ...updatedEnrollment } : null);
+      }
+      
+      // Recargar form data
+      await loadFormData();
+      
+      const successMessage = 'Matrícula actualizada exitosamente';
+      onSuccess?.(successMessage);
+      console.log('✅ Matrícula actualizada:', updatedEnrollment);
+      
+      return updatedEnrollment;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al actualizar matrícula';
+      setError(errorMessage);
+      onError?.(errorMessage);
+      console.error('❌ Error actualizando matrícula:', err);
+      return null;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [selectedEnrollment, loadFormData, onSuccess, onError]);
 
-    const handleBulkTransfer = async (ids: number[]) => {
-        try {
-            await bulkTransferEnrollments(ids);
-            toast.success(`${ids.length} estudiantes transferidos correctamente`);
-            await fetchEnrollments(currentFilters);
-            return { success: true };
-        } catch (error: any) {
-            toast.error(error.message || "Error en transferencia masiva");
-            return { success: false, message: error.message };
-        }
-    };
+  /**
+   * Elimina una matrícula
+   */
+  const deleteEnrollmentItem = useCallback(async (id: number): Promise<boolean> => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      await deleteEnrollment(id);
+      
+      // Actualizar lista local
+      setEnrollments(prev => prev.filter(item => item.id !== id));
+      
+      // Limpiar selección si es la misma
+      if (selectedEnrollment?.id === id) {
+        setSelectedEnrollment(null);
+      }
+      
+      // Recargar form data
+      await loadFormData();
+      
+      const successMessage = 'Matrícula eliminada exitosamente';
+      onSuccess?.(successMessage);
+      console.log('✅ Matrícula eliminada:', id);
+      
+      return true;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al eliminar matrícula';
+      setError(errorMessage);
+      onError?.(errorMessage);
+      console.error('❌ Error eliminando matrícula:', err);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [selectedEnrollment, loadFormData, onSuccess, onError]);
 
-    // Specialized fetch functions
-    const fetchEnrollmentsByStudent = async (studentId: number) => {
-        try {
-            const enrollments = await getEnrollmentsByStudent(studentId);
-            return { success: true, data: enrollments };
-        } catch (error: any) {
-            toast.error(error.message || "Error al cargar matrículas del estudiante");
-            return { success: false, message: error.message };
-        }
-    };
+  // ==================== CAMBIOS DE ESTADO ====================
 
-    const fetchEnrollmentsByCycle = async (cycleId: number) => {
-        try {
-            const enrollments = await getEnrollmentsByCycle(cycleId);
-            return { success: true, data: enrollments };
-        } catch (error: any) {
-            toast.error(error.message || "Error al cargar matrículas del ciclo");
-            return { success: false, message: error.message };
-        }
-    };
+  /**
+   * Gradúa una matrícula
+   */
+  const graduateEnrollmentItem = useCallback(async (
+    id: number
+  ): Promise<EnrollmentResponse | null> => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      const graduatedEnrollment = await graduateEnrollment(id);
+      
+      // Actualizar lista local
+      setEnrollments(prev => 
+        prev.map(item => item.id === id ? graduatedEnrollment : item)
+      );
+      
+      await loadFormData();
+      
+      const successMessage = 'Matrícula graduada exitosamente';
+      onSuccess?.(successMessage);
+      console.log('✅ Matrícula graduada:', graduatedEnrollment);
+      
+      return graduatedEnrollment;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al graduar matrícula';
+      setError(errorMessage);
+      onError?.(errorMessage);
+      console.error('❌ Error graduando matrícula:', err);
+      return null;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [loadFormData, onSuccess, onError]);
 
-    const fetchEnrollmentsBySection = async (sectionId: number) => {
-        try {
-            const enrollments = await getEnrollmentsBySection(sectionId);
-            return { success: true, data: enrollments };
-        } catch (error: any) {
-            toast.error(error.message || "Error al cargar matrículas de la sección");
-            return { success: false, message: error.message };
-        }
-    };
+  /**
+   * Transfiere una matrícula
+   */
+  const transferEnrollmentItem = useCallback(async (
+    id: number
+  ): Promise<EnrollmentResponse | null> => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      const transferredEnrollment = await transferEnrollment(id);
+      
+      setEnrollments(prev => 
+        prev.map(item => item.id === id ? transferredEnrollment : item)
+      );
+      
+      await loadFormData();
+      
+      const successMessage = 'Matrícula transferida exitosamente';
+      onSuccess?.(successMessage);
+      console.log('✅ Matrícula transferida:', transferredEnrollment);
+      
+      return transferredEnrollment;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al transferir matrícula';
+      setError(errorMessage);
+      onError?.(errorMessage);
+      console.error('❌ Error transfiriendo matrícula:', err);
+      return null;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [loadFormData, onSuccess, onError]);
 
-    const fetchActiveEnrollments = async (cycleId?: number) => {
-        try {
-            const enrollments = await getActiveEnrollments(cycleId);
-            setEnrollments(enrollments);
-            return { success: true, data: enrollments };
-        } catch (error: any) {
-            toast.error(error.message || "Error al cargar matrículas activas");
-            return { success: false, message: error.message };
-        }
-    };
+  /**
+   * Reactiva una matrícula
+   */
+  const reactivateEnrollmentItem = useCallback(async (
+    id: number
+  ): Promise<EnrollmentResponse | null> => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      const reactivatedEnrollment = await reactivateEnrollment(id);
+      
+      setEnrollments(prev => 
+        prev.map(item => item.id === id ? reactivatedEnrollment : item)
+      );
+      
+      await loadFormData();
+      
+      const successMessage = 'Matrícula reactivada exitosamente';
+      onSuccess?.(successMessage);
+      console.log('✅ Matrícula reactivada:', reactivatedEnrollment);
+      
+      return reactivatedEnrollment;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al reactivar matrícula';
+      setError(errorMessage);
+      onError?.(errorMessage);
+      console.error('❌ Error reactivando matrícula:', err);
+      return null;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [loadFormData, onSuccess, onError]);
 
-    // Get enrollment by ID
-    const fetchEnrollmentById = async (id: number, includeRelations: boolean = true) => {
-        try {
-            const enrollment = await getEnrollmentById(id, includeRelations);
-            return { success: true, data: enrollment };
-        } catch (error: any) {
-            toast.error(error.message || "Error al cargar la matrícula");
-            return { success: false, message: error.message };
-        }
-    };
+  // ==================== OPERACIONES EN LOTE ====================
 
-    const handleSubmit = isEditMode ? handleUpdateEnrollment : handleCreateEnrollment;
+  /**
+   * Gradúa múltiples matrículas
+   */
+  const bulkGraduate = useCallback(async (ids: number[]): Promise<EnrollmentResponse[]> => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      const graduatedEnrollments = await bulkGraduateEnrollments(ids);
+      
+      // Actualizar lista local
+      setEnrollments(prev => 
+        prev.map(item => {
+          const updated = graduatedEnrollments.find(g => g.id === item.id);
+          return updated || item;
+        })
+      );
+      
+      await loadFormData();
+      
+      const successMessage = `${ids.length} matrículas graduadas exitosamente`;
+      onSuccess?.(successMessage);
+      console.log('✅ Matrículas graduadas:', graduatedEnrollments);
+      
+      return graduatedEnrollments;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error en graduación masiva';
+      setError(errorMessage);
+      onError?.(errorMessage);
+      console.error('❌ Error en graduación masiva:', err);
+      return [];
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [loadFormData, onSuccess, onError]);
 
-    // Initial load
-    useEffect(() => {
-        fetchEnrollments();
-    }, []);
+  /**
+   * Transfiere múltiples matrículas
+   */
+  const bulkTransfer = useCallback(async (ids: number[]): Promise<EnrollmentResponse[]> => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      const transferredEnrollments = await bulkTransferEnrollments(ids);
+      
+      setEnrollments(prev => 
+        prev.map(item => {
+          const updated = transferredEnrollments.find(t => t.id === item.id);
+          return updated || item;
+        })
+      );
+      
+      await loadFormData();
+      
+      const successMessage = `${ids.length} matrículas transferidas exitosamente`;
+      onSuccess?.(successMessage);
+      console.log('✅ Matrículas transferidas:', transferredEnrollments);
+      
+      return transferredEnrollments;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error en transferencia masiva';
+      setError(errorMessage);
+      onError?.(errorMessage);
+      console.error('❌ Error en transferencia masiva:', err);
+      return [];
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [loadFormData, onSuccess, onError]);
 
-    return {
-        // Data
-        enrollments,
-        currentEnrollment,
-        stats,
-        currentFilters,
+  // ==================== UTILIDADES ====================
 
-        // Loading states
-        isLoadingEnrollments,
-        isLoadingStats,
-        enrollmentsError,
-        isSubmitting,
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
 
-        // Form
-        form,
+  // ==================== EFECTOS INICIALES ====================
 
-        // CRUD operations
-        fetchEnrollments,
-        fetchEnrollmentById,
-        createEnrollment: handleCreateEnrollment,
-        updateEnrollment: handleUpdateEnrollment,
-        deleteEnrollment: handleDeleteEnrollment,
+  // Auto-cargar form data al montar
+  useState(() => {
+    if (autoLoadFormData) {
+      loadFormData();
+    }
+  });
 
-        // Status operations
-        graduateEnrollment: handleGraduateEnrollment,
-        transferEnrollment: handleTransferEnrollment,
-        reactivateEnrollment: handleReactivateEnrollment,
+  // Auto-cargar matrículas al montar
+  useState(() => {
+    if (autoLoadEnrollments) {
+      loadEnrollments();
+    }
+  });
 
-        // Bulk operations
-        bulkGraduate: handleBulkGraduate,
-        bulkTransfer: handleBulkTransfer,
+  // ==================== RETURN ====================
 
-        // Specialized queries
-        fetchEnrollmentsByStudent,
-        fetchEnrollmentsByCycle,
-        fetchEnrollmentsBySection,
-        fetchActiveEnrollments,
+  return {
+    // Estado
+    formData,
+    enrollments,
+    selectedEnrollment,
+    isLoading,
+    isLoadingFormData,
+    isSubmitting,
+    error,
 
-        // Stats
-        fetchEnrollmentStats,
+    // Métodos de carga
+    loadFormData,
+    loadEnrollments,
+    loadEnrollmentById,
 
-        // Utils
-        resetForm: () => form.reset(defaultEnrollmentValues),
-        refreshData: () => fetchEnrollments(currentFilters)
-    };
+    // CRUD
+    createEnrollmentItem,
+    updateEnrollmentItem,
+    deleteEnrollmentItem,
+
+    // Cambios de estado
+    graduateEnrollmentItem,
+    transferEnrollmentItem,
+    reactivateEnrollmentItem,
+
+    // Operaciones en lote
+    bulkGraduate,
+    bulkTransfer,
+
+    // Utilidades
+    clearError,
+    setSelectedEnrollment
+  };
 }
