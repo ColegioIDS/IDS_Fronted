@@ -1,207 +1,191 @@
 // src/services/attendanceService.ts
-import axios, { AxiosError } from 'axios';
-import { API_BASE_URL } from '@/config/api';
-import { 
-  Attendance, 
-  CreateAttendanceRequest, 
-  UpdateAttendanceRequest,
-  AttendanceFilters,
-  AttendanceResponse,
-  AttendanceStats
-} from '@/types/attendance.types';
-import { ApiResponse } from '@/types/api';
 
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
+import apiClient from './api';
+import {
+  StudentAttendance,
+  CreateAttendanceDto,
+  UpdateAttendanceDto,
+  BulkCreateAttendanceDto,
+  BulkUpdateAttendanceDto,
+  BulkDeleteAttendanceDto,
+  BulkApplyStatusDto,
+  AttendanceChangeRecord,
+  AttendanceListResponse,
+  BulkAttendanceResponse,
+} from '@/types/attendance';
+import { ApiResponse, PaginatedResponse } from '@/types/api';
+
+/**
+ * Servicio de Asistencia
+ * Contiene todas las llamadas HTTP relacionadas con asistencia
+ */
+
+export const attendanceService = {
+  /**
+   * Obtiene la asistencia de un estudiante específico
+   * @param enrollmentId - ID de la matrícula
+   * @param page - Número de página (default: 1)
+   * @param limit - Cantidad de registros por página (default: 10)
+   */
+  getStudentAttendance: async (enrollmentId: number, page: number = 1, limit: number = 10) => {
+    try {
+      const { data } = await apiClient.get<AttendanceListResponse>(
+        `/attendance/student/${enrollmentId}?page=${page}&limit=${limit}`
+      );
+      return data.data;
+    } catch (error) {
+      throw new Error(`Error fetching attendance: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   },
-});
 
-// ==================== ATTENDANCE ====================
-
-export const getAttendances = async (filters?: AttendanceFilters): Promise<AttendanceResponse> => {
-  try {
-    const params = new URLSearchParams();
-    
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, value.toString());
-        }
-      });
+  /**
+   * Crea un nuevo registro de asistencia
+   * @param dto - Datos del registro
+   */
+  createAttendance: async (dto: CreateAttendanceDto) => {
+    try {
+      const { data } = await apiClient.post<ApiResponse<StudentAttendance>>(
+        '/attendance',
+        dto
+      );
+      if (!data.success) {
+        throw new Error(data.data ? 'Error al crear asistencia' : 'Error desconocido');
+      }
+      return data.data;
+    } catch (error) {
+      throw new Error(`Error creating attendance: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  },
 
-    const url = params.toString() ? `/api/attendance?${params.toString()}` : '/api/attendance';
-    const { data } = await apiClient.get<AttendanceResponse>(url);
-    return data;
-  } catch (error) {
-    handleApiError(error, 'Error al obtener asistencias');
-  }
-};
-
-export const getAttendanceById = async (id: number): Promise<Attendance> => {
-  try {
-    const { data } = await apiClient.get<ApiResponse<Attendance>>(`/api/attendance/${id}`);
-    if (!data.success) throw new Error(data.message || 'Error al obtener la asistencia');
-    return data.data;
-  } catch (error) {
-    handleApiError(error, 'Error al obtener la asistencia');
-  }
-};
-
-export const getAttendancesByStudent = async (
-  studentId: number, 
-  filters?: Omit<AttendanceFilters, 'studentId'>
-): Promise<AttendanceResponse> => {
-  try {
-    const params = new URLSearchParams();
-    
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, value.toString());
-        }
-      });
+  /**
+   * Actualiza un registro de asistencia existente
+   * @param id - ID del registro
+   * @param dto - Datos a actualizar
+   * @param reason - Razón del cambio (opcional)
+   */
+  updateAttendance: async (id: number, dto: UpdateAttendanceDto, reason?: string) => {
+    try {
+      const params = reason ? `?reason=${encodeURIComponent(reason)}` : '';
+      const { data } = await apiClient.put<ApiResponse<StudentAttendance>>(
+        `/attendance/${id}${params}`,
+        dto
+      );
+      if (!data.success) {
+        throw new Error('Error al actualizar asistencia');
+      }
+      return data.data;
+    } catch (error) {
+      throw new Error(`Error updating attendance: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  },
 
-    const url = params.toString() 
-      ? `/api/attendance/by-student/${studentId}?${params.toString()}`
-      : `/api/attendance/by-student/${studentId}`;
-    
-    const { data } = await apiClient.get<AttendanceResponse>(url);
-    return data;
-  } catch (error) {
-    handleApiError(error, 'Error al obtener asistencias del estudiante');
-  }
-};
-
-export const getAttendancesByEnrollment = async (
-  enrollmentId: number,
-  filters?: Omit<AttendanceFilters, 'enrollmentId'>
-): Promise<AttendanceResponse> => {
-  try {
-    const params = new URLSearchParams();
-    
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, value.toString());
-        }
-      });
+  /**
+   * Obtiene el historial de cambios de un registro de asistencia
+   * @param id - ID del registro
+   */
+  getAttendanceHistory: async (id: number) => {
+    try {
+      const { data } = await apiClient.get<ApiResponse<AttendanceChangeRecord[]>>(
+        `/attendance/${id}/history`
+      );
+      if (!data.success) {
+        throw new Error('Error al obtener historial');
+      }
+      return data.data;
+    } catch (error) {
+      throw new Error(`Error fetching history: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  },
 
-    const url = params.toString() 
-      ? `/api/attendance/by-enrollment/${enrollmentId}?${params.toString()}`
-      : `/api/attendance/by-enrollment/${enrollmentId}`;
-    
-    const { data } = await apiClient.get<AttendanceResponse>(url);
-    return data;
-  } catch (error) {
-    handleApiError(error, 'Error al obtener asistencias de la matrícula');
-  }
-};
-
-export const getAttendancesByBimester = async (
-  bimesterId: number,
-  filters?: Omit<AttendanceFilters, 'bimesterId'>
-): Promise<AttendanceResponse> => {
-  try {
-    const params = new URLSearchParams();
-    
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, value.toString());
-        }
-      });
+  /**
+   * Crea múltiples registros de asistencia (BULK)
+   * @param dto - Objeto con array de asistencias
+   */
+  bulkCreateAttendance: async (dto: BulkCreateAttendanceDto) => {
+    try {
+      const { data } = await apiClient.post<BulkAttendanceResponse>(
+        '/attendance/bulk/create',
+        dto
+      );
+      if (!data.success) {
+        throw new Error('Error en carga masiva');
+      }
+      return data;
+    } catch (error) {
+      throw new Error(`Error bulk creating: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  },
 
-    const url = params.toString() 
-      ? `/api/attendance/by-bimester/${bimesterId}?${params.toString()}`
-      : `/api/attendance/by-bimester/${bimesterId}`;
-    
-    const { data } = await apiClient.get<AttendanceResponse>(url);
-    return data;
-  } catch (error) {
-    handleApiError(error, 'Error al obtener asistencias del bimestre');
-  }
-};
-
-export const getAttendanceStats = async (enrollmentId: number, bimesterId?: number): Promise<AttendanceStats> => {
-  try {
-    const url = bimesterId 
-      ? `/api/attendance/stats/${enrollmentId}?bimesterId=${bimesterId}`
-      : `/api/attendance/stats/${enrollmentId}`;
-    
-    const { data } = await apiClient.get<ApiResponse<AttendanceStats>>(url);
-    if (!data.success) throw new Error(data.message || 'Error al obtener estadísticas de asistencia');
-    return data.data;
-  } catch (error) {
-    handleApiError(error, 'Error al obtener estadísticas de asistencia');
-  }
-};
-
-export const createAttendance = async (attendanceData: CreateAttendanceRequest): Promise<Attendance> => {
-  try {
-    const { data } = await apiClient.post<ApiResponse<Attendance>>('/api/attendance', attendanceData);
-    if (!data.success) {
-      const error = new Error(data.message || 'Error al crear asistencia');
-      (error as any).details = data.details ?? [];
-      throw error;
+  /**
+   * Actualiza múltiples registros de asistencia (BULK)
+   * @param dto - Objeto con array de actualizaciones
+   */
+  bulkUpdateAttendance: async (dto: BulkUpdateAttendanceDto) => {
+    try {
+      const { data } = await apiClient.put<BulkAttendanceResponse>(
+        '/attendance/bulk/update',
+        dto
+      );
+      if (!data.success) {
+        throw new Error('Error en actualización masiva');
+      }
+      return data;
+    } catch (error) {
+      throw new Error(`Error bulk updating: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-    return data.data;
-  } catch (error) {
-    handleApiError(error, 'Error al crear asistencia');
-  }
-};
+  },
 
-export const createBulkAttendance = async (attendanceData: CreateAttendanceRequest[]): Promise<Attendance[]> => {
-  try {
-    const { data } = await apiClient.post<ApiResponse<Attendance[]>>('/api/attendance/bulk', attendanceData);
-    if (!data.success) {
-      const error = new Error(data.message || 'Error al crear asistencias múltiples');
-      (error as any).details = data.details ?? [];
-      throw error;
+  /**
+   * Elimina múltiples registros de asistencia (BULK)
+   * @param dto - Objeto con array de IDs a eliminar
+   */
+  bulkDeleteAttendance: async (dto: BulkDeleteAttendanceDto) => {
+    try {
+      const { data } = await apiClient.delete<BulkAttendanceResponse>(
+        '/attendance/bulk/delete',
+        { data: dto }
+      );
+      if (!data.success) {
+        throw new Error('Error en eliminación masiva');
+      }
+      return data;
+    } catch (error) {
+      throw new Error(`Error bulk deleting: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-    return data.data;
-  } catch (error) {
-    handleApiError(error, 'Error al crear asistencias múltiples');
-  }
+  },
+
+  /**
+   * Aplica un estado a múltiples estudiantes en un rango de fechas (BULK)
+   * @param dto - Datos con studentIds, estado, fechas, etc.
+   */
+  bulkApplyStatus: async (dto: BulkApplyStatusDto) => {
+    try {
+      const { data } = await apiClient.post<BulkAttendanceResponse>(
+        '/attendance/bulk/apply-status',
+        dto
+      );
+      if (!data.success) {
+        throw new Error('Error al aplicar estado masivamente');
+      }
+      return data;
+    } catch (error) {
+      throw new Error(`Error bulk applying status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  },
+
+  /**
+   * Obtiene el estado de la API (health check)
+   */
+  health: async () => {
+    try {
+      const { data } = await apiClient.get<{ status: string; service: string }>(
+        '/attendance/health'
+      );
+      return data;
+    } catch (error) {
+      throw new Error(`Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  },
 };
 
-export const updateAttendance = async (
-  id: number,
-  attendanceData: UpdateAttendanceRequest
-): Promise<Attendance> => {
-  try {
-    const { data } = await apiClient.patch<ApiResponse<Attendance>>(`/api/attendance/${id}`, attendanceData);
-    if (!data.success) throw new Error(data.message || 'Error al actualizar asistencia');
-    return data.data;
-  } catch (error) {
-    handleApiError(error, 'Error al actualizar asistencia');
-  }
-};
-
-export const deleteAttendance = async (id: number): Promise<void> => {
-  try {
-    const { data } = await apiClient.delete<ApiResponse<void>>(`/api/attendance/${id}`);
-    if (!data.success) throw new Error(data.message || 'Error al eliminar asistencia');
-  } catch (error) {
-    handleApiError(error, 'Error al eliminar asistencia');
-  }
-};
-
-// ==================== UTILS ====================
-function handleApiError(error: unknown, fallbackMessage: string): never {
-  if (axios.isAxiosError(error)) {
-    const message = error.response?.data?.message || error.message || fallbackMessage;
-    const details = error.response?.data?.details || [];
-    const err = new Error(message);
-    (err as any).details = details;
-    throw err;
-  }
-  if (error instanceof Error) throw error;
-  throw new Error(fallbackMessage);
-}
+export default attendanceService;

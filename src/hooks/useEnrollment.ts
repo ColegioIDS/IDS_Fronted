@@ -1,6 +1,6 @@
 // src/hooks/useEnrollment.ts
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   getEnrollmentFormData,
   getEnrollments,
@@ -80,30 +80,118 @@ export function useEnrollment(options: UseEnrollmentOptions = {}): UseEnrollment
   const [isLoadingFormData, setIsLoadingFormData] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+// ==================== ERROR HANDLING ====================
+
+/**
+ * Obtiene un mensaje de error legible según el tipo de error
+ */
+const getErrorMessage = (err: any, defaultMessage: string): string => {
+  // Si es un error de Axios con respuesta del servidor
+  if (err.response?.data?.message) {
+    return err.response.data.message;
+  }
+  
+  // Si es un error HTTP con estado específico
+  if (err.response?.status) {
+    switch (err.response.status) {
+      case 400:
+        return 'Datos inválidos. Por favor revisa los campos.';
+      case 404:
+        return 'El recurso no fue encontrado.';
+      case 409:
+        return 'Ya existe un registro con esos datos.';
+      case 500:
+        return 'Error en el servidor. Intenta más tarde.';
+      default:
+        return `Error ${err.response.status}: ${err.response.statusText || defaultMessage}`;
+    }
+  }
+  
+  // Si es un error de red
+  if (!err.response) {
+    return 'Error de conexión. Verifica tu internet.';
+  }
+  
+  // Si tiene un mensaje personalizado
+  if (err.message) {
+    return err.message;
+  }
+  
+  return defaultMessage;
+};
+
+// ==================== VALIDACIONES ====================
+
+/**
+ * Valida que los datos de creación sean correctos
+ */
+const validateCreateEnrollmentData = (data: CreateEnrollmentDto): string | null => {
+  if (!data.studentId || data.studentId < 1) {
+    return 'Debes seleccionar un estudiante válido';
+  }
+  if (!data.cycleId || data.cycleId < 1) {
+    return 'Debes seleccionar un ciclo válido';
+  }
+  if (!data.gradeId || data.gradeId < 1) {
+    return 'Debes seleccionar un grado válido';
+  }
+  if (!data.sectionId || data.sectionId < 1) {
+    return 'Debes seleccionar una sección válida';
+  }
+  
+  return null; // Sin errores
+};
+
+/**
+ * Valida que los datos de actualización sean correctos
+ */
+const validateUpdateEnrollmentData = (data: UpdateEnrollmentDto): string | null => {
+  // Al actualizar, todos los campos son opcionales
+  if (data.studentId !== undefined && data.studentId < 1) {
+    return 'Estudiante inválido';
+  }
+  if (data.cycleId !== undefined && data.cycleId < 1) {
+    return 'Ciclo inválido';
+  }
+  if (data.gradeId !== undefined && data.gradeId < 1) {
+    return 'Grado inválido';
+  }
+  if (data.sectionId !== undefined && data.sectionId < 1) {
+    return 'Sección inválida';
+  }
+  
+  return null; // Sin errores
+};
+
 
   // ==================== CARGA DE DATOS ====================
 
   /**
    * Carga todos los datos necesarios para el formulario de matrícula
    */
-  const loadFormData = useCallback(async () => {
-    try {
-      setIsLoadingFormData(true);
-      setError(null);
-      
-      const data = await getEnrollmentFormData();
-      setFormData(data);
-      
-      console.log('✅ Form data cargado:', data);
-    } catch (err: any) {
-      const errorMessage = err.message || 'Error al cargar datos del formulario';
-      setError(errorMessage);
-      onError?.(errorMessage);
-      console.error('❌ Error cargando form data:', err);
-    } finally {
-      setIsLoadingFormData(false);
-    }
-  }, [onError]);
+
+const loadFormData = useCallback(async () => {
+  try {
+    setIsLoadingFormData(true);
+    setError(null);
+    
+    const data = await getEnrollmentFormData();
+    setFormData(data);
+    
+    console.log('✅ Form data cargado:', data);
+  } 
+  catch (err: any) {
+  const errorMessage = getErrorMessage(err, 'Error al cargar matrículas');
+  setError(errorMessage);
+  onError?.(errorMessage);
+  console.error('❌ Error cargando matrículas:', err);
+}
+  
+  finally {
+    setIsLoadingFormData(false);
+  }
+}, [onError]);
 
   /**
    * Carga lista de matrículas con filtros opcionales
@@ -116,12 +204,13 @@ export function useEnrollment(options: UseEnrollmentOptions = {}): UseEnrollment
       const data = await getEnrollments(params);
       setEnrollments(data);
       
-      console.log('✅ Matrículas cargadas:', data.length);
-    } catch (err: any) {
-      const errorMessage = err.message || 'Error al cargar matrículas';
-      setError(errorMessage);
-      onError?.(errorMessage);
-      console.error('❌ Error cargando matrículas:', err);
+      console.log('✅ Matrículas cargadas:', data.length, 'con filtros:', params);
+    }catch (err: any) {
+  const errorMessage = getErrorMessage(err, 'Error al cargar matrículas');
+  setError(errorMessage);
+  onError?.(errorMessage);
+  console.error('❌ Error cargando matrículas:', err);
+
     } finally {
       setIsLoading(false);
     }
@@ -141,7 +230,7 @@ export function useEnrollment(options: UseEnrollmentOptions = {}): UseEnrollment
       console.log('✅ Matrícula cargada:', data);
       return data;
     } catch (err: any) {
-      const errorMessage = err.message || 'Error al cargar matrícula';
+      const errorMessage = getErrorMessage(err, 'Error al cargar matrícula');
       setError(errorMessage);
       onError?.(errorMessage);
       console.error('❌ Error cargando matrícula:', err);
@@ -153,39 +242,89 @@ export function useEnrollment(options: UseEnrollmentOptions = {}): UseEnrollment
 
   // ==================== OPERACIONES CRUD ====================
 
-  /**
-   * Crea una nueva matrícula
-   */
-  const createEnrollmentItem = useCallback(async (
-    data: CreateEnrollmentDto
-  ): Promise<EnrollmentResponse | null> => {
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      
-      const newEnrollment = await createEnrollment(data);
-      
-      // Actualizar lista local
-      setEnrollments(prev => [newEnrollment, ...prev]);
-      
-      // Recargar form data para actualizar estadísticas
-      await loadFormData();
-      
-      const successMessage = 'Matrícula creada exitosamente';
-      onSuccess?.(successMessage);
-      console.log('✅ Matrícula creada:', newEnrollment);
-      
-      return newEnrollment;
-    } catch (err: any) {
-      const errorMessage = err.message || 'Error al crear matrícula';
-      setError(errorMessage);
-      onError?.(errorMessage);
-      console.error('❌ Error creando matrícula:', err);
-      return null;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [loadFormData, onSuccess, onError]);
+  // ✅ FRAGMENTO CORREGIDO PARA createEnrollmentItem
+
+// ✅ createEnrollmentItem - VERSIÓN CORRECTA
+
+const createEnrollmentItem = useCallback(async (
+  data: CreateEnrollmentDto
+): Promise<EnrollmentResponse | null> => {
+  try {
+    setIsSubmitting(true);
+    setError(null);
+
+    const newEnrollment = await createEnrollment(data);
+
+    // Actualizar lista local
+    setEnrollments(prev => [newEnrollment, ...prev]);
+
+    // ✅ Transformar newEnrollment al formato de formData.enrollments
+    setFormData(prev => {
+      if (!prev) return null;
+
+      // Transformar al formato correcto
+      const enrollmentForFormData = {
+        id: newEnrollment.id,
+        studentId: newEnrollment.studentId,
+        studentName: `${newEnrollment.student.givenNames} ${newEnrollment.student.lastNames}`,
+        studentProfilePicture: null,
+        cycleId: newEnrollment.cycleId,
+        gradeId: newEnrollment.gradeId,
+        gradeName: newEnrollment.section?.grade?.name || '',
+        sectionId: newEnrollment.sectionId,
+        sectionName: newEnrollment.section?.name || '',
+        status: newEnrollment.status
+      };
+
+      return {
+        ...prev,
+        enrollments: [enrollmentForFormData, ...prev.enrollments],
+        students: prev.students.map(s =>
+          s.id === newEnrollment.studentId
+            ? {
+              ...s,
+              isEnrolled: true,
+              currentEnrollment: enrollmentForFormData as any
+            }
+            : s
+        ),
+        grades: prev.grades.map(g => ({
+          ...g,
+          sections: g.sections.map(s =>
+            s.id === newEnrollment.sectionId
+              ? {
+                ...s,
+                currentEnrollments: s.currentEnrollments + 1,
+                availableSpots: s.availableSpots - 1
+              }
+              : s
+          )
+        })),
+        stats: {
+          ...prev.stats,
+          enrolledStudents: prev.stats.enrolledStudents + 1,
+          availableStudents: prev.stats.availableStudents - 1,
+          occupiedSpots: prev.stats.occupiedSpots + 1,
+          availableSpots: prev.stats.availableSpots - 1
+        }
+      };
+    });
+
+    const successMessage = 'Matrícula creada exitosamente';
+    onSuccess?.(successMessage);
+    console.log('✅ Matrícula creada:', newEnrollment);
+
+    return newEnrollment;
+  } catch (err: any) {
+    const errorMessage = err.response?.data?.message || err.message || 'Error al crear matrícula';
+    setError(errorMessage);
+    onError?.(errorMessage);
+    console.error('❌ Error creando matrícula:', err);
+    return null;
+  } finally {
+    setIsSubmitting(false);
+  }
+}, [onSuccess, onError]);
 
   /**
    * Actualiza una matrícula existente
@@ -453,18 +592,19 @@ export function useEnrollment(options: UseEnrollmentOptions = {}): UseEnrollment
   // ==================== EFECTOS INICIALES ====================
 
   // Auto-cargar form data al montar
-  useState(() => {
-    if (autoLoadFormData) {
+  useEffect(() => {
+    if (autoLoadFormData && !formData && !isLoadingFormData) {
       loadFormData();
     }
-  });
+  }, [autoLoadFormData, formData, isLoadingFormData, loadFormData]);
 
-  // Auto-cargar matrículas al montar
-  useState(() => {
-    if (autoLoadEnrollments) {
-      loadEnrollments();
-    }
-  });
+// ✅ DESPUÉS
+useEffect(() => {
+  if (autoLoadEnrollments && enrollments.length === 0 && !isLoading) {
+    loadEnrollments();
+  }
+}, [autoLoadEnrollments, enrollments.length, isLoading, loadEnrollments]);
+
 
   // ==================== RETURN ====================
 

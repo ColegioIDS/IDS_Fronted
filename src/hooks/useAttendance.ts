@@ -1,387 +1,374 @@
 // src/hooks/useAttendance.ts
-import { useState, useEffect } from 'react';
-import { 
-  Attendance, 
-  CreateAttendanceRequest, 
-  UpdateAttendanceRequest,
-  AttendanceFilters,
-  AttendanceResponse,
-  AttendanceStats,
-  AttendanceFormData,
-  UpdateAttendanceFormData
-} from '@/types/attendance.types';
-import { 
-  getAttendances, 
-  createAttendance, 
-  updateAttendance, 
-  getAttendanceById,
-  deleteAttendance,
-  createBulkAttendance,
-  getAttendancesByStudent,
-  getAttendancesByEnrollment,
-  getAttendancesByBimester,
-  getAttendanceStats
-} from '@/services/attendanceService';
-import { createAttendanceSchema, updateAttendanceSchema, defaultAttendanceValues } from "@/schemas/attendance.schemas";
+
+'use client';
+
+import { useState, useCallback, useRef } from 'react';
 import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { toast } from 'react-toastify';
+import attendanceService from '@/services/attendanceService';
+import {
+  StudentAttendance,
+  CreateAttendanceDto,
+  UpdateAttendanceDto,
+  BulkCreateAttendanceDto,
+  BulkDeleteAttendanceDto,
+  BulkApplyStatusDto,
+  AttendanceChangeRecord,
+  BulkAttendanceResponse,
+} from '@/types/attendance';
 
-type AttendanceFormSchemaData = z.infer<typeof createAttendanceSchema>;
-type UpdateAttendanceFormSchemaData = z.infer<typeof updateAttendanceSchema>;
+// ============================================
+// VALIDATION SCHEMAS (Zod)
+// ============================================
 
-export function useAttendance(
-  isEditMode: boolean = false, 
-  id?: number,
-  initialFilters?: AttendanceFilters
-) {
-  const [attendances, setAttendances] = useState<Attendance[]>([]);
-  const [attendanceResponse, setAttendanceResponse] = useState<AttendanceResponse | null>(null);
-  const [isLoadingAttendances, setIsLoadingAttendances] = useState(true);
-  const [attendancesError, setAttendancesError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentAttendance, setCurrentAttendance] = useState<Attendance | null>(null);
-  const [stats, setStats] = useState<AttendanceStats | null>(null);
-  const [isLoadingStats, setIsLoadingStats] = useState(false);
+const createAttendanceSchema = z.object({
+  enrollmentId: z.number().int().positive('ID de matrícula inválido'),
+  date: z.string().datetime('Fecha inválida'),
+  statusCode: z.enum(['A', 'I', 'IJ', 'TI', 'TJ'], {
+    errorMap: () => ({ message: 'Código de estado inválido' }),
+  }),
+  courseAssignmentId: z.number().int().optional(),
+  notes: z.string().max(500, 'Las notas no pueden exceder 500 caracteres').optional(),
+  arrivalTime: z.string().regex(/^\d{2}:\d{2}$/, 'Formato de hora inválido').optional(),
+  minutesLate: z.number().int().nonnegative().optional(),
+});
 
-  const form = useForm<AttendanceFormSchemaData>({
-    resolver: zodResolver(createAttendanceSchema),
-    defaultValues: defaultAttendanceValues,
-  });
+const updateAttendanceSchema = createAttendanceSchema.partial().omit({ enrollmentId: true });
 
-  const updateForm = useForm<UpdateAttendanceFormSchemaData>({
-    resolver: zodResolver(updateAttendanceSchema),
-    defaultValues: {},
-  });
+type UseAttendanceError = {
+  message: string;
+  code?: string;
+  details?: any;
+};
 
-  // Load attendance data when in edit mode
-  useEffect(() => {
-    if (isEditMode && id) {
-      const loadAttendanceData = async () => {
-        try {
-          const attendance = await getAttendanceById(id);
-          setCurrentAttendance(attendance);
-          
-          const formData: AttendanceFormSchemaData = {
-            enrollmentId: attendance.enrollmentId.toString(),
-            bimesterId: attendance.bimesterId.toString(),
-            date: new Date(attendance.date).toISOString().split('T')[0],
-            status: attendance.status,
-            notes: attendance.notes || '',
-          };
-          
-          form.reset(formData);
-          updateForm.reset(formData);
-        } catch (error) {
-          console.error('Error loading attendance data:', error);
-          toast.error('Error al cargar los datos de asistencia');
-        }
-      };
-      loadAttendanceData();
-    }
-  }, [isEditMode, id, form, updateForm]);
+// ============================================
+// HOOK PRINCIPAL
+// ============================================
 
-  const fetchAttendances = async (filters?: AttendanceFilters) => {
-    setIsLoadingAttendances(true);
-    setAttendancesError(null);
-    try {
-      const response = await getAttendances(filters || initialFilters);
-      setAttendanceResponse(response);
-      setAttendances(response.data);
-    } catch (error) {
-      setAttendancesError('Error al cargar las asistencias');
-      console.error(error);
-      toast.error('Error al cargar las asistencias');
-    } finally {
-      setIsLoadingAttendances(false);
-    }
-  };
+export const useAttendance = () => {
+  // Estados principales
+  const [attendance, setAttendance] = useState<StudentAttendance | null>(null);
+  const [attendanceList, setAttendanceList] = useState<StudentAttendance[]>([]);
+  const [history, setHistory] = useState<AttendanceChangeRecord[]>([]);
 
-  const fetchAttendancesByStudent = async (studentId: number, filters?: Omit<AttendanceFilters, 'studentId'>) => {
-    setIsLoadingAttendances(true);
-    setAttendancesError(null);
-    try {
-      const response = await getAttendancesByStudent(studentId, filters);
-      setAttendanceResponse(response);
-      setAttendances(response.data);
-    } catch (error) {
-      setAttendancesError('Error al cargar las asistencias del estudiante');
-      console.error(error);
-      toast.error('Error al cargar las asistencias del estudiante');
-    } finally {
-      setIsLoadingAttendances(false);
-    }
-  };
+  // Estados de carga y error
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<UseAttendanceError | null>(null);
 
-  const fetchAttendancesByEnrollment = async (enrollmentId: number, filters?: Omit<AttendanceFilters, 'enrollmentId'>) => {
-    setIsLoadingAttendances(true);
-    setAttendancesError(null);
-    try {
-      const response = await getAttendancesByEnrollment(enrollmentId, filters);
-      setAttendanceResponse(response);
-      setAttendances(response.data);
-    } catch (error) {
-      setAttendancesError('Error al cargar las asistencias de la matrícula');
-      console.error(error);
-      toast.error('Error al cargar las asistencias de la matrícula');
-    } finally {
-      setIsLoadingAttendances(false);
-    }
-  };
+  // Estados de bulk operations
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
-  const fetchAttendancesByBimester = async (bimesterId: number, filters?: Omit<AttendanceFilters, 'bimesterId'>) => {
-    setIsLoadingAttendances(true);
-    setAttendancesError(null);
-    try {
-      const response = await getAttendancesByBimester(bimesterId, filters);
-      setAttendanceResponse(response);
-      setAttendances(response.data);
-    } catch (error) {
-      setAttendancesError('Error al cargar las asistencias del bimestre');
-      console.error(error);
-      toast.error('Error al cargar las asistencias del bimestre');
-    } finally {
-      setIsLoadingAttendances(false);
-    }
-  };
+  // Ref para cancelar operaciones
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const fetchAttendanceStats = async (enrollmentId: number, bimesterId?: number) => {
-    setIsLoadingStats(true);
-    try {
-      const statsData = await getAttendanceStats(enrollmentId, bimesterId);
-      setStats(statsData);
-    } catch (error) {
-      console.error(error);
-      toast.error('Error al cargar las estadísticas de asistencia');
-    } finally {
-      setIsLoadingStats(false);
-    }
-  };
+  // ============================================
+  // HELPERS
+  // ============================================
 
-  const handleCreateAttendance = async (data: AttendanceFormSchemaData) => {
-    setIsSubmitting(true);
-    try {
-      const requestData: CreateAttendanceRequest = {
-        enrollmentId: parseInt(data.enrollmentId),
-        bimesterId: parseInt(data.bimesterId),
-        date: new Date(data.date),
-        status: data.status,
-        notes: data.notes || undefined,
-      };
-
-      await createAttendance(requestData);
-      toast.success("Asistencia registrada correctamente");
-      await fetchAttendances();
-      form.reset();
-      return { success: true };
-    } catch (error: any) {
-      console.log("Error completo:", error);
-      console.log("Datos de respuesta:", error.response?.data);
-      
-      if (error.response?.data) {
-        return { 
-          success: false,
-          message: error.response.data.message || "Error de validación",
-          details: error.response.data.details || []
-        };
-      }
-      
-      toast.error(error.message || "Error al registrar la asistencia");
-      return { 
-        success: false, 
-        message: error.message || "Error desconocido",
-        details: []
-      };
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleCreateBulkAttendance = async (data: CreateAttendanceRequest[]) => {
-    setIsSubmitting(true);
-    try {
-      await createBulkAttendance(data);
-      toast.success(`${data.length} registros de asistencia creados correctamente`);
-      await fetchAttendances();
-      return { success: true };
-    } catch (error: any) {
-      console.log("Error completo:", error);
-      
-      if (error.response?.data) {
-        return { 
-          success: false,
-          message: error.response.data.message || "Error de validación",
-          details: error.response.data.details || []
-        };
-      }
-      
-      toast.error(error.message || "Error al crear las asistencias");
-      return { 
-        success: false, 
-        message: error.message || "Error desconocido",
-        details: []
-      };
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdateAttendance = async (id: number, data: UpdateAttendanceFormSchemaData) => {
-    if (!id) return;
-
-    setIsSubmitting(true);
-    try {
-      const requestData: UpdateAttendanceRequest = {
-        ...(data.enrollmentId && { enrollmentId: parseInt(data.enrollmentId) }),
-        ...(data.bimesterId && { bimesterId: parseInt(data.bimesterId) }),
-        ...(data.date && { date: new Date(data.date) }),
-        ...(data.status && { status: data.status }),
-        ...(data.notes !== undefined && { notes: data.notes || undefined }),
-      };
-
-      await updateAttendance(id, requestData);
-      toast.success("Asistencia actualizada correctamente");
-      await fetchAttendances();
-      return { success: true };
-    } catch (error: any) {
-      if (error.response?.data) {
-        return error.response.data; 
-      }
-      toast.error("Error al actualizar la asistencia");
-      console.error(error);
-      return { success: false, message: "Error desconocido" };
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteAttendance = async (id: number) => {
-    try {
-      await deleteAttendance(id);
-      toast.success("Asistencia eliminada correctamente");
-      await fetchAttendances();
-      return { success: true };
-    } catch (error: any) {
-      toast.error("Error al eliminar la asistencia");
-      console.error(error);
-      return { success: false, message: error.message || "Error desconocido" };
-    }
-  };
-
-  const handleSubmit = isEditMode ? handleUpdateAttendance : handleCreateAttendance;
-
-  useEffect(() => {
-    fetchAttendances(initialFilters);
+  const resetError = useCallback(() => {
+    setError(null);
   }, []);
 
-  return {
-    // Data
-    attendances,
-    attendanceResponse,
-    currentAttendance,
-    stats,
-    
-    // Loading states
-    isLoadingAttendances,
-    isLoadingStats,
-    isSubmitting,
-    
-    // Error states
-    attendancesError,
-    
-    // Forms
-    form,
-    updateForm,
-    
-    // Actions
-    fetchAttendances,
-    fetchAttendancesByStudent,
-    fetchAttendancesByEnrollment,
-    fetchAttendancesByBimester,
-    fetchAttendanceStats,
-    createAttendance: handleCreateAttendance,
-    createBulkAttendance: handleCreateBulkAttendance,
-    updateAttendance: handleUpdateAttendance,
-    deleteAttendance: handleDeleteAttendance,
-    
-    // Utils
-    resetForm: () => form.reset(defaultAttendanceValues),
-    resetUpdateForm: () => updateForm.reset({})
-  };
-}
+  const handleError = useCallback((err: unknown): UseAttendanceError => {
+    let error: UseAttendanceError;
 
-// Hook simplificado para solo obtener asistencias
-export function useAttendanceList(filters?: AttendanceFilters) {
-  const [attendances, setAttendances] = useState<Attendance[]>([]);
-  const [meta, setMeta] = useState({
-    total: 0,
-    page: 1,
-    limit: 10,
-    totalPages: 0
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+    if (err instanceof z.ZodError) {
+      error = {
+        message: 'Validación fallida',
+        code: 'VALIDATION_ERROR',
+        details: err.errors,
+      };
+    } else if (err instanceof Error) {
+      error = {
+        message: err.message,
+        code: 'SERVICE_ERROR',
+      };
+    } else {
+      error = {
+        message: 'Error desconocido',
+        code: 'UNKNOWN_ERROR',
+      };
+    }
 
-  const fetchAttendances = async (newFilters?: AttendanceFilters) => {
+    setError(error);
+    return error;
+  }, []);
+
+  // ============================================
+  // OPERACIONES SIMPLES
+  // ============================================
+
+  /**
+   * Obtiene la asistencia de un estudiante
+   */
+  const getStudentAttendance = useCallback(
+    async (enrollmentId: number, page: number = 1, limit: number = 10) => {
+      resetError();
+      setLoading(true);
+
+      try {
+        const data = await attendanceService.getStudentAttendance(enrollmentId, page, limit);
+        setAttendanceList(data);
+        return data;
+      } catch (err) {
+        handleError(err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [resetError, handleError]
+  );
+
+  /**
+   * Crea un nuevo registro de asistencia
+   */
+  const createAttendance = useCallback(
+    async (dto: CreateAttendanceDto) => {
+      resetError();
+      setLoading(true);
+
+      try {
+        // Validar con Zod
+        const validated = createAttendanceSchema.parse(dto);
+
+        const data = await attendanceService.createAttendance(validated);
+        setAttendance(data);
+
+        // Actualizar lista si existe
+        setAttendanceList((prev) => [data, ...prev]);
+
+        return data;
+      } catch (err) {
+        handleError(err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [resetError, handleError]
+  );
+
+  /**
+   * Actualiza un registro de asistencia
+   */
+  const updateAttendance = useCallback(
+    async (id: number, dto: UpdateAttendanceDto, reason?: string) => {
+      resetError();
+      setLoading(true);
+
+      try {
+        // Validar con Zod
+        const validated = updateAttendanceSchema.parse(dto);
+
+        const data = await attendanceService.updateAttendance(id, validated, reason);
+        setAttendance(data);
+
+        // Actualizar en lista
+        setAttendanceList((prev) =>
+          prev.map((item) => (item.id === id ? data : item))
+        );
+
+        return data;
+      } catch (err) {
+        handleError(err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [resetError, handleError]
+  );
+
+  /**
+   * Obtiene el historial de cambios
+   */
+  const getHistory = useCallback(async (id: number) => {
+    resetError();
     setLoading(true);
-    setError(null);
+
     try {
-      const response = await getAttendances(newFilters || filters);
-      setAttendances(response.data);
-      setMeta(response.meta);
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar asistencias');
+      const data = await attendanceService.getAttendanceHistory(id);
+      setHistory(data);
+      return data;
+    } catch (err) {
+      handleError(err);
+      throw err;
     } finally {
       setLoading(false);
     }
-  };
+  }, [resetError, handleError]);
 
-  useEffect(() => {
-    fetchAttendances(filters);
-  }, []);
+  // ============================================
+  // OPERACIONES BULK
+  // ============================================
+
+  /**
+   * Crea múltiples registros de asistencia
+   */
+  const bulkCreate = useCallback(
+    async (attendances: CreateAttendanceDto[]) => {
+      resetError();
+      setBulkError(null);
+      setLoading(true);
+      setBulkProgress({ current: 0, total: attendances.length });
+
+      try {
+        // Validar cada registro
+        const validated = attendances.map((item) => {
+          const result = createAttendanceSchema.safeParse(item);
+          if (!result.success) {
+            throw new Error(`Validación fallida: ${result.error.message}`);
+          }
+          return result.data;
+        });
+
+        const dto: BulkCreateAttendanceDto = { attendances: validated };
+        const response = await attendanceService.bulkCreateAttendance(dto);
+
+        // Actualizar progreso
+        setBulkProgress({ current: validated.length, total: validated.length });
+
+        return response;
+      } catch (err) {
+        const error = handleError(err);
+        setBulkError(error.message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [handleError]
+  );
+
+  /**
+   * Actualiza múltiples registros de asistencia
+   */
+  const bulkUpdate = useCallback(
+    async (updates: Array<{ id: number } & UpdateAttendanceDto>) => {
+      resetError();
+      setBulkError(null);
+      setLoading(true);
+
+      try {
+        const dto = { updates };
+        const response = await attendanceService.bulkUpdateAttendance(dto);
+        return response;
+      } catch (err) {
+        const error = handleError(err);
+        setBulkError(error.message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [handleError]
+  );
+
+  /**
+   * Elimina múltiples registros
+   */
+  const bulkDelete = useCallback(
+    async (ids: number[]) => {
+      if (!ids.length) {
+        throw new Error('Debe proporcionar al menos un ID');
+      }
+
+      resetError();
+      setBulkError(null);
+      setLoading(true);
+
+      try {
+        const dto: BulkDeleteAttendanceDto = { ids };
+        const response = await attendanceService.bulkDeleteAttendance(dto);
+
+        // Actualizar lista local
+        setAttendanceList((prev) => prev.filter((item) => !ids.includes(item.id)));
+
+        return response;
+      } catch (err) {
+        const error = handleError(err);
+        setBulkError(error.message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [resetError, handleError]
+  );
+
+  /**
+   * Aplica un estado a múltiples estudiantes
+   */
+  const bulkApplyStatus = useCallback(
+    async (
+      enrollmentIds: number[],
+      statusCode: string,
+      startDate: string,
+      endDate: string,
+      notes?: string
+    ) => {
+      if (!enrollmentIds.length) {
+        throw new Error('Debe proporcionar al menos un estudiante');
+      }
+
+      resetError();
+      setBulkError(null);
+      setLoading(true);
+
+      try {
+        const dto: BulkApplyStatusDto = {
+          enrollmentIds,
+          statusCode,
+          startDate,
+          endDate,
+          notes,
+        };
+
+        const response = await attendanceService.bulkApplyStatus(dto);
+        return response;
+      } catch (err) {
+        const error = handleError(err);
+        setBulkError(error.message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [resetError, handleError]
+  );
+
+  // ============================================
+  // RETORNO
+  // ============================================
 
   return {
-    attendances,
-    meta,
+    // Estados
+    attendance,
+    attendanceList,
+    history,
     loading,
     error,
-    refetch: fetchAttendances
+    bulkProgress,
+    bulkError,
+
+    // Acciones simples
+    getStudentAttendance,
+    createAttendance,
+    updateAttendance,
+    getHistory,
+
+    // Acciones bulk
+    bulkCreate,
+    bulkUpdate,
+    bulkDelete,
+    bulkApplyStatus,
+
+    // Utilidades
+    resetError,
+    clearAttendance: () => setAttendance(null),
+    clearList: () => setAttendanceList([]),
   };
-}
+};
 
-// Hook para estadísticas de asistencia
-export function useAttendanceStats(enrollmentId?: number, bimesterId?: number) {
-  const [stats, setStats] = useState<AttendanceStats | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchStats = async (newEnrollmentId?: number, newBimesterId?: number) => {
-    const targetEnrollmentId = newEnrollmentId || enrollmentId;
-    if (!targetEnrollmentId) return;
-
-    setLoading(true);
-    setError(null);
-    try {
-      const statsData = await getAttendanceStats(targetEnrollmentId, newBimesterId || bimesterId);
-      setStats(statsData);
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar estadísticas');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (enrollmentId) {
-      fetchStats();
-    }
-  }, [enrollmentId, bimesterId]);
-
-  return {
-    stats,
-    loading,
-    error,
-    refetch: fetchStats
-  };
-}
+export default useAttendance;

@@ -258,7 +258,7 @@ export const reactivateEnrollment = async (id: number): Promise<EnrollmentRespon
 // ==================== BULK OPERATIONS ====================
 
 /**
- * Operaciones en lote para múltiples matrículas
+ * Operaciones en lote - Actualizar múltiples matrículas
  */
 export const bulkUpdateEnrollments = async (
   ids: number[],
@@ -362,6 +362,8 @@ export const canEditEnrollment = (enrollment: EnrollmentResponse): boolean => {
 export const canDeleteEnrollment = (enrollment: EnrollmentDetailResponse): boolean => {
   return enrollment.attendances.length === 0 && enrollment.grades.length === 0;
 };
+
+
 
 /**
  * Obtiene el label en español para un status

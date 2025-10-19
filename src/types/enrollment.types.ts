@@ -1,5 +1,22 @@
 // enrollment.types.ts - Types para Frontend
 
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message: string;
+  data: T;
+  details?: string[];
+  statusCode?: number;
+  error?: string;
+}
+
+export interface ApiErrorResponse {
+  success: false;
+  message: string;
+  error: string;
+  statusCode: number;
+  details?: string[];
+}
+
 // ==================== ENUMS ====================
 export enum EnrollmentStatus {
   ACTIVE = 'active',
@@ -144,6 +161,15 @@ export interface EnrollmentFilterDto {
 export interface EnrollmentResponse extends EnrollmentWithBasicRelations {}
 
 export interface EnrollmentDetailResponse extends EnrollmentWithFullRelations {}
+
+// ✅ DESPUÉS (Agregar dateEnrolled)
+export interface EnrollmentResponse extends EnrollmentWithBasicRelations {
+  dateEnrolled?: string; // ISO date string, ej: "2024-01-15"
+}
+
+export interface EnrollmentDetailResponse extends EnrollmentWithFullRelations {
+  dateEnrolled?: string; // ISO date string, ej: "2024-01-15"
+}
 
 export interface EnrollmentListResponse {
   data: EnrollmentResponse[];
