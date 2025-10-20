@@ -130,6 +130,8 @@ const navItems: NavItem[] = [
         requiredPermission: { module: 'user', action: 'read' }
       },
       { name: "Crear Usuario", path: "/users/create", requiredPermission: { module: 'user', action: 'create' } },
+      { name: "Asignacion Grados - Ciclos", path: "/grade-cycle" },
+      
     ]
 
 

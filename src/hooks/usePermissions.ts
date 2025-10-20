@@ -54,7 +54,7 @@ export function usePermission(
 export function usePermissionsForSelector(enabled: boolean = true) {
   return usePermissions(
     { 
-      limit: 100,
+      limit: 500,
       isActive: true 
     },
     enabled

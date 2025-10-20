@@ -1,16 +1,16 @@
 // src/app/(admin)/attendance/page.tsx
 
-"use client";
+'use client';
 
 import dynamic from 'next/dynamic';
 import Breadcrumb from '@/components/common/Breadcrumb';
 import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
 
-const AttendanceManager = dynamic(
-  () => import('@/components/attendance/AttendanceManager'),
+const AttendanceManagerWrapper = dynamic(
+  () => import('@/components/attendance/AttendanceManagerWrapper'),
   {
     loading: () => <ProfileSkeleton type="meta" />,
-    ssr: false
+    ssr: false,
   }
 );
 
@@ -25,7 +25,7 @@ export default function AttendancePage() {
           { label: "Asistencia", href: "#" },
         ]}
       />
-      <AttendanceManager />
+      <AttendanceManagerWrapper />
     </div>
   );
 }

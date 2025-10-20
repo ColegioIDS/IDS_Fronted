@@ -6,27 +6,42 @@ import { verifySession, logout as apiLogout, getMyPermissions } from '@/services
 import { UserPermission } from '@/types/permissions';
 import { usePathname, useRouter } from 'next/navigation';
 
+// ✅ ACTUALIZADO: Role con permissions
+interface Role {
+  id: number;
+  name: string;
+  permissions?: Array<{
+    permissionId: number;
+    scope: 'all' | 'own' | 'grade';
+    permission?: {
+      id: number;
+      module: string;
+      action: string;
+    };
+  }>;
+}
+
 interface User {
   id: string;
   fullName: string;
   username: string;
   email: string;
   avatar?: string;
-  role?: { id: number; name: string }; // ✅ Agregar role aquí
+  role?: Role; // ✅ ACTUALIZADO: Ahora es Role completo con permissions
 }
 
 interface AuthContextProps {
   user: User | null;
   permissions: UserPermission[];
-  role: { id: number; name: string } | null;
+  role: Role | null; // ✅ ACTUALIZADO
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (user: User) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: (force?: boolean) => Promise<void>;
-  hasPermission: (module: string, action: string) => boolean; // ✅ Nuevo método
-  hasAnyPermission: (checks: Array<{ module: string; action: string }>) => boolean; // ✅ Nuevo método
-  getPermissionScope: (module: string, action: string) => string | null; // ✅ Nuevo método
+  hasPermission: (module: string, action: string) => boolean;
+  hasAnyPermission: (checks: Array<{ module: string; action: string }>) => boolean;
+  getPermissionScope: (module: string, action: string) => string | null;
 }
 
 const AuthContext = createContext<AuthContextProps>({
@@ -46,7 +61,7 @@ const AuthContext = createContext<AuthContextProps>({
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [permissions, setPermissions] = useState<UserPermission[]>([]);
-  const [role, setRole] = useState<{ id: number; name: string } | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastCheck, setLastCheck] = useState(0);
   const router = useRouter();
@@ -56,7 +71,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const data = await getMyPermissions();
       setPermissions(data.permissions);
-      setRole(data.role);
+      
+      // ✅ ACTUALIZADO: Ahora setRole recibe Role con permissions
+      if (data.role) {
+  const roleWithPermissions: Role = {
+    id: data.role.id,
+    name: data.role.name,
+    permissions: data.permissions.map((p: UserPermission, index: number) => ({
+      permissionId: index,
+      scope: (p.scope as 'all' | 'own' | 'grade'),
+      permission: {
+        id: index,
+        module: p.module,
+        action: p.action,
+      },
+    })),
+  };
+  setRole(roleWithPermissions);
+}
     } catch (error) {
       console.error('Error loading permissions:', error);
       setPermissions([]);
@@ -64,48 +96,54 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  const checkAuth = useCallback(async (force = false) => {
-    setIsLoading(true);
-    
-    if (!force && Date.now() - lastCheck < 5 * 60 * 1000) {
-      setIsLoading(false);
-      return;
-    }
+  const checkAuth = useCallback(
+    async (force = false) => {
+      setIsLoading(true);
 
-    try {
-      const userData = await verifySession();
-      setUser(userData);
-      setLastCheck(Date.now());
-      
-      await loadPermissions();
-      
-      if (['/signin', '/signup'].includes(pathname) && userData) {
-        router.replace('/dashboard');
+      if (!force && Date.now() - lastCheck < 5 * 60 * 1000) {
+        setIsLoading(false);
+        return;
       }
-    } catch (error) {
-      setUser(null);
-      setPermissions([]);
-      setRole(null);
-      setLastCheck(0);
-      
-      if (pathname.startsWith('/dashboard') || pathname.startsWith('/profile')) {
-        router.replace('/signin');
+
+      try {
+        const userData = await verifySession();
+        setUser(userData);
+        setLastCheck(Date.now());
+
+        await loadPermissions();
+
+        if (['/signin', '/signup'].includes(pathname) && userData) {
+          router.replace('/dashboard');
+        }
+      } catch (error) {
+        setUser(null);
+        setPermissions([]);
+        setRole(null);
+        setLastCheck(0);
+
+        if (pathname.startsWith('/dashboard') || pathname.startsWith('/profile')) {
+          router.replace('/signin');
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [pathname, router, lastCheck, loadPermissions]);
+    },
+    [pathname, router, lastCheck, loadPermissions]
+  );
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
-  const login = useCallback(async (userData: User) => {
-    setUser(userData);
-    setLastCheck(Date.now());
-    await loadPermissions();
-    router.replace('/dashboard');
-  }, [router, loadPermissions]);
+  const login = useCallback(
+    async (userData: User) => {
+      setUser(userData);
+      setLastCheck(Date.now());
+      await loadPermissions();
+      router.replace('/dashboard');
+    },
+    [router, loadPermissions]
+  );
 
   const logout = useCallback(async () => {
     try {
@@ -120,47 +158,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [router]);
 
-  // ✅ NUEVOS MÉTODOS DE PERMISOS
-  const hasPermission = useCallback((module: string, action: string): boolean => {
-    if (!permissions || permissions.length === 0) return false;
-    
-    return permissions.some(
-      (p) => p.module === module && p.action === action
-    );
-  }, [permissions]);
+  // ✅ MÉTODOS DE PERMISOS
+  const hasPermission = useCallback(
+    (module: string, action: string): boolean => {
+      if (!permissions || permissions.length === 0) return false;
 
-  const hasAnyPermission = useCallback((checks: Array<{ module: string; action: string }>): boolean => {
-    return checks.some(({ module, action }) => hasPermission(module, action));
-  }, [hasPermission]);
+      return permissions.some((p) => p.module === module && p.action === action);
+    },
+    [permissions]
+  );
 
-  const getPermissionScope = useCallback((module: string, action: string): string | null => {
-    const permission = permissions?.find(
-      (p) => p.module === module && p.action === action
-    );
-    return permission?.scope || null;
-  }, [permissions]);
+  const hasAnyPermission = useCallback(
+    (checks: Array<{ module: string; action: string }>): boolean => {
+      return checks.some(({ module, action }) => hasPermission(module, action));
+    },
+    [hasPermission]
+  );
+
+  const getPermissionScope = useCallback(
+    (module: string, action: string): string | null => {
+      const permission = permissions?.find(
+        (p) => p.module === module && p.action === action
+      );
+      return permission?.scope || null;
+    },
+    [permissions]
+  );
 
   // ✅ Actualizar el user con el role cuando se cargue
   useEffect(() => {
     if (user && role && !user.role) {
-      setUser((prev) => prev ? { ...prev, role } : null);
+      setUser((prev) => (prev ? { ...prev, role } : null));
     }
   }, [role, user]);
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      permissions,
-      role,
-      isAuthenticated: !!user,
-      isLoading,
-      login,
-      logout,
-      checkAuth,
-      hasPermission,
-      hasAnyPermission,
-      getPermissionScope,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        permissions,
+        role,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        logout,
+        checkAuth,
+        hasPermission,
+        hasAnyPermission,
+        getPermissionScope,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

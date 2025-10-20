@@ -95,6 +95,7 @@ export default function RoleForm({ editingId, onSuccess, onCancel }: RoleFormPro
       console.error('Error de validación:', error);
     }
   };
+  console.log("permission data:", permissionsData);
 
   // Agrupar permisos por módulo
   const permissionsByModule = permissionsData?.data.reduce((acc, permission) => {
@@ -105,6 +106,8 @@ export default function RoleForm({ editingId, onSuccess, onCancel }: RoleFormPro
     acc[module].push(permission);
     return acc;
   }, {} as Record<string, typeof permissionsData.data>);
+
+  console.log("Permissions by module:", permissionsByModule);
 
   // ✨ NUEVO: Helper para verificar si un permiso está seleccionado
   const isPermissionSelected = (permissionId: number): boolean => {
