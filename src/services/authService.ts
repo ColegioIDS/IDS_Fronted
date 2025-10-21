@@ -1,7 +1,6 @@
-// src/services/authService.ts
-import axios from 'axios';
-import { API_BASE_URL } from '@/config/api';
+import { api } from '@/config/api';  // ✅ Cambio aquí
 import { UserPermissionsResponse } from '@/types/permissions'; 
+
 export interface LoginCredentials {
   dpi?: string;
   email?: string;
@@ -10,18 +9,15 @@ export interface LoginCredentials {
 
 export const signin = async (credentials: LoginCredentials) => {
   try {
-    const response = await axios.post(
-      `${API_BASE_URL}/api/auth/signin`, 
-      credentials, 
-      { withCredentials: true }
+    const response = await api.post(
+      '/api/auth/signin',  // ✅ Sin API_BASE_URL
+      credentials
     );
 
-    // ✨ Backend retorna: { success: true, user: {...}, token?: string }
     if (!response.data.success) {
       throw new Error(response.data.message || 'Error en el inicio de sesión');
     }
 
-    // ✨ Transformar a formato esperado por tu contexto
     const { user } = response.data;
     return {
       id: user.id.toString(),
@@ -30,7 +26,6 @@ export const signin = async (credentials: LoginCredentials) => {
       email: user.email || '',
     };
   } catch (error: any) {
-    // ✨ Manejar errores estructurados del backend
     if (error.response?.data) {
       const { message, details } = error.response.data;
       throw {
@@ -43,21 +38,13 @@ export const signin = async (credentials: LoginCredentials) => {
 };
 
 export const logout = async () => {
-  await axios.post(
-    `${API_BASE_URL}/api/auth/logout`, 
-    {}, 
-    { withCredentials: true }
-  );
+  await api.post('/api/auth/logout', {});
 };
 
 export const verifySession = async () => {
   try {
-    const response = await axios.get(
-      `${API_BASE_URL}/api/auth/verify`, 
-      { withCredentials: true }
-    );
+    const response = await api.get('/api/auth/verify');
     
-    // ✨ Backend retorna: { success: true, data: {...} }
     const user = response.data.data;
     return {
       id: user.id.toString(),
@@ -70,13 +57,9 @@ export const verifySession = async () => {
   }
 };
 
-
 export const getMyPermissions = async (): Promise<UserPermissionsResponse> => {
   try {
-    const response = await axios.get(
-      `${API_BASE_URL}/api/auth/me/permissions`,
-      { withCredentials: true }
-    );
+    const response = await api.get('/api/auth/me/permissions');
     
     return response.data.data;
   } catch (error) {
