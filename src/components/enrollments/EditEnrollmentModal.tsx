@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { X, Edit2 } from 'lucide-react';
-import { Enrollment } from './useEnrollment';
+
+interface Enrollment {
+  id: number;
+  studentId: number;
+  cycleId: number;
+  gradeId: number;
+  sectionId: number;
+  status: 'active' | 'graduated' | 'transferred';
+}
 
 interface EditEnrollmentModalProps {
   enrollment: Enrollment | null;
