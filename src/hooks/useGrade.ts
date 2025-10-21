@@ -50,7 +50,7 @@ export function useGrade(isEditMode: boolean = false, id?: number) {
         setGradesError(null);
         try {
             const response = await getGrades();
-            setGrades(response);
+            setGrades(Array.isArray(response) ? response : response.data || []);
         } catch (error) {
             setGradesError('Error al cargar los grados');
             console.error(error);

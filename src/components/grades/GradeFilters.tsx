@@ -1,7 +1,7 @@
 // src/components/grades/GradeFilters.tsx
 'use client';
 import { useState } from 'react';
-import { GradeFilters } from '@/types/grades';
+import type { GradeFilters } from '@/types/grades';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {

@@ -13,7 +13,7 @@ export function transformToCreateUserPayload(
     const payload: CreateUserPayload = {
       username: formData.username,
       email: formData.email,
-      password: formData.password,
+      password: formData.password ?? "",
       givenNames: formData.givenNames,
       lastNames: formData.lastNames,
       dpi: formData.dpi,
@@ -31,12 +31,12 @@ export function transformToCreateUserPayload(
 
 
     if (pictureData) {
-    payload.picture = {
+    payload.pictures = [{
       kind: 'profile',
       url: pictureData.url,
       publicId: pictureData.publicId,
       description: 'Foto de perfil',
-    };
+    }];
   }
 
     if (isParent && formData.parentDetails) {

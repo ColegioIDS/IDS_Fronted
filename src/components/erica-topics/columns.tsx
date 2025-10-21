@@ -164,7 +164,7 @@ export const createColumns = (
               className="text-xs font-medium"
               style={{ 
                 backgroundColor: courseColor ? `${courseColor}15` : undefined,
-                borderColor: courseColor || undefined 
+               
               }}
             >
               {course.code}

@@ -133,8 +133,6 @@ export default function GradesContent() {
         </div>
         <LoadingSpinner 
           size="lg" 
-          text="Cargando grados..." 
-          type="grades" 
         />
       </div>
     );

@@ -220,9 +220,11 @@ export const dateRangeSchema = z.object({
 });
 
 // Complex filters schema (combining multiple filter types)
-export const complexFiltersSchema = evaluationFiltersSchema
-  .merge(searchSchema)
-  .merge(paginationSchema);
+export const complexFiltersSchema = z.intersection(
+  z.intersection(evaluationFiltersSchema, searchSchema),
+  paginationSchema
+);
+
 
 // Inferred types from schemas
 export type CreateEricaEvaluationDto = z.infer<typeof createEricaEvaluationSchema>;
