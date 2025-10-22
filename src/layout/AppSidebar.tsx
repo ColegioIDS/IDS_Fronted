@@ -215,7 +215,6 @@ const navItems: NavItem[] = [
       },
     ]
   },
-
   {
     icon: <ClipboardList className="w-5 h-5" />,
     name: "Matrículas",
