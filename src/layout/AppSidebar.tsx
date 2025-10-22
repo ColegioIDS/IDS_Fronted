@@ -59,15 +59,16 @@ const navItems: NavItem[] = [
     ],
     subItems: [
       {
-        name: "Roles",
-        path: "/roles",
-        requiredPermission: { module: 'role', action: 'read' }
-      },
-      {
         name: "Permisos",
         path: "/permissions",
         requiredPermission: { module: 'permission', action: 'read' }
       },
+      {
+        name: "Roles",
+        path: "/roles",
+        requiredPermission: { module: 'role', action: 'read' }
+      }
+      
     ],
   },
 
@@ -130,7 +131,6 @@ const navItems: NavItem[] = [
         requiredPermission: { module: 'user', action: 'read' }
       },
       { name: "Crear Usuario", path: "/users/create", requiredPermission: { module: 'user', action: 'create' } },
-      { name: "Asignacion Grados - Ciclos", path: "/grade-cycle" },
       
     ]
 
@@ -150,7 +150,9 @@ const navItems: NavItem[] = [
        },
       { name: "Secciones", path: "/sections",
         requiredPermission: { module: 'section', action: 'read' }
-      }
+      },
+      { name: "Asignacion Grados - Ciclos", path: "/grade-cycle" },
+
     ]
 
 
