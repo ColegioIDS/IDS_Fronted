@@ -219,16 +219,20 @@ const navItems: NavItem[] = [
   {
     icon: <ClipboardList className="w-5 h-5" />,
     name: "Matrículas",
+    requiredAnyPermissions: [
+      { module: 'enrollment', action: 'read' },
+      { module: 'enrollment', action: 'create' }
+    ],
     subItems: [
-      { name: "Lista de Matrículas", path: "/enrollments/list", pro: false },
-      { name: "Crear Matrícula", path: "/enrollments/create", pro: false },
+      { name: "Lista de Matrículas", path: "/enrollments/list", pro: false, requiredPermission: { module: 'enrollment', action: 'read' } },
+      { name: "Crear Matrícula", path: "/enrollments/create", pro: false, requiredPermission: { module: 'enrollment', action: 'create' } },
     ]
   },
   {
     icon: <CalendarCheck2 className="w-5 h-5" />,
     name: "Asistencia",
-    path: "/attendance"
-
+  requiredPermission: { module: 'attendance', action: 'read' },
+    path: "/attendance", 
   }
 
 ];
