@@ -29,6 +29,7 @@ export const useLoginForm = () => {
       
       const user = await signin(dataForm);
       login(user);
+      console.log("Usuario autenticado:", user);
       router.push("/dashboard");
     } catch (error: any) {
       console.error('Login error:', error);

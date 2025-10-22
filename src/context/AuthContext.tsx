@@ -96,44 +96,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  const checkAuth = useCallback(
-    async (force = false) => {
-      setIsLoading(true);
+ const checkAuth = useCallback(
+  async (force = false) => {
+    // Si ya verificamos recientemente, no volver a hacerlo
+    if (!force && user && Date.now() - lastCheck < 5 * 60 * 1000) {
+      setIsLoading(false);
+      return;
+    }
 
-      if (!force && Date.now() - lastCheck < 5 * 60 * 1000) {
-        setIsLoading(false);
-        return;
-      }
+    setIsLoading(true);
 
-      try {
-        const userData = await verifySession();
-        setUser(userData);
-        setLastCheck(Date.now());
-
-        await loadPermissions();
-
-        if (['/signin', '/signup'].includes(pathname) && userData) {
-          router.replace('/dashboard');
-        }
-      } catch (error) {
-        setUser(null);
-        setPermissions([]);
-        setRole(null);
-        setLastCheck(0);
-
-        if (pathname.startsWith('/dashboard') || pathname.startsWith('/profile')) {
-          router.replace('/signin');
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [pathname, router, lastCheck, loadPermissions]
-  );
+    try {
+      const userData = await verifySession();
+      console.log("✅ Usuario verificado:", userData);
+      setUser(userData);
+      setLastCheck(Date.now());
+      await loadPermissions();
+    } catch (error) {
+      console.error("❌ Verificación fallida:", error);
+      setUser(null);
+      setPermissions([]);
+      setRole(null);
+      setLastCheck(0);
+    } finally {
+      setIsLoading(false);
+    }
+  },
+  [user, lastCheck, loadPermissions]
+);
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+  }, []);
 
   const login = useCallback(
     async (userData: User) => {

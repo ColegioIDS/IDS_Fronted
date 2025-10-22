@@ -1,3 +1,4 @@
+//src\app\(admin)\dashboard\page.tsx
 import type { Metadata } from "next";
 import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
 import React from "react";

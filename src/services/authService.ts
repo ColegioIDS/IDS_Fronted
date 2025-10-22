@@ -44,8 +44,14 @@ export const logout = async () => {
 export const verifySession = async () => {
   try {
     const response = await api.get('/api/auth/verify');
-    
     const user = response.data.data;
+    
+    if (!user?.id) {
+      throw new Error('Respuesta de sesión inválida');
+    }
+    
+    console.log("✅ Session verified:", user);
+    
     return {
       id: user.id.toString(),
       fullName: `${user.givenNames} ${user.lastNames}`,
@@ -53,6 +59,7 @@ export const verifySession = async () => {
       email: user.email || '',
     };
   } catch (error) {
+    console.error("❌ verifySession error:", error);
     throw new Error('Sesión inválida');
   }
 };
