@@ -88,7 +88,7 @@ const navItems: NavItem[] = [
     subItems: [
       {
         name: "Ciclos Escolares",
-        path: "/cycle",
+        path: "/school-cycles",
         pro: false,
         requiredPermission: { module: 'school-cycle', action: 'read' }
       },

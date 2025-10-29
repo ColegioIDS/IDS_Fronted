@@ -1,3 +1,30 @@
+# IDS Colegio - Sistema de Gestión Académica
+
+Sistema de gestión académica completo construido sobre **Next.js 15 + TypeScript + Tailwind CSS**, proporcionando todas las herramientas necesarias para administrar un colegio de forma integral.
+
+## 🎯 Nueva Integración: Endpoints de Ciclos para Bimestres
+
+Se ha completado la integración de **endpoints de ciclos escolares accesibles desde permisos de bimester**, permitiendo que usuarios con permisos limitados puedan gestionar bimestres sin necesidad de permisos de administración de ciclos.
+
+### 📚 Documentación de la Integración
+
+- **[📖 README Principal](./README_BIMESTER_INTEGRATION.md)** - Resumen completo de la implementación
+- **[🚀 Quick Start](./QUICK_START_BIMESTER_CYCLES.md)** - Guía rápida con ejemplos copy-paste
+- **[🔧 Documentación Completa](./INTEGRATION_BIMESTER_CYCLES.md)** - Documentación técnica detallada
+- **[📝 Endpoints Backend](./BIMESTER_CYCLES_ENDPOINTS.md)** - Especificación de los endpoints
+
+### ✨ Características Principales
+
+- ✅ **3 nuevos endpoints** para ciclos escolares desde bimester
+- ✅ **Componentes reutilizables** (CycleSelector, CycleInfo)
+- ✅ **Hooks especializados** (useBimesters, useBimesterCycles)
+- ✅ **Formulario completo** de ejemplo con validación Zod
+- ✅ **Dark mode completo** y responsive
+- ✅ **TypeScript estricto** sin 'any'
+- ✅ **Manejo de errores centralizado** con toasts
+
+---
+
 # TailAdmin Next.js - Free Next.js Tailwind Admin Dashboard Template
 
 TailAdmin is a free and open-source admin dashboard template built on **Next.js and Tailwind CSS** providing developers with everything they need to create a feature-rich and data-driven: back-end, dashboard, or admin panel solution for any sort of web project.
