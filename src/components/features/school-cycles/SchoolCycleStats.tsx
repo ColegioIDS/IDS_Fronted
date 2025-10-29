@@ -13,7 +13,7 @@ interface SchoolCycleStatsProps {
 
 export function SchoolCycleStats({ cycles, isLoading = false }: SchoolCycleStatsProps) {
   const activeCycle = cycles.find((c) => c.isActive);
-  const closedCycles = cycles.filter((c) => c.isClosed);
+  const closedCycles = cycles.filter((c) => c.isArchived);
   const totalEnrollments = cycles.reduce((sum, c) => sum + (c._count?.enrollments || 0), 0);
   const totalGrades = cycles.reduce((sum, c) => sum + (c._count?.grades || 0), 0);
 

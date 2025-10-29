@@ -10,6 +10,12 @@ export interface Bimester {
   weeksCount: number;
 }
 
+export interface User {
+  id: number;
+  givenNames: string;
+  lastNames: string;
+}
+
 export interface SchoolCycleCounts {
   bimesters: number;
   grades: number;
@@ -19,20 +25,40 @@ export interface SchoolCycleCounts {
 export interface SchoolCycle {
   id: number;
   name: string;
+  description?: string | null;
+  academicYear?: number | null;
   startDate: string;
   endDate: string;
   isActive: boolean;
-  isClosed: boolean;
+  isArchived: boolean; // ← CHANGED: was isClosed
+  canEnroll: boolean;
+  
+  // Campos de auditoría de archivo (renombrado de cierre)
+  archivedAt?: string | null; // ← CHANGED: was closedAt
+  archivedBy?: number | null; // ← CHANGED: was closedBy
+  archiveReason?: string | null; // ← CHANGED: was closedReason
+  
+  // Campos de auditoría general
+  createdById?: number | null;
+  modifiedById?: number | null;
   createdAt: string;
+  updatedAt?: string | null;
+  
+  // Relaciones
   bimesters?: Bimester[];
   _count?: SchoolCycleCounts;
+  
+  // Usuarios relacionados
+  createdBy?: User | null;
+  modifiedBy?: User | null;
+  archivedByUser?: User | null; // ← CHANGED: was closedByUser
 }
 
 export interface SchoolCycleStats {
   id: number;
   name: string;
   isActive: boolean;
-  isClosed: boolean;
+  isArchived: boolean; // ← CHANGED: was isClosed
   stats: {
     durationDays: number;
     totalBimesters: number;
@@ -48,16 +74,23 @@ export interface SchoolCycleStats {
 
 export interface CreateSchoolCycleDto {
   name: string;
+  description?: string;
+  academicYear?: number;
   startDate: string;
   endDate: string;
   isActive?: boolean;
+  canEnroll?: boolean;
 }
 
 export interface UpdateSchoolCycleDto {
   name?: string;
+  description?: string;
+  academicYear?: number;
   startDate?: string;
   endDate?: string;
   isActive?: boolean;
+  canEnroll?: boolean;
+  archiveReason?: string; // ← CHANGED: was closedReason
 }
 
 export interface QuerySchoolCyclesDto {
@@ -65,7 +98,8 @@ export interface QuerySchoolCyclesDto {
   limit?: number;
   search?: string;
   isActive?: boolean;
-  isClosed?: boolean;
+  isArchived?: boolean; // ← CHANGED: was isClosed
+  canEnroll?: boolean;
   year?: number;
   sortBy?: 'name' | 'startDate' | 'endDate' | 'createdAt';
   sortOrder?: 'asc' | 'desc';

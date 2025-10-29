@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { QuerySchoolCyclesDto } from '@/types/school-cycle.types';
-import { Search, Filter, X, Zap, Lock, Calendar } from 'lucide-react';
+import { Search, Filter, X, Zap, Lock, Calendar, CheckCircle } from 'lucide-react';
 import { getModuleTheme } from '@/config/theme.config';
 
 interface SchoolCycleFiltersProps {
@@ -24,7 +24,8 @@ export function SchoolCycleFilters({
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     isActive: undefined as boolean | undefined,
-    isClosed: undefined as boolean | undefined,
+isArchived: undefined as boolean | undefined,
+    canEnroll: undefined as boolean | undefined, // ← NUEVO
     sortBy: 'createdAt' as const,
     sortOrder: 'desc' as const,
   });
@@ -44,7 +45,8 @@ export function SchoolCycleFilters({
 
       onFilterChange({
         isActive: newFilters.isActive,
-        isClosed: newFilters.isClosed,
+        isArchived: newFilters.isArchived,
+        canEnroll: newFilters.canEnroll, // ← NUEVO
         sortBy: newFilters.sortBy,
         sortOrder: newFilters.sortOrder,
         page: 1,
@@ -57,14 +59,16 @@ export function SchoolCycleFilters({
     setSearch('');
     setFilters({
       isActive: undefined,
-      isClosed: undefined,
+      isArchived: undefined,
+      canEnroll: undefined, // ← NUEVO
       sortBy: 'createdAt',
       sortOrder: 'desc',
     });
     onFilterChange({
       search: undefined,
       isActive: undefined,
-      isClosed: undefined,
+      isArchived: undefined,
+      canEnroll: undefined, // ← NUEVO
       sortBy: 'createdAt',
       sortOrder: 'desc',
       page: 1,
@@ -74,7 +78,7 @@ export function SchoolCycleFilters({
   const hasActiveFilters =
     search.trim().length > 0 ||
     filters.isActive !== undefined ||
-    filters.isClosed !== undefined;
+    filters.isArchived !== undefined;
 
   return (
     <Card className="border-0 shadow-md bg-white dark:bg-gray-900">
@@ -120,12 +124,12 @@ export function SchoolCycleFilters({
 
         {/* Advanced filters */}
         {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-3 border-t border-gray-200 dark:border-gray-800">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 pt-3 border-t border-gray-200 dark:border-gray-800">
             {/* Estado activo */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 <Zap className="w-4 h-4" strokeWidth={2.5} />
-                Estado Activo
+                Activo
               </label>
               <select
                 value={filters.isActive === undefined ? '' : String(filters.isActive)}
@@ -146,13 +150,13 @@ export function SchoolCycleFilters({
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 <Lock className="w-4 h-4" strokeWidth={2.5} />
-                Estado Cerrado
+                Cerrado
               </label>
               <select
-                value={filters.isClosed === undefined ? '' : String(filters.isClosed)}
+                value={filters.isArchived === undefined ? '' : String(filters.isArchived)}
                 onChange={(e) => {
                   const value = e.target.value === '' ? undefined : e.target.value === 'true';
-                  handleFilterChange('isClosed', value);
+                  handleFilterChange('isArchived', value);
                 }}
                 disabled={isLoading}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
@@ -160,6 +164,27 @@ export function SchoolCycleFilters({
                 <option value="">Todos</option>
                 <option value="true">Cerrados</option>
                 <option value="false">Abiertos</option>
+              </select>
+            </div>
+
+            {/* Matrículas */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" strokeWidth={2.5} />
+                Matrículas
+              </label>
+              <select
+                value={filters.canEnroll === undefined ? '' : String(filters.canEnroll)}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? undefined : e.target.value === 'true';
+                  handleFilterChange('canEnroll', value);
+                }}
+                disabled={isLoading}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+              >
+                <option value="">Todas</option>
+                <option value="true">Abiertas</option>
+                <option value="false">Cerradas</option>
               </select>
             </div>
 

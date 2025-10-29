@@ -10,17 +10,24 @@ import { useSchoolCycles } from '@/hooks/data/useSchoolCycles';
 import { usePermissions } from '@/hooks/usePermissions';
 import { schoolCycleService } from '@/services/school-cycle.service';
 import { SchoolCycle, QuerySchoolCyclesDto } from '@/types/school-cycle.types';
-import { ProtectedButton } from '@/components/shared/permissions/ProtectedButton';
 import { ProtectedContent } from '@/components/shared/permissions/ProtectedContent';
 import { NoPermissionCard } from '@/components/shared/permissions/NoPermissionCard';
+import { handleApiError } from '@/utils/handleApiError';
 import {
   SchoolCycleStats,
   SchoolCycleFilters,
   SchoolCycleGrid,
   SchoolCycleForm,
   SchoolCycleDetailDialog,
+  ArchiveReasonDialog, // ← NUEVO
 } from './index';
 import { Plus, Loader } from 'lucide-react';
+
+interface ApiError {
+  title?: string;
+  message: string;
+  details?: string[];
+}
 
 export function SchoolCyclePageContent() {
   const { hasPermission } = usePermissions();
@@ -31,8 +38,13 @@ export function SchoolCyclePageContent() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [editingCycle, setEditingCycle] = useState<SchoolCycle | null>(null);
+  
+  // ✅ NUEVO: Estados para Archive Dialog
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [cycleToArchive, setCycleToArchive] = useState<SchoolCycle | null>(null);
+  
   const [actionLoading, setActionLoading] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [globalError, setGlobalError] = useState<ApiError | null>(null);
 
   // Permisos
   const canRead = hasPermission('school-cycle', 'read');
@@ -40,12 +52,12 @@ export function SchoolCyclePageContent() {
   const canUpdate = hasPermission('school-cycle', 'update');
   const canDelete = hasPermission('school-cycle', 'delete');
   const canActivate = hasPermission('school-cycle', 'activate');
-  const canClose = hasPermission('school-cycle', 'close');
+  const canArchive = hasPermission('school-cycle', 'activate'); // ← CAMBIO: era canClose
 
   const hasSearchFilter =
     (query.search && query.search.trim().length > 0) ||
     query.isActive !== undefined ||
-    query.isClosed !== undefined;
+    query.isArchived !== undefined; // ← CAMBIO: era isClosed
 
   // Handlers
   const handleFilterChange = useCallback(
@@ -59,8 +71,8 @@ export function SchoolCyclePageContent() {
     updateQuery({
       search: undefined,
       isActive: undefined,
-      isClosed: undefined,
-      sortBy: 'createdAt',
+      isArchived: undefined, // ← CAMBIO: era isClosed
+      sortBy: 'startDate',
       sortOrder: 'desc',
       page: 1,
     });
@@ -77,12 +89,16 @@ export function SchoolCyclePageContent() {
 
       try {
         setActionLoading(true);
-        setActionError(null);
+        setGlobalError(null);
         await schoolCycleService.delete(cycle.id);
         refresh();
       } catch (err: any) {
-        setActionError(err.message || 'Error al eliminar ciclo escolar');
-        console.error('Delete error:', err);
+        const handled = handleApiError(err, 'Error al eliminar ciclo escolar');
+        setGlobalError({
+          title: 'Error al eliminar',
+          message: handled.message,
+          details: handled.details,
+        });
       } finally {
         setActionLoading(false);
       }
@@ -101,12 +117,16 @@ export function SchoolCyclePageContent() {
 
       try {
         setActionLoading(true);
-        setActionError(null);
+        setGlobalError(null);
         await schoolCycleService.activate(cycle.id);
         refresh();
       } catch (err: any) {
-        setActionError(err.message || 'Error al activar ciclo escolar');
-        console.error('Activate error:', err);
+        const handled = handleApiError(err, 'Error al activar ciclo escolar');
+        setGlobalError({
+          title: 'Error al activar',
+          message: handled.message,
+          details: handled.details,
+        });
       } finally {
         setActionLoading(false);
       }
@@ -114,28 +134,37 @@ export function SchoolCyclePageContent() {
     [refresh]
   );
 
-  const handleClose = useCallback(
-    async (cycle: SchoolCycle) => {
-      if (
-        !confirm(
-          `¿Cerrar el ciclo "${cycle.name}"? Esto bloqueará cualquier modificación futura.`
-        )
-      )
-        return;
+  // ✅ NUEVO: Handler para abrir Archive Dialog
+  const handleArchiveClick = useCallback((cycle: SchoolCycle) => {
+    setCycleToArchive(cycle);
+    setArchiveDialogOpen(true);
+  }, []);
+
+  // ✅ NUEVO: Handler para confirmar Archive con razón
+  const handleArchiveConfirm = useCallback(
+    async (reason: string) => {
+      if (!cycleToArchive) return;
 
       try {
         setActionLoading(true);
-        setActionError(null);
-        await schoolCycleService.close(cycle.id);
+        setGlobalError(null);
+        // ← AQUÍ: Se envía la razón al servicio
+        await schoolCycleService.archive(cycleToArchive.id, reason);
         refresh();
+        setArchiveDialogOpen(false);
+        setCycleToArchive(null);
       } catch (err: any) {
-        setActionError(err.message || 'Error al cerrar ciclo escolar');
-        console.error('Close error:', err);
+        const handled = handleApiError(err, 'Error al archivar ciclo escolar');
+        setGlobalError({
+          title: 'Error al archivar',
+          message: handled.message,
+          details: handled.details,
+        });
       } finally {
         setActionLoading(false);
       }
     },
-    [refresh]
+    [cycleToArchive, refresh]
   );
 
   const handleViewDetails = useCallback((cycle: SchoolCycle) => {
@@ -146,11 +175,13 @@ export function SchoolCyclePageContent() {
   const handleFormSuccess = useCallback(() => {
     setFormDialogOpen(false);
     setEditingCycle(null);
+    setGlobalError(null);
     refresh();
   }, [refresh]);
 
   const handleCreateClick = useCallback(() => {
     setEditingCycle(null);
+    setGlobalError(null);
     setFormDialogOpen(true);
   }, []);
 
@@ -161,8 +192,8 @@ export function SchoolCyclePageContent() {
         <NoPermissionCard
           title="Acceso Denegado"
           description="No tienes permiso para ver ciclos escolares"
-        //  requiredPermission="school-cycle:read"
-        />
+/*           requiredPermission="school-cycle:read"
+ */        />
       </div>
     );
   }
@@ -180,7 +211,7 @@ export function SchoolCyclePageContent() {
           </p>
         </div>
 
-        <ProtectedContent module="school-cycle" action="create">
+        <ProtectedContent module="school-cycle" action="create" hideOnNoPermission>
           <Button
             onClick={handleCreateClick}
             disabled={isLoading || actionLoading}
@@ -195,7 +226,7 @@ export function SchoolCyclePageContent() {
       {/* Estadísticas */}
       <SchoolCycleStats cycles={data} isLoading={isLoading} />
 
-      {/* Errores globales */}
+      {/* Errores globales - Carga de datos */}
       {error && (
         <ErrorAlert
           title="Error al cargar"
@@ -204,11 +235,12 @@ export function SchoolCyclePageContent() {
         />
       )}
 
-      {actionError && (
+      {/* Errores globales - Acciones */}
+      {globalError && (
         <ErrorAlert
-          title="Error en la operación"
-          message={actionError}
-          details={['Verifica los datos e intenta nuevamente']}
+          title={globalError.title}
+          message={globalError.message}
+          details={globalError.details}
         />
       )}
 
@@ -226,7 +258,7 @@ export function SchoolCyclePageContent() {
         onEdit={canUpdate ? handleEdit : undefined}
         onDelete={canDelete ? handleDelete : undefined}
         onActivate={canActivate ? handleActivate : undefined}
-        onClose={canClose ? handleClose : undefined}
+        onArchive={canArchive ? handleArchiveClick : undefined} // ← CAMBIO: era onClose
         onViewDetails={handleViewDetails}
         onCreate={canCreate ? handleCreateClick : undefined}
         onClearFilters={handleClearFilters}
@@ -301,6 +333,18 @@ export function SchoolCyclePageContent() {
         cycle={selectedCycle}
         open={detailDialogOpen}
         onOpenChange={setDetailDialogOpen}
+      />
+
+      {/* ✅ NUEVO: Archive Reason Dialog */}
+      <ArchiveReasonDialog
+        cycle={cycleToArchive}
+        open={archiveDialogOpen}
+        onConfirm={handleArchiveConfirm}
+        onCancel={() => {
+          setArchiveDialogOpen(false);
+          setCycleToArchive(null);
+        }}
+        isLoading={actionLoading}
       />
 
       {/* Loading overlay */}

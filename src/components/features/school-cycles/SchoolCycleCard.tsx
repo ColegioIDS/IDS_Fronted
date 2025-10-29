@@ -17,6 +17,7 @@ import {
   Lock,
   Zap,
   ChevronRight,
+  CheckCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -65,10 +66,16 @@ export function SchoolCycleCard({
                 Activo
               </Badge>
             )}
-            {cycle.isClosed && (
+            {cycle.isArchived  && (
               <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-300 flex items-center gap-1">
                 <Lock className="w-3 h-3" strokeWidth={3} />
                 Cerrado
+              </Badge>
+            )}
+            {!cycle.isArchived  && cycle.canEnroll && (
+              <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" strokeWidth={3} />
+                Matrículas
               </Badge>
             )}
           </div>
@@ -152,7 +159,7 @@ export function SchoolCycleCard({
             </Button>
           )}
 
-          {!cycle.isClosed && onEdit && (
+          {!cycle.isArchived  && onEdit && (
             <Button
               onClick={() => onEdit(cycle)}
               disabled={isLoading}
@@ -163,7 +170,7 @@ export function SchoolCycleCard({
             </Button>
           )}
 
-          {!cycle.isClosed && !cycle.isActive && onActivate && (
+          {!cycle.isArchived  && !cycle.isActive && onActivate && (
             <Button
               onClick={() => onActivate(cycle)}
               disabled={isLoading}
@@ -175,7 +182,7 @@ export function SchoolCycleCard({
             </Button>
           )}
 
-          {!cycle.isClosed && isEnded && onClose && (
+          {!cycle.isArchived  && isEnded && onClose && (
             <Button
               onClick={() => onClose(cycle)}
               disabled={isLoading}
@@ -187,7 +194,7 @@ export function SchoolCycleCard({
             </Button>
           )}
 
-          {!cycle.isClosed && onDelete && (
+          {!cycle.isArchived  && onDelete && (
             <Button
               onClick={() => onDelete(cycle)}
               disabled={isLoading}

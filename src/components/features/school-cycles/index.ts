@@ -7,3 +7,4 @@ export { SchoolCycleFilters } from './SchoolCycleFilters';
 export { SchoolCycleStats } from './SchoolCycleStats';
 export { SchoolCycleDetailDialog } from './SchoolCycleDetailDialog';
 export { SchoolCyclePageContent } from './SchoolCyclePageContent';
+export { ArchiveReasonDialog } from './ArchiveReasonDialog';

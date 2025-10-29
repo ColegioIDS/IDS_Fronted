@@ -98,7 +98,7 @@ export function SchoolCycleDetailDialog({
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Estado General</p>
                   <p className="text-lg font-bold text-gray-900 dark:text-white">
-                    {cycle.isClosed ? 'Cerrado' : cycle.isActive ? 'Activo' : 'Inactivo'}
+                    {cycle.isArchived ? 'Cerrado' : cycle.isActive ? 'Activo' : 'Inactivo'}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -108,13 +108,13 @@ export function SchoolCycleDetailDialog({
                       Activo
                     </Badge>
                   )}
-                  {cycle.isClosed && (
+                  {cycle.isArchived && (
                     <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-300 flex items-center gap-1">
                       <Lock className="w-3 h-3" strokeWidth={3} />
                       Cerrado
                     </Badge>
                   )}
-                  {!cycle.isActive && !cycle.isClosed && (
+                  {!cycle.isActive && !cycle.isArchived && (
                     <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
                       Inactivo
                     </Badge>
@@ -242,16 +242,66 @@ export function SchoolCycleDetailDialog({
                   <span className="text-gray-600 dark:text-gray-400">ID del Ciclo:</span>
                   <span className="font-mono text-gray-900 dark:text-white">{cycle.id}</span>
                 </div>
+                {cycle.academicYear && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Año Académico:</span>
+                    <span className="text-gray-900 dark:text-white">{cycle.academicYear}</span>
+                  </div>
+                )}
+                {cycle.description && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Descripción:</span>
+                    <span className="text-gray-900 dark:text-white">{cycle.description}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Matrículas:</span>
+                  <span className={cycle.canEnroll ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                    {cycle.canEnroll ? 'Abiertas' : 'Cerradas'}
+                  </span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Creado:</span>
                   <span className="text-gray-900 dark:text-white">
                     {format(new Date(cycle.createdAt), 'dd MMM yyyy HH:mm', { locale: es })}
                   </span>
                 </div>
+                {cycle.createdBy && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Por:</span>
+                    <span className="text-gray-900 dark:text-white">
+                      {cycle.createdBy.givenNames} {cycle.createdBy.lastNames}
+                    </span>
+                  </div>
+                )}
+                {cycle.isArchived && cycle.archivedAt && (
+                  <>
+                    <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-800">
+                      <span className="text-gray-600 dark:text-gray-400">Archivado:</span>
+                      <span className="text-gray-900 dark:text-white">
+                        {format(new Date(cycle.archivedAt), 'dd MMM yyyy HH:mm', { locale: es })}
+                      </span>
+                    </div>
+                    {cycle.archiveReason && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Razón:</span>
+                        <span className="text-gray-900 dark:text-white">{cycle.archiveReason}</span>
+                      </div>
+                    )}
+                    {cycle.archivedByUser && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Por:</span>
+                        <span className="text-gray-900 dark:text-white">
+                          {cycle.archivedByUser.givenNames} {cycle.archivedByUser.lastNames}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
-        )}
+        )}  
       </DialogContent>
     </Dialog>
   );

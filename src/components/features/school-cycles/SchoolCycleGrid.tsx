@@ -15,7 +15,7 @@ interface SchoolCycleGridProps {
   onEdit?: (cycle: SchoolCycle) => void;
   onDelete?: (cycle: SchoolCycle) => void;
   onActivate?: (cycle: SchoolCycle) => void;
-  onClose?: (cycle: SchoolCycle) => void;
+  onArchive?: (cycle: SchoolCycle) => void;
   onViewDetails?: (cycle: SchoolCycle) => void;
   onCreate?: () => void;
   onClearFilters?: () => void;
@@ -28,7 +28,7 @@ export function SchoolCycleGrid({
   onEdit,
   onDelete,
   onActivate,
-  onClose,
+  onArchive,
   onViewDetails,
   onCreate,
   onClearFilters,
@@ -73,7 +73,7 @@ export function SchoolCycleGrid({
           onEdit={onEdit}
           onDelete={onDelete}
           onActivate={onActivate}
-          onClose={onClose}
+          onClose={onArchive}
           onViewDetails={onViewDetails}
           isLoading={isLoading}
         />
