@@ -61,7 +61,7 @@ export function AcademicWeekFormDialog({
             initialData={initialData ? {
               cycleId: (initialData as any).cycleId,
               bimesterId: (initialData as any).bimesterId,
-              weekNumber: initialData.weekNumber,
+              number: initialData.number,
               weekType: initialData.weekType,
               name: initialData.name,
               startDate: new Date(initialData.startDate),

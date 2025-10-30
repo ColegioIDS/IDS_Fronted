@@ -38,7 +38,7 @@ import { getWeekTypeTheme } from '@/config/theme.config';
 const academicWeekFormSchema = z.object({
   cycleId: z.number({ required_error: 'El ciclo escolar es requerido' }),
   bimesterId: z.number({ required_error: 'El bimestre es requerido' }),
-  weekNumber: z.number({ required_error: 'El número de semana es requerido' }).min(1).max(52),
+  number: z.number({ required_error: 'El número de semana es requerido' }).min(1).max(52),
   weekType: z.nativeEnum(WeekType, { required_error: 'El tipo de semana es requerido' }),
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres').max(100),
   startDate: z.date({ required_error: 'La fecha de inicio es requerida' }),
@@ -97,7 +97,7 @@ export function AcademicWeekForm({
     defaultValues: {
       cycleId: initialData?.cycleId,
       bimesterId: initialData?.bimesterId,
-      weekNumber: initialData?.weekNumber || 1,
+      number: initialData?.number || 1,
       weekType: initialData?.weekType || WeekType.REGULAR,
       name: initialData?.name || '',
       startDate: initialData?.startDate,
@@ -137,6 +137,7 @@ export function AcademicWeekForm({
   };
 
   const handleSubmit = async (data: AcademicWeekFormValues) => {
+    console.log('Submitting form data:', data);
     try {
       await onSubmit(data);
     } catch (error) {
@@ -224,7 +225,7 @@ export function AcademicWeekForm({
           {/* Número de Semana */}
           <FormField
             control={form.control}
-            name="weekNumber"
+            name="number"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Número de Semana *</FormLabel>

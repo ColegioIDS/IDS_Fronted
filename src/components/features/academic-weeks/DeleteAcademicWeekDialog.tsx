@@ -99,7 +99,7 @@ export function DeleteAcademicWeekDialog({
                         Número
                       </p>
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        #{week.weekNumber}
+                        #{week.number}
                       </p>
                     </div>
                     <div>

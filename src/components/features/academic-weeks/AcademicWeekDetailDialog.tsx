@@ -57,7 +57,7 @@ export function AcademicWeekDetailDialog({
                 </span>
                 {/* Badge número */}
                 <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium">
-                  Semana #{week.weekNumber}
+                  Semana #{week.number}
                 </span>
                 {/* Badge estado */}
                 {week.isActive ? (

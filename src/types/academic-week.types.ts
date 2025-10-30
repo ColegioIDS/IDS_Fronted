@@ -39,7 +39,7 @@ export enum AcademicMonth {
 export interface AcademicWeek {
   id: number;
   bimesterId: number;
-  weekNumber: number;
+  number: number;
   weekType: WeekType;
   name: string;
   startDate: string;

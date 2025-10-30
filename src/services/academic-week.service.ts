@@ -88,17 +88,20 @@ export const academicWeekService = {
    * Crear una nueva semana académica
    * @requires academic-week:create
    */
-  async create(data: CreateAcademicWeekDto): Promise<AcademicWeek> {
-    const response = await api.post('/api/academic-weeks', data);
+ async create(bimesterId: number, data: CreateAcademicWeekDto): Promise<AcademicWeek> {
+  console.log('Creating academic week with data:', data);
+  console.log('For bimester ID:', bimesterId);
+  const response = await api.post(`/api/bimesters/${bimesterId}/academic-weeks`, data);
 
-    if (!response.data?.success) {
-      const error = new Error(response.data?.message || 'Error al crear la semana académica') as any;
-      error.response = { data: response.data };
-      throw error;
-    }
+  if (!response.data?.success) {
+    const error = new Error(response.data?.message || 'Error al crear la semana académica') as any;
+    error.response = { data: response.data };
+    throw error;
+  }
 
-    return response.data.data;
-  },
+  return response.data.data;
+},
+
 
   /**
    * Actualizar una semana académica

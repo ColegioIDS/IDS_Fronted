@@ -98,7 +98,7 @@ export function AcademicWeekCard({
 
             {/* Número de semana y año */}
             <p className="text-xs text-gray-600 dark:text-gray-400">
-              Semana #{week.weekNumber} • {week.year}
+              Semana #{week.number} • {week.year}
             </p>
           </div>
 

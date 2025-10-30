@@ -137,7 +137,7 @@ export function AcademicWeekList({
               {/* Número */}
               <div className="col-span-1 flex items-center">
                 <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                  {week.weekNumber}
+                  {week.number}
                 </span>
               </div>
 

@@ -182,9 +182,18 @@ export function AcademicWeekPageContent({
     setIsSubmitting(true);
     try {
       if (formMode === 'create') {
-        await academicWeekService.create(data);
-        toast.success('Semana académica creada exitosamente');
-      } else if (selectedWeek) {
+  const bimesterId = data.bimesterId;
+  if (!bimesterId) {
+    throw new Error('Debe seleccionar un bimestre antes de crear la semana académica.');
+  }
+
+  await academicWeekService.create(bimesterId, data);
+  toast.success('Semana académica creada exitosamente');
+}
+
+      
+      
+      else if (selectedWeek) {
         await academicWeekService.update(selectedWeek.id, data);
         toast.success('Semana académica actualizada exitosamente');
       }

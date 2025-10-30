@@ -201,7 +201,7 @@ export function AcademicWeekCalendar({
                             >
                               <div className="truncate">
                                 {isStartDay && (
-                                  <span className="font-semibold">#{week.weekNumber} </span>
+                                  <span className="font-semibold">#{week.number} </span>
                                 )}
                                 {week.name}
                               </div>
