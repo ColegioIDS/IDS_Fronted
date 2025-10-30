@@ -1,4 +1,5 @@
 // src/app/layout.tsx
+
 import { Outfit } from "next/font/google";
 import "./globals.css";
 
@@ -10,14 +11,28 @@ const outfit = Outfit({
   subsets: ["latin"],
 });
 
+export const metadata = {
+  title: "Sistema de Gestión Académica",
+  description: "Plataforma de gestión de ciclos, bimestres y calificaciones",
+  other: {
+    google: "notranslate", // ← Previene que Google Translate traduzca
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-<body className={`${outfit.className} dark:bg-gray-900 overflow-x-hidden`}>
+    <html 
+      lang="es" 
+      suppressHydrationWarning
+    >
+      <body 
+        className={`${outfit.className} dark:bg-gray-900 overflow-x-hidden`}
+        suppressHydrationWarning
+      >
         <ThemeProvider>
           <AuthProvider>
             <SidebarProvider>

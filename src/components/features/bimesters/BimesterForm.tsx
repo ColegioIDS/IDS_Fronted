@@ -6,9 +6,9 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Save, X } from 'lucide-react';
+import { Loader2, Save, X, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import DatePicker from '@/components/form/date-picker';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { CycleSelector } from '@/components/shared/selectors/CycleSelector';
 import { CycleInfo } from '@/components/shared/info/CycleInfo';
 import { bimesterService } from '@/services/bimester.service';
@@ -33,7 +34,7 @@ import { Bimester } from '@/types/bimester.types';
 // ============================================
 
 const bimesterFormSchema = z.object({
-  cycleId: z.number().min(1, 'Debe seleccionar un ciclo escolar'),
+  cycleId: z.number(),
   number: z.number().min(1, 'El número debe ser al menos 1').max(4, 'El número máximo es 4'),
   name: z.string().min(1, 'El nombre es requerido').max(100, 'Máximo 100 caracteres'),
   startDate: z.string().min(1, 'La fecha de inicio es requerida'),
@@ -78,14 +79,17 @@ export function BimesterForm({
 }: BimesterFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCycleId, setSelectedCycleId] = useState<number | null>(
-    editingBimester?.schoolCycleId || null
+    editingBimester?.schoolCycleId || (editingBimester as any)?.cycleId || null
   );
-  const [startDate, setStartDate] = useState<string>(
-    editingBimester?.startDate ? format(new Date(editingBimester.startDate), 'dd/MM/yyyy') : ''
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    editingBimester?.startDate ? new Date(editingBimester.startDate) : undefined
   );
-  const [endDate, setEndDate] = useState<string>(
-    editingBimester?.endDate ? format(new Date(editingBimester.endDate), 'dd/MM/yyyy') : ''
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    editingBimester?.endDate ? new Date(editingBimester.endDate) : undefined
   );
+  const [openStartDate, setOpenStartDate] = useState(false);
+  const [openEndDate, setOpenEndDate] = useState(false);
+  const [cycleDateRange, setCycleDateRange] = useState<{ from: Date; to: Date } | null>(null);
 
   const isEditing = !!editingBimester;
 
@@ -100,7 +104,7 @@ export function BimesterForm({
   } = useForm<BimesterFormData>({
     resolver: zodResolver(bimesterFormSchema),
     defaultValues: {
-      cycleId: editingBimester?.schoolCycleId || 0,
+      cycleId: editingBimester?.schoolCycleId || (editingBimester as any)?.cycleId || 0,
       number: editingBimester?.number || 1,
       name: editingBimester?.name || '',
       startDate: editingBimester?.startDate?.split('T')[0] || '',
@@ -112,6 +116,51 @@ export function BimesterForm({
 
   const isActive = watch('isActive');
 
+  // Reiniciar formulario cuando cambie el bimestre en edición o se abra el diálogo
+  React.useEffect(() => {
+    if (open) {
+      if (editingBimester) {
+        // Modo edición: cargar datos del bimestre
+        const cycleId = editingBimester.schoolCycleId || (editingBimester as any).cycleId;
+        
+        console.log('🔧 Modo edición - Cargando bimestre:', editingBimester);
+        console.log('📍 School Cycle ID:', cycleId);
+        
+        setSelectedCycleId(cycleId);
+        setStartDate(editingBimester.startDate ? new Date(editingBimester.startDate) : undefined);
+        setEndDate(editingBimester.endDate ? new Date(editingBimester.endDate) : undefined);
+        
+        // Reiniciar formulario con valores
+        reset({
+          cycleId: cycleId,
+          number: editingBimester.number,
+          name: editingBimester.name,
+          startDate: editingBimester.startDate,
+          endDate: editingBimester.endDate,
+          isActive: editingBimester.isActive,
+          weeksCount: editingBimester.weeksCount,
+        });
+        
+        console.log('✅ Estados actualizados - selectedCycleId:', cycleId);
+      } else {
+        // Modo creación: resetear todo
+        console.log('➕ Modo creación - Reseteando formulario');
+        setSelectedCycleId(null);
+        setStartDate(undefined);
+        setEndDate(undefined);
+        reset({
+          cycleId: 0,
+          number: 1,
+          name: '',
+          startDate: '',
+          endDate: '',
+          isActive: false,
+          weeksCount: 8,
+        });
+      }
+    }
+  }, [open, editingBimester, reset]);
+
   // Sincronizar cycleId con el selector
   React.useEffect(() => {
     if (selectedCycleId) {
@@ -119,60 +168,102 @@ export function BimesterForm({
     }
   }, [selectedCycleId, setValue]);
 
+  // Sincronizar startDate con react-hook-form
+  React.useEffect(() => {
+    if (startDate) {
+      setValue('startDate', startDate.toISOString(), { shouldValidate: true });
+    }
+  }, [startDate, setValue]);
+
+  // Sincronizar endDate con react-hook-form
+  React.useEffect(() => {
+    if (endDate) {
+      setValue('endDate', endDate.toISOString(), { shouldValidate: true });
+    }
+  }, [endDate, setValue]);
+
+  // Obtener fechas del ciclo seleccionado usando SOLO bimesterService
+  // Esto asegura que use los permisos de bimester:read en lugar de school-cycle:read
+  React.useEffect(() => {
+    const fetchCycleDates = async () => {
+      if (selectedCycleId) {
+        try {
+          const cycle = await bimesterService.getCycleById(selectedCycleId);
+          if (cycle.startDate && cycle.endDate) {
+            const dateRange = {
+              from: new Date(cycle.startDate),
+              to: new Date(cycle.endDate),
+            };
+            console.log('🗓️ Rango de fechas del ciclo:', dateRange);
+            setCycleDateRange(dateRange);
+          }
+        } catch (error) {
+          console.error('Error al obtener fechas del ciclo:', error);
+          setCycleDateRange(null);
+        }
+      } else {
+        setCycleDateRange(null);
+      }
+    };
+
+    fetchCycleDates();
+  }, [selectedCycleId]);
+
   // Submit handler
   const onSubmit = async (data: BimesterFormData) => {
     try {
       setIsLoading(true);
 
-      // Convertir fechas de dd/MM/yyyy a ISO
-      let startDateISO: string;
-      let endDateISO: string;
+      console.log('📤 Enviando formulario:', {
+        isEditing,
+        data,
+        startDate,
+        endDate,
+        selectedCycleId,
+      });
 
-      try {
-        // Si las fechas vienen en formato dd/MM/yyyy, parsear
-        if (startDate.includes('/')) {
-          const parsedStart = parse(startDate, 'dd/MM/yyyy', new Date());
-          startDateISO = parsedStart.toISOString();
-        } else {
-          startDateISO = new Date(data.startDate).toISOString();
-        }
+      // Validar que el ciclo esté seleccionado (solo en modo creación)
+      if (!isEditing && (!data.cycleId || data.cycleId === 0)) {
+        toast.error('Debe seleccionar un ciclo escolar');
+        return;
+      }
 
-        if (endDate.includes('/')) {
-          const parsedEnd = parse(endDate, 'dd/MM/yyyy', new Date());
-          endDateISO = parsedEnd.toISOString();
-        } else {
-          endDateISO = new Date(data.endDate).toISOString();
-        }
-      } catch (dateError) {
-        toast.error('Error al procesar las fechas. Usa el formato dd/mm/aaaa');
+      // Validar que las fechas estén seleccionadas
+      if (!startDate || !endDate) {
+        toast.error('Debes seleccionar las fechas de inicio y fin');
         return;
       }
 
       const payload = {
         number: data.number,
         name: data.name,
-        startDate: startDateISO,
-        endDate: endDateISO,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
         isActive: data.isActive,
         weeksCount: data.weeksCount,
       };
 
+      console.log('📦 Payload a enviar:', payload);
+
       if (isEditing && editingBimester) {
         // Actualizar
+        console.log('🔄 Actualizando bimestre ID:', editingBimester.id);
         await bimesterService.update(editingBimester.id, payload);
         handleApiSuccess('Bimestre actualizado correctamente');
       } else {
         // Crear
+        console.log('➕ Creando bimestre en ciclo:', data.cycleId);
         await bimesterService.create(data.cycleId, payload);
         handleApiSuccess('Bimestre creado correctamente');
       }
 
       reset();
-      setStartDate('');
-      setEndDate('');
+      setStartDate(undefined);
+      setEndDate(undefined);
       onOpenChange(false);
       onSuccess?.();
     } catch (err: any) {
+      console.error('❌ Error en submit:', err);
       handleApiError(err, isEditing ? 'Error al actualizar bimestre' : 'Error al crear bimestre');
     } finally {
       setIsLoading(false);
@@ -181,7 +272,7 @@ export function BimesterForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900">
+      <DialogContent className="max-w-fit lg:max-w-fit overflow-y-auto  bg-white dark:bg-gray-900">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {isEditing ? 'Editar Bimestre' : 'Crear Nuevo Bimestre'}
@@ -206,7 +297,7 @@ export function BimesterForm({
                 disabled={isLoading || isEditing}
                 showDateRange
               />
-              {errors.cycleId && (
+              {!isEditing && errors.cycleId && (
                 <p className="text-sm text-red-600 dark:text-red-400">{errors.cycleId.message}</p>
               )}
 
@@ -247,43 +338,83 @@ export function BimesterForm({
 
               {/* Fechas */}
               <div className="grid grid-cols-2 gap-4">
+                {/* Fecha Inicio */}
                 <div className="space-y-2">
-                  <DatePicker
-                    id="startDate"
-                    label="Fecha Inicio"
-                    required
-                    defaultDate={editingBimester?.startDate ? new Date(editingBimester.startDate) : undefined}
-                    placeholder="dd/mm/aaaa"
-                    onChange={(selectedDates) => {
-                      if (selectedDates && selectedDates.length > 0) {
-                        const date = selectedDates[0];
-                        const formatted = format(date, 'dd/MM/yyyy');
-                        setStartDate(formatted);
-                        setValue('startDate', date.toISOString());
-                      }
-                    }}
-                  />
+                  <Label htmlFor="startDate" className="px-1">
+                    Fecha Inicio <span className="text-red-500">*</span>
+                  </Label>
+                  <Popover open={openStartDate} onOpenChange={setOpenStartDate}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        id="startDate"
+                        className="w-full justify-between font-normal bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+                      >
+                        {startDate ? format(startDate, 'dd/MM/yyyy') : 'dd/mm/aaaa'}
+                        <ChevronDown className="h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto overflow-hidden p-0 calendar-date-in-range" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        captionLayout="dropdown"
+                        fromYear={2020}
+                        toYear={2035}
+                        fromDate={cycleDateRange?.from}
+                        toDate={cycleDateRange?.to}
+                        disabled={(date) => {
+                          if (!cycleDateRange) return false;
+                          return date < cycleDateRange.from || date > cycleDateRange.to;
+                        }}
+                        onSelect={(date) => {
+                          setStartDate(date);
+                          setOpenStartDate(false);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                   {errors.startDate && (
                     <p className="text-sm text-red-600 dark:text-red-400">{errors.startDate.message}</p>
                   )}
                 </div>
 
+                {/* Fecha Fin */}
                 <div className="space-y-2">
-                  <DatePicker
-                    id="endDate"
-                    label="Fecha Fin"
-                    required
-                    defaultDate={editingBimester?.endDate ? new Date(editingBimester.endDate) : undefined}
-                    placeholder="dd/mm/aaaa"
-                    onChange={(selectedDates) => {
-                      if (selectedDates && selectedDates.length > 0) {
-                        const date = selectedDates[0];
-                        const formatted = format(date, 'dd/MM/yyyy');
-                        setEndDate(formatted);
-                        setValue('endDate', date.toISOString());
-                      }
-                    }}
-                  />
+                  <Label htmlFor="endDate" className="px-1">
+                    Fecha Fin <span className="text-red-500">*</span>
+                  </Label>
+                  <Popover open={openEndDate} onOpenChange={setOpenEndDate}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        id="endDate"
+                        className="w-full justify-between font-normal bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+                      >
+                        {endDate ? format(endDate, 'dd/MM/yyyy') : 'dd/mm/aaaa'}
+                        <ChevronDown className="h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto overflow-hidden p-0 calendar-date-in-range" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        captionLayout="dropdown"
+                        fromYear={2020}
+                        toYear={2035}
+                        fromDate={cycleDateRange?.from}
+                        toDate={cycleDateRange?.to}
+                        disabled={(date) => {
+                          if (!cycleDateRange) return false;
+                          return date < cycleDateRange.from || date > cycleDateRange.to;
+                        }}
+                        onSelect={(date) => {
+                          setEndDate(date);
+                          setOpenEndDate(false);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                   {errors.endDate && (
                     <p className="text-sm text-red-600 dark:text-red-400">{errors.endDate.message}</p>
                   )}
@@ -344,7 +475,7 @@ export function BimesterForm({
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || !selectedCycleId}
+              disabled={isLoading || (!isEditing && !selectedCycleId)}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {isLoading ? (

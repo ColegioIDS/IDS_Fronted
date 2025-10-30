@@ -55,6 +55,31 @@ export const APP_THEME = {
       text: '#1e3a8a',
     },
 
+    // 🎨 Colores pastel para calendario (suaves y profesionales)
+    calendar: {
+      available: {
+        light: '#f0fdf4',        // Verde menta muy suave
+        lightHover: '#dcfce7',   // Verde menta suave hover
+        dark: '#064e3b',         // Verde oscuro para dark mode
+        darkHover: '#065f46',    // Verde oscuro hover
+        text: '#166534',         // Texto verde oscuro
+        textDark: '#86efac',     // Texto verde claro para dark mode
+      },
+      disabled: {
+        light: '#fef2f2',        // Rosa muy suave
+        lightHover: '#fee2e2',   // Rosa suave hover
+        dark: '#450a0a',         // Rojo muy oscuro para dark mode
+        darkHover: '#7f1d1d',    // Rojo oscuro hover
+        text: '#991b1b',         // Texto rojo oscuro
+        textDark: '#fca5a5',     // Texto rojo claro para dark mode
+      },
+      selected: {
+        light: '#3b82f6',        // Azul primario
+        dark: '#2563eb',         // Azul primario oscuro
+        text: '#ffffff',         // Texto blanco
+      },
+    },
+
     // Status colors (para permisos/estados)
     status: {
       active: '#10b981',
@@ -168,6 +193,14 @@ export const APP_THEME = {
         border: 'border-sky-200 dark:border-sky-800',
         icon: 'text-sky-600 dark:text-sky-400',
         gradient: 'from-sky-500 to-sky-600',
+      },
+      academicWeek: {
+        bg: 'bg-indigo-50 dark:bg-indigo-950/30',
+        bgHover: 'hover:bg-indigo-100 dark:hover:bg-indigo-950/50',
+        text: 'text-indigo-700 dark:text-indigo-300',
+        border: 'border-indigo-200 dark:border-indigo-800',
+        icon: 'text-indigo-600 dark:text-indigo-400',
+        gradient: 'from-indigo-500 to-indigo-600',
       },
       // Fallback para módulos no definidos
       default: {
@@ -342,7 +375,44 @@ export const APP_THEME = {
     },
   },
 
-  // 📏 SPACING & RADIUS
+  // �️ WEEK TYPES (para Academic Weeks)
+  weekTypes: {
+    REGULAR: {
+      bg: 'bg-blue-50 dark:bg-blue-950/30',
+      bgHover: 'hover:bg-blue-100 dark:hover:bg-blue-950/50',
+      text: 'text-blue-700 dark:text-blue-300',
+      border: 'border-blue-200 dark:border-blue-800',
+      icon: 'text-blue-600 dark:text-blue-400',
+      badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+      gradient: 'from-blue-500 to-blue-600',
+      label: 'Regular',
+      description: 'Semana académica normal con clases regulares',
+    },
+    EVALUATION: {
+      bg: 'bg-red-50 dark:bg-red-950/30',
+      bgHover: 'hover:bg-red-100 dark:hover:bg-red-950/50',
+      text: 'text-red-700 dark:text-red-300',
+      border: 'border-red-200 dark:border-red-800',
+      icon: 'text-red-600 dark:text-red-400',
+      badge: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+      gradient: 'from-red-500 to-red-600',
+      label: 'Evaluación',
+      description: 'Semana de exámenes y evaluaciones',
+    },
+    REVIEW: {
+      bg: 'bg-amber-50 dark:bg-amber-950/30',
+      bgHover: 'hover:bg-amber-100 dark:hover:bg-amber-950/50',
+      text: 'text-amber-700 dark:text-amber-300',
+      border: 'border-amber-200 dark:border-amber-800',
+      icon: 'text-amber-600 dark:text-amber-400',
+      badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+      gradient: 'from-amber-500 to-amber-600',
+      label: 'Repaso',
+      description: 'Semana de repaso y refuerzo de contenidos',
+    },
+  },
+
+  // �📏 SPACING & RADIUS
   spacing: {
     xs: '0.25rem',
     sm: '0.5rem',
@@ -401,4 +471,13 @@ export const getStatusTheme = (status: 'active' | 'inactive' | 'system' | 'pendi
 export const getRoleTheme = (role: string) => {
   const normalizedRole = role.toLowerCase() as keyof typeof APP_THEME.roles;
   return APP_THEME.roles[normalizedRole] || APP_THEME.roles.admin;
+};
+
+/**
+ * Obtener tema de tipo de semana
+ * @param weekType - Tipo de semana (REGULAR, EVALUATION, REVIEW)
+ * @returns Objeto con clases de Tailwind para el tipo de semana
+ */
+export const getWeekTypeTheme = (weekType: 'REGULAR' | 'EVALUATION' | 'REVIEW') => {
+  return APP_THEME.weekTypes[weekType] || APP_THEME.weekTypes.REGULAR;
 };

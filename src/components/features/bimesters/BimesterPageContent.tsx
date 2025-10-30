@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useBimesters } from '@/hooks/data/useBimesters';
@@ -14,11 +14,13 @@ import { NoPermissionCard } from '@/components/shared/permissions/NoPermissionCa
 import { ErrorAlert } from '@/components/shared/feedback/ErrorAlert';
 import { BimesterStats } from './BimesterStats';
 import { BimesterFilters } from './BimesterFilters';
+import { CycleProgressCard } from './CycleProgressCard';
+import { BimesterBusinessRulesDialog } from './BimesterBusinessRulesDialog';
 import { BimesterGrid } from './BimesterGrid';
 import { BimesterForm } from './BimesterForm';
 import { BimesterDetailDialog } from './BimesterDetailDialog';
 import { DeleteBimesterDialog } from './DeleteBimesterDialog';
-import { Bimester } from '@/types/bimester.types';
+import { Bimester, SchoolCycleForBimester } from '@/types/bimester.types';
 import { handleApiError, handleApiSuccess } from '@/utils/handleApiError';
 import { bimesterService } from '@/services/bimester.service';
 
@@ -41,7 +43,7 @@ interface ApiError {
  */
 export function BimesterPageContent() {
   const { hasPermission } = usePermissions();
-  const { activeCycle } = useBimesterCycles();
+  const { activeCycle, cycles } = useBimesterCycles();
   
   // Estado de query inicial con ciclo activo
   const [initialQuery] = useState(() => ({
@@ -52,6 +54,19 @@ export function BimesterPageContent() {
 
   const { data, meta, isLoading, error, query, updateQuery, setPage, refresh } = 
     useBimesters(initialQuery);
+
+  // Estado para el ciclo seleccionado (para mostrar en el progress card)
+  const [selectedCycle, setSelectedCycle] = useState<SchoolCycleForBimester | null>(activeCycle);
+
+  // Actualizar el ciclo seleccionado cuando cambie el query
+  useEffect(() => {
+    if (query.schoolCycleId) {
+      const cycle = cycles.find((c) => c.id === query.schoolCycleId);
+      setSelectedCycle(cycle || null);
+    } else {
+      setSelectedCycle(null);
+    }
+  }, [query.schoolCycleId, cycles]);
 
   // Estados de UI
   const [selectedBimester, setSelectedBimester] = useState<Bimester | null>(null);
@@ -71,6 +86,7 @@ export function BimesterPageContent() {
 
   // Handlers
   const handleFilterChange = useCallback((filters: any) => {
+    console.log('📥 BimesterPageContent recibió filtros:', filters);
     updateQuery(filters);
   }, [updateQuery]);
 
@@ -152,19 +168,28 @@ export function BimesterPageContent() {
           </p>
         </div>
 
-        <ProtectedContent module="bimester" action="create">
-          <Button 
-            onClick={handleCreateClick}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Crear Bimestre
-          </Button>
-        </ProtectedContent>
+        <div className="flex items-center gap-3">
+          {/* Botón de Reglas de Negocio - Solo visible con permiso read */}
+          {canRead && <BimesterBusinessRulesDialog />}
+          
+          {/* Botón Crear - Solo visible con permiso create */}
+          <ProtectedContent module="bimester" action="create">
+            <Button 
+              onClick={handleCreateClick}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Crear Bimestre
+            </Button>
+          </ProtectedContent>
+        </div>
       </div>
 
       {/* Stats */}
       <BimesterStats data={data} isLoading={isLoading} />
+
+      {/* Progress Card del Ciclo Escolar */}
+      <CycleProgressCard cycle={selectedCycle} />
 
       {/* Errores globales */}
       {error && (

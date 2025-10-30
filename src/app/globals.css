@@ -921,3 +921,82 @@ span.flatpickr-weekday,
   color: white;
   border-color: #4b5563; /* gray-600 */
 }
+
+/* ============================================
+   🎨 VARIABLES CSS PARA CALENDARIO
+   Basadas en theme.config.ts
+   ============================================ */
+:root {
+  /* Fechas disponibles (verde pastel) */
+  --calendar-available-bg: #f0fdf4;
+  --calendar-available-bg-hover: #dcfce7;
+  --calendar-available-text: #166534;
+  
+  /* Fechas deshabilitadas (rosa pastel) */
+  --calendar-disabled-bg: #fef2f2;
+  --calendar-disabled-bg-hover: #fee2e2;
+  --calendar-disabled-text: #991b1b;
+  
+  /* Fecha seleccionada (azul) */
+  --calendar-selected-bg: #3b82f6;
+  --calendar-selected-text: #ffffff;
+}
+
+.dark {
+  /* Fechas disponibles dark mode */
+  --calendar-available-bg: #064e3b;
+  --calendar-available-bg-hover: #065f46;
+  --calendar-available-text: #86efac;
+  
+  /* Fechas deshabilitadas dark mode */
+  --calendar-disabled-bg: #450a0a;
+  --calendar-disabled-bg-hover: #7f1d1d;
+  --calendar-disabled-text: #fca5a5;
+  
+  /* Fecha seleccionada dark mode */
+  --calendar-selected-bg: #2563eb;
+  --calendar-selected-text: #ffffff;
+}
+
+/* ============================================
+   📅 ESTILOS DEL CALENDARIO
+   ============================================ */
+/* Fechas dentro del rango permitido - Verde pastel suave */
+.calendar-date-in-range [data-day] button:not([disabled]) {
+  background-color: var(--calendar-available-bg) !important;
+  color: var(--calendar-available-text) !important;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.calendar-date-in-range [data-day] button:not([disabled]):hover {
+  background-color: var(--calendar-available-bg-hover) !important;
+  transform: scale(1.05);
+}
+
+/* Fechas fuera del rango - Rosa pastel suave */
+.calendar-date-in-range [data-day] button[disabled] {
+  background-color: var(--calendar-disabled-bg) !important;
+  color: var(--calendar-disabled-text) !important;
+  opacity: 0.7;
+  cursor: not-allowed !important;
+  transition: all 0.2s ease;
+}
+
+.calendar-date-in-range [data-day] button[disabled]:hover {
+  background-color: var(--calendar-disabled-bg-hover) !important;
+  opacity: 0.8;
+}
+
+/* Fecha seleccionada - Azul primario */
+.calendar-date-in-range [data-day] button[data-selected] {
+  background-color: var(--calendar-selected-bg) !important;
+  color: var(--calendar-selected-text) !important;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.calendar-date-in-range [data-day] button[data-selected]:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.4);
+}

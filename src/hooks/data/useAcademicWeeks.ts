@@ -1,37 +1,35 @@
-// src/hooks/data/useBimesters.ts
+// src/hooks/data/useAcademicWeeks.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import { bimesterService } from '@/services/bimester.service';
+import { academicWeekService } from '@/services/academic-week.service';
 import {
-  Bimester,
-  QueryBimestersDto,
-  PaginatedBimestersResponse,
-} from '@/types/bimester.types';
+  AcademicWeek,
+  QueryAcademicWeeksDto,
+  PaginatedAcademicWeeksResponse,
+} from '@/types/academic-week.types';
 
 /**
- * Hook para gestionar bimestres
- *
- * Sigue el patrón establecido en master_guide_general_v2.md
- *
+ * 🎓 Hook para gestionar semanas académicas
+ * 
  * Uso:
  * ```tsx
- * const { data, meta, isLoading, error, refresh } = useBimesters({
- *   schoolCycleId: 1,
- *   limit: 100
+ * const { data, meta, isLoading, error, refresh } = useAcademicWeeks({
+ *   bimesterId: 1,
+ *   limit: 20
  * });
  * ```
  */
-export function useBimesters(initialQuery: QueryBimestersDto = {}) {
-  const [data, setData] = useState<Bimester[]>([]);
+export function useAcademicWeeks(initialQuery: QueryAcademicWeeksDto = {}) {
+  const [data, setData] = useState<AcademicWeek[]>([]);
   const [meta, setMeta] = useState({
     page: 1,
-    limit: 10,
+    limit: 20,
     total: 0,
     totalPages: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState<QueryBimestersDto>(initialQuery);
+  const [query, setQuery] = useState<QueryAcademicWeeksDto>(initialQuery);
 
   // Cargar datos
   const loadData = useCallback(async () => {
@@ -39,20 +37,13 @@ export function useBimesters(initialQuery: QueryBimestersDto = {}) {
       setIsLoading(true);
       setError(null);
 
-      // ✅ Solo hacer request si tenemos cycleId
-      if (!query.schoolCycleId) {
-        setData([]);
-        setIsLoading(false);
-        return;
-      }
-
-      const result = await bimesterService.getAll(query);
+      const result = await academicWeekService.getAll(query);
       setData(result.data);
       setMeta(result.meta);
     } catch (err: any) {
-      const errorMessage = err.message || 'Error al cargar bimestres';
+      const errorMessage = err.message || 'Error al cargar semanas académicas';
       setError(errorMessage);
-      console.error('Error loading bimesters:', err);
+      console.error('Error loading academic weeks:', err);
       setData([]);
     } finally {
       setIsLoading(false);
@@ -65,7 +56,7 @@ export function useBimesters(initialQuery: QueryBimestersDto = {}) {
   }, [loadData]);
 
   // Actualizar query (resetea a página 1)
-  const updateQuery = useCallback((newQuery: Partial<QueryBimestersDto>) => {
+  const updateQuery = useCallback((newQuery: Partial<QueryAcademicWeeksDto>) => {
     setQuery((prev) => ({ ...prev, ...newQuery, page: 1 }));
   }, []);
 
@@ -89,4 +80,4 @@ export function useBimesters(initialQuery: QueryBimestersDto = {}) {
   };
 }
 
-export default useBimesters;
+export default useAcademicWeeks;
