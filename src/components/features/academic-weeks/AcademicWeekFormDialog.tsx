@@ -67,12 +67,11 @@ export function AcademicWeekFormDialog({
               bimesterId: (initialData as any).bimesterId,
               number: initialData.number,
               weekType: initialData.weekType,
-              name: initialData.name,
               startDate: new Date(initialData.startDate),
               endDate: new Date(initialData.endDate),
               year: initialData.year,
               month: initialData.month,
-              notes: initialData.notes,
+              objectives: initialData.objectives,
               isActive: initialData.isActive,
             } : (mode === 'create' && (selectedCycleId || selectedBimesterId)) ? {
               cycleId: selectedCycleId || undefined,

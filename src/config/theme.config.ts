@@ -410,6 +410,17 @@ export const APP_THEME = {
       label: 'Repaso',
       description: 'Semana de repaso y refuerzo de contenidos',
     },
+    BREAK: {
+      bg: 'bg-gray-50 dark:bg-gray-950/30',
+      bgHover: 'hover:bg-gray-100 dark:hover:bg-gray-950/50',
+      text: 'text-gray-700 dark:text-gray-300',
+      border: 'border-gray-200 dark:border-gray-800',
+      icon: 'text-gray-600 dark:text-gray-400',
+      badge: 'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-300',
+      gradient: 'from-gray-500 to-gray-600',
+      label: 'Receso',
+      description: 'Semana de receso o vacaciones',
+    },
   },
 
   // �📏 SPACING & RADIUS
@@ -475,9 +486,9 @@ export const getRoleTheme = (role: string) => {
 
 /**
  * Obtener tema de tipo de semana
- * @param weekType - Tipo de semana (REGULAR, EVALUATION, REVIEW)
+ * @param weekType - Tipo de semana (REGULAR, EVALUATION, REVIEW, BREAK)
  * @returns Objeto con clases de Tailwind para el tipo de semana
  */
-export const getWeekTypeTheme = (weekType: 'REGULAR' | 'EVALUATION' | 'REVIEW') => {
+export const getWeekTypeTheme = (weekType: 'REGULAR' | 'EVALUATION' | 'REVIEW' | 'BREAK') => {
   return APP_THEME.weekTypes[weekType] || APP_THEME.weekTypes.REGULAR;
 };

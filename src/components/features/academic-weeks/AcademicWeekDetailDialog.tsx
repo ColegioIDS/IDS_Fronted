@@ -49,15 +49,13 @@ export function AcademicWeekDetailDialog({
         <DialogHeader>
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <DialogTitle className="text-2xl mb-2">{week.name}</DialogTitle>
+              <DialogTitle className="text-2xl mb-2">
+                Semana {week.number} - {WEEK_TYPE_LABELS[week.weekType]}
+              </DialogTitle>
               <div className="flex flex-wrap items-center gap-2">
                 {/* Badge tipo */}
                 <span className={cn('px-3 py-1 rounded-full text-sm font-medium', theme.badge)}>
                   {WEEK_TYPE_LABELS[week.weekType]}
-                </span>
-                {/* Badge número */}
-                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium">
-                  Semana #{week.number}
                 </span>
                 {/* Badge estado */}
                 {week.isActive ? (
@@ -192,15 +190,15 @@ export function AcademicWeekDetailDialog({
             </div>
           </div>
 
-          {/* Notas */}
-          {week.notes && (
+          {/* Objetivos */}
+          {week.objectives && (
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Notas
+                Objetivos de Aprendizaje
               </h3>
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                 <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                  {week.notes}
+                  {week.objectives}
                 </p>
               </div>
             </div>

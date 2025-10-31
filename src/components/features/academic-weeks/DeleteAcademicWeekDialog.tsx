@@ -74,17 +74,17 @@ export function DeleteAcademicWeekDialog({
                 )}
               >
                 <div className="space-y-3">
-                  {/* Nombre */}
+                  {/* Identificación */}
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                      Nombre
+                      Semana
                     </p>
                     <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {week.name}
+                      Semana {week.number} - {WEEK_TYPE_LABELS[week.weekType]}
                     </p>
                   </div>
 
-                  {/* Tipo y Número */}
+                  {/* Tipo y Estado */}
                   <div className="flex items-center gap-4">
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
@@ -93,14 +93,6 @@ export function DeleteAcademicWeekDialog({
                       <span className={cn('px-2 py-1 rounded text-xs font-medium', theme.badge)}>
                         {WEEK_TYPE_LABELS[week.weekType]}
                       </span>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                        Número
-                      </p>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        #{week.number}
-                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
@@ -130,14 +122,14 @@ export function DeleteAcademicWeekDialog({
                     </p>
                   </div>
 
-                  {/* Notas si existen */}
-                  {week.notes && (
+                  {/* Objetivos si existen */}
+                  {week.objectives && (
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                        Notas
+                        Objetivos
                       </p>
                       <p className="text-sm text-gray-700 dark:text-gray-300 italic">
-                        "{week.notes}"
+                        "{week.objectives}"
                       </p>
                     </div>
                   )}

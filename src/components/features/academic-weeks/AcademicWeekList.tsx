@@ -141,11 +141,11 @@ export function AcademicWeekList({
                 </span>
               </div>
 
-              {/* Nombre */}
+              {/* Título */}
               <div className="col-span-3 flex items-center">
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {week.name}
+                    Semana {week.number} - {WEEK_TYPE_LABELS[week.weekType]}
                   </p>
                   {isInProgress && (
                     <span className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 mt-0.5">

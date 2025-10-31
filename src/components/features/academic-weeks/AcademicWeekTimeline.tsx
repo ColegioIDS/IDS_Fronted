@@ -188,9 +188,9 @@ console.log(weeks);
                             )}
                           </div>
 
-                          {/* Nombre */}
+                          {/* Título */}
                           <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-                            {week.name}
+                            Semana {week.number} - {WEEK_TYPE_LABELS[week.weekType]}
                           </h4>
                         </div>
                       </div>
@@ -247,11 +247,11 @@ console.log(weeks);
                         </div>
                       )}
 
-                      {/* Notas */}
-                      {week.notes && (
+                      {/* Objetivos */}
+                      {week.objectives && (
                         <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
                           <p className="text-xs text-gray-600 dark:text-gray-400">
-                            {week.notes}
+                            {week.objectives}
                           </p>
                         </div>
                       )}

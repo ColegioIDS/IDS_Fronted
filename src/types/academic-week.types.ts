@@ -15,6 +15,7 @@ export enum WeekType {
   REGULAR = 'REGULAR',
   EVALUATION = 'EVALUATION',
   REVIEW = 'REVIEW',
+  BREAK = 'BREAK',
 }
 
 export enum AcademicMonth {
@@ -41,13 +42,12 @@ export interface AcademicWeek {
   bimesterId: number;
   number: number;
   weekType: WeekType;
-  name: string;
   startDate: string;
   endDate: string;
   year: number;
   month: AcademicMonth;
   isActive: boolean;
-  notes?: string;
+  objectives?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -226,6 +226,7 @@ export const WEEK_TYPE_LABELS: Record<WeekType, string> = {
   [WeekType.REGULAR]: 'Regular',
   [WeekType.EVALUATION]: 'Evaluación',
   [WeekType.REVIEW]: 'Repaso',
+  [WeekType.BREAK]: 'Receso',
 };
 
 export const MONTH_LABELS: Record<AcademicMonth, string> = {

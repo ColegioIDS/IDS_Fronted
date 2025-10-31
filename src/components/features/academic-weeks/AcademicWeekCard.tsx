@@ -91,14 +91,14 @@ export function AcademicWeekCard({
               )}
             </div>
 
-            {/* Nombre */}
+            {/* Título generado */}
             <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">
-              {week.name}
+              Semana {week.number} - {WEEK_TYPE_LABELS[week.weekType]}
             </h3>
 
-            {/* Número de semana y año */}
+            {/* Año */}
             <p className="text-xs text-gray-600 dark:text-gray-400">
-              Semana #{week.number} • {week.year}
+              {week.year}
             </p>
           </div>
 
@@ -186,11 +186,11 @@ export function AcademicWeekCard({
           </div>
         </div>
 
-        {/* Notas (si existen) */}
-        {week.notes && (
+        {/* Objetivos (si existen) */}
+        {week.objectives && (
           <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
             <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-              {week.notes}
+              {week.objectives}
             </p>
           </div>
         )}

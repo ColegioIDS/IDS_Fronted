@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Calendar, Loader2 } from 'lucide-react';
+import { Calendar, Loader2, AlertCircle, Info, CheckCircle2, BookOpen, Hash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -41,13 +41,12 @@ const academicWeekFormSchema = z.object({
   bimesterId: z.number({ required_error: 'El bimestre es requerido' }),
   number: z.number({ required_error: 'El número de semana es requerido' }).min(1).max(52),
   weekType: z.nativeEnum(WeekType, { required_error: 'El tipo de semana es requerido' }),
-  name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres').max(100),
   startDate: z.date({ required_error: 'La fecha de inicio es requerida' }),
   endDate: z.date({ required_error: 'La fecha de fin es requerida' }),
   isActive: z.boolean(),
   year: z.number().optional(),
   month: z.nativeEnum(AcademicMonth).optional(),
-  notes: z.string().max(500, 'Las notas no pueden exceder 500 caracteres').optional(),
+  objectives: z.string().max(500, 'Los objetivos no pueden exceder 500 caracteres').optional(),
 }).refine(
   (data) => {
     if (data.startDate && data.endDate) {
@@ -107,12 +106,11 @@ export function AcademicWeekForm({
       bimesterId: initialData?.bimesterId,
       number: initialData?.number || 1,
       weekType: initialData?.weekType || WeekType.REGULAR,
-      name: initialData?.name || '',
       startDate: initialData?.startDate,
       endDate: initialData?.endDate,
       year: initialData?.year,
       month: initialData?.month,
-      notes: initialData?.notes || '',
+      objectives: initialData?.objectives || '',
       isActive: initialData?.isActive ?? true,
     },
   });
@@ -175,12 +173,11 @@ export function AcademicWeekForm({
           bimesterId: initialData.bimesterId,
           number: initialData.number || 1,
           weekType: initialData.weekType || WeekType.REGULAR,
-          name: initialData.name || '',
           startDate: initialData.startDate,
           endDate: initialData.endDate,
           year: initialData.year,
           month: initialData.month,
-          notes: initialData.notes || '',
+          objectives: initialData.objectives || '',
           isActive: initialData.isActive ?? true,
         });
 
@@ -211,12 +208,11 @@ export function AcademicWeekForm({
           bimesterId: initialData.bimesterId,
           number: initialData.number || 1,
           weekType: initialData.weekType || WeekType.REGULAR,
-          name: initialData.name || '',
           startDate: initialData.startDate,
           endDate: initialData.endDate,
           year: initialData.year,
           month: initialData.month,
-          notes: initialData.notes || '',
+          objectives: initialData.objectives || '',
           isActive: initialData.isActive ?? true,
         });
         setIsInitialized(true);
@@ -358,7 +354,10 @@ export function AcademicWeekForm({
           name="cycleId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Ciclo Escolar *</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                Ciclo Escolar *
+              </FormLabel>
               <Select
                 value={field.value?.toString()}
                 onValueChange={(value) => {
@@ -368,8 +367,8 @@ export function AcademicWeekForm({
                 disabled={isSubmitting}
               >
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar ciclo" />
+                  <SelectTrigger className="border-gray-300 dark:border-gray-600 focus:border-indigo-500 dark:focus:border-indigo-400">
+                    <SelectValue placeholder="Seleccionar ciclo escolar" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -391,14 +390,17 @@ export function AcademicWeekForm({
           name="bimesterId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Bimestre *</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                Bimestre *
+              </FormLabel>
               <Select
                 value={field.value?.toString()}
                 onValueChange={(value) => field.onChange(parseInt(value))}
                 disabled={isSubmitting || !selectedCycleId || isLoadingBimesters}
               >
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-300 dark:border-gray-600 focus:border-indigo-500 dark:focus:border-indigo-400">
                     <SelectValue placeholder="Seleccionar bimestre" />
                   </SelectTrigger>
                 </FormControl>
@@ -411,14 +413,21 @@ export function AcademicWeekForm({
                 </SelectContent>
               </Select>
               {!selectedCycleId && (
-                <FormDescription>Primero selecciona un ciclo escolar</FormDescription>
+                <FormDescription className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                  <Info className="h-3.5 w-3.5" />
+                  Primero selecciona un ciclo escolar
+                </FormDescription>
               )}
               {isLoadingBimesters && (
-                <FormDescription>Cargando bimestres...</FormDescription>
+                <FormDescription className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Cargando bimestres...
+                </FormDescription>
               )}
               {dynamicBimesterDateRange && (
-                <FormDescription className="text-blue-600 dark:text-blue-400">
-                  📅 Rango: {format(new Date(dynamicBimesterDateRange.startDate), 'd MMM', { locale: es })} -{' '}
+                <FormDescription className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Rango: {format(new Date(dynamicBimesterDateRange.startDate), 'd MMM', { locale: es })} -{' '}
                   {format(new Date(dynamicBimesterDateRange.endDate), 'd MMM yyyy', { locale: es })}
                 </FormDescription>
               )}
@@ -435,7 +444,10 @@ export function AcademicWeekForm({
             name="number"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Número de Semana *</FormLabel>
+                <FormLabel className="flex items-center gap-2">
+                  <Hash className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  Número de Semana *
+                </FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -444,9 +456,13 @@ export function AcademicWeekForm({
                     {...field}
                     onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                     disabled={isSubmitting}
+                    className="border-gray-300 dark:border-gray-600 focus:border-indigo-500 dark:focus:border-indigo-400"
                   />
                 </FormControl>
-                <FormDescription>1-52</FormDescription>
+                <FormDescription className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                  <Info className="h-3.5 w-3.5" />
+                  Entre 1 y 52
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -458,15 +474,18 @@ export function AcademicWeekForm({
             name="weekType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tipo de Semana *</FormLabel>
+                <FormLabel className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  Tipo de Semana *
+                </FormLabel>
                 <Select
                   value={field.value}
                   onValueChange={field.onChange}
                   disabled={isSubmitting}
                 >
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Tipo" />
+                    <SelectTrigger className="border-gray-300 dark:border-gray-600 focus:border-indigo-500 dark:focus:border-indigo-400">
+                      <SelectValue placeholder="Seleccionar tipo" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -489,26 +508,6 @@ export function AcademicWeekForm({
           />
         </div>
 
-        {/* Nombre */}
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nombre *</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="ej. Semana de introducción"
-                  {...field}
-                  disabled={isSubmitting}
-                />
-              </FormControl>
-              <FormDescription>3-100 caracteres</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         {/* Grid: Fechas */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Fecha Inicio */}
@@ -517,14 +516,17 @@ export function AcademicWeekForm({
             name="startDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Fecha de Inicio *</FormLabel>
+                <FormLabel className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  Fecha de Inicio *
+                </FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
                         variant="outline"
                         className={cn(
-                          'w-full pl-3 text-left font-normal',
+                          'w-full pl-3 text-left font-normal border-gray-300 dark:border-gray-600',
                           !field.value && 'text-muted-foreground',
                         )}
                         disabled={isSubmitting}
@@ -552,10 +554,11 @@ export function AcademicWeekForm({
                     />
                   </PopoverContent>
                 </Popover>
-                {!isDateInBimesterRange(field.value) && (
-                  <FormDescription className="text-red-600 dark:text-red-400">
-                    ⚠️ Fecha fuera del rango del bimestre
-                  </FormDescription>
+                {field.value && !isDateInBimesterRange(field.value) && (
+                  <div className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md px-3 py-2">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>Fecha fuera del rango del bimestre</span>
+                  </div>
                 )}
                 <FormMessage />
               </FormItem>
@@ -568,14 +571,17 @@ export function AcademicWeekForm({
             name="endDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Fecha de Fin *</FormLabel>
+                <FormLabel className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                  Fecha de Fin *
+                </FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
                         variant="outline"
                         className={cn(
-                          'w-full pl-3 text-left font-normal',
+                          'w-full pl-3 text-left font-normal border-gray-300 dark:border-gray-600',
                           !field.value && 'text-muted-foreground',
                         )}
                         disabled={isSubmitting}
@@ -604,10 +610,11 @@ export function AcademicWeekForm({
                     />
                   </PopoverContent>
                 </Popover>
-                {!isDateInBimesterRange(field.value) && (
-                  <FormDescription className="text-red-600 dark:text-red-400">
-                    ⚠️ Fecha fuera del rango del bimestre
-                  </FormDescription>
+                {field.value && !isDateInBimesterRange(field.value) && (
+                  <div className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md px-3 py-2">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>Fecha fuera del rango del bimestre</span>
+                  </div>
                 )}
                 <FormMessage />
               </FormItem>
@@ -615,23 +622,30 @@ export function AcademicWeekForm({
           />
         </div>
 
-        {/* Notas */}
+        {/* Objetivos */}
         <FormField
           control={form.control}
-          name="notes"
+          name="objectives"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Notas (opcional)</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                Objetivos de Aprendizaje
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">(opcional)</span>
+              </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Notas adicionales sobre esta semana académica..."
-                  className="resize-none"
+                  placeholder="Describe los objetivos de aprendizaje para esta semana académica..."
+                  className="resize-none border-gray-300 dark:border-gray-600 focus:border-purple-500 dark:focus:border-purple-400"
                   rows={3}
                   {...field}
                   disabled={isSubmitting}
                 />
               </FormControl>
-              <FormDescription>Máximo 500 caracteres</FormDescription>
+              <FormDescription className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                <Info className="h-3.5 w-3.5" />
+                Máximo 500 caracteres
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -642,18 +656,21 @@ export function AcademicWeekForm({
           control={form.control}
           name="isActive"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 p-4">
               <FormControl>
                 <input
                   type="checkbox"
                   checked={field.value}
                   onChange={field.onChange}
                   disabled={isSubmitting}
-                  className="h-4 w-4 mt-1"
+                  className="h-4 w-4 mt-1 text-emerald-600 focus:ring-emerald-500 dark:focus:ring-emerald-400 border-gray-300 dark:border-gray-600 rounded"
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
-                <FormLabel>Semana activa</FormLabel>
+                <FormLabel className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  Semana activa
+                </FormLabel>
                 <FormDescription>
                   Si está activa, esta semana será visible para estudiantes y maestros
                 </FormDescription>
@@ -663,16 +680,21 @@ export function AcademicWeekForm({
         />
 
         {/* Botones */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t">
+        <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
           <Button
             type="button"
             variant="outline"
             onClick={onCancel}
             disabled={isSubmitting}
+            className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             Cancelar
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button 
+            type="submit" 
+            disabled={isSubmitting}
+            className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white"
+          >
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {mode === 'create' ? 'Crear Semana' : 'Guardar Cambios'}
           </Button>

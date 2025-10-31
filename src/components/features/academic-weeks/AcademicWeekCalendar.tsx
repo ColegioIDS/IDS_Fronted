@@ -197,13 +197,13 @@ export function AcademicWeekCalendar({
                                 'hover:opacity-80 hover:shadow-sm',
                                 isStartDay && 'ring-1 ring-offset-1',
                               )}
-                              title={`${week.name} - ${WEEK_TYPE_LABELS[week.weekType]}`}
+                              title={`Semana ${week.number} - ${WEEK_TYPE_LABELS[week.weekType]}`}
                             >
                               <div className="truncate">
                                 {isStartDay && (
                                   <span className="font-semibold">#{week.number} </span>
                                 )}
-                                {week.name}
+                                {WEEK_TYPE_LABELS[week.weekType]}
                               </div>
                             </button>
                           );
