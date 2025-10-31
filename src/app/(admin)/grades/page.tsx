@@ -1,26 +1,24 @@
-//src/app/(admin)/grades/page.tsx
-'use client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { GradeProvider } from '@/context/GradeContext';
-import dynamic from 'next/dynamic';
-import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
+// src/app/(admin)/grades/page.tsx
+
+import { Metadata } from "next";
+import { GradesPageContent } from "@/components/features/grades/GradesPageContent";
 import Breadcrumb from '@/components/common/Breadcrumb';
 
-// Crear cliente específico para esta página
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutos
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+export const metadata: Metadata = {
+  title: "Grados - Sistema Académico IDS",
+  description: "Gestión de grados académicos",
+};
 
-const GradesContent = dynamic(() => import('@/components/grades/GradesContent'), {
-  loading: () => <ProfileSkeleton type="meta" />
-});
-
-function GradesPageContent() {
+/**
+ * 📚 Página de Grados
+ * 
+ * Permite administrar los grados académicos del sistema:
+ * - Ver listado de grados con filtros
+ * - Crear, editar y eliminar grados
+ * - Activar/desactivar grados
+ * - Ver estadísticas de uso
+ */
+export default function GradesPage() {
   return (
     <div className="space-y-6">
       <Breadcrumb
@@ -31,17 +29,7 @@ function GradesPageContent() {
           { label: "Grados", href: "#" },
         ]}
       />
-      <GradesContent />
+      <GradesPageContent />
     </div>
-  );
-}
-
-export default function GradesPageWrapper() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <GradeProvider>
-        <GradesPageContent />
-      </GradeProvider>
-    </QueryClientProvider>
   );
 }
