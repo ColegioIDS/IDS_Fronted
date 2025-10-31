@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,6 +33,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { WeekType, AcademicMonth, WEEK_TYPE_LABELS, MONTH_LABELS } from '@/types/academic-week.types';
 import { getWeekTypeTheme } from '@/config/theme.config';
+import { academicWeekService } from '@/services/academic-week.service';
 
 // Esquema de validación
 const academicWeekFormSchema = z.object({
@@ -92,6 +93,13 @@ export function AcademicWeekForm({
   availableBimesters,
   bimesterDateRange,
 }: AcademicWeekFormProps) {
+  // Estado para bimesters dinámicos
+  const [dynamicBimesters, setDynamicBimesters] = useState<Array<{ id: number; name: string; number: number }>>(availableBimesters);
+  const [isLoadingBimesters, setIsLoadingBimesters] = useState(false);
+  const [dynamicBimesterDateRange, setDynamicBimesterDateRange] = useState<{ startDate: string; endDate: string } | null>(bimesterDateRange || null);
+  const [isLoadingDateRange, setIsLoadingDateRange] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
   const form = useForm<AcademicWeekFormValues>({
     resolver: zodResolver(academicWeekFormSchema),
     defaultValues: {
@@ -114,6 +122,202 @@ export function AcademicWeekForm({
   const startDate = form.watch('startDate');
   const endDate = form.watch('endDate');
 
+  // Resetear isInitialized cuando cambia initialData (nuevo registro a editar o crear)
+  useEffect(() => {
+    setIsInitialized(false);
+    setDynamicBimesters([]);
+    setDynamicBimesterDateRange(null);
+  }, [initialData]);
+
+  // Reset form cuando cambia initialData (especialmente importante para modo edición)
+  useEffect(() => {
+    const initializeForm = async () => {
+      if (initialData && initialData.cycleId) {
+        // PASO 1: Cargar los bimesters del ciclo PRIMERO
+        setIsLoadingBimesters(true);
+        try {
+          const response = await academicWeekService.getAvailableBimesters({
+            cycleId: initialData.cycleId,
+          });
+          const bimestersData = response.data.map((b: any) => ({
+            id: b.id,
+            name: b.name,
+            number: b.number,
+          }));
+          setDynamicBimesters(bimestersData);
+        } catch (error) {
+          console.error('Error al cargar bimesters:', error);
+          setDynamicBimesters([]);
+        } finally {
+          setIsLoadingBimesters(false);
+        }
+
+        // PASO 2: Cargar date range si tenemos bimesterId
+        if (initialData.bimesterId) {
+          setIsLoadingDateRange(true);
+          try {
+            const range = await academicWeekService.getBimesterDateRange(initialData.bimesterId);
+            setDynamicBimesterDateRange(range);
+          } catch (error) {
+            console.error('Error al cargar rango de fechas:', error);
+            setDynamicBimesterDateRange(null);
+          } finally {
+            setIsLoadingDateRange(false);
+          }
+        }
+
+        // PASO 3: Ahora SÍ resetear el formulario con TODOS los datos
+        // Esperar un tick para asegurar que los bimesters están en el estado
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        form.reset({
+          cycleId: initialData.cycleId,
+          bimesterId: initialData.bimesterId,
+          number: initialData.number || 1,
+          weekType: initialData.weekType || WeekType.REGULAR,
+          name: initialData.name || '',
+          startDate: initialData.startDate,
+          endDate: initialData.endDate,
+          year: initialData.year,
+          month: initialData.month,
+          notes: initialData.notes || '',
+          isActive: initialData.isActive ?? true,
+        });
+
+        setIsInitialized(true);
+      } else if (initialData) {
+        // Si no hay cycleId pero hay initialData (modo crear con valores pre-cargados)
+        // Cargar bimesters si hay cycleId pre-seleccionado
+        if (initialData.cycleId) {
+          setIsLoadingBimesters(true);
+          try {
+            const response = await academicWeekService.getAvailableBimesters({
+              cycleId: initialData.cycleId,
+            });
+            setDynamicBimesters(response.data.map((b: any) => ({
+              id: b.id,
+              name: b.name,
+              number: b.number,
+            })));
+          } catch (error) {
+            console.error('Error al cargar bimesters:', error);
+          } finally {
+            setIsLoadingBimesters(false);
+          }
+        }
+        
+        form.reset({
+          cycleId: initialData.cycleId,
+          bimesterId: initialData.bimesterId,
+          number: initialData.number || 1,
+          weekType: initialData.weekType || WeekType.REGULAR,
+          name: initialData.name || '',
+          startDate: initialData.startDate,
+          endDate: initialData.endDate,
+          year: initialData.year,
+          month: initialData.month,
+          notes: initialData.notes || '',
+          isActive: initialData.isActive ?? true,
+        });
+        setIsInitialized(true);
+      } else {
+        // Modo crear sin valores iniciales
+        setIsInitialized(true);
+      }
+    };
+
+    if (!isInitialized) {
+      initializeForm();
+    }
+  }, [initialData, isInitialized]);
+
+  // Cargar bimesters dinámicamente cuando cambia el ciclo seleccionado (solo en modo interactivo)
+  useEffect(() => {
+    const loadBimesters = async () => {
+      // No cargar si no hay cycleId
+      if (!selectedCycleId) {
+        setDynamicBimesters([]);
+        return;
+      }
+
+      // No cargar si aún no está inicializado (ya se carga en la inicialización)
+      if (!isInitialized) {
+        return;
+      }
+
+      // Si ya tenemos bimesters y el bimester seleccionado está en la lista, no recargar
+      const currentBimesterId = form.getValues('bimesterId');
+      if (dynamicBimesters.length > 0 && currentBimesterId) {
+        const bimesterExists = dynamicBimesters.some(b => b.id === currentBimesterId);
+        if (bimesterExists) {
+          return; // No recargar si el bimester actual ya está en la lista
+        }
+      }
+
+      setIsLoadingBimesters(true);
+      try {
+        const response = await academicWeekService.getAvailableBimesters({
+          cycleId: selectedCycleId,
+        });
+        setDynamicBimesters(response.data.map((b: any) => ({
+          id: b.id,
+          name: b.name,
+          number: b.number,
+        })));
+      } catch (error) {
+        console.error('Error al cargar bimesters:', error);
+        setDynamicBimesters([]);
+      } finally {
+        setIsLoadingBimesters(false);
+      }
+    };
+
+    loadBimesters();
+  }, [selectedCycleId, isInitialized]);
+
+  // Cargar rango de fechas cuando cambia el bimestre seleccionado (solo en modo interactivo)
+  useEffect(() => {
+    const loadDateRange = async () => {
+      if (!selectedBimesterId) {
+        setDynamicBimesterDateRange(null);
+        return;
+      }
+
+      // No cargar si aún no está inicializado (ya se carga en la inicialización)
+      if (!isInitialized) {
+        return;
+      }
+
+      setIsLoadingDateRange(true);
+      try {
+        const range = await academicWeekService.getBimesterDateRange(selectedBimesterId);
+        setDynamicBimesterDateRange(range);
+      } catch (error) {
+        console.error('Error al cargar rango de fechas:', error);
+        setDynamicBimesterDateRange(null);
+      } finally {
+        setIsLoadingDateRange(false);
+      }
+    };
+
+    loadDateRange();
+  }, [selectedBimesterId, isInitialized]);
+
+  // Actualizar bimesters cuando cambia availableBimesters (para mantener sincronización)
+  // Solo si no estamos en proceso de inicialización y no tenemos bimesters dinámicos ya cargados
+  useEffect(() => {
+    if (isInitialized && availableBimesters.length > 0 && dynamicBimesters.length === 0) {
+      setDynamicBimesters(availableBimesters);
+    }
+  }, [availableBimesters, isInitialized, dynamicBimesters.length]);
+
+  // Actualizar date range cuando cambia bimesterDateRange (para mantener sincronización)
+  useEffect(() => {
+    if (isInitialized && bimesterDateRange && !dynamicBimesterDateRange) {
+      setDynamicBimesterDateRange(bimesterDateRange);
+    }
+  }, [bimesterDateRange, isInitialized, dynamicBimesterDateRange]);
+
   // Auto-calcular año y mes cuando cambian las fechas
   useEffect(() => {
     if (startDate) {
@@ -128,10 +332,10 @@ export function AcademicWeekForm({
 
   // Validar fechas contra rango del bimestre
   const isDateInBimesterRange = (date: Date | undefined): boolean => {
-    if (!date || !bimesterDateRange) return true;
+    if (!date || !dynamicBimesterDateRange) return true;
 
-    const bimesterStart = new Date(bimesterDateRange.startDate);
-    const bimesterEnd = new Date(bimesterDateRange.endDate);
+    const bimesterStart = new Date(dynamicBimesterDateRange.startDate);
+    const bimesterEnd = new Date(dynamicBimesterDateRange.endDate);
 
     return date >= bimesterStart && date <= bimesterEnd;
   };
@@ -191,7 +395,7 @@ export function AcademicWeekForm({
               <Select
                 value={field.value?.toString()}
                 onValueChange={(value) => field.onChange(parseInt(value))}
-                disabled={isSubmitting || !selectedCycleId}
+                disabled={isSubmitting || !selectedCycleId || isLoadingBimesters}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -199,7 +403,7 @@ export function AcademicWeekForm({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {availableBimesters.map((bimester) => (
+                  {dynamicBimesters.map((bimester) => (
                     <SelectItem key={bimester.id} value={bimester.id.toString()}>
                       Bimestre {bimester.number} - {bimester.name}
                     </SelectItem>
@@ -209,10 +413,13 @@ export function AcademicWeekForm({
               {!selectedCycleId && (
                 <FormDescription>Primero selecciona un ciclo escolar</FormDescription>
               )}
-              {bimesterDateRange && (
+              {isLoadingBimesters && (
+                <FormDescription>Cargando bimestres...</FormDescription>
+              )}
+              {dynamicBimesterDateRange && (
                 <FormDescription className="text-blue-600 dark:text-blue-400">
-                  📅 Rango: {format(new Date(bimesterDateRange.startDate), 'd MMM', { locale: es })} -{' '}
-                  {format(new Date(bimesterDateRange.endDate), 'd MMM yyyy', { locale: es })}
+                  📅 Rango: {format(new Date(dynamicBimesterDateRange.startDate), 'd MMM', { locale: es })} -{' '}
+                  {format(new Date(dynamicBimesterDateRange.endDate), 'd MMM yyyy', { locale: es })}
                 </FormDescription>
               )}
               <FormMessage />

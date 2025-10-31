@@ -24,6 +24,8 @@ interface AcademicWeekFormDialogProps {
   availableCycles: Array<{ id: number; name: string }>;
   availableBimesters: Array<{ id: number; name: string; number: number }>;
   bimesterDateRange?: { startDate: string; endDate: string } | null;
+  selectedCycleId?: number | null;
+  selectedBimesterId?: number | null;
 }
 
 /**
@@ -41,6 +43,8 @@ export function AcademicWeekFormDialog({
   availableCycles,
   availableBimesters,
   bimesterDateRange,
+  selectedCycleId,
+  selectedBimesterId,
 }: AcademicWeekFormDialogProps) {
   const title = mode === 'create' ? 'Crear Semana Académica' : 'Editar Semana Académica';
   const description =
@@ -70,6 +74,9 @@ export function AcademicWeekFormDialog({
               month: initialData.month,
               notes: initialData.notes,
               isActive: initialData.isActive,
+            } : (mode === 'create' && (selectedCycleId || selectedBimesterId)) ? {
+              cycleId: selectedCycleId || undefined,
+              bimesterId: selectedBimesterId || undefined,
             } : undefined}
             onSubmit={onSubmit}
             onCancel={onClose}

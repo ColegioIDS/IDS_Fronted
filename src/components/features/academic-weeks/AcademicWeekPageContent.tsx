@@ -162,10 +162,38 @@ export function AcademicWeekPageContent({
     setIsFormDialogOpen(true);
   };
 
-  const handleEdit = (week: AcademicWeek) => {
+  const handleEdit = async (week: AcademicWeek) => {
     setFormMode('edit');
-    setSelectedWeek(week);
-    setIsFormDialogOpen(true);
+    
+    try {
+      // Obtener información completa del bimestre para obtener el cycleId
+      const bimesterInfo = await academicWeekService.getBimesterInfo(week.bimesterId);
+      const cycleId = (bimesterInfo as any).schoolCycleId || bimesterInfo.id;
+      
+      // Si el cycleId es diferente, actualizarlo (esto cargará los bimesters automáticamente)
+      if (cycleId && cycleId !== selectedCycleId) {
+        setSelectedCycleId(cycleId);
+        // Dar tiempo para que se carguen los bimesters
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      
+      // Asegurar que el bimestre correcto esté seleccionado
+      if (week.bimesterId && week.bimesterId !== selectedBimesterId) {
+        setSelectedBimesterId(week.bimesterId);
+      }
+      
+      // Agregar el cycleId a los datos de la semana
+      const weekWithCycle = {
+        ...week,
+        cycleId: cycleId,
+      };
+      
+      setSelectedWeek(weekWithCycle as any);
+      setIsFormDialogOpen(true);
+    } catch (error) {
+      console.error('Error al preparar edición:', error);
+      toast.error('Error al cargar los datos del bimestre');
+    }
   };
 
   const handleView = (week: AcademicWeek) => {
@@ -424,6 +452,8 @@ export function AcademicWeekPageContent({
         availableCycles={cycles}
         availableBimesters={bimesters}
         bimesterDateRange={bimesterDateRange}
+        selectedCycleId={selectedCycleId}
+        selectedBimesterId={selectedBimesterId}
       />
 
       <DeleteAcademicWeekDialog
