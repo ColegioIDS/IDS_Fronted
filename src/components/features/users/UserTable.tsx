@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CheckCircle2, Lock, Eye, MoreHorizontal, Edit, Trash2, Key } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -47,6 +47,13 @@ export function UserTable({
     const given = user.givenNames?.split(' ')[0]?.[0] || '';
     const last = user.lastNames?.split(' ')[0]?.[0] || '';
     return `${given}${last}`.toUpperCase();
+  };
+
+  const getProfilePicture = (user: User | UserWithRelations) => {
+    if (isUserWithRelations(user)) {
+      return user.pictures?.find((p) => p.kind === 'profile')?.url;
+    }
+    return undefined;
   };
 
   if (users.length === 0) {
@@ -87,6 +94,10 @@ export function UserTable({
                 <TableCell className="py-4">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8 border border-slate-200 dark:border-slate-700">
+                      <AvatarImage 
+                        src={getProfilePicture(user)} 
+                        alt={`${user.givenNames} ${user.lastNames}`}
+                      />
                       <AvatarFallback className="text-xs dark:bg-slate-700 dark:text-white">
                         {getInitials(user)}
                       </AvatarFallback>

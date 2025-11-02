@@ -276,7 +276,7 @@ export function UserDetailDialog({
             {pictures && pictures.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {pictures.map((picture) => (
-                  <Card key={picture.id} className="dark:bg-slate-800 dark:border-slate-700">
+                  <Card key={picture.id} className="dark:bg-slate-800 dark:border-slate-700 overflow-hidden">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <Badge
@@ -287,28 +287,30 @@ export function UserDetailDialog({
                             ? 'Perfil'
                             : picture.kind === 'document'
                               ? 'Documento'
-                              : 'Evidencia'}
+                              : picture.kind === 'evidence'
+                                ? 'Evidencia'
+                                : picture.kind}
                         </Badge>
-                        {picture.isDefault && (
-                          <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
-                            Por defecto
-                          </Badge>
-                        )}
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <img
-                        src={picture.url}
-                        alt={`Foto ${picture.kind}`}
-                        className="w-full h-48 object-cover rounded-lg mb-2"
-                      />
+                    <CardContent className="space-y-3">
+                      <div className="relative w-full overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
+                        <img
+                          src={picture.url}
+                          alt={`Foto ${picture.kind}`}
+                          className="w-full h-48 object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = '/images/user/user-01.jpg';
+                          }}
+                        />
+                      </div>
                       {picture.description && (
                         <p className="text-sm text-slate-600 dark:text-slate-400">
                           {picture.description}
                         </p>
                       )}
-                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
-                        {formatDistanceToNow(new Date(picture.createdAt), {
+                      <p className="text-xs text-slate-500 dark:text-slate-500">
+                        Subida: {formatDistanceToNow(new Date(picture.uploadedAt), {
                           addSuffix: true,
                           locale: es,
                         })}

@@ -150,6 +150,15 @@ export function UserForm({
     return `${given}${last}`.toUpperCase();
   };
 
+  const getExistingProfilePicture = () => {
+    if (user && 'pictures' in user) {
+      return user.pictures?.find((p) => p.kind === 'profile')?.url;
+    }
+    return undefined;
+  };
+
+  const currentPictureUrl = preview || getExistingProfilePicture();
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
@@ -472,27 +481,39 @@ export function UserForm({
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Preview */}
-              {preview || (user && 'pictures' in user && (user.pictures?.length ?? 0) > 0) ? (
+              {currentPictureUrl ? (
                 <div className="flex flex-col items-center gap-4">
                   <Avatar className="h-24 w-24 border-2 border-slate-200 dark:border-slate-600">
-                    <AvatarImage src={preview} />
+                    <AvatarImage src={currentPictureUrl} />
                     <AvatarFallback className="dark:bg-slate-700 dark:text-white text-lg">
                       {getInitials()}
                     </AvatarFallback>
                   </Avatar>
-                  {preview && (
+                  <div className="flex gap-2">
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="secondary"
                       size="sm"
-                      onClick={handleRemoveFile}
+                      onClick={() => fileInputRef.current?.click()}
                       disabled={isSubmitting}
-                      className="dark:border-red-600/50 dark:text-red-400 dark:hover:bg-red-950/20"
+                      className="dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white"
                     >
-                      <X className="w-4 h-4 mr-2" />
-                      Remover
+                      Cambiar foto
                     </Button>
-                  )}
+                    {preview && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRemoveFile}
+                        disabled={isSubmitting}
+                        className="dark:border-red-600/50 dark:text-red-400 dark:hover:bg-red-950/20"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Cancelar cambio
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div

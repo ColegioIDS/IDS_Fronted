@@ -3,13 +3,15 @@
 // ✅ Picture type
 export interface Picture {
   id: number;
-  userId: number;
+  userId?: number;
   url: string;
+  publicId: string;
   kind: 'profile' | 'document' | 'evidence';
   description: string | null;
-  isDefault: boolean;
-  createdAt: string;
-  updatedAt: string;
+  isDefault?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  uploadedAt: string;
   studentId?: number | null;
 }
 

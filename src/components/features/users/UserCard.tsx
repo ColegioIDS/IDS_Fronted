@@ -5,7 +5,7 @@ import { User, UserWithRelations } from '@/types/users.types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Mail,
   Phone,
@@ -34,6 +34,8 @@ export function UserCard({
 }: UserCardProps) {
   const isUserWithRelations = (u: any): u is UserWithRelations => 'role' in u;
   const roleName = isUserWithRelations(user) ? user.role.name : 'N/A';
+  const pictures = isUserWithRelations(user) ? user.pictures || [] : [];
+  const profilePicture = pictures?.find((p) => p.kind === 'profile');
 
   // Get initials for avatar
   const getInitials = () => {
@@ -70,6 +72,7 @@ export function UserCard({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <Avatar className="h-10 w-10 border-2 border-slate-200 dark:border-slate-700">
+              <AvatarImage src={profilePicture?.url} alt={`${user.givenNames} ${user.lastNames}`} />
               <AvatarFallback className="dark:bg-slate-700 dark:text-white">
                 {getInitials()}
               </AvatarFallback>
