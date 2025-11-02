@@ -5,17 +5,20 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Trash2, 
-  GraduationCap, 
+import {
+  Trash2,
+  GraduationCap,
   Calendar,
   Loader2,
   AlertTriangle,
   RefreshCw,
-  Plus
+  Plus,
+  BookOpen,
+  Clock,
 } from 'lucide-react';
 import { gradeCyclesService } from '@/services/grade-cycles.service';
 import type { AvailableCycle, AvailableGrade } from '@/types/grade-cycles.types';
+import { getModuleTheme, getStatusTheme } from '@/config/theme.config';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -33,24 +36,24 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const moduleTheme = getModuleTheme('gradeCycle');
+  const activeTheme = getStatusTheme('active');
+
   const loadData = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // Cargar todos los ciclos
       const allCycles = await gradeCyclesService.getAvailableCycles();
 
-      // Para cada ciclo, cargar sus grados asignados
       const cyclesWithGrades = await Promise.all(
         allCycles.map(async (cycle) => {
           try {
             const relations = await gradeCyclesService.getGradesByCycle(cycle.id);
-            // Los relations tienen { cycleId, gradeId, grade: {...} }
             const grades = relations
-              .filter(r => r.grade)
-              .map(r => r.grade as AvailableGrade);
-            
+              .filter((r) => r.grade)
+              .map((r) => r.grade as AvailableGrade);
+
             return { ...cycle, grades };
           } catch (err) {
             console.error(`Error loading grades for cycle ${cycle.id}:`, err);
@@ -78,16 +81,15 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
     }
 
     const deleteId = `${cycleId}-${gradeId}`;
-    
+
     try {
       setDeletingId(deleteId);
       await gradeCyclesService.delete(cycleId, gradeId);
-      
-      // Actualizar UI localmente
-      setCycles(prevCycles =>
-        prevCycles.map(cycle =>
+
+      setCycles((prevCycles) =>
+        prevCycles.map((cycle) =>
           cycle.id === cycleId
-            ? { ...cycle, grades: cycle.grades.filter(g => g.id !== gradeId) }
+            ? { ...cycle, grades: cycle.grades.filter((g) => g.id !== gradeId) }
             : cycle
         )
       );
@@ -99,23 +101,37 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
     }
   };
 
+  // Loading state
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <Loader2 className="w-12 h-12 animate-spin text-lime-600 dark:text-lime-500" />
-        <p className="text-gray-600 dark:text-gray-400">Cargando configuraciones...</p>
+      <div className="flex flex-col items-center justify-center py-32 space-y-4">
+        <div className={`p-4 rounded-2xl ${moduleTheme.bg}`}>
+          <Loader2 className={`w-12 h-12 animate-spin ${moduleTheme.icon}`} />
+        </div>
+        <p className="text-gray-600 dark:text-gray-400 font-medium">Cargando configuraciones...</p>
       </div>
     );
   }
 
+  // Error state
   if (error) {
     return (
-      <Card className="border-2 border-red-200 dark:border-red-800">
-        <CardContent className="py-12 text-center">
-          <AlertTriangle className="w-12 h-12 text-red-600 dark:text-red-400 mx-auto mb-4" />
-          <p className="text-red-800 dark:text-red-300 font-semibold mb-4">{error}</p>
-          <Button onClick={loadData} variant="outline">
-            <RefreshCw className="w-4 h-4 mr-2" />
+      <Card className="border-2 border-red-200 dark:border-red-900/50 shadow-lg overflow-hidden">
+        <div className="absolute inset-0 bg-red-50/50 dark:bg-red-950/10" />
+        <CardContent className="relative py-16 text-center">
+          <div className="inline-flex p-4 rounded-2xl bg-red-100 dark:bg-red-950/40 mb-4">
+            <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
+          </div>
+          <p className="text-red-700 dark:text-red-300 font-semibold mb-2 text-lg">{error}</p>
+          <p className="text-red-600 dark:text-red-400 text-sm mb-6">
+            Algo salió mal al cargar los ciclos
+          </p>
+          <Button 
+            onClick={loadData} 
+            variant="outline" 
+            className="gap-2 border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30"
+          >
+            <RefreshCw className="w-4 h-4" />
             Reintentar
           </Button>
         </CardContent>
@@ -125,96 +141,163 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-            Configuraciones Actuales
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            {cycles.length} ciclo{cycles.length !== 1 ? 's' : ''} configurado{cycles.length !== 1 ? 's' : ''}
-          </p>
+      {/* Header Principal */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className={`p-3 rounded-xl ${moduleTheme.bg}`}>
+                <Calendar className={`w-6 h-6 ${moduleTheme.icon}`} />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Ciclos Configurados
+              </h2>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 ml-12">
+              Administra los ciclos académicos y sus grados asignados
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={loadData}
+              variant="outline"
+              size="sm"
+              className="gap-2 border-lime-300 dark:border-lime-800 hover:bg-lime-50 dark:hover:bg-lime-950/30"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Actualizar
+            </Button>
+            <Button
+              onClick={onCreateNew}
+              size="sm"
+              className={`gap-2 text-white font-semibold ${moduleTheme.bg} hover:opacity-90 transition-all`}
+            >
+              <Plus className="w-5 h-5" />
+              Nuevo Ciclo
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={loadData}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Actualizar
-          </Button>
-          <Button
-            onClick={onCreateNew}
-            size="sm"
-            className="gap-2 bg-lime-600 hover:bg-lime-700 text-white dark:bg-lime-600 dark:hover:bg-lime-700"
-          >
-            <Plus className="w-4 h-4" />
-            Configurar Nuevo Ciclo
-          </Button>
+
+        {/* Stats Summary */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className={`p-4 rounded-lg border ${moduleTheme.border} ${moduleTheme.bg}`}>
+            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium uppercase tracking-wide">Total Ciclos</p>
+            <p className={`text-2xl font-bold ${moduleTheme.text} mt-1`}>{cycles.length}</p>
+          </div>
+          <div className={`p-4 rounded-lg border ${activeTheme.border} ${activeTheme.bg}`}>
+            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium uppercase tracking-wide">Activos</p>
+            <p className={`text-2xl font-bold ${activeTheme.text} mt-1`}>
+              {cycles.filter(c => c.isActive).length}
+            </p>
+          </div>
+          <div className="p-4 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
+            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium uppercase tracking-wide">Inscripción</p>
+            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-1">
+              {cycles.filter(c => c.canEnroll).length}
+            </p>
+          </div>
+          <div className="p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
+            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium uppercase tracking-wide">Grados Total</p>
+            <p className="text-2xl font-bold text-amber-700 dark:text-amber-300 mt-1">
+              {cycles.reduce((sum, c) => sum + c.grades.length, 0)}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Lista de ciclos */}
+      {/* Empty State */}
       {cycles.length === 0 ? (
-        <Card className="border-2 border-dashed border-gray-300 dark:border-gray-700">
-          <CardContent className="py-12 text-center">
-            <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              No hay ciclos configurados todavía
+        <Card className="border-2 border-dashed border-lime-300 dark:border-lime-800 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="py-20 text-center">
+            <div className={`inline-flex p-5 rounded-2xl ${moduleTheme.bg} mb-4`}>
+              <Calendar className={`w-10 h-10 ${moduleTheme.icon}`} />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+              Sin ciclos configurados
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+              Crea tu primer ciclo académico para comenzar a asignar grados y gestionar el año escolar
             </p>
-            <Button onClick={onCreateNew} className="gap-2">
-              <Plus className="w-4 h-4" />
-              Configurar Primer Ciclo
+            <Button 
+              onClick={onCreateNew} 
+              className={`gap-2 text-white font-semibold ${moduleTheme.bg} hover:opacity-90`}
+            >
+              <Plus className="w-5 h-5" />
+              Crear Primer Ciclo
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid gap-5">
           {cycles.map((cycle) => (
             <Card
               key={cycle.id}
-              className="border-2 border-gray-200 dark:border-gray-800 hover:border-lime-300 dark:hover:border-lime-700 transition-colors"
+              className={`border-2 ${moduleTheme.border} hover:border-lime-400 dark:hover:border-lime-600 transition-all hover:shadow-lg overflow-hidden group`}
             >
-              <CardHeader className="bg-gradient-to-r from-lime-50 to-lime-100 dark:from-lime-950/30 dark:to-lime-900/20 border-b-2 border-lime-200 dark:border-lime-800">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-lime-600 dark:text-lime-500" />
-                      {cycle.name}
-                    </CardTitle>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {format(new Date(cycle.startDate), 'dd MMM yyyy', { locale: es })} -{' '}
-                      {format(new Date(cycle.endDate), 'dd MMM yyyy', { locale: es })}
-                    </p>
+              {/* Header with gradient background */}
+              <CardHeader className={`${moduleTheme.bg} border-b-2 ${moduleTheme.border} pb-4`}>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className={`p-2.5 rounded-lg ${moduleTheme.bg} border-2 ${moduleTheme.border} group-hover:scale-110 transition-transform`}>
+                        <Calendar className={`w-5 h-5 ${moduleTheme.icon}`} />
+                      </div>
+                      <div>
+                        <CardTitle className={`text-xl font-bold ${moduleTheme.text}`}>
+                          {cycle.name}
+                        </CardTitle>
+                        <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          <Clock className="w-3.5 h-3.5" />
+                          {format(new Date(cycle.startDate), 'dd MMM', { locale: es })} →{' '}
+                          {format(new Date(cycle.endDate), 'dd MMM yyyy', { locale: es })}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+
+                  {/* Badges */}
+                  <div className="flex gap-2 flex-wrap justify-end">
                     {cycle.isActive && (
-                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-700">
+                      <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 font-semibold">
+                        <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 mr-1.5" />
                         Activo
                       </Badge>
                     )}
                     {cycle.canEnroll && (
-                      <Badge className="bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-700">
+                      <Badge className="bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-700 font-semibold">
+                        <BookOpen className="w-3 h-3 mr-1.5" />
                         Inscripción
                       </Badge>
                     )}
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6">
+
+              {/* Content */}
+              <CardContent className="p-6 bg-white dark:bg-gray-950">
                 {cycle.grades.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                    <GraduationCap className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Sin grados asignados</p>
+                  <div className="text-center py-12 px-4">
+                    <div className={`inline-flex p-4 rounded-2xl ${moduleTheme.bg} mb-3`}>
+                      <GraduationCap className={`w-8 h-8 ${moduleTheme.icon}`} />
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-400 font-medium">
+                      Sin grados asignados a este ciclo
+                    </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Grados asignados ({cycle.grades.length}):
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <GraduationCap className={`w-4 h-4 ${moduleTheme.icon}`} />
+                        Grados Asignados
+                        <Badge className={`${moduleTheme.bg} ${moduleTheme.text} border ${moduleTheme.border} ml-2`}>
+                          {cycle.grades.length}
+                        </Badge>
+                      </p>
+                    </div>
+
+                    {/* Grades Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {cycle.grades
                         .sort((a, b) => a.order - b.order)
                         .map((grade) => {
@@ -224,25 +307,29 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
                           return (
                             <div
                               key={grade.id}
-                              className="flex items-center justify-between bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                              className={`flex items-center justify-between ${moduleTheme.bg} border-2 ${moduleTheme.border} rounded-lg p-4 transition-all hover:${moduleTheme.bgHover} group/item`}
                             >
-                              <div className="flex items-center gap-2 flex-1">
-                                <GraduationCap className="w-4 h-4 text-lime-600 dark:text-lime-500" />
-                                <div>
-                                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <div className={`p-2 rounded-lg ${moduleTheme.bg} border ${moduleTheme.border}`}>
+                                  <GraduationCap className={`w-4 h-4 ${moduleTheme.icon}`} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                                     {grade.name}
                                   </p>
                                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    {grade.level}
+                                    Nivel: {grade.level}
                                   </p>
                                 </div>
                               </div>
+
+                              {/* Delete Button */}
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDelete(cycle.id, grade.id, grade.name)}
                                 disabled={isDeleting}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
+                                className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 ml-2 flex-shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity"
                               >
                                 {isDeleting ? (
                                   <Loader2 className="w-4 h-4 animate-spin" />

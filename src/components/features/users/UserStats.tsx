@@ -45,35 +45,35 @@ export function UserStats({ stats, isLoading, permissionError }: UserStatsProps)
   const statsCards = [
     {
       title: 'Total Usuarios',
-      value: stats.totalUsers,
+      value: stats?.totalUsers ?? 0,
       icon: Users,
       color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-50 dark:bg-blue-950/30',
     },
     {
       title: 'Activos',
-      value: stats.activeUsers,
+      value: stats?.activeUsers ?? 0,
       icon: CheckCircle2,
       color: 'text-green-600 dark:text-green-400',
       bgColor: 'bg-green-50 dark:bg-green-950/30',
     },
     {
       title: 'Inactivos',
-      value: stats.inactiveUsers,
+      value: stats?.inactiveUsers ?? 0,
       icon: Lock,
       color: 'text-slate-600 dark:text-slate-400',
       bgColor: 'bg-slate-50 dark:bg-slate-800/50',
     },
     {
       title: 'Verificados',
-      value: stats.verifiedEmails,
+      value: stats?.verifiedEmails ?? 0,
       icon: Mail,
       color: 'text-emerald-600 dark:text-emerald-400',
       bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
     },
     {
       title: 'Con Acceso',
-      value: stats.canAccessPlatform,
+      value: stats?.canAccessPlatform ?? 0,
       icon: Eye,
       color: 'text-indigo-600 dark:text-indigo-400',
       bgColor: 'bg-indigo-50 dark:bg-indigo-950/30',
@@ -102,7 +102,7 @@ export function UserStats({ stats, isLoading, permissionError }: UserStatsProps)
                 {stat.value.toLocaleString('es-GT')}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                {Math.round((stat.value / stats.totalUsers) * 100)}% del total
+                {statsCards[0].value > 0 ? Math.round((stat.value / statsCards[0].value) * 100) : 0}% del total
               </p>
             </CardContent>
           </Card>

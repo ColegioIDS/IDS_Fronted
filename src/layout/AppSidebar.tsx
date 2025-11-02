@@ -121,16 +121,14 @@ const navItems: NavItem[] = [
     // Mostrar si tiene AL MENOS UNO de estos permisos
     requiredAnyPermissions: [
       { module: 'user', action: 'read' },
-      { module: 'user', action: 'create' }
     ],
 
     subItems: [
       {
-        name: "Lista de Usuarios",
-        path: "/users/list",
+        name: "Gestionar Usuarios",
+        path: "/users",
         requiredPermission: { module: 'user', action: 'read' }
       },
-      { name: "Crear Usuario", path: "/users/create", requiredPermission: { module: 'user', action: 'create' } },
 
     ]
 
