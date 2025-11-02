@@ -251,17 +251,21 @@ export function useUsers(initialQuery: UsersQuery = {}) {
   // Upload picture
   const uploadPicture = useCallback(
     async (userId: number, file: File, kind: string, description?: string) => {
+      const loadingId = toast.loading('Subiendo imagen a Cloudinary...');
       try {
         // 1️⃣ Subir a Cloudinary
-        toast.loading('Subiendo imagen a Cloudinary...');
         const { url, publicId } = await uploadImageToCloudinary(file);
         
         // 2️⃣ Registrar en backend
         const result = await usersService.uploadPicture(userId, url, publicId, kind, description);
+        
+        // Actualizar toast
+        toast.dismiss(loadingId);
         toast.success('Foto subida exitosamente');
         return result;
       } catch (error) {
         const err = error instanceof Error ? error : new Error('Error al subir foto');
+        toast.dismiss(loadingId);
         toast.error(err.message);
         throw err;
       }
