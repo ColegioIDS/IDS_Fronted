@@ -7,66 +7,127 @@ import { sectionsService } from '@/services/sections.service';
 import type {
   Section,
   QuerySectionsDto,
-  PaginatedSectionsResponse,
+  CreateSectionDto,
+  UpdateSectionDto,
 } from '@/types/sections.types';
 
-interface UseSectionsOptions extends Omit<QuerySectionsDto, 'page' | 'limit'> {
-  page?: number;
-  limit?: number;
-  autoFetch?: boolean;
+interface UseSectionsReturn {
+  data: Section[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  isLoading: boolean;
+  error: string | null;
+  query: QuerySectionsDto;
+  updateQuery: (newQuery: Partial<QuerySectionsDto>) => void;
+  setPage: (page: number) => void;
+  refresh: () => void;
+  createSection: (data: CreateSectionDto) => Promise<Section>;
+  updateSection: (id: number, data: UpdateSectionDto) => Promise<Section>;
+  deleteSection: (id: number) => Promise<void>;
 }
 
-export function useSections(options: UseSectionsOptions = {}) {
-  const {
-    page = 1,
-    limit = 10,
-    autoFetch = true,
-    ...filters
-  } = options;
-
+/**
+ * Hook para gestión de secciones con paginación y filtros
+ */
+export function useSections(initialQuery: QuerySectionsDto = {}): UseSectionsReturn {
   const [data, setData] = useState<Section[]>([]);
-  const [meta, setMeta] = useState<PaginatedSectionsResponse['meta'] | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const [meta, setMeta] = useState({
+    page: 1,
+    limit: 12,
+    total: 0,
+    totalPages: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState<QuerySectionsDto>({
-    page,
-    limit,
-    ...filters,
+    page: 1,
+    limit: 12,
+    sortBy: 'name',
+    sortOrder: 'asc',
+    ...initialQuery,
   });
 
-  const fetchSections = useCallback(async (params?: QuerySectionsDto) => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await sectionsService.getAll(params || query);
-      setData(response.data);
-      setMeta(response.meta);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Error fetching sections'));
+
+      const result = await sectionsService.getAll(query);
+      
+      setData(result.data);
+      setMeta(result.meta);
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar secciones');
       setData([]);
-      setMeta(null);
+      setMeta({ page: 1, limit: 12, total: 0, totalPages: 0 });
     } finally {
       setIsLoading(false);
     }
   }, [query]);
 
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   const updateQuery = useCallback((newQuery: Partial<QuerySectionsDto>) => {
-    setQuery((prev) => ({ ...prev, ...newQuery }));
+    setQuery((prev) => ({ ...prev, ...newQuery, page: 1 }));
   }, []);
 
-  const setPage = useCallback((newPage: number) => {
-    updateQuery({ page: newPage });
-  }, [updateQuery]);
+  const setPage = useCallback((page: number) => {
+    setQuery((prev) => ({ ...prev, page }));
+  }, []);
 
   const refresh = useCallback(() => {
-    fetchSections(query);
-  }, [fetchSections, query]);
+    loadData();
+  }, [loadData]);
 
-  useEffect(() => {
-    if (autoFetch) {
-      fetchSections(query);
+  const createSection = useCallback(async (data: CreateSectionDto): Promise<Section> => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const result = await sectionsService.create(data);
+      await loadData(); // Recargar lista
+      return result;
+    } catch (err: any) {
+      setError(err.message || 'Error al crear sección');
+      throw err;
+    } finally {
+      setIsLoading(false);
     }
-  }, [query, autoFetch, fetchSections]);
+  }, [loadData]);
+
+  const updateSection = useCallback(async (id: number, data: UpdateSectionDto): Promise<Section> => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const result = await sectionsService.update(id, data);
+      await loadData(); // Recargar lista
+      return result;
+    } catch (err: any) {
+      setError(err.message || 'Error al actualizar sección');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadData]);
+
+  const deleteSection = useCallback(async (id: number): Promise<void> => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      await sectionsService.delete(id);
+      await loadData(); // Recargar lista
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar sección');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadData]);
 
   return {
     data,
@@ -77,6 +138,8 @@ export function useSections(options: UseSectionsOptions = {}) {
     updateQuery,
     setPage,
     refresh,
-    fetchSections,
+    createSection,
+    updateSection,
+    deleteSection,
   };
 }

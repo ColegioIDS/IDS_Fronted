@@ -186,6 +186,14 @@ export const APP_THEME = {
         icon: 'text-fuchsia-600 dark:text-fuchsia-400',
         gradient: 'from-fuchsia-500 to-fuchsia-600',
       },
+      gradeCycle: {
+        bg: 'bg-lime-50 dark:bg-lime-950/30',
+        bgHover: 'hover:bg-lime-100 dark:hover:bg-lime-950/50',
+        text: 'text-lime-700 dark:text-lime-300',
+        border: 'border-lime-200 dark:border-lime-800',
+        icon: 'text-lime-600 dark:text-lime-400',
+        gradient: 'from-lime-500 to-lime-600',
+      },
       assignment: {
         bg: 'bg-sky-50 dark:bg-sky-950/30',
         bgHover: 'hover:bg-sky-100 dark:hover:bg-sky-950/50',

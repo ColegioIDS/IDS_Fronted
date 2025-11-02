@@ -142,7 +142,8 @@ const navItems: NavItem[] = [
     name: "Grados & Secciones",
     requiredAnyPermissions: [
       { module: 'grade', action: 'read' },
-      { module: 'section', action: 'read' }
+      { module: 'section', action: 'read' },
+      { module: 'grade-cycle', action: 'read' }
     ],
     subItems: [
       {
@@ -153,7 +154,9 @@ const navItems: NavItem[] = [
         name: "Secciones", path: "/sections",
         requiredPermission: { module: 'section', action: 'read' }
       },
-      { name: "Asignacion Grados - Ciclos", path: "/grade-cycle" },
+      { name: "Asignacion Grados - Ciclos", path: "/grade-cycles",
+        requiredPermission: { module: 'grade-cycle', action: 'read' }
+      },
 
     ]
 

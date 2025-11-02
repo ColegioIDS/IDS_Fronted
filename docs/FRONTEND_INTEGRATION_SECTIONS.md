@@ -18,6 +18,13 @@ The Sections module manages sections (classrooms/groups) within the school syste
 
 **Base URL:** `/api/sections`
 
+**Required Permissions:**
+- `section:read` - List sections and get available teachers
+- `section:read-one` - View section details and statistics
+- `section:create` - Create new sections
+- `section:update` - Update sections and assign/remove teachers
+- `section:delete` - Delete sections
+
 ---
 
 ## TypeScript Interfaces
@@ -46,6 +53,30 @@ interface Section {
     enrollments: number;
     courseAssignments: number;
     schedules: number;
+  };
+}
+```
+
+### AvailableTeacher ⭐ NEW
+```typescript
+interface AvailableTeacher {
+  id: number;
+  givenNames: string;
+  lastNames: string;
+  email: string | null;
+  role?: {
+    id: number;
+    name: string;
+    roleType: 'TEACHER';  // Siempre será TEACHER
+  };
+  teacherDetails?: {
+    hiredDate: Date;
+    isHomeroomTeacher: boolean;
+    academicDegree: string | null;
+  } | null;
+  _count?: {
+    guidedSections: number;      // Secciones donde es maestro guía
+    courseAssignments: number;   // Cursos asignados
   };
 }
 ```
@@ -99,6 +130,31 @@ interface PaginatedSectionsResponse {
 }
 ```
 
+### SectionStatsResponse
+```typescript
+interface SectionStatsResponse {
+  id: number;
+  name: string;
+  capacity: number;
+  currentEnrollments: number;
+  availableSpots: number;
+  utilizationPercentage: number;
+  totalCourseAssignments: number;
+  totalSchedules: number;
+  hasTeacher: boolean;
+  teacher?: {
+    id: number;
+    givenNames: string;
+    lastNames: string;
+  };
+  grade: {
+    id: number;
+    name: string;
+    level: string;
+  };
+}
+```
+
 ### SectionStats
 ```typescript
 interface SectionStats {
@@ -130,6 +186,8 @@ interface SectionStats {
 
 ### 1. Create Section
 **POST** `/api/sections`
+
+**Permission Required:** `section:create`
 
 Creates a new section.
 
@@ -180,6 +238,8 @@ Creates a new section.
 ### 2. Get All Sections (with filters)
 **GET** `/api/sections?page=1&limit=10&gradeId=1&sortBy=name`
 
+**Permission Required:** `section:read`
+
 Retrieve sections with pagination and filters.
 
 **Query Parameters:** See [Query Parameters](#query-parameters)
@@ -224,8 +284,71 @@ Retrieve sections with pagination and filters.
 
 ---
 
-### 3. Get Section by Grade
+### 3. Get Available Teachers ⭐ NEW
+**GET** `/api/sections/available-teachers`
+
+**Permission Required:** `section:read`
+
+Get all teachers available for section assignment. Only returns users with `roleType=TEACHER`.
+
+**Success Response (200):**
+```json
+[
+  {
+    "id": 5,
+    "givenNames": "María",
+    "lastNames": "López García",
+    "email": "maria.lopez@school.com",
+    "role": {
+      "id": 2,
+      "name": "Docente",
+      "roleType": "TEACHER"
+    },
+    "teacherDetails": {
+      "hiredDate": "2020-01-15T00:00:00.000Z",
+      "isHomeroomTeacher": true,
+      "academicDegree": "Licenciatura en Educación Primaria"
+    },
+    "_count": {
+      "guidedSections": 1,
+      "courseAssignments": 3
+    }
+  },
+  {
+    "id": 6,
+    "givenNames": "Carlos",
+    "lastNames": "Ramírez Soto",
+    "email": "carlos.ramirez@school.com",
+    "role": {
+      "id": 3,
+      "name": "Docente de Inglés",
+      "roleType": "TEACHER"
+    },
+    "teacherDetails": {
+      "hiredDate": "2019-08-20T00:00:00.000Z",
+      "isHomeroomTeacher": false,
+      "academicDegree": "Licenciatura en Idioma Inglés"
+    },
+    "_count": {
+      "guidedSections": 0,
+      "courseAssignments": 5
+    }
+  }
+]
+```
+
+**Use Cases:**
+- Dropdown para seleccionar maestro guía al crear/editar sección
+- Mostrar maestros disponibles sin asignación
+- Filtrar por `isHomeroomTeacher` en el frontend
+- Mostrar carga actual (`_count.guidedSections`, `_count.courseAssignments`)
+
+---
+
+### 4. Get Section by Grade
 **GET** `/api/sections/grade/:gradeId`
+
+**Permission Required:** `section:read`
 
 Get all sections for a specific grade.
 
@@ -260,8 +383,10 @@ Get all sections for a specific grade.
 
 ---
 
-### 4. Get Section by ID
+### 5. Get Section by ID
 **GET** `/api/sections/:id`
+
+**Permission Required:** `section:read-one`
 
 Retrieve a specific section by ID.
 
@@ -302,7 +427,12 @@ Retrieve a specific section by ID.
 ---
 
 ### 5. Update Section
+---
+
+### 6. Update Section
 **PATCH** `/api/sections/:id`
+
+**Permission Required:** `section:update`
 
 Update section information.
 
@@ -339,8 +469,10 @@ Update section information.
 
 ---
 
-### 6. Delete Section
+### 7. Delete Section
 **DELETE** `/api/sections/:id`
+
+**Permission Required:** `section:delete`
 
 Delete a section (only if no dependencies exist).
 
@@ -360,8 +492,10 @@ Delete a section (only if no dependencies exist).
 
 ---
 
-### 7. Get Section Statistics
+### 8. Get Section Statistics
 **GET** `/api/sections/:id/stats`
+
+**Permission Required:** `section:read-one`
 
 Get detailed statistics for a section.
 
@@ -398,8 +532,10 @@ Get detailed statistics for a section.
 
 ---
 
-### 8. Assign Teacher to Section
+### 9. Assign Teacher to Section
 **PATCH** `/api/sections/:id/assign-teacher`
+
+**Permission Required:** `section:update`
 
 Assign a teacher to a section.
 
@@ -432,8 +568,10 @@ Assign a teacher to a section.
 
 ---
 
-### 9. Remove Teacher from Section
+### 10. Remove Teacher from Section
 **PATCH** `/api/sections/:id/remove-teacher`
+
+**Permission Required:** `section:update`
 
 Remove the assigned teacher from a section.
 
@@ -539,6 +677,19 @@ If dependencies exist, delete them first or use deactivation instead.
 - Grade can be changed (with validation)
 - Name uniqueness is re-validated when changing grade
 
+### 6. Available Teachers Filtering ⭐ NEW
+- Only returns users with `roleType = 'TEACHER'`
+- Includes users with roles like: "Docente", "Maestro", "Docente de Inglés", etc.
+- Automáticamente escalable: crear nuevos roles con `roleType=TEACHER` los incluye
+- No requiere modificar código backend
+- Incluye contador de secciones y cursos asignados para mejor decisión
+
+**Ventajas del sistema:**
+- ✅ **Escalable**: Nuevos roles de docentes funcionan automáticamente
+- ✅ **Flexible**: Soporta roles personalizados (ej: "Docente Suplente")
+- ✅ **Performante**: Query optimizado con índice en enum
+- ✅ **Mantenible**: No depende de nombres específicos de roles
+
 ---
 
 ## Code Examples
@@ -582,6 +733,12 @@ export const sectionsService = {
   // Get all sections with filters
   getAll: async (params?: QuerySectionsDto) => {
     const response = await axios.get(API_BASE, { params });
+    return response.data;
+  },
+
+  // ⭐ NEW: Get available teachers
+  getAvailableTeachers: async () => {
+    const response = await axios.get(`${API_BASE}/available-teachers`);
     return response.data;
   },
 
@@ -637,7 +794,77 @@ export const sectionsService = {
 };
 ```
 
-### React Component Example
+### React Component Examples
+
+#### 1. Teacher Selector Dropdown ⭐ NEW
+
+```typescript
+// components/TeacherSelector.tsx
+import React, { useState, useEffect } from 'react';
+import { sectionsService, AvailableTeacher } from '../services/sections.service';
+
+interface TeacherSelectorProps {
+  value?: number | null;
+  onChange: (teacherId: number | null) => void;
+  placeholder?: string;
+}
+
+export const TeacherSelector: React.FC<TeacherSelectorProps> = ({
+  value,
+  onChange,
+  placeholder = 'Seleccionar maestro...'
+}) => {
+  const [teachers, setTeachers] = useState<AvailableTeacher[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchTeachers();
+  }, []);
+
+  const fetchTeachers = async () => {
+    try {
+      setLoading(true);
+      const data = await sectionsService.getAvailableTeachers();
+      setTeachers(data);
+      setError(null);
+    } catch (err) {
+      setError('Error al cargar maestros');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getTeacherLabel = (teacher: AvailableTeacher) => {
+    const fullName = `${teacher.lastNames}, ${teacher.givenNames}`;
+    const sections = teacher._count?.guidedSections || 0;
+    const courses = teacher._count?.courseAssignments || 0;
+    
+    return `${fullName} (${sections} secc., ${courses} cursos)`;
+  };
+
+  if (loading) return <div>Cargando maestros...</div>;
+  if (error) return <div className="error">{error}</div>;
+
+  return (
+    <select
+      value={value || ''}
+      onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+      className="form-select"
+    >
+      <option value="">{placeholder}</option>
+      {teachers.map((teacher) => (
+        <option key={teacher.id} value={teacher.id}>
+          {getTeacherLabel(teacher)}
+        </option>
+      ))}
+    </select>
+  );
+};
+```
+
+#### 2. Sections List Component
 
 ```typescript
 // components/SectionsList.tsx
@@ -809,35 +1036,170 @@ try {
 1. Select grade from list
 2. Enter section name (A, B, C, etc.)
 3. Set capacity (default: 30)
-4. Optionally assign teacher
+4. **⭐ NEW:** Use `TeacherSelector` component to choose teacher
+   - Shows teachers with `roleType=TEACHER`
+   - Displays current workload (sections and courses)
+   - Optional: filter by `isHomeroomTeacher`
 5. Submit and redirect to section details
 
-### Assigning Teacher
+### Assigning Teacher ⭐ UPDATED
 1. View section details
 2. Click "Assign Teacher" button
-3. Search and select teacher from list
-4. Confirm assignment
-5. Show success message
+3. **Use GET `/api/sections/available-teachers`** to load options
+4. Search and select teacher from dropdown
+5. Call **PATCH `/api/sections/:id/assign-teacher`**
+6. Show success message with teacher details
 
 ### Managing Capacity
-1. View section statistics
-2. See current utilization
+1. View section statistics (GET `/api/sections/:id/stats`)
+2. See current utilization percentage
 3. If needed, adjust capacity
 4. System validates against enrollments
 5. Update capacity if valid
+
+### Filtering Teachers by Workload (Frontend)
+```typescript
+// Filtrar maestros disponibles por carga de trabajo
+const availableTeachers = allTeachers.filter(t => 
+  t._count.guidedSections < 2 // Menos de 2 secciones guía
+);
+
+// Ordenar por menos carga
+const sortedTeachers = allTeachers.sort((a, b) => 
+  (a._count.guidedSections + a._count.courseAssignments) -
+  (b._count.guidedSections + b._count.courseAssignments)
+);
+
+// Destacar maestros sin sección asignada
+const noSectionTeachers = allTeachers.filter(t => 
+  t._count.guidedSections === 0 &&
+  t.teacherDetails?.isHomeroomTeacher
+);
+```
+
+---
+
+## Integration Checklist
+
+### Backend Setup ✅
+- [x] Enum `RoleType` agregado al schema
+- [x] Campo `roleType` en modelo `Role`
+- [x] Migración aplicada
+- [x] Endpoint `GET /api/sections/available-teachers` creado
+- [x] Permisos `section:read` aplicados
+- [x] DTOs actualizados con `AvailableTeacher`
+
+### Frontend Implementation 📋
+- [ ] Agregar interface `AvailableTeacher` a types
+- [ ] Implementar `sectionsService.getAvailableTeachers()`
+- [ ] Crear componente `TeacherSelector`
+- [ ] Actualizar formulario de crear/editar sección
+- [ ] Agregar filtros de maestros por carga
+- [ ] Implementar visualización de estadísticas de maestros
+- [ ] Manejar estados de carga y error
+
+### Testing 🧪
+- [ ] Probar endpoint con diferentes roles
+- [ ] Verificar que solo aparezcan `roleType=TEACHER`
+- [ ] Validar datos de `teacherDetails`
+- [ ] Comprobar contadores (`_count`)
+- [ ] Probar asignación de maestros
+- [ ] Validar permisos de acceso
+
+---
+
+## Best Practices
+
+### 1. Caching de Maestros Disponibles
+```typescript
+// Cachear la lista de maestros disponibles
+const { data: teachers, isLoading } = useQuery(
+  ['available-teachers'],
+  () => sectionsService.getAvailableTeachers(),
+  {
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    cacheTime: 10 * 60 * 1000, // 10 minutos
+  }
+);
+```
+
+### 2. Mostrar Información Relevante
+```typescript
+// Formatear información del maestro
+const formatTeacherInfo = (teacher: AvailableTeacher) => {
+  const fullName = `${teacher.lastNames}, ${teacher.givenNames}`;
+  const workload = `${teacher._count?.guidedSections || 0} secciones, ${teacher._count?.courseAssignments || 0} cursos`;
+  const isHR = teacher.teacherDetails?.isHomeroomTeacher ? '⭐' : '';
+  
+  return `${isHR} ${fullName} - ${workload}`;
+};
+```
+
+### 3. Validación Frontend
+```typescript
+// Validar antes de enviar
+const validateSection = (data: CreateSectionDto) => {
+  if (!data.name.trim()) throw new Error('Nombre requerido');
+  if (data.capacity < 1 || data.capacity > 100) {
+    throw new Error('Capacidad debe estar entre 1 y 100');
+  }
+  if (!data.gradeId) throw new Error('Grado requerido');
+  return true;
+};
+```
+
+### 4. Manejo de Errores
+```typescript
+// Manejar errores específicos
+try {
+  await sectionsService.create(sectionData);
+  toast.success('Sección creada exitosamente');
+} catch (error) {
+  if (error.response?.status === 409) {
+    toast.error('Ya existe una sección con ese nombre en este grado');
+  } else if (error.response?.status === 403) {
+    toast.error('No tienes permisos para crear secciones');
+  } else {
+    toast.error('Error al crear sección');
+  }
+}
+```
 
 ---
 
 ## Notes
 
-- All endpoints require appropriate permissions
-- Section names are case-insensitive for uniqueness
-- Teacher assignment is optional and can be changed anytime
-- Sections cannot be deleted if they have dependencies
-- Capacity changes are validated against current enrollments
-- Statistics are calculated in real-time
+- ✅ All endpoints require appropriate permissions (`section:read`, `section:create`, etc.)
+- ✅ Section names are case-insensitive for uniqueness
+- ✅ Teacher assignment is optional and can be changed anytime
+- ✅ Sections cannot be deleted if they have dependencies
+- ✅ Capacity changes are validated against current enrollments
+- ✅ Statistics are calculated in real-time
+- ⭐ **NEW:** Teacher filtering uses `roleType` enum for scalability
+- ⭐ **NEW:** Available teachers endpoint includes workload metrics
+- ⭐ **NEW:** No need to modify code when creating new teacher roles
 
 ---
 
-**Last Updated:** October 31, 2025
-**API Version:** 1.0.0
+## Changelog
+
+### Version 1.1.0 (November 1, 2025)
+- ⭐ Added `GET /api/sections/available-teachers` endpoint
+- ⭐ Implemented `RoleType` enum system
+- ⭐ Added `AvailableTeacher` interface
+- ⭐ Included teacher workload metrics (`_count`)
+- ⭐ Added permission requirements documentation
+- ⭐ Updated all examples with new patterns
+
+### Version 1.0.0 (October 31, 2025)
+- Initial documentation
+- Basic CRUD endpoints
+- Query parameters and filters
+- React component examples
+
+---
+
+**Last Updated:** November 1, 2025  
+**API Version:** 1.1.0  
+**Backend:** NestJS + Prisma + PostgreSQL  
+**Author:** IDS School System
