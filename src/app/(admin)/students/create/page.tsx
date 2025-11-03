@@ -1,37 +1,8 @@
+// src/app/(admin)/students/create/page.tsx
+'use client';
 
-// src/app/(admin)/students/page.tsx
-"use client";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SchoolCycleProvider } from '@/context/SchoolCycleContext';
-import { GradeProvider } from '@/context/GradeContext';
-import { SectionProvider } from '@/context/SectionsContext';
-import { StudentProvider } from '@/context/StudentContext';
-import { StudentForm } from '@/components/students/StudentForm';
-// Crear cliente específico para esta página
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutos (datos de estudiantes son relativamente estables)
-      refetchOnWindowFocus: true,
-      refetchInterval: 10 * 60 * 1000, // Refrescar cada 10 minutos
-    },
-  },
-});
+import { StudentCreateForm } from '@/components/features/students/StudentCreateForm';
 
-export default function StudentsPageWrapper() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <SchoolCycleProvider>
-
-
-        <GradeProvider>
-          <SectionProvider>
-            <StudentProvider>
-              <StudentForm />
-            </StudentProvider>
-          </SectionProvider>
-        </GradeProvider>
-      </SchoolCycleProvider>
-    </QueryClientProvider>
-  );
+export default function CreateStudentPage() {
+  return <StudentCreateForm />;
 }

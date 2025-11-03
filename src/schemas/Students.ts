@@ -40,11 +40,11 @@ const AddressSchema = z.object({
     .min(1, "La zona es obligatoria")
     .max(50, "La zona no puede exceder 50 caracteres"),
   municipality: z.string()
-    .min(3, "El municipio debe tener al menos 3 caracteres")
-    .max(50, "El municipio no puede exceder 50 caracteres"),
+    .max(50, "El municipio no puede exceder 50 caracteres")
+    .refine(val => !isNaN(Number(val)) || val.length >= 3, "El municipio debe ser un ID válido o tener al menos 3 caracteres"),
   department: z.string()
-    .min(3, "El departamento debe tener al menos 3 caracteres")
-    .max(50, "El departamento no puede exceder 50 caracteres"),
+    .max(50, "El departamento no puede exceder 50 caracteres")
+    .refine(val => !isNaN(Number(val)) || val.length >= 3, "El departamento debe ser un ID válido o tener al menos 3 caracteres"),
 });
 
 const MedicalInfoSchema = z.object({
@@ -55,6 +55,7 @@ const MedicalInfoSchema = z.object({
   hasAllergies: z.boolean(),
   allergiesDetails: z.string().max(500, errors.maxLength(500)).nullable().optional(),
   emergencyMedicationAllowed: z.boolean(),
+  emergencyMedicationDetails: z.string().max(500, errors.maxLength(500)).nullable().optional(),
   hasLearningDisability: z.boolean(),
   disabilityDetails: z.string().max(500, errors.maxLength(500)).nullable().optional(),
   strengths: z.string().max(500, errors.maxLength(500)).nullable().optional(),
@@ -69,7 +70,10 @@ export const AcademicRecordSchema = z.object({
   gradeCompleted: z.string().min(1, errors.required).max(20),
   gradePromotedTo: z.string().min(1, errors.required).max(20),
   year: z.number().int(),
-});
+}).refine(
+  (data) => data.schoolName.trim().length > 0,
+  { message: "El nombre de la escuela es obligatorio", path: ["schoolName"] }
+);
 
 export const UserCreateSchema = z.object({
   givenNames: z.string().min(2, "Los nombres son requeridos"),
@@ -85,7 +89,6 @@ export const ParentDetailsSchema = z.object({
   dpiIssuedAt: z.string().min(2, "Lugar de emisión requerido"),
   occupation: z.string().min(2, "Ocupación requerida"),
   workplace: z.string().min(2, "Lugar de trabajo requerido"),
-  email: z.string().email().optional().nullable(),
   workPhone: z.string().optional().nullable(),
 });
 
@@ -101,25 +104,56 @@ export const ParentLinkSchema = z.object({
   financialResponsible: z.boolean(),
   livesWithStudent: z.boolean(),
   emergencyContactPriority: z.number().int(),
-});
+}).refine(
+  (data) => data.userId || data.newParent,
+  { message: "Debe proporcionar un ID de usuario O datos de padre nuevo", path: ["newParent"] }
+);
 
 export const EmergencyContactSchema = z.object({
-  name: z.string().min(2, "Nombre requerido"),
-  relationship: z.string().min(2, "Relación requerida"),
-  phone: z.string().min(8, "Teléfono inválido"),
-});
+  name: z.string().min(1, "Nombre requerido").optional().nullable(),
+  relationship: z.string().min(1, "Relación requerida").optional().nullable(),
+  phone: z.string().min(8, "Teléfono inválido").optional().nullable(),
+}).refine(
+  (data) => {
+    // Si el nombre existe, relación y teléfono también deben existir
+    if (data.name && data.name.trim().length > 0) {
+      return !!data.relationship && !!data.phone;
+    }
+    return true;
+  },
+  { message: "Si proporciona un nombre, debe dar la relación y teléfono", path: ["name"] }
+);
 
 export const AuthorizedPersonSchema = z.object({
-  name: z.string(),
-  relationship: z.string(),
-  phone: z.string().optional()
-});
+  name: z.string().optional().nullable(),
+  relationship: z.string().optional().nullable(),
+  phone: z.string().optional().nullable()
+}).refine(
+  (data) => {
+    // Si proporciona algún dato, todos son opcionales
+    // Pero si proporciona nombre, debe dar relación
+    if (data.name && data.name.trim().length > 0) {
+      return !!data.relationship;
+    }
+    return true;
+  },
+  { message: "Si proporciona un nombre, debe dar la relación", path: ["name"] }
+);
 
 export const SiblingSchema = z.object({
-  name: z.string(),
-  age: z.number().int().nonnegative(),
+  name: z.string().optional().nullable(),
+  age: z.number().int().nonnegative().optional().nullable(),
   gender: GenderSchema,
-});
+}).refine(
+  (data) => {
+    // Si hay nombre, edad debe estar ahí
+    if (data.name && data.name.trim().length > 0) {
+      return data.age !== null && data.age !== undefined;
+    }
+    return true;
+  },
+  { message: "Si proporciona un nombre, debe dar la edad", path: ["name"] }
+);
 
 export const BusServiceSchema = z.object({
   hasService: z.boolean(),
@@ -160,8 +194,16 @@ export const createBaseStudentSchema = () => z.object({
   favoriteSubject: z.string().max(50).optional(),
   favoriteToy: z.string().max(50).optional(),
   favoriteCake: z.string().max(50).optional(),
-  // ❌ REMOVIDO: enrollmentStatus (ya no va en Student)
-  profileImage: z.union([z.instanceof(File), z.string(), z.null()]).optional(),
+  // ✅ ACTUALIZADO: profileImage puede ser File (durante edición) o objeto {url, publicId} (después de upload)
+  profileImage: z.union([
+    z.instanceof(File),
+    z.object({
+      url: z.string().url("URL inválida"),
+      publicId: z.string().min(1, "publicId requerido"),
+      kind: z.literal("profile").default("profile"),
+      description: z.string().optional().nullable(),
+    }),
+  ]).nullable().optional(),
 
   pictures: z.array(z.object({
     url: z.string(),
@@ -175,8 +217,16 @@ export const createBaseStudentSchema = () => z.object({
 
 /* Esquema Extendido */
 export const ExtendedStudentSchema = createBaseStudentSchema().extend({
-  // ✅ NUEVO: Enrollment obligatorio
-  enrollment: EnrollmentDataSchema,
+  // ✅ ACTUALIZADO: Enrollment con campos que pueden ser null inicialmente
+  enrollment: z.object({
+    cycleId: z.number().int().positive("Debe seleccionar un ciclo escolar válido").nullable().optional(),
+    gradeId: z.number().int().positive("Debe seleccionar un grado válido").nullable().optional(),
+    sectionId: z.number().int().positive("Debe seleccionar una sección válida").nullable().optional(),
+    status: z.enum(['active', 'inactive', 'graduated', 'transferred']),
+  }).refine(
+    (data) => data.cycleId && data.gradeId && data.sectionId,
+    { message: "Ciclo, Grado y Sección son obligatorios", path: ["cycleId"] }
+  ),
   
   medicalInfo: MedicalInfoSchema.optional(),
   academicRecords: z.array(AcademicRecordSchema).min(1, "Debe proporcionar al menos un registro académico"),
@@ -223,11 +273,11 @@ export const defaultValues: StudentFormValues = {
   favoriteToy: undefined,
   favoriteCake: undefined,
   
-  // ✅ NUEVO: Enrollment con valores por defecto
+  // ✅ NUEVO: Enrollment con valores por defecto (null inicialmente, se setean cuando cargan datos)
   enrollment: {
-    cycleId: 0, // Se debe actualizar con el ciclo activo
-    gradeId: 0, // Se debe seleccionar en el formulario
-    sectionId: 0, // Se debe seleccionar en el formulario
+    cycleId: null,
+    gradeId: null,
+    sectionId: null,
     status: 'active' as 'active' | 'inactive' | 'graduated' | 'transferred',
   },
   
@@ -242,11 +292,12 @@ export const defaultValues: StudentFormValues = {
     hasDisease: false,
     takesMedication: false,
     hasAllergies: false,
-    emergencyMedicationAllowed: true,
+    emergencyMedicationAllowed: false,
     hasLearningDisability: false,
     diseaseDetails: undefined,
     medicationDetails: undefined,
     allergiesDetails: undefined,
+    emergencyMedicationDetails: undefined,
     disabilityDetails: undefined,
     strengths: undefined,
     areasToImprove: undefined,
@@ -276,7 +327,6 @@ export const defaultValues: StudentFormValues = {
           dpiIssuedAt: "",
           occupation: "",
           workplace: "",
-          email: undefined,
           workPhone: undefined,
         },
       },
@@ -326,6 +376,9 @@ export const defaultValues: StudentFormValues = {
     acceptedRules: false,
     signedDate: null,
   },
+
+  // ✅ ACTUALIZADO: profileImage ahora es un objeto
+  profileImage: null,
   
   pictures: [],
 };
