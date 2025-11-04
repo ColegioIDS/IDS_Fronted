@@ -9,14 +9,14 @@ export const courseAssignmentSchema = z.object({
   sectionId: z.number().int().positive("El ID de sección debe ser positivo"),
   courseId: z.number().int().positive("El ID de curso debe ser positivo"),
   teacherId: z.number().int().positive("El ID de maestro debe ser positivo"),
-  assignmentType: z.enum(['titular', 'specialist']).default('titular'),
+  assignmentType: z.enum(['titular', 'apoyo', 'temporal', 'suplente']).default('titular'),
   isActive: z.boolean().default(true),
 });
 
 // Esquema para actualizar asignación
 export const updateCourseAssignmentSchema = z.object({
   teacherId: z.number().int().positive().optional(),
-  assignmentType: z.enum(['titular', 'specialist']).optional(),
+  assignmentType: z.enum(['titular', 'apoyo', 'temporal', 'suplente']).optional(),
   isActive: z.boolean().optional(),
 }).refine(data => Object.keys(data).length > 0, {
   message: 'Al menos un campo debe ser proporcionado para actualizar',
@@ -24,9 +24,8 @@ export const updateCourseAssignmentSchema = z.object({
 
 // Esquema para actualización masiva
 export const bulkUpdateSchema = z.object({
-  gradeId: z.number().int().positive("El ID de grado debe ser positivo"),
+  sectionId: z.number().int().positive("El ID de sección debe ser positivo"),
   assignments: z.array(z.object({
-    sectionId: z.number().int().positive(),
     courseId: z.number().int().positive(),
     teacherId: z.number().int().positive(),
   })).min(1, "Debe proporcionar al menos una asignación"),
@@ -37,7 +36,7 @@ export const courseAssignmentFiltersSchema = z.object({
   sectionId: z.number().int().positive().optional(),
   teacherId: z.number().int().positive().optional(),
   courseId: z.number().int().positive().optional(),
-  assignmentType: z.enum(['titular', 'specialist']).optional(),
+  assignmentType: z.enum(['titular', 'apoyo', 'temporal', 'suplente']).optional(),
   isActive: z.boolean().optional(),
   search: z.string().optional(),
   page: z.number().int().positive().optional(),

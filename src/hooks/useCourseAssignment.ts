@@ -1,21 +1,14 @@
 // src/hooks/useCourseAssignment.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { toast } from 'sonner'; // o tu librería de toasts
+import { toast } from 'sonner';
+import { courseAssignmentsService } from '@/services/course-assignments.service';
 import { 
-  getCourseAssignmentFormData, 
-  getSectionAssignmentData,
-  getCourseAssignments,
-  createCourseAssignment,
-  updateCourseAssignment,
-  deleteCourseAssignment,
-  bulkUpdateCourseAssignments
-} from '@/services/course-assignments';
-import { 
-  CourseAssignmentFormData, 
+  CourseAssignmentFormData,
+  CycleGradesData,
   SectionAssignmentData,
   CourseAssignment,
   CourseAssignmentFilters
-} from '@/types/course-assignments';
+} from '@/types/course-assignments.types';
 import {
   CourseAssignmentFormValues,
   UpdateCourseAssignmentFormValues,
@@ -35,12 +28,14 @@ interface UseCourseAssignmentOptions {
 interface UseCourseAssignmentReturn {
   // Data states
   formData: CourseAssignmentFormData | null;
+  cycleGradesData: CycleGradesData | null;
   sectionData: SectionAssignmentData | null;
   assignments: CourseAssignment[];
   
   // Loading states
   isLoading: boolean;
   isLoadingFormData: boolean;
+  isLoadingCycleGrades: boolean;
   isLoadingSectionData: boolean;
   isSubmitting: boolean;
   
@@ -49,6 +44,7 @@ interface UseCourseAssignmentReturn {
   
   // Actions
   loadFormData: () => Promise<void>;
+  loadCycleGrades: (cycleId: number) => Promise<void>;
   loadSectionData: (sectionId: number) => Promise<void>;
   fetchAssignments: (filters?: CourseAssignmentFilters) => Promise<void>;
   createAssignment: (data: CourseAssignmentFormValues) => Promise<CourseAssignment | null>;
@@ -78,11 +74,13 @@ export function useCourseAssignment(
   // ==================== STATES ====================
   
   const [formData, setFormData] = useState<CourseAssignmentFormData | null>(null);
+  const [cycleGradesData, setCycleGradesData] = useState<CycleGradesData | null>(null);
   const [sectionData, setSectionData] = useState<SectionAssignmentData | null>(null);
   const [assignments, setAssignments] = useState<CourseAssignment[]>([]);
   
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingFormData, setIsLoadingFormData] = useState(false);
+  const [isLoadingCycleGrades, setIsLoadingCycleGrades] = useState(false);
   const [isLoadingSectionData, setIsLoadingSectionData] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -92,6 +90,7 @@ export function useCourseAssignment(
   
   // Prevenir múltiples llamadas simultáneas
   const isLoadingFormDataRef = useRef(false);
+  const isLoadingCycleGradesRef = useRef(false);
   const isLoadingSectionDataRef = useRef(false);
 
   // ==================== HELPERS ====================
@@ -142,16 +141,12 @@ export function useCourseAssignment(
       setIsLoadingFormData(true);
       setError(null);
       
-      const data = await getCourseAssignmentFormData();
+      const data = await courseAssignmentsService.getFormData();
       setFormData(data);
       
-      // Validar datos críticos
-      if (!data.activeCycle) {
-        throw new Error('No hay ciclo escolar activo');
-      }
-      
-      if (data.grades.length === 0) {
-        console.warn('No hay grados disponibles en el ciclo activo');
+      // Validar que haya ciclos disponibles
+      if (!data.cycles || data.cycles.length === 0) {
+        throw new Error('No hay ciclos escolares disponibles');
       }
       
     } catch (err: any) {
@@ -161,6 +156,38 @@ export function useCourseAssignment(
     } finally {
       setIsLoadingFormData(false);
       isLoadingFormDataRef.current = false;
+    }
+  }, [handleError]);
+
+  // ==================== LOAD CYCLE GRADES ====================
+  
+  const loadCycleGrades = useCallback(async (cycleId: number) => {
+    // Prevenir llamadas duplicadas
+    if (isLoadingCycleGradesRef.current) {
+      console.log('loadCycleGrades ya en progreso, saltando...');
+      return;
+    }
+
+    try {
+      isLoadingCycleGradesRef.current = true;
+      setIsLoadingCycleGrades(true);
+      setError(null);
+      
+      const data = await courseAssignmentsService.getCycleGrades(cycleId);
+      setCycleGradesData(data);
+      
+      // Validar datos críticos
+      if (!data.grades || data.grades.length === 0) {
+        console.warn('No hay grados disponibles para este ciclo');
+      }
+      
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al cargar grados del ciclo';
+      handleError(errorMessage);
+      console.error('Error en loadCycleGrades:', err);
+    } finally {
+      setIsLoadingCycleGrades(false);
+      isLoadingCycleGradesRef.current = false;
     }
   }, [handleError]);
 
@@ -178,7 +205,7 @@ export function useCourseAssignment(
       setIsLoadingSectionData(true);
       setError(null);
       
-      const data = await getSectionAssignmentData(id);
+      const data = await courseAssignmentsService.getSectionAssignmentData(id);
       setSectionData(data);
       
       // Validar datos críticos
@@ -203,8 +230,8 @@ export function useCourseAssignment(
       setIsLoading(true);
       setError(null);
       
-      const data = await getCourseAssignments(filters);
-      const assignmentsArray = Array.isArray(data) ? data : data.data;
+      const response = await courseAssignmentsService.getCourseAssignments(filters);
+      const assignmentsArray = Array.isArray(response) ? response : response.data;
       setAssignments(assignmentsArray);
       
     } catch (err: any) {
@@ -225,7 +252,7 @@ export function useCourseAssignment(
       setIsSubmitting(true);
       setError(null);
       
-      const newAssignment = await createCourseAssignment(data);
+      const newAssignment = await courseAssignmentsService.createCourseAssignment(data);
       
       // Actualizar lista local
       setAssignments(prev => [...prev, newAssignment]);
@@ -253,7 +280,7 @@ export function useCourseAssignment(
       setIsSubmitting(true);
       setError(null);
       
-      const updatedAssignment = await updateCourseAssignment(id, data);
+      const updatedAssignment = await courseAssignmentsService.updateCourseAssignment(id, data);
       
       // Actualizar lista local
       setAssignments(prev => 
@@ -280,7 +307,7 @@ export function useCourseAssignment(
       setIsSubmitting(true);
       setError(null);
       
-      await deleteCourseAssignment(id);
+      await courseAssignmentsService.deleteCourseAssignment(id);
       
       // Actualizar lista local
       setAssignments(prev => prev.filter(item => item.id !== id));
@@ -307,7 +334,7 @@ export function useCourseAssignment(
       setIsSubmitting(true);
       setError(null);
       
-      await bulkUpdateCourseAssignments(data);
+      await courseAssignmentsService.bulkUpdateCourseAssignments(data);
       
       // Recargar datos de la sección si está disponible
       if (sectionId) {
@@ -348,12 +375,14 @@ export function useCourseAssignment(
   return {
     // Data
     formData,
+    cycleGradesData,
     sectionData,
     assignments,
     
     // Loading
     isLoading,
     isLoadingFormData,
+    isLoadingCycleGrades,
     isLoadingSectionData,
     isSubmitting,
     
@@ -362,6 +391,7 @@ export function useCourseAssignment(
     
     // Actions
     loadFormData,
+    loadCycleGrades,
     loadSectionData,
     fetchAssignments,
     createAssignment,

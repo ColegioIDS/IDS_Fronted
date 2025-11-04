@@ -1,16 +1,8 @@
 // src/app/(admin)/course-grades/page.tsx
 "use client";
 
-import dynamic from 'next/dynamic';
 import Breadcrumb from '@/components/common/Breadcrumb';
-import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
-
-const CourseGradeManager = dynamic(
-  () => import('@/components/course-grades/CourseGradeManager'),
-  {
-    loading: () => <ProfileSkeleton type="meta" />
-  }
-);
+import { CourseGradesPageContent } from '@/components/features/course-grades';
 
 export default function CourseGradesPage() {
   return (
@@ -23,7 +15,7 @@ export default function CourseGradesPage() {
           { label: "Curso-Grados", href: "#" },
         ]}
       />
-      <CourseGradeManager />
+      <CourseGradesPageContent />
     </div>
   );
 }
