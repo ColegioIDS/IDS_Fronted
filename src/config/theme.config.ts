@@ -500,3 +500,64 @@ export const getRoleTheme = (role: string) => {
 export const getWeekTypeTheme = (weekType: 'REGULAR' | 'EVALUATION' | 'REVIEW' | 'BREAK') => {
   return APP_THEME.weekTypes[weekType] || APP_THEME.weekTypes.REGULAR;
 };
+
+/**
+ * Obtener tema del curso por área
+ * @param area - Área del curso
+ * @returns Objeto con clases de Tailwind para el área del curso
+ */
+export const getCourseTheme = (area: string = 'default') => {
+  const courseThemes = {
+    científica: {
+      bg: 'bg-blue-50 dark:bg-blue-950/20',
+      border: 'border-blue-200 dark:border-blue-800',
+      text: 'text-blue-900 dark:text-blue-100',
+      badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+    },
+    humanística: {
+      bg: 'bg-green-50 dark:bg-green-950/20',
+      border: 'border-green-200 dark:border-green-800',
+      text: 'text-green-900 dark:text-green-100',
+      badge: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+    },
+    sociales: {
+      bg: 'bg-purple-50 dark:bg-purple-950/20',
+      border: 'border-purple-200 dark:border-purple-800',
+      text: 'text-purple-900 dark:text-purple-100',
+      badge: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+    },
+    tecnológica: {
+      bg: 'bg-cyan-50 dark:bg-cyan-950/20',
+      border: 'border-cyan-200 dark:border-cyan-800',
+      text: 'text-cyan-900 dark:text-cyan-100',
+      badge: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300',
+    },
+    artística: {
+      bg: 'bg-yellow-50 dark:bg-yellow-950/20',
+      border: 'border-yellow-200 dark:border-yellow-800',
+      text: 'text-yellow-900 dark:text-yellow-100',
+      badge: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
+    },
+    idiomas: {
+      bg: 'bg-pink-50 dark:bg-pink-950/20',
+      border: 'border-pink-200 dark:border-pink-800',
+      text: 'text-pink-900 dark:text-pink-100',
+      badge: 'bg-pink-100 text-pink-800 dark:bg-pink-900/40 dark:text-pink-300',
+    },
+    'educación física': {
+      bg: 'bg-red-50 dark:bg-red-950/20',
+      border: 'border-red-200 dark:border-red-800',
+      text: 'text-red-900 dark:text-red-100',
+      badge: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+    },
+    default: {
+      bg: 'bg-gray-50 dark:bg-gray-950/20',
+      border: 'border-gray-200 dark:border-gray-800',
+      text: 'text-gray-900 dark:text-gray-100',
+      badge: 'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-300',
+    },
+  };
+
+  const normalizedArea = area.toLowerCase();
+  return courseThemes[normalizedArea as keyof typeof courseThemes] || courseThemes.default;
+};
