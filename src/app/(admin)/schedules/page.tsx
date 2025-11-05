@@ -6,7 +6,7 @@ import Breadcrumb from '@/components/common/Breadcrumb';
 import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
 
 const SchedulesContent = dynamic(
-  () => import('@/components/schedules/ContentSchedules'),
+  () => import('@/components/features/schedules').then(mod => ({ default: mod.SchedulesPageContent })),
   {
     loading: () => <ProfileSkeleton type="meta" />
   }
