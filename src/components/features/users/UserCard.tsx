@@ -33,7 +33,7 @@ export function UserCard({
   isLoading,
 }: UserCardProps) {
   const isUserWithRelations = (u: any): u is UserWithRelations => 'role' in u;
-  const roleName = isUserWithRelations(user) ? user.role.name : 'N/A';
+  const roleName = isUserWithRelations(user) && user.role ? user.role.name : 'N/A';
   const pictures = isUserWithRelations(user) ? user.pictures || [] : [];
   const profilePicture = pictures?.find((p) => p.kind === 'profile');
 

@@ -207,7 +207,7 @@ const navItems: NavItem[] = [
         requiredPermission: { module: 'course-grade', action: 'read' }
       },
       {
-        name: "Cursos Maestros", path: "/course-teachers",
+        name: "Cursos Maestros", path: "/course-assignment",
         requiredPermission: { module: 'course-assignment', action: 'read' }
       },
       {

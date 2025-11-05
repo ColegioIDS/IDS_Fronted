@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BookOpen, AlertCircle, CheckCircle, UserCheck, Users } from 'lucide-react';
 import { useCourseAssignmentSection } from '@/hooks/useCourseAssignment';
+import { AssignmentType } from '@/types/course-assignments.types';
 import BulkSaveActions from './bulk-save-actions';
 import AssignmentSummary from './assignment-summary';
 
@@ -26,7 +27,7 @@ interface CourseAssignmentRow {
   courseColor?: string | null;
   currentTeacherId?: number | null;
   currentTeacherName?: string;
-  assignmentType: 'titular' | 'specialist';
+  assignmentType: AssignmentType;
   isModified: boolean;
 }
 
@@ -48,30 +49,54 @@ export default function CourseTeacherTable({
   const [assignmentRows, setAssignmentRows] = useState<CourseAssignmentRow[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Helper para obtener el label del tipo de asignación
+  const getAssignmentTypeLabel = (type: AssignmentType): string => {
+    const labels: Record<AssignmentType, string> = {
+      titular: 'Titular',
+      apoyo: 'Apoyo',
+      temporal: 'Temporal',
+      suplente: 'Suplente'
+    };
+    return labels[type] || type;
+  };
+
   // Helper para categorizar maestros
   const categorizedTeachers = useMemo(() => {
-    if (!sectionData) return { titular: [], specialists: [], otherTitular: [] };
+    if (!sectionData || !sectionData.availableTeachers) {
+      return { titular: [], specialists: [], otherTitular: [] };
+    }
 
-    const teachers = sectionData.teachers;
+    const teachers = sectionData.availableTeachers;
+    const currentSectionTeacherId = sectionData.section.teacherId;
     
     return {
-      titular: teachers.filter(t => t.isTitular),
-      specialists: teachers.filter(t => !t.isTitular && t.sections.length === 0),
-      otherTitular: teachers.filter(t => !t.isTitular && t.sections.length > 0)
+      // Maestro titular de ESTA sección específica
+      titular: teachers.filter(t => t.id === currentSectionTeacherId),
+      // Maestros sin sección asignada (especialistas puros)
+      specialists: teachers.filter(t => 
+        t.id !== currentSectionTeacherId && 
+        (!t.sections || t.sections.length === 0)
+      ),
+      // Maestros titulares de OTRAS secciones
+      otherTitular: teachers.filter(t => 
+        t.id !== currentSectionTeacherId && 
+        t.sections && 
+        t.sections.length > 0
+      )
     };
   }, [sectionData]);
 
   // Helper para obtener maestro por ID
   const getTeacherById = (teacherId: number) => {
-    if (!sectionData) return null;
-    return sectionData.teachers.find(t => t.id === teacherId);
+    if (!sectionData || !sectionData.availableTeachers) return null;
+    return sectionData.availableTeachers.find(t => t.id === teacherId);
   };
 
   // Construir filas de la tabla cuando cambien los datos
   useEffect(() => {
-    if (!sectionData) return;
+    if (!sectionData || !sectionData.availableCourses) return;
 
-    const rows: CourseAssignmentRow[] = sectionData.courses.map(course => {
+    const rows: CourseAssignmentRow[] = sectionData.availableCourses.map(course => {
       // Buscar si ya existe una asignación para este curso
       const existingAssignment = sectionData.assignments.find(
         a => a.courseId === course.id
@@ -80,14 +105,18 @@ export default function CourseTeacherTable({
       // Por defecto, asignar al maestro titular de la sección
       let defaultTeacherId = sectionData.section.teacherId;
       let defaultTeacherName = sectionData.section.teacher 
-        ? `${sectionData.section.teacher.givenNames} ${sectionData.section.teacher.lastNames}`
+        ? sectionData.section.teacher.fullName
         : undefined;
-      let defaultAssignmentType: 'titular' | 'specialist' = 'titular';
+      let defaultAssignmentType: AssignmentType = 'titular'; // Por defecto es titular
+      let courseColor = course.color || '#6B7280'; // Usar color del curso o gris por defecto
 
       // Si ya existe una asignación, usar esos datos
       if (existingAssignment) {
         defaultTeacherId = existingAssignment.teacherId;
-        defaultTeacherName = existingAssignment.teacherName;
+        defaultTeacherName = existingAssignment.teacher.fullName;
+        // Usar el color del curso desde la asignación (más actualizado)
+        courseColor = existingAssignment.course.color || course.color || '#6B7280';
+        // Usar el assignmentType del backend directamente
         defaultAssignmentType = existingAssignment.assignmentType;
       }
 
@@ -96,7 +125,7 @@ export default function CourseTeacherTable({
         courseName: course.name,
         courseCode: course.code,
         courseArea: course.area,
-        courseColor: course.color,
+        courseColor: courseColor,
         currentTeacherId: defaultTeacherId,
         currentTeacherName: defaultTeacherName,
         assignmentType: defaultAssignmentType,
@@ -122,7 +151,7 @@ export default function CourseTeacherTable({
             currentTeacherName: selectedTeacher 
               ? `${selectedTeacher.givenNames} ${selectedTeacher.lastNames}`
               : undefined,
-            assignmentType: isDefaultTeacher ? 'titular' : 'specialist',
+            assignmentType: isDefaultTeacher ? 'titular' : 'apoyo',
             isModified: true
           };
         }
@@ -137,13 +166,12 @@ export default function CourseTeacherTable({
     const assignments = assignmentRows
       .filter(row => row.currentTeacherId) // Solo filas con maestro asignado
       .map(row => ({
-        sectionId,
         courseId: row.courseId,
         teacherId: row.currentTeacherId!
       }));
 
     const success = await bulkUpdate({
-      gradeId,
+      sectionId,
       assignments
     });
     
@@ -157,25 +185,26 @@ export default function CourseTeacherTable({
 
   // Resetear cambios
   const handleResetChanges = () => {
-    if (!sectionData) return;
+    if (!sectionData || !sectionData.availableCourses) return;
     
     // Reconstruir filas desde sectionData
-    const rows: CourseAssignmentRow[] = sectionData.courses.map(course => {
+    const rows: CourseAssignmentRow[] = sectionData.availableCourses.map(course => {
       const existingAssignment = sectionData.assignments.find(
         a => a.courseId === course.id
       );
+
+      // Determinar el color del curso
+      const courseColor = existingAssignment?.course.color || course.color || '#6B7280';
 
       return {
         courseId: course.id,
         courseName: course.name,
         courseCode: course.code,
         courseArea: course.area,
-        courseColor: course.color,
+        courseColor: courseColor,
         currentTeacherId: existingAssignment?.teacherId || sectionData.section.teacherId,
-        currentTeacherName: existingAssignment?.teacherName || 
-          (sectionData.section.teacher 
-            ? `${sectionData.section.teacher.givenNames} ${sectionData.section.teacher.lastNames}`
-            : undefined),
+        currentTeacherName: existingAssignment?.teacher.fullName || 
+          sectionData.section.teacher?.fullName,
         assignmentType: existingAssignment?.assignmentType || 'titular',
         isModified: false
       };
@@ -330,11 +359,14 @@ export default function CourseTeacherTable({
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-3">
                           <div 
-                            className="w-3 h-3 rounded-full"
+                            className="w-3 h-3 rounded-full flex-shrink-0"
                             style={{ backgroundColor: row.courseColor || '#6B7280' }}
                           />
                           <div>
-                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                            <p 
+                              className="font-bold"
+                              style={{ color: row.courseColor || '#6B7280' }}
+                            >
                               {row.courseName}
                             </p>
                             {row.courseArea && (
@@ -424,7 +456,7 @@ export default function CourseTeacherTable({
                                       <div className="flex-1">
                                         <p className="font-medium">{teacher.fullName}</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                                          {teacher.sections.length > 0 
+                                          {teacher.sections && teacher.sections.length > 0 
                                             ? `${teacher.sections[0].name}` 
                                             : 'Otra sección'
                                           }
@@ -455,12 +487,12 @@ export default function CourseTeacherTable({
                           {row.assignmentType === 'titular' ? (
                             <>
                               <UserCheck className="h-3 w-3 mr-1" />
-                              Titular
+                              {getAssignmentTypeLabel(row.assignmentType)}
                             </>
                           ) : (
                             <>
                               <Users className="h-3 w-3 mr-1" />
-                              Especialista
+                              {getAssignmentTypeLabel(row.assignmentType)}
                             </>
                           )}
                         </Badge>
@@ -498,7 +530,7 @@ export default function CourseTeacherTable({
           totalCourses={assignmentRows.length}
           assignedCourses={assignmentRows.filter(row => row.currentTeacherId).length}
           titularCourses={assignmentRows.filter(row => row.assignmentType === 'titular').length}
-          specialistCourses={assignmentRows.filter(row => row.assignmentType === 'specialist').length}
+          specialistCourses={assignmentRows.filter(row => row.assignmentType !== 'titular').length}
           hasChanges={hasChanges}
         />
       )}

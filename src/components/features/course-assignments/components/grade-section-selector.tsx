@@ -1,4 +1,4 @@
-// src/components/course-assignments/components/grade-section-selector.tsx
+// src/components/features/course-assignments/components/grade-section-selector.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -6,19 +6,21 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GraduationCap, Users, ChevronRight, AlertCircle } from 'lucide-react';
-import { Grade } from '@/types/course-assignments';
+import { CycleGradesData } from '@/types/course-assignments.types';
 
 interface GradeSectionSelectorProps {
-  grades: Grade[];
+  formData: CycleGradesData;
   onSelectionComplete: (gradeId: number, sectionId: number) => void;
 }
 
 export default function GradeSectionSelector({ 
-  grades, 
+  formData, 
   onSelectionComplete 
 }: GradeSectionSelectorProps) {
   const [selectedGradeId, setSelectedGradeId] = useState<number | null>(null);
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
+
+  const grades = formData.grades;
 
   // Obtener el grado seleccionado
   const selectedGrade = grades.find(g => g.id === selectedGradeId);

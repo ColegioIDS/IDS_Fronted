@@ -2,11 +2,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Users, 
   BookOpen, 
@@ -15,7 +16,8 @@ import {
   AlertCircle, 
   RefreshCw,
   ArrowLeft,
-  Settings
+  Settings,
+  Calendar
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext'; // ✅ NUEVO
 import ProtectedContent from '@/components/common/ProtectedContent'; // ✅ NUEVO
@@ -33,59 +35,74 @@ export default function CourseAssignmentsContent() {
 
   // Hook principal
   const { 
-    formData, 
-    isLoadingFormData, 
+    formData,
+    cycleGradesData,
+    isLoadingFormData,
+    isLoadingCycleGrades,
     error, 
     clearError,
-    loadFormData 
+    loadFormData,
+    loadCycleGrades
   } = useCourseAssignment({ 
     autoLoadFormData: true 
   });
 
   // Estados locales para navegación
+  const [selectedCycleId, setSelectedCycleId] = useState<number | null>(null);
   const [selectedGradeId, setSelectedGradeId] = useState<number | null>(null);
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
-  const [currentStep, setCurrentStep] = useState<'selection' | 'assignment'>('selection');
 
-  // Determinar el paso actual basado en las selecciones
+  // Auto-seleccionar ciclo activo cuando se carguen los datos
   useEffect(() => {
-    if (selectedGradeId && selectedSectionId) {
-      setCurrentStep('assignment');
-    } else {
-      setCurrentStep('selection');
+    if (formData?.cycles && formData.cycles.length > 0 && !selectedCycleId) {
+      const activeCycle = formData.cycles.find(c => c.isActive);
+      if (activeCycle) {
+        setSelectedCycleId(activeCycle.id);
+        loadCycleGrades(activeCycle.id);
+      }
     }
-  }, [selectedGradeId, selectedSectionId]);
+  }, [formData, selectedCycleId, loadCycleGrades]);
+
+  // Manejar selección de ciclo
+  const handleCycleChange = (value: string) => {
+    const cycleId = parseInt(value);
+    setSelectedCycleId(cycleId);
+    setSelectedGradeId(null);
+    setSelectedSectionId(null);
+    loadCycleGrades(cycleId);
+  };
 
   // Manejar cuando se completa la selección de grado-sección
   const handleSelectionComplete = (gradeId: number, sectionId: number) => {
     setSelectedGradeId(gradeId);
     setSelectedSectionId(sectionId);
-    setCurrentStep('assignment');
   };
 
-  // Volver al paso de selección
+  // Volver a selección de grado/sección
   const handleBackToSelection = () => {
     setSelectedGradeId(null);
     setSelectedSectionId(null);
-    setCurrentStep('selection');
   };
 
-  // Refrescar datos
+  // Refrescar todo
   const handleRefresh = () => {
     loadFormData();
-    if (selectedSectionId) {
-      setSelectedSectionId(null);
-      setSelectedGradeId(null);
-      setCurrentStep('selection');
+    if (selectedCycleId) {
+      loadCycleGrades(selectedCycleId);
     }
+    setSelectedGradeId(null);
+    setSelectedSectionId(null);
   };
 
   // Helper para calcular info del ciclo
-  const getActiveCycleInfo = () => {
-    if (!formData?.activeCycle) return null;
+  const getCycleInfo = () => {
+    if (!selectedCycleId || !formData?.cycles) return null;
 
-    const start = new Date(formData.activeCycle.startDate);
-    const end = new Date(formData.activeCycle.endDate);
+    const selectedCycle = formData.cycles.find(c => c.id === selectedCycleId);
+    if (!selectedCycle) return null;
+
+    const start = new Date(selectedCycle.startDate);
+    const end = new Date(selectedCycle.endDate);
     const now = new Date();
     
     const totalDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
@@ -94,13 +111,16 @@ export default function CourseAssignmentsContent() {
     const progress = (daysElapsed / totalDays) * 100;
 
     return {
-      academicYear: formData.activeCycle.name,
+      academicYear: selectedCycle.name,
       daysRemaining: Math.max(0, daysRemaining),
       progress: Math.min(100, Math.max(0, progress))
     };
   };
 
-  const activeCycleInfo = getActiveCycleInfo();
+  const cycleInfo = getCycleInfo();
+  const selectedCycle = formData?.cycles?.find(c => c.id === selectedCycleId);
+  const showGradeSelection = selectedCycleId && cycleGradesData && !isLoadingCycleGrades;
+  const showAssignmentTable = selectedGradeId && selectedSectionId;
 
   // ✅ NUEVO: Si no tiene permiso de lectura, mostrar ProtectedContent
   if (!canRead) {
@@ -134,8 +154,8 @@ export default function CourseAssignmentsContent() {
     );
   }
 
-  // Si no hay ciclo activo
-  if (!formData?.activeCycle) {
+  // Si no hay datos de formulario o no hay ciclos
+  if (!formData || !formData.cycles || formData.cycles.length === 0) {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <div className="text-center space-y-4">
@@ -144,10 +164,10 @@ export default function CourseAssignmentsContent() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              No hay ciclo escolar activo
+              No hay ciclos escolares disponibles
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
-              Configure un ciclo escolar activo antes de asignar cursos y maestros
+              Configure al menos un ciclo escolar para poder asignar cursos y maestros
             </p>
           </div>
           <Button asChild>
@@ -176,14 +196,14 @@ export default function CourseAssignmentsContent() {
           </div>
           
           <div className="flex items-center gap-2">
-            {currentStep === 'assignment' && (
+            {showAssignmentTable && (
               <Button 
                 variant="outline" 
                 onClick={handleBackToSelection}
                 className="border-gray-300 dark:border-gray-600"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Cambiar Selección
+                Cambiar Sección
               </Button>
             )}
             <Button 
@@ -198,14 +218,14 @@ export default function CourseAssignmentsContent() {
         </div>
       </div>
 
-      {/* Información del Ciclo Activo */}
-      {activeCycleInfo && (
+      {/* Información del Ciclo Seleccionado */}
+      {cycleInfo && (
         <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
           <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
           <AlertDescription className="text-green-800 dark:text-green-200">
-            <strong>Ciclo Activo:</strong> {activeCycleInfo.academicYear} 
+            <strong>Ciclo Seleccionado:</strong> {cycleInfo.academicYear} 
             <span className="ml-2 text-sm">
-              ({activeCycleInfo.daysRemaining} días restantes, {Math.round(activeCycleInfo.progress)}% completado)
+              ({cycleInfo.daysRemaining} días restantes, {Math.round(cycleInfo.progress)}% completado)
             </span>
           </AlertDescription>
         </Alert>
@@ -229,79 +249,140 @@ export default function CourseAssignmentsContent() {
         </Alert>
       )}
 
-      {/* Indicador de Progreso */}
+      {/* Selector de Ciclo Escolar */}
       <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {/* Paso 1: Selección */}
-              <div className="flex items-center gap-2">
-                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
-                  selectedGradeId && selectedSectionId
-                    ? 'bg-green-600 text-white'
-                    : currentStep === 'selection'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
-                }`}>
-                  {selectedGradeId && selectedSectionId ? '✓' : '1'}
-                </div>
-                <span className={`text-sm font-medium ${
-                  selectedGradeId && selectedSectionId
-                    ? 'text-green-700 dark:text-green-300'
-                    : currentStep === 'selection'
-                    ? 'text-blue-700 dark:text-blue-300'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}>
-                  Seleccionar Grado y Sección
-                </span>
-              </div>
-
-              <div className="h-px w-8 bg-gray-300 dark:bg-gray-600" />
-
-              {/* Paso 2: Asignación */}
-              <div className="flex items-center gap-2">
-                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
-                  currentStep === 'assignment'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
-                }`}>
-                  2
-                </div>
-                <span className={`text-sm font-medium ${
-                  currentStep === 'assignment'
-                    ? 'text-blue-700 dark:text-blue-300'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}>
-                  Asignar Maestros a Cursos
-                </span>
-              </div>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+            <Calendar className="h-5 w-5" />
+            Ciclo Escolar
+          </CardTitle>
+          <CardDescription className="text-blue-700 dark:text-blue-300">
+            Seleccione el ciclo escolar para el cual desea configurar las asignaciones
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Select value={selectedCycleId?.toString() || ''} onValueChange={handleCycleChange}>
+            <SelectTrigger className="w-full max-w-md bg-white dark:bg-gray-800">
+              <SelectValue placeholder="Seleccionar ciclo escolar" />
+            </SelectTrigger>
+            <SelectContent>
+              {formData.cycles.map((cycle) => (
+                <SelectItem key={cycle.id} value={cycle.id.toString()}>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{cycle.name}</span>
+                    {cycle.isActive && (
+                      <Badge variant="default" className="bg-green-600 text-white text-xs">
+                        Activo
+                      </Badge>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {selectedCycle && (
+            <div className="mt-3 flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+              <CheckCircle className="h-4 w-4" />
+              <span>
+                {new Date(selectedCycle.startDate).toLocaleDateString()} - {new Date(selectedCycle.endDate).toLocaleDateString()}
+              </span>
             </div>
-
-            {/* Info de selección actual */}
-            {selectedGradeId && selectedSectionId && (
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700">
-                  <GraduationCap className="h-3 w-3 mr-1" />
-                  Grado Seleccionado
-                </Badge>
-                <Badge variant="outline" className="bg-white dark:bg-gray-800 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700">
-                  <Users className="h-3 w-3 mr-1" />
-                  Sección Seleccionada
-                </Badge>
-              </div>
-            )}
-          </div>
+          )}
         </CardContent>
       </Card>
 
+      {/* Indicador de Progreso */}
+      {selectedCycleId && (
+        <Card className="border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50 dark:border-indigo-800 dark:from-indigo-950 dark:to-blue-950">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {/* Paso 1: Selección */}
+                <div className="flex items-center gap-2">
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
+                    selectedGradeId && selectedSectionId
+                      ? 'bg-green-600 text-white'
+                      : !showAssignmentTable
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
+                  }`}>
+                    {selectedGradeId && selectedSectionId ? '✓' : '1'}
+                  </div>
+                  <span className={`text-sm font-medium ${
+                    selectedGradeId && selectedSectionId
+                      ? 'text-green-700 dark:text-green-300'
+                      : !showAssignmentTable
+                      ? 'text-indigo-700 dark:text-indigo-300'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}>
+                    Seleccionar Grado y Sección
+                  </span>
+                </div>
+
+                <div className="h-px w-12 bg-gray-300 dark:bg-gray-600" />
+
+                {/* Paso 2: Asignación */}
+                <div className="flex items-center gap-2">
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
+                    showAssignmentTable
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
+                  }`}>
+                    2
+                  </div>
+                  <span className={`text-sm font-medium ${
+                    showAssignmentTable
+                      ? 'text-indigo-700 dark:text-indigo-300'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}>
+                    Asignar Maestros a Cursos
+                  </span>
+                </div>
+              </div>
+
+              {/* Info de selección actual */}
+              {selectedGradeId && selectedSectionId && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-white dark:bg-gray-800 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700">
+                    <GraduationCap className="h-3 w-3 mr-1" />
+                    Grado Seleccionado
+                  </Badge>
+                  <Badge variant="outline" className="bg-white dark:bg-gray-800 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700">
+                    <Users className="h-3 w-3 mr-1" />
+                    Sección Seleccionada
+                  </Badge>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Separator className="my-6" />
+
+      {/* Loading grados */}
+      {isLoadingCycleGrades && (
+        <Card className="bg-white dark:bg-gray-800">
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+              <div className="grid grid-cols-3 gap-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Contenido Principal */}
       <div className="space-y-6">
-        {currentStep === 'selection' && (
+        {showGradeSelection && !showAssignmentTable && cycleGradesData && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <BookOpen className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                 Paso 1: Seleccionar Grado y Sección
               </h2>
@@ -315,7 +396,7 @@ export default function CourseAssignmentsContent() {
               </CardHeader>
               <CardContent>
                 <GradeSectionSelector 
-                  grades={formData.grades}
+                  formData={cycleGradesData}
                   onSelectionComplete={handleSelectionComplete} 
                 />
               </CardContent>
@@ -323,7 +404,7 @@ export default function CourseAssignmentsContent() {
           </div>
         )}
 
-        {currentStep === 'assignment' && selectedGradeId && selectedSectionId && (
+        {showAssignmentTable && selectedGradeId && selectedSectionId && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5 text-green-600 dark:text-green-400" />

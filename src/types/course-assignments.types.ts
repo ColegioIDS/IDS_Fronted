@@ -199,6 +199,7 @@ export interface SectionAssignmentData {
     code: string;
     name: string;
     area: string | null;
+    color: string | null;
     isActive: boolean;
   }>;
   availableTeachers: Array<{

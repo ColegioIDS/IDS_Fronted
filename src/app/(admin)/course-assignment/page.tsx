@@ -6,7 +6,7 @@ import Breadcrumb from '@/components/common/Breadcrumb';
 import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
 
 const CourseAssignmentsContent = dynamic(
-  () => import('@/components/course-assignments/course-assignments-content'),
+  () => import('@/components/features/course-assignments').then(mod => ({ default: mod.CourseAssignmentsContent })),
   {
     loading: () => <ProfileSkeleton type="meta" />
   }

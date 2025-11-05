@@ -1,4 +1,4 @@
-// src/components/features/course-assignments/CourseAssignmentsPageContent.tsx
+// src/components/features/course-assignments/course-assignments-content.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -16,19 +16,22 @@ import {
   AlertCircle, 
   RefreshCw,
   ArrowLeft,
-  Calendar,
-  Settings
+  Settings,
+  Calendar
 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import ProtectedContent from '@/components/common/ProtectedContent';
+import { useAuth } from '@/context/AuthContext'; // ✅ NUEVO
+import ProtectedContent from '@/components/common/ProtectedContent'; // ✅ NUEVO
 import { useCourseAssignment } from '@/hooks/useCourseAssignment';
-import GradeSectionSelector from './GradeSectionSelector';
-import CourseAssignmentsTable from './CourseAssignmentsTable';
+import GradeSectionSelector from './components/grade-section-selector';
+import CourseTeacherTable from './components/course-teacher-table';
 
-export default function CourseAssignmentsPageContent() {
-  // Verificar permisos
+export default function CourseAssignmentsContent() {
+  // ✅ NUEVO: Verificar permisos
   const { hasPermission } = useAuth();
   const canRead = hasPermission('course-assignment', 'read');
+  const canCreate = hasPermission('course-assignment', 'create');
+  const canUpdate = hasPermission('course-assignment', 'update');
+  const canBulkUpdate = hasPermission('course-assignment', 'bulk-update');
 
   // Hook principal
   const { 
@@ -91,12 +94,42 @@ export default function CourseAssignmentsPageContent() {
     setSelectedSectionId(null);
   };
 
-  // Si no tiene permiso de lectura
+  // Helper para calcular info del ciclo
+  const getCycleInfo = () => {
+    if (!selectedCycleId || !formData?.cycles) return null;
+
+    const selectedCycle = formData.cycles.find(c => c.id === selectedCycleId);
+    if (!selectedCycle) return null;
+
+    const start = new Date(selectedCycle.startDate);
+    const end = new Date(selectedCycle.endDate);
+    const now = new Date();
+    
+    const totalDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const daysElapsed = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = Math.floor((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const progress = (daysElapsed / totalDays) * 100;
+
+    return {
+      academicYear: selectedCycle.name,
+      daysRemaining: Math.max(0, daysRemaining),
+      progress: Math.min(100, Math.max(0, progress))
+    };
+  };
+
+  const cycleInfo = getCycleInfo();
+  const selectedCycle = formData?.cycles?.find(c => c.id === selectedCycleId);
+  const showGradeSelection = selectedCycleId && cycleGradesData && !isLoadingCycleGrades;
+  const showAssignmentTable = selectedGradeId && selectedSectionId;
+
+  // ✅ NUEVO: Si no tiene permiso de lectura, mostrar ProtectedContent
   if (!canRead) {
     return (
       <ProtectedContent requiredPermission={{ module: 'course-assignment', action: 'read' }}>
-        <></>
+        <>
+        </>
       </ProtectedContent>
+
     );
   }
 
@@ -121,8 +154,8 @@ export default function CourseAssignmentsPageContent() {
     );
   }
 
-  // Si no hay ciclos disponibles
-  if (!formData?.cycles || formData.cycles.length === 0) {
+  // Si no hay datos de formulario o no hay ciclos
+  if (!formData || !formData.cycles || formData.cycles.length === 0) {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <div className="text-center space-y-4">
@@ -147,32 +180,6 @@ export default function CourseAssignmentsPageContent() {
       </div>
     );
   }
-
-  const selectedCycle = formData.cycles.find(c => c.id === selectedCycleId);
-  const showGradeSelection = selectedCycleId && cycleGradesData && !isLoadingCycleGrades;
-  const showAssignmentTable = selectedGradeId && selectedSectionId;
-
-  // Helper para calcular info del ciclo
-  const getCycleInfo = () => {
-    if (!selectedCycle) return null;
-
-    const start = new Date(selectedCycle.startDate);
-    const end = new Date(selectedCycle.endDate);
-    const now = new Date();
-    
-    const totalDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    const daysElapsed = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    const daysRemaining = Math.floor((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    const progress = (daysElapsed / totalDays) * 100;
-
-    return {
-      academicYear: selectedCycle.name,
-      daysRemaining: Math.max(0, daysRemaining),
-      progress: Math.min(100, Math.max(0, progress))
-    };
-  };
-
-  const cycleInfo = getCycleInfo();
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -211,6 +218,19 @@ export default function CourseAssignmentsPageContent() {
         </div>
       </div>
 
+      {/* Información del Ciclo Seleccionado */}
+      {cycleInfo && (
+        <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <AlertDescription className="text-green-800 dark:text-green-200">
+            <strong>Ciclo Seleccionado:</strong> {cycleInfo.academicYear} 
+            <span className="ml-2 text-sm">
+              ({cycleInfo.daysRemaining} días restantes, {Math.round(cycleInfo.progress)}% completado)
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Error Global */}
       {error && (
         <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
@@ -226,19 +246,6 @@ export default function CourseAssignmentsPageContent() {
           >
             Cerrar
           </Button>
-        </Alert>
-      )}
-
-      {/* Información del Ciclo Seleccionado */}
-      {cycleInfo && (
-        <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
-          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-          <AlertDescription className="text-green-800 dark:text-green-200">
-            <strong>Ciclo Seleccionado:</strong> {cycleInfo.academicYear} 
-            <span className="ml-2 text-sm">
-              ({cycleInfo.daysRemaining} días restantes, {Math.round(cycleInfo.progress)}% completado)
-            </span>
-          </AlertDescription>
         </Alert>
       )}
 
@@ -291,9 +298,9 @@ export default function CourseAssignmentsPageContent() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                {/* Paso 1: Selección de Grado y Sección */}
+                {/* Paso 1: Selección */}
                 <div className="flex items-center gap-2">
-                  <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors ${
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
                     selectedGradeId && selectedSectionId
                       ? 'bg-green-600 text-white'
                       : !showAssignmentTable
@@ -315,9 +322,9 @@ export default function CourseAssignmentsPageContent() {
 
                 <div className="h-px w-12 bg-gray-300 dark:bg-gray-600" />
 
-                {/* Paso 2: Asignación de Cursos */}
+                {/* Paso 2: Asignación */}
                 <div className="flex items-center gap-2">
-                  <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors ${
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
                     showAssignmentTable
                       ? 'bg-indigo-600 text-white'
                       : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
@@ -390,10 +397,7 @@ export default function CourseAssignmentsPageContent() {
               <CardContent>
                 <GradeSectionSelector 
                   formData={cycleGradesData}
-                  onSelectionComplete={(gradeId, sectionId) => {
-                    setSelectedGradeId(gradeId);
-                    setSelectedSectionId(sectionId);
-                  }}
+                  onSelectionComplete={handleSelectionComplete} 
                 />
               </CardContent>
             </Card>
@@ -409,9 +413,12 @@ export default function CourseAssignmentsPageContent() {
               </h2>
             </div>
 
-            <CourseAssignmentsTable 
-              gradeId={selectedGradeId}
+            {/* ✅ NUEVO: Pasar permisos al componente hijo */}
+            <CourseTeacherTable 
+              gradeId={selectedGradeId} 
               sectionId={selectedSectionId}
+              canUpdate={canUpdate}
+              canBulkUpdate={canBulkUpdate}
             />
           </div>
         )}
