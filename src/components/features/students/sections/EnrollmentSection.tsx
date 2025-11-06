@@ -21,7 +21,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 
 interface EnrollmentSectionProps {
-  activeCycle: {
+  activeCycle?: {
     id: number;
     name: string;
     startDate: string;
@@ -66,7 +66,7 @@ export const EnrollmentSection = memo(function EnrollmentSection({
   const selectedGradeId = watch('enrollment.gradeId');
   const selectedCycleId = watch('enrollment.cycleId');
 
-  const availableCycles = allCycles || [activeCycle];
+  const availableCycles = allCycles || (activeCycle ? [activeCycle] : []);
   
   const selectedCycle = availableCycles.find(c => c.id === selectedCycleId) || activeCycle;
   const availableGrades = selectedCycle?.grades || [];
@@ -118,22 +118,24 @@ export const EnrollmentSection = memo(function EnrollmentSection({
         </div>
 
         {/* Alert del ciclo activo - Mejorado */}
-        <div className="relative overflow-hidden rounded-lg border border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-blue-50/70 dark:from-blue-950/30 dark:to-blue-950/20 p-4">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                <strong className="text-gray-900 dark:text-gray-100">Ciclo Activo:</strong> 
-              </p>
-              <p className="text-base font-semibold text-gray-900 dark:text-white mt-0.5">
-                {activeCycle.name} 
-                <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-400">
-                  ({formatDate(activeCycle.startDate)} - {formatDate(activeCycle.endDate)})
-                </span>
-              </p>
+        {activeCycle && (
+          <div className="relative overflow-hidden rounded-lg border border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-blue-50/70 dark:from-blue-950/30 dark:to-blue-950/20 p-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <strong className="text-gray-900 dark:text-gray-100">Ciclo Activo:</strong> 
+                </p>
+                <p className="text-base font-semibold text-gray-900 dark:text-white mt-0.5">
+                  {activeCycle.name} 
+                  <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-400">
+                    ({formatDate(activeCycle.startDate)} - {formatDate(activeCycle.endDate)})
+                  </span>
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Grid de selecciones */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

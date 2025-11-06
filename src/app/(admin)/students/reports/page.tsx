@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, BarChart3, AlertCircle } from 'lucide-react';
-import { ReportGenerator } from '@/components/features/students';
 import { studentsService } from '@/services/students.service';
 import { Student } from '@/types/students.types';
 import { toast } from 'sonner';
@@ -164,11 +163,9 @@ export default function ReportsPage() {
 
           {/* Report Generator */}
           <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            <ReportGenerator
-              students={students}
-              loading={loading}
-              onExport={handleExport}
-            />
+            <p className="text-gray-600 dark:text-gray-400">
+              Generador de reportes removido.
+            </p>
           </div>
         </div>
       )}

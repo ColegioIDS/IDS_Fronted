@@ -1,0 +1,1420 @@
+// prisma/schema.prisma - SCHEMA COMPLETO CORREGIDO
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * ============================================
+ * SECCIÓN 1: AUTENTICACIÓN Y ROLES
+ * ============================================
+ */
+
+/**
+ * Tipo de rol base del sistema
+ * Define la categoría principal de cada rol
+ */
+enum RoleType {
+  ADMIN       // Administradores del sistema
+  TEACHER     // Docentes/Maestros (pueden ser maestros guía)
+  COORDINATOR // Coordinadores académicos
+  PARENT      // Padres/Tutores
+  STUDENT     // Estudiantes
+  STAFF       // Personal administrativo
+  CUSTOM      // Roles personalizados
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  roleType    RoleType @default(CUSTOM) // ⭐ NUEVO: Define el tipo base del rol
+  isActive    Boolean  @default(true)
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdById  Int?
+  modifiedById Int?
+
+  createdBy  User? @relation("CreatedRoles", fields: [createdById], references: [id])
+  modifiedBy User? @relation("ModifiedRoles", fields: [modifiedById], references: [id])
+
+  permissions           RolePermission[]
+  attendancePermissions RoleAttendancePermission[] @relation("RoleAttendancePermissions")
+  users                 User[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id                  Int              @id @default(autoincrement())
+  module              String
+  action              String
+  description         String?
+  isActive            Boolean          @default(true)
+  isSystem            Boolean          @default(false)
+  allowedScopes       String[]         @default(["all"])
+  requiredPermissions Int[]            @default([])
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  roles               RolePermission[]
+
+  @@unique([module, action], name: "module_action")
+  @@map("permissions")
+}
+
+model RolePermission {
+  role         Role       @relation(fields: [roleId], references: [id])
+  roleId       Int
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  permissionId Int
+
+  scope    String @default("all")
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+/**
+ * ============================================
+ * SECCIÓN 2: USUARIOS Y PERFILES
+ * ============================================
+ */
+
+model User {
+  id            Int       @id @default(autoincrement())
+  username      String?   @unique
+  email         String?   @unique
+  password      String
+  dpi           String    @unique
+  nit           String?
+  givenNames    String
+  lastNames     String
+  phone         String?
+  birthDate     DateTime?
+  gender        String?
+  lastLogin     DateTime?
+  loginAttempts Int       @default(0)
+
+  accountVerified Boolean @default(false)
+  isActive        Boolean @default(true)
+  canAccessPlatform Boolean @default(false)
+
+  role   Role? @relation(fields: [roleId], references: [id])
+  roleId Int?
+
+  createdRoles  Role[] @relation("CreatedRoles")
+  modifiedRoles Role[] @relation("ModifiedRoles")
+
+  address   Address? @relation(fields: [addressId], references: [id])
+  addressId Int?
+
+  pictures Picture[]
+  children ParentChildLink[] @relation("Parent")
+
+  parentDetails  ParentDetails?
+  teacherDetails TeacherDetails?
+
+  guidedSections Section[] @relation("SectionToTeacher")
+
+  courseAssignments CourseAssignment[] @relation("CourseAssignment")
+  schedulePrimary   Schedule[]         @relation("TeacherSchedulePrimary")
+  scheduleSubstitute Schedule[]        @relation("TeacherScheduleSubstitute")
+
+  gradedSubmissions AssignmentSubmission[] @relation("SubmissionGrader")
+
+  ericaEvaluations EricaEvaluation[] @relation("EricaTeacher")
+  ericaTopics      EricaTopic[]      @relation("TopicTeacher")
+
+  absences         TeacherAbsence[] @relation("TeacherAbsence")
+  absencesApproved TeacherAbsence[] @relation("ApprovedBy")
+
+  leaveRequests  TeacherLeaveRequest[] @relation("TeacherLeaveRequest")
+  leaveApprovals TeacherLeaveRequest[] @relation("ApprovedLeaveBy")
+
+  attendances TeacherAttendance[] @relation("TeacherAttendanceRecord")
+
+  assignmentHistory        CourseAssignmentHistory[] @relation("AssignedHistory")
+  assignmentHistoryApproved CourseAssignmentHistory[] @relation("ChangedBy")
+
+  createdCycles  SchoolCycle[] @relation("CreatedCycles")
+  modifiedCycles SchoolCycle[] @relation("ModifiedCycles")
+  archivedCycles SchoolCycle[] @relation("ArchivedCycles")  // ⭐ CAMBIO
+
+  
+
+  // ✨ RELACIONES DE ASISTENCIA DE ESTUDIANTES
+  recordedAttendances StudentAttendance[]  @relation("RecordedByAttendance")
+  modifiedAttendances StudentAttendance[]  @relation("ModifiedByAttendance")
+  recordedClassAttendances StudentClassAttendance[] @relation("RecordedByClassAttendance")
+  justificationsApproved StudentJustification[] @relation("JustificationApprovedBy")
+  justificationsSubmitted StudentJustification[] @relation("JustificationSubmittedBy")
+  attendanceChanges StudentAttendanceChange[] @relation("AttendanceChangedBy")
+
+  metadataCreatedById     Int?
+  metadataLastUpdatedById Int?
+  metadataLastUpdatedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roleId])
+  @@map("users")
+}
+
+/**
+ * ============================================
+ * SECCIÓN 2: UBICACIÓN (DEPARTAMENTOS Y MUNICIPIOS)
+ * ============================================
+ */
+
+model Department {
+  id             Int      @id @default(autoincrement())
+  name           String   @unique
+  code           String   @unique
+  municipalities Municipality[]
+  addresses      Address[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("departments")
+}
+
+model Municipality {
+  id             Int      @id @default(autoincrement())
+  name           String
+  code           String   @unique
+  departmentId   Int
+  department     Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  addresses      Address[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([departmentId, name])
+  @@map("municipalities")
+}
+
+model Address {
+  id               Int      @id @default(autoincrement())
+  street           String?
+  zone             String?
+  
+  municipalityId   Int?
+  departmentId     Int?
+  
+  municipality     Municipality? @relation(fields: [municipalityId], references: [id], onDelete: SetNull)
+  department       Department?   @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  
+  user             User[]
+  students         Student[]
+
+  @@map("addresses")
+}
+
+model ParentDetails {
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+
+  dpiIssuedAt String?
+  email       String?
+  workPhone   String?
+
+  isSponsor   Boolean @default(false)
+  sponsorInfo String?
+  occupation  String?
+  workplace   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("parent_details")
+}
+
+model TeacherDetails {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @unique
+  user              User     @relation(fields: [userId], references: [id])
+  hiredDate         DateTime
+  isHomeroomTeacher Boolean
+  academicDegree    String?
+
+  @@map("teacher_details")
+}
+
+model Picture {
+  id          Int      @id @default(autoincrement())
+  publicId    String
+  kind        String
+  url         String
+  description String?
+  uploadedAt  DateTime @default(now())
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id])
+
+  studentId Int?
+  student   Student? @relation(fields: [studentId], references: [id])
+
+  @@map("pictures")
+}
+
+/**
+ * ============================================
+ * SECCIÓN 3: ESTUDIANTES
+ * ============================================
+ */
+
+model Student {
+  id                       Int      @id @default(autoincrement())
+  codeSIRE                 String?  @unique
+  givenNames               String
+  lastNames                String
+  birthDate                DateTime
+  birthPlace               String?
+  birthTown                String?
+  nationality              String?
+  gender                   String?
+  nativeLanguage           String?
+  secondLanguage           String?
+  livesWithText            String?
+  financialResponsibleText String?
+  siblingsCount            Int      @default(0)
+  brothersCount            Int      @default(0)
+  sistersCount             Int      @default(0)
+  favoriteColor            String?
+  hobby                    String?
+  favoriteFood             String?
+  favoriteSubject          String?
+  favoriteToy              String?
+  favoriteCake             String?
+
+  address   Address? @relation(fields: [addressId], references: [id])
+  addressId Int?
+
+  enrollments Enrollment[]
+
+  medicalInfo       MedicalInfo?
+  academicRecords   AcademicRecord[]
+  busService        BusService?
+  parents           ParentChildLink[]
+  authorizedPersons AuthorizedPerson[]
+  sponsorships      Sponsorship[]
+  emergencyContacts EmergencyContact[]
+  siblings          Sibling[]
+  pictures          Picture[]
+  submissions       AssignmentSubmission[] @relation("SubmissionStudent")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("students")
+}
+
+model MedicalInfo {
+  id                         Int      @id @default(autoincrement())
+  studentId                  Int      @unique
+  student                    Student  @relation(fields: [studentId], references: [id])
+  hasDisease                 Boolean  @default(false)
+  diseaseDetails             String?
+  takesMedication            Boolean  @default(false)
+  medicationDetails          String?
+  hasAllergies               Boolean  @default(false)
+  allergiesDetails           String?
+  emergencyMedicationAllowed Boolean  @default(false)
+  hasLearningDisability      Boolean  @default(false)
+  disabilityDetails          String?
+  strengths                  String?
+  areasToImprove             String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@map("medical_infos")
+}
+
+model AcademicRecord {
+  id              Int      @id @default(autoincrement())
+  studentId       Int
+  student         Student  @relation(fields: [studentId], references: [id])
+  schoolName      String
+  gradeCompleted  String
+  gradePromotedTo String
+  year            Int
+  createdAt       DateTime @default(now())
+
+  @@map("academic_records")
+}
+
+model BusService {
+  id                      Int       @id @default(autoincrement())
+  studentId               Int       @unique
+  student                 Student?  @relation(fields: [studentId], references: [id])
+  hasService              Boolean   @default(false)
+  pickupPersonName        String?
+  dropoffPersonName       String?
+  homeAddress             String?
+  referencePoints         String?
+  emergencyContact        String?
+  emergencyDeliveryPerson String?
+  route                   String?
+  monthlyFee              Float?
+  acceptedRules           Boolean   @default(false)
+  signedDate              DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@map("bus_services")
+}
+
+model AuthorizedPerson {
+  id           Int      @id @default(autoincrement())
+  studentId    Int
+  student      Student  @relation(fields: [studentId], references: [id])
+  name         String
+  relationship String
+  phone        String?
+  createdAt    DateTime @default(now())
+
+  @@map("authorized_persons")
+}
+
+model Sponsorship {
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  student     Student  @relation(fields: [studentId], references: [id])
+  sponsorName String?
+  preferences Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("sponsorships")
+}
+
+model Sibling {
+  id         Int     @id @default(autoincrement())
+  name       String
+  age        Int
+  gender     String?
+  birthOrder Int?
+  studentId  Int
+  student    Student @relation(fields: [studentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("siblings")
+}
+
+model ParentChildLink {
+  id               Int     @id @default(autoincrement())
+  parentId         Int
+  studentId        Int
+  parent           User    @relation("Parent", fields: [parentId], references: [id])
+  student          Student @relation(fields: [studentId], references: [id])
+  relationshipType String
+  isPrimaryContact Boolean @default(false)
+  hasLegalCustody  Boolean @default(false)
+  canAccessInfo    Boolean @default(true)
+
+  livesWithStudent     Boolean @default(false)
+  financialResponsible Boolean @default(false)
+
+  emergencyContactPriority Int?    @default(1)
+  receivesSchoolNotices    Boolean @default(true)
+
+  @@unique([parentId, studentId])
+  @@map("parent_child_links")
+}
+
+model EmergencyContact {
+  id           Int     @id @default(autoincrement())
+  name         String
+  relationship String
+  phone        String
+  priority     Int?    @default(1)
+  studentId    Int
+  student      Student @relation(fields: [studentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("emergency_contacts")
+}
+
+/**
+ * ============================================
+ * SECCIÓN 4: CICLOS Y BIMESTRES
+ * ============================================
+ */
+
+model SchoolCycle {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  startDate DateTime
+  endDate   DateTime
+  
+  isActive  Boolean  @default(false)
+  isArchived Boolean  @default(false)  // ⭐ CAMBIO
+  canEnroll Boolean  @default(false)
+  
+  // ⭐ CAMPOS FALTANTES:
+  description String?              // Descripción adicional
+  academicYear Int?                 // Ej: 2025 (para búsquedas/filtros)
+  
+  archivedAt     DateTime? // ⭐ CAMBIO
+  archivedBy     Int?      // ⭐ CAMBIO
+  archiveReason  String?   // ⭐ CAMBIO
+  
+  updatedAt   DateTime? @updatedAt  // Auditoría de cambios
+  
+  createdById  Int?                // ¿Quién lo creó?
+  modifiedById Int?                // ¿Quién lo modificó último?
+  
+  // Relaciones de auditoría
+  createdBy  User? @relation("CreatedCycles", fields: [createdById], references: [id])
+  modifiedBy User? @relation("ModifiedCycles", fields: [modifiedById], references: [id])
+  archivedByUser User? @relation("ArchivedCycles", fields: [archivedBy], references: [id])
+  
+  createdAt DateTime @default(now())
+  
+  bimesters   Bimester[]
+  grades      GradeCycle[]
+  enrollments Enrollment[]
+
+  @@map("school_cycles")
+}
+
+model Bimester {
+  id         Int      @id @default(autoincrement())
+  cycleId    Int
+  number     Int      @default(1)
+  name       String
+  startDate  DateTime
+  endDate    DateTime
+  isActive   Boolean  @default(false)
+  weeksCount Int      @default(8)
+
+  cycle       SchoolCycle    @relation(fields: [cycleId], references: [id])
+  holidays    Holiday[]
+  weeks       AcademicWeek[]
+  grades      StudentGrade[]
+  
+  assignments Assignment[]
+
+  ericaEvaluations  EricaEvaluation[]       @relation("EricaBimester")
+  ericaAverages     EricaAverage[]          @relation("AverageBimester")
+  calculatedResults EricaCalculatedResult[] @relation("CalculatedBimester")
+  
+  attendanceReports StudentAttendanceReport[] @relation("ReportBimester")
+
+  @@unique([cycleId, number])
+  @@map("bimesters")
+}
+
+model Holiday {
+  id          Int      @id @default(autoincrement())
+  bimesterId  Int
+  date        DateTime
+  description String
+  isRecovered Boolean  @default(false)
+
+  bimester Bimester @relation(fields: [bimesterId], references: [id])
+
+  @@map("holidays")
+}
+
+enum WeekType {
+  REGULAR
+  EVALUATION
+  REVIEW
+  BREAK
+}
+
+model AcademicWeek {
+  id         Int      @id @default(autoincrement())
+  bimesterId Int
+  number     Int
+  startDate  DateTime
+  endDate    DateTime
+  objectives String?
+  weekType   WeekType @default(REGULAR)
+
+  ericaEvaluations EricaEvaluation[] @relation("EricaAcademicWeek")
+  ericaTopics      EricaTopic[]      @relation("TopicWeek")
+
+  bimester Bimester @relation(fields: [bimesterId], references: [id])
+
+  @@map("academic_weeks")
+}
+
+/**
+ * ============================================
+ * SECCIÓN 5: ESTRUCTURA ACADÉMICA
+ * ============================================
+ */
+model Grade {
+  id       Int     @id @default(autoincrement())
+  name     String  @unique
+  level    String
+  order    Int
+  isActive Boolean @default(true)
+
+  cycles       GradeCycle[]
+  sections     Section[]
+  courseGrades CourseGrade[]
+
+  @@map("grades")
+}
+
+model Section {
+  id        Int    @id @default(autoincrement())
+  name      String
+  capacity  Int
+  gradeId   Int
+  teacherId Int?
+  grade     Grade  @relation(fields: [gradeId], references: [id])
+
+  teacher     User?        @relation("SectionToTeacher", fields: [teacherId], references: [id])
+  ericaTopics EricaTopic[] @relation("TopicSection")
+
+  courseAssignments CourseAssignment[]
+  enrollments       Enrollment[]
+  schedules         Schedule[]
+  scheduleConfig    ScheduleConfig?
+
+  @@map("sections")
+}
+model GradeCycle {
+  id      Int         @id @default(autoincrement())
+  cycleId Int
+  gradeId Int
+  grade   Grade       @relation(fields: [gradeId], references: [id])
+  cycle   SchoolCycle @relation(fields: [cycleId], references: [id])
+
+  @@unique([cycleId, gradeId])
+  @@map("grade_cycles")
+}
+
+
+
+
+
+/**
+ * ============================================
+ * SECCIÓN 6: CURSOS
+ * ============================================
+ */
+
+model Course {
+  id       Int     @id @default(autoincrement())
+  code     String  @unique
+  name     String
+  area     String?
+  color    String? @db.VarChar(7)
+  isActive Boolean @default(true)
+
+  courseGrades  CourseGrade[]
+  assignments   Assignment[]
+  studentGrades StudentGrade[]
+
+  ericaEvaluations  EricaEvaluation[]       @relation("EricaCourse")
+  ericaAverages     EricaAverage[]          @relation("AverageCourse")
+  ericaTopics       EricaTopic[]            @relation("TopicCourse")
+  courseAssignments CourseAssignment[]
+  calculatedResults EricaCalculatedResult[] @relation("CalculatedCourse")
+  schedules         Schedule[]
+  
+  attendanceReports StudentAttendanceReport[] @relation("ReportCourse")
+
+  @@map("courses")
+}
+
+model CourseGrade {
+  id       Int     @id @default(autoincrement())
+  courseId Int
+  gradeId  Int
+  isCore   Boolean @default(true)
+
+  course Course @relation(fields: [courseId], references: [id])
+  grade  Grade  @relation(fields: [gradeId], references: [id])
+
+  @@unique([courseId, gradeId])
+  @@map("course_grades")
+}
+
+/**
+ * ============================================
+ * SECCIÓN 7: ASIGNACIÓN DE CURSOS
+ * ============================================
+ */
+
+/**
+ * Tipos de asignación de cursos
+ */
+enum AssignmentType {
+  titular    // Maestro titular de la sección
+  apoyo      // Maestro de apoyo/especialista
+  temporal   // Asignación temporal
+  suplente   // Maestro suplente
+}
+
+model CourseAssignment {
+  id             Int            @id @default(autoincrement())
+  sectionId      Int
+  courseId       Int
+  teacherId      Int
+  assignmentType AssignmentType @default(titular)
+  isActive       Boolean        @default(true)
+
+  assignedAt     DateTime @default(now())
+  assignedBy     Int?
+  notes          String?
+
+  section        Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  course         Course   @relation(fields: [courseId], references: [id])
+  teacher        User     @relation("CourseAssignment", fields: [teacherId], references: [id])
+
+  schedules      Schedule[]
+  history        CourseAssignmentHistory[] @relation("CourseAssignmentOriginal")
+  classAttendances StudentClassAttendance[]
+
+  updatedAt      DateTime @updatedAt
+
+  @@unique([sectionId, courseId], name: "unique_section_course")
+  @@index([teacherId])
+  @@map("course_assignments")
+}
+
+/**
+ * ============================================
+ * SECCIÓN 8: HISTORIAL DE ASIGNACIONES
+ * ============================================
+ */
+
+model CourseAssignmentHistory {
+  id                    Int      @id @default(autoincrement())
+  courseAssignmentId    Int
+  teacherId             Int
+  assignedAt            DateTime @default(now())
+  unassignedAt          DateTime?
+  reason                String?
+  replacedBy            Int?
+  notes                 String?
+  changedBy             Int?
+
+  courseAssignment      CourseAssignment @relation("CourseAssignmentOriginal", fields: [courseAssignmentId], references: [id], onDelete: Cascade)
+  teacher               User     @relation("AssignedHistory", fields: [teacherId], references: [id])
+  changedByUser         User?    @relation("ChangedBy", fields: [changedBy], references: [id])
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([courseAssignmentId])
+  @@index([teacherId])
+  @@map("course_assignment_history")
+}
+
+/**
+ * ============================================
+ * SECCIÓN 8.5: HORARIOS
+ * ============================================
+ */
+
+model Schedule {
+  id                  Int      @id @default(autoincrement())
+  sectionId           Int
+  courseId            Int
+  courseAssignmentId  Int
+  dayOfWeek           Int
+  startTime           String
+  endTime             String
+  classroom           String?
+
+  teacherId           Int?
+
+  substituteTeacherId Int?
+  isSubstitution      Boolean  @default(false)
+  substitutionReason  String?
+  substitutionDate    DateTime?
+
+  absenceId           Int?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  section             Section  @relation(fields: [sectionId], references: [id])
+  course              Course   @relation(fields: [courseId], references: [id])
+  courseAssignment    CourseAssignment @relation(fields: [courseAssignmentId], references: [id], onDelete: Cascade)
+  teacher             User?    @relation("TeacherSchedulePrimary", fields: [teacherId], references: [id])
+  substituteTeacher   User?    @relation("TeacherScheduleSubstitute", fields: [substituteTeacherId], references: [id])
+  absence             TeacherAbsence? @relation(fields: [absenceId], references: [id], onDelete: SetNull)
+
+  attendance          TeacherAttendance[] @relation("ScheduleAttendance")
+  classAttendances    StudentClassAttendance[]
+
+  @@unique([courseAssignmentId, dayOfWeek, startTime], name: "unique_schedule_slot")
+  @@index([teacherId])
+  @@index([substituteTeacherId])
+  @@index([dayOfWeek, startTime])
+  @@index([absenceId])
+  @@map("schedules")
+}
+
+model ScheduleConfig {
+  id            Int      @id @default(autoincrement())
+  sectionId     Int      @unique
+  workingDays   Json
+  startTime     String
+  endTime       String
+  classDuration Int
+  breakSlots    Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  section       Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_configs")
+}
+
+/**
+ * ============================================
+ * SECCIÓN 9: AUSENCIAS Y PERMISOS DE MAESTROS
+ * ============================================
+ */
+
+model TeacherAbsence {
+  id                  Int      @id @default(autoincrement())
+  teacherId           Int
+  startDate           DateTime
+  endDate             DateTime
+  reason              String
+
+  substituteTeacherId Int?
+
+  status              String   @default("pending")
+  approvedBy          Int?
+  approvedAt          DateTime?
+
+  notes               String?
+  attachmentUrl       String?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  teacher             User     @relation("TeacherAbsence", fields: [teacherId], references: [id], onDelete: Cascade)
+  approvedByUser      User?    @relation("ApprovedBy", fields: [approvedBy], references: [id])
+  schedules           Schedule[]
+
+  @@index([teacherId])
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("teacher_absences")
+}
+
+model TeacherLeaveRequest {
+  id                  Int      @id @default(autoincrement())
+  teacherId           Int
+  startDate           DateTime
+  endDate             DateTime
+  reason              String
+
+  substituteTeacherId Int?
+
+  status              String   @default("pending")
+  approvedBy          Int?
+  approvedAt          DateTime?
+  rejectionReason     String?
+
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  teacher             User     @relation("TeacherLeaveRequest", fields: [teacherId], references: [id], onDelete: Cascade)
+  approvedByUser      User?    @relation("ApprovedLeaveBy", fields: [approvedBy], references: [id])
+
+  @@index([teacherId])
+  @@index([status])
+  @@map("teacher_leave_requests")
+}
+
+model TeacherAttendance {
+  id          Int      @id @default(autoincrement())
+  teacherId   Int
+  scheduleId  Int
+  date        DateTime
+  status      String
+  notes       String?
+
+  recordedAt  DateTime @default(now())
+  recordedBy  Int?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teacher     User     @relation("TeacherAttendanceRecord", fields: [teacherId], references: [id], onDelete: Cascade)
+  schedule    Schedule @relation("ScheduleAttendance", fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleId, date], name: "unique_schedule_attendance")
+  @@index([teacherId])
+  @@index([date])
+  @@index([status])
+  @@map("teacher_attendances")
+}
+
+/**
+ * ============================================
+ * SECCIÓN 9: SISTEMA DE ASISTENCIA DE ESTUDIANTES
+ * ============================================
+ */
+
+model AttendanceStatus {
+  id              Int     @id @default(autoincrement())
+  code            String  @unique
+  name            String
+  description     String?
+
+  requiresJustification Boolean @default(false)
+  canHaveNotes          Boolean @default(true)
+  isNegative            Boolean @default(false)
+  isExcused             Boolean @default(false)
+  isTemporal            Boolean @default(false)
+
+  colorCode String? @db.VarChar(7)
+  order     Int     @default(0)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rolePermissions RoleAttendancePermission[]
+  studentAttendances StudentAttendance[]
+
+  @@index([code])
+  @@map("attendance_statuses")
+}
+
+model RoleAttendancePermission {
+  id                 Int     @id @default(autoincrement())
+  roleId             Int
+  attendanceStatusId Int
+
+  canView              Boolean @default(true)
+  canCreate            Boolean @default(false)
+  canModify            Boolean @default(false)
+  canDelete            Boolean @default(false)
+  canApprove           Boolean @default(false)
+  canAddJustification  Boolean @default(false)
+
+  requiresNotes    Boolean @default(false)
+  minNotesLength   Int?
+  maxNotesLength   Int?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  role            Role             @relation("RoleAttendancePermissions", fields: [roleId], references: [id], onDelete: Cascade)
+  attendanceStatus AttendanceStatus @relation(fields: [attendanceStatusId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, attendanceStatusId])
+  @@map("role_attendance_permissions")
+}
+
+model AttendanceConfig {
+  id                      Int     @id @default(autoincrement())
+
+  negativeStatusCodes     String[] @default(["I", "TI"])
+  riskThresholdPercentage Float   @default(80.0)
+  consecutiveAbsenceAlert Int     @default(3)
+
+  notesRequiredForStates  String[] @default(["IJ", "TJ"])
+  defaultNotesPlaceholder String?
+
+  lateThresholdTime        String @default("08:30")
+  markAsTardyAfterMinutes  Int    @default(15)
+
+  justificationRequiredAfter Int @default(3)
+  maxJustificationDays       Int @default(365)
+
+  autoApproveJustification Boolean @default(false)
+  autoApprovalAfterDays    Int    @default(7)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("attendance_configs")
+}
+
+model StudentAttendance {
+  id             Int     @id @default(autoincrement())
+  enrollmentId   Int
+  date           DateTime
+
+  courseAssignmentId Int? // Opcional, para asistencia específica de curso
+
+
+  statusCode     String
+
+  notes          String?
+  arrivalTime    String?
+  minutesLate    Int?
+  departureTime  String?
+
+  hasJustification Boolean @default(false)
+  justificationId  Int?
+
+  recordedBy      Int
+  recordedAt      DateTime @default(now())
+
+  lastModifiedBy  Int?
+  lastModifiedAt  DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  enrollment      Enrollment                    @relation("StudentAttendance", fields: [enrollmentId], references: [id], onDelete: Cascade)
+  recordedByUser  User                          @relation("RecordedByAttendance", fields: [recordedBy], references: [id])
+  modifiedByUser  User?                         @relation("ModifiedByAttendance", fields: [lastModifiedBy], references: [id])
+  status          AttendanceStatus              @relation(fields: [statusCode], references: [code])
+  justification   StudentJustification?         @relation(fields: [justificationId], references: [id])
+  changeHistory   StudentAttendanceChange[]
+  classAttendances StudentClassAttendance[]
+
+  @@unique([enrollmentId, date, courseAssignmentId], name: "unique_student_attendance")
+  @@index([enrollmentId])
+  @@index([date])
+  @@index([statusCode])
+  @@index([recordedBy])
+  @@map("student_attendances")
+}
+
+model StudentClassAttendance {
+  id                  Int @id @default(autoincrement())
+  studentAttendanceId Int
+  scheduleId          Int
+  courseAssignmentId  Int
+
+  status      String
+  arrivalTime String?
+  notes       String?
+
+  recordedBy  Int?
+  recordedAt  DateTime @default(now())
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  studentAttendance StudentAttendance @relation(fields: [studentAttendanceId], references: [id], onDelete: Cascade)
+  schedule          Schedule          @relation(fields: [scheduleId], references: [id])
+  courseAssignment  CourseAssignment  @relation(fields: [courseAssignmentId], references: [id])
+  recordedByUser    User?             @relation("RecordedByClassAttendance", fields: [recordedBy], references: [id])
+
+  @@unique([studentAttendanceId, scheduleId], name: "unique_class_attendance")
+  @@index([scheduleId])
+  @@index([courseAssignmentId])
+  @@map("student_class_attendances")
+}
+
+model StudentJustification {
+  id              Int @id @default(autoincrement())
+  enrollmentId    Int
+
+  startDate       DateTime
+  endDate         DateTime
+
+  type            String
+  reason          String
+  description     String?
+
+  documentUrl     String?
+  documentType    String?
+  documentName    String?
+
+  status          String @default("pending")
+  approvedBy      Int?
+  approvedAt      DateTime?
+  rejectionReason String?
+
+  needsFollowUp   Boolean @default(false)
+  followUpNotes   String?
+
+  submittedBy     Int
+  submittedAt     DateTime @default(now())
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  enrollment      Enrollment           @relation("JustificationEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
+  approvedByUser  User?                @relation("JustificationApprovedBy", fields: [approvedBy], references: [id])
+  submittedByUser User                 @relation("JustificationSubmittedBy", fields: [submittedBy], references: [id])
+  attendances     StudentAttendance[]
+
+  @@index([enrollmentId])
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("student_justifications")
+}
+
+model StudentAttendanceChange {
+  id                  Int @id @default(autoincrement())
+  studentAttendanceId Int
+
+  statusCodeBefore String
+  statusCodeAfter  String
+
+  notesBefore     String?
+  notesAfter      String?
+
+  arrivalTimeBefore String?
+  arrivalTimeAfter  String?
+
+  justificationAddedId Int?
+
+  changeReason String?
+
+  changedBy Int
+  changedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+
+  studentAttendance StudentAttendance @relation(fields: [studentAttendanceId], references: [id], onDelete: Cascade)
+  changedByUser     User              @relation("AttendanceChangedBy", fields: [changedBy], references: [id])
+
+  @@index([studentAttendanceId])
+  @@index([changedAt])
+  @@map("student_attendance_changes")
+}
+
+model StudentAttendanceReport {
+  id              Int @id @default(autoincrement())
+  enrollmentId    Int @unique  // ✅ MANTENER @unique
+  bimesterId      Int
+  courseId        Int?
+
+  countPresent            Int @default(0)
+  countAbsent             Int @default(0)
+  countAbsentJustified    Int @default(0)
+  countTemporal           Int @default(0)
+  countTemporalJustified  Int @default(0)
+
+  totalSchoolDays Int @default(0)
+  totalMarkDays   Int @default(0)
+
+  attendancePercentage  Float @default(100.0)
+  absencePercentage     Float @default(0.0)
+
+  consecutiveAbsences   Int     @default(0)
+  isAtRisk              Boolean @default(false)
+  needsIntervention     Boolean @default(false)
+
+  notes String?
+
+  calculatedAt       DateTime @default(now())
+  lastRecalculatedAt DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  enrollment Enrollment @relation("ReportEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
+  bimester   Bimester   @relation("ReportBimester", fields: [bimesterId], references: [id])
+  course     Course?    @relation("ReportCourse", fields: [courseId], references: [id])
+
+  @@unique([enrollmentId, bimesterId, courseId], name: "unique_attendance_report")
+  @@index([enrollmentId])
+  @@index([isAtRisk])
+  @@map("student_attendance_reports")
+}
+
+/**
+ * ============================================
+ * SECCIÓN 10: MATRÍCULAS Y EVALUACIONES
+ * ============================================
+ */
+
+model Enrollment {
+  id        Int    @id @default(autoincrement())
+  studentId Int
+  cycleId   Int
+  gradeId   Int
+  sectionId Int
+  status    String @default("active")
+
+  dateEnrolled DateTime @default(now())
+
+  student Student     @relation(fields: [studentId], references: [id])
+  cycle   SchoolCycle @relation(fields: [cycleId], references: [id])
+  section Section     @relation(fields: [sectionId], references: [id])
+
+  ericaEvaluations  EricaEvaluation[]       @relation("EricaEnrollment")
+  ericaAverages     EricaAverage[]          @relation("AverageEnrollment")
+  calculatedResults EricaCalculatedResult[] @relation("CalculatedEnrollment")
+
+ 
+  grades      StudentGrade[]
+
+  // ✨ RELACIONES DE ASISTENCIA DE ESTUDIANTES
+  studentAttendances StudentAttendance[]  @relation("StudentAttendance")
+  justifications     StudentJustification[] @relation("JustificationEnrollment")
+  attendanceReport   StudentAttendanceReport? @relation("ReportEnrollment")
+
+  @@map("enrollments")
+}
+
+model StudentGrade {
+  id           Int     @id @default(autoincrement())
+  enrollmentId Int
+  courseId     Int
+  bimesterId   Int
+  value        Float
+  comments     String?
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id])
+  course     Course     @relation(fields: [courseId], references: [id])
+  bimester   Bimester   @relation(fields: [bimesterId], references: [id])
+
+  @@unique([enrollmentId, courseId, bimesterId])
+  @@map("student_grades")
+}
+
+/* model Attendance {
+  id           Int      @id @default(autoincrement())
+  enrollmentId Int
+  bimesterId   Int
+  date         DateTime
+  status       String
+  notes        String?
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id])
+  bimester   Bimester   @relation(fields: [bimesterId], references: [id])
+
+  @@map("attendances")
+}
+ */
+/**
+ * ============================================
+ * SECCIÓN 10: TAREAS Y EVALUACIONES
+ * ============================================
+ */
+
+model Assignment {
+  id         Int      @id @default(autoincrement())
+  courseId   Int
+  bimesterId Int
+  title      String
+  dueDate    DateTime
+  maxScore   Float
+
+  course      Course                 @relation(fields: [courseId], references: [id])
+  bimester    Bimester               @relation(fields: [bimesterId], references: [id])
+  submissions AssignmentSubmission[]
+
+  @@map("assignments")
+}
+
+model AssignmentSubmission {
+  id           Int       @id @default(autoincrement())
+  assignmentId Int
+  studentId    Int
+  teacherId    Int?
+  score        Float?
+  feedback     String?
+  submittedAt  DateTime? @default(now())
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  student    Student    @relation("SubmissionStudent", fields: [studentId], references: [id])
+  teacher    User?      @relation("SubmissionGrader", fields: [teacherId], references: [id])
+
+  @@map("assignment_submissions")
+}
+
+model EricaCategory {
+  id          Int     @id @default(autoincrement())
+  code        String  @unique
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+  order       Int
+
+  evaluations EricaEvaluation[]
+
+  @@map("erica_categories")
+}
+
+model EricaScale {
+  id           Int     @id @default(autoincrement())
+  code         String  @unique
+  name         String
+  description  String?
+  numericValue Float
+  colorCode    String
+  isActive     Boolean @default(true)
+  order        Int
+
+  evaluations EricaEvaluation[]
+
+  @@map("erica_scales")
+}
+
+model EricaTopic {
+  id             Int @id @default(autoincrement())
+  courseId       Int
+  academicWeekId Int
+  sectionId      Int
+  teacherId      Int
+
+  title       String
+  description String?
+  objectives  String?
+  materials   String?
+
+  isActive    Boolean @default(true)
+  isCompleted Boolean @default(false)
+
+  course       Course       @relation("TopicCourse", fields: [courseId], references: [id])
+  academicWeek AcademicWeek @relation("TopicWeek", fields: [academicWeekId], references: [id])
+  section      Section      @relation("TopicSection", fields: [sectionId], references: [id])
+  teacher      User         @relation("TopicTeacher", fields: [teacherId], references: [id])
+
+  evaluations EricaEvaluation[] @relation("EvaluationTopic")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, academicWeekId, sectionId], name: "unique_course_week_section_topic")
+  @@map("erica_topics")
+}
+
+model EricaEvaluation {
+  id             Int @id @default(autoincrement())
+  enrollmentId   Int
+  courseId       Int
+  bimesterId     Int
+  academicWeekId Int
+  topicId        Int
+  teacherId      Int
+
+  categoryId Int
+  scaleId    Int
+  points     Float
+
+  notes       String?
+  evaluatedAt DateTime?
+
+  enrollment   Enrollment    @relation("EricaEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
+  course       Course        @relation("EricaCourse", fields: [courseId], references: [id])
+  bimester     Bimester      @relation("EricaBimester", fields: [bimesterId], references: [id])
+  academicWeek AcademicWeek  @relation("EricaAcademicWeek", fields: [academicWeekId], references: [id])
+  topic        EricaTopic    @relation("EvaluationTopic", fields: [topicId], references: [id])
+  teacher      User          @relation("EricaTeacher", fields: [teacherId], references: [id])
+  category     EricaCategory @relation(fields: [categoryId], references: [id])
+  scale        EricaScale    @relation(fields: [scaleId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([enrollmentId, topicId, categoryId], name: "unique_student_topic_category")
+  @@map("erica_evaluations")
+}
+
+model EricaAverage {
+  id           Int @id @default(autoincrement())
+  enrollmentId Int
+  courseId     Int
+  bimesterId   Int
+
+  omaOneAverage  Float?
+  omaTwoAverage  Float?
+  monthlyAverage Float?
+  finalAverage   Float?
+
+  executeAverage   Float?
+  retainAverage    Float?
+  interpretAverage Float?
+  knowAverage      Float?
+  applyAverage     Float?
+
+  totalEvaluations Int @default(0)
+  excellentCount   Int @default(0)
+  goodCount        Int @default(0)
+  regularCount     Int @default(0)
+  poorCount        Int @default(0)
+  nothingCount     Int @default(0)
+
+  lastCalculated DateTime @default(now())
+  isUpToDate     Boolean  @default(false)
+
+  enrollment Enrollment @relation("AverageEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
+  course     Course     @relation("AverageCourse", fields: [courseId], references: [id])
+  bimester   Bimester   @relation("AverageBimester", fields: [bimesterId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([enrollmentId, courseId, bimesterId], name: "unique_student_course_bimester")
+  @@map("erica_averages")
+}
+
+model EricaConfig {
+  id          Int     @id @default(autoincrement())
+  configType  String
+  configKey   String
+  configValue String
+  description String?
+  isActive    Boolean @default(true)
+  category    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([configType, configKey])
+  @@map("erica_configs")
+}
+
+model EricaCalculatedResult {
+  id Int @id @default(autoincrement())
+
+  enrollmentId    Int
+  bimesterId      Int
+  courseId        Int
+  calculationType String
+
+  resultE Float @default(0.0)
+  resultR Float @default(0.0)
+  resultI Float @default(0.0)
+  resultC Float @default(0.0)
+  resultA Float @default(0.0)
+
+  colorE String?
+  colorR String?
+  colorI String?
+  colorC String?
+  colorA String?
+
+  calculationDate DateTime @default(now())
+  sourceWeeks     String?
+
+  enrollment Enrollment @relation("CalculatedEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
+  bimester   Bimester   @relation("CalculatedBimester", fields: [bimesterId], references: [id])
+  course     Course     @relation("CalculatedCourse", fields: [courseId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([enrollmentId, bimesterId, courseId, calculationType])
+  @@map("erica_calculated_results")
+}
