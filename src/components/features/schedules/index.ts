@@ -16,8 +16,8 @@ export { DroppableTimeSlot } from './calendar/DroppableTimeSlot';
 export { ScheduleConfigModal } from './calendar/ScheduleConfigModal';
 
 // Draggable components
-export { DraggableCourseAssignment } from './draggable/DraggableCourseAssignment.js';
-export { DraggableSchedule } from './draggable/DraggableSchedule.js';
+/* export { DraggableCourseAssignment } from './draggable/DraggableCourseAssignment.js';
+export { DraggableSchedule } from './draggable/DraggableSchedule.js'; */
 
 // Re-export commonly needed types for convenience
 export type {

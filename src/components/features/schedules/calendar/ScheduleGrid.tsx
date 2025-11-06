@@ -1,41 +1,128 @@
 // src/components/features/schedules/calendar/ScheduleGrid.tsx
 "use client";
 
+import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Schedule, DayOfWeek, TimeSlot, DragItem, TempSchedule, ScheduleChange } from "@/types/schedules.types";
+import type { 
+  Schedule, 
+  DayOfWeek, 
+  TimeSlot, 
+  TempSchedule, 
+  ScheduleChange,
+  CourseAssignment,
+  DragItem 
+} from "@/types/schedules.types";
 import { DroppableTimeSlot } from "@/components/features/schedules/calendar/DroppableTimeSlot";
 import { DEFAULT_TIME_SLOTS, ALL_DAYS_OF_WEEK, type DayObject } from "@/types/schedules.types";
 
 interface ScheduleGridProps {
-  scheduleGrid: { [key: string]: (Schedule | TempSchedule)[] };
-  pendingChanges: ScheduleChange[];
+  schedules: Schedule[];
+  tempSchedules: TempSchedule[];
   timeSlots?: TimeSlot[];
-  workingDays?: DayObject[];
-  onDrop: (item: DragItem, day: DayOfWeek, timeSlot: TimeSlot) => void;
-  onScheduleEdit: (schedule: Schedule | TempSchedule) => void;
-  onScheduleDelete: (id: string | number) => void;
+  workingDays?: number[];
+  courseAssignments: CourseAssignment[];
+  onDrop?: (item: DragItem, day: DayOfWeek, timeSlot: TimeSlot) => void;
+  onScheduleUpdate?: (updatedTempSchedules: TempSchedule[], changes: ScheduleChange[]) => void;
+  onScheduleClick?: (schedule: Schedule | TempSchedule) => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
 export function ScheduleGrid({
-  scheduleGrid,
-  pendingChanges,
+  schedules,
+  tempSchedules,
   timeSlots,
   workingDays,
+  courseAssignments,
   onDrop,
-  onScheduleEdit,
-  onScheduleDelete
+  onScheduleUpdate,
+  onScheduleClick,
+  canEdit = true,
+  canDelete = true,
 }: ScheduleGridProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
   const currentTimeSlots = timeSlots || DEFAULT_TIME_SLOTS;
-  const currentWorkingDays = workingDays || ALL_DAYS_OF_WEEK.slice(0, 5);
+  
+  // Convert working days from number[] to DayObject[]
+  const currentWorkingDays = useMemo((): DayObject[] => {
+    if (!workingDays || workingDays.length === 0) {
+      return ALL_DAYS_OF_WEEK.slice(0, 5); // Default Mon-Fri
+    }
+    return workingDays
+      .map(day => ALL_DAYS_OF_WEEK.find(d => d.value === day))
+      .filter((d): d is DayObject => d !== undefined);
+  }, [workingDays]);
 
-  console.log('🟢 ScheduleGrid renderizando con:', {
+  // Merge schedules and tempSchedules, group by day and time
+  const scheduleGrid = useMemo(() => {
+    const grid: { [key: string]: (Schedule | TempSchedule)[] } = {};
+    
+    // Helper to enrich schedule with courseAssignment data
+    const enrichSchedule = (schedule: Schedule | TempSchedule) => {
+      const assignment = courseAssignments.find(ca => ca.id === schedule.courseAssignmentId);
+      if (assignment) {
+        return {
+          ...schedule,
+          courseAssignment: assignment,
+        };
+      }
+      return schedule;
+    };
+    
+    // Add saved schedules
+    schedules.forEach(schedule => {
+      const key = `${schedule.dayOfWeek}-${schedule.startTime}`;
+      if (!grid[key]) grid[key] = [];
+      grid[key].push(enrichSchedule(schedule));
+    });
+    
+    // Add temp schedules
+    tempSchedules.forEach(schedule => {
+      const key = `${schedule.dayOfWeek}-${schedule.startTime}`;
+      if (!grid[key]) grid[key] = [];
+      grid[key].push(enrichSchedule(schedule));
+    });
+    
+    return grid;
+  }, [schedules, tempSchedules, courseAssignments]);
+
+  // Handle schedule actions
+  const handleScheduleEdit = (schedule: Schedule | TempSchedule) => {
+    if (onScheduleClick) {
+      onScheduleClick(schedule);
+    }
+  };
+
+  const handleScheduleDelete = (id: string | number) => {
+    if (!canDelete) return;
+    
+    if (typeof id === 'string') {
+      // It's a temp schedule
+      const updatedTemp = tempSchedules.filter(s => s.id !== id);
+      onScheduleUpdate?.(updatedTemp, []);
+    } else {
+      // It's a saved schedule - add to pending changes
+      const schedule = schedules.find(s => s.id === id);
+      if (schedule) {
+        const change: ScheduleChange = {
+          action: 'delete',
+          schedule: schedule,
+          originalSchedule: schedule,
+        };
+        onScheduleUpdate?.(tempSchedules, [change]);
+      }
+    }
+  };
+
+  console.log('🟢 ScheduleGrid rendering:', {
+    schedules: schedules.length,
+    tempSchedules: tempSchedules.length,
     timeSlots: currentTimeSlots.length,
     workingDays: currentWorkingDays.map(d => d.shortLabel).join(', '),
-    scheduleGridKeys: Object.keys(scheduleGrid).length
+    courseAssignments: courseAssignments.length,
   });
 
   return (
@@ -136,26 +223,7 @@ export function ScheduleGrid({
                   {/* Time slots for each day */}
                   {currentWorkingDays.map((day) => {
                     const key = `${day.value}-${timeSlot.start}`;
-                    let daySchedules = scheduleGrid[key] || [];
-                    
-                    daySchedules = daySchedules.filter(schedule => {
-                      const deleteChange = pendingChanges.find(
-                        change => change.action === 'delete' && change.schedule.id === schedule.id
-                      );
-                      return !deleteChange;
-                    });
-                    
-                    daySchedules = daySchedules.map(schedule => {
-                      const updateChange = pendingChanges.find(
-                        change => change.action === 'update' && change.schedule.id === schedule.id
-                      );
-                      if (updateChange && 
-                          updateChange.schedule.dayOfWeek === day.value && 
-                          updateChange.schedule.startTime === timeSlot.start) {
-                        return updateChange.schedule as Schedule;
-                      }
-                      return schedule;
-                    });
+                    const daySchedules = scheduleGrid[key] || [];
                     
                     return (
                       <DroppableTimeSlot
@@ -163,9 +231,9 @@ export function ScheduleGrid({
                         day={day.value as DayOfWeek}
                         timeSlot={timeSlot}
                         schedules={daySchedules}
-                        onDrop={onDrop}
-                        onScheduleEdit={onScheduleEdit}
-                        onScheduleDelete={onScheduleDelete}
+                        onDrop={onDrop || (() => {})}
+                        onScheduleEdit={handleScheduleEdit}
+                        onScheduleDelete={handleScheduleDelete}
                         isBreakTime={isBreakTime}
                       />
                     );
@@ -177,27 +245,28 @@ export function ScheduleGrid({
         </div>
 
         {/* Footer */}
-        {(timeSlots || workingDays) && (
-          <div className={`px-4 py-2 border-t text-xs ${
-            isDark 
-              ? 'bg-gray-800 border-gray-700 text-gray-400' 
-              : 'bg-gray-50 border-gray-200 text-gray-600'
-          }`}>
-            <div className="flex flex-wrap gap-4 items-center justify-between">
-              <div className="flex gap-4">
-                <span>📅 <strong>{currentWorkingDays.length}</strong> días laborales</span>
-                <span>⏰ <strong>{currentTimeSlots.length}</strong> slots de tiempo</span>
-                <span>📚 <strong>{currentTimeSlots.filter(s => !s.isBreak).length}</strong> períodos de clase</span>
-                <span>☕ <strong>{currentTimeSlots.filter(s => s.isBreak).length}</strong> recreos</span>
-              </div>
-              <div className={`font-medium ${
-                isDark ? 'text-green-400' : 'text-green-600'
-              }`}>
-                ✅ Configuración personalizada
-              </div>
+        <div className={`px-4 py-2 border-t text-xs ${
+          isDark 
+            ? 'bg-gray-800 border-gray-700 text-gray-400' 
+            : 'bg-gray-50 border-gray-200 text-gray-600'
+        }`}>
+          <div className="flex flex-wrap gap-4 items-center justify-between">
+            <div className="flex gap-4">
+              <span>📅 <strong>{currentWorkingDays.length}</strong> días laborales</span>
+              <span>⏰ <strong>{currentTimeSlots.length}</strong> slots de tiempo</span>
+              <span>📚 <strong>{currentTimeSlots.filter(s => !s.isBreak).length}</strong> períodos de clase</span>
+              <span>☕ <strong>{currentTimeSlots.filter(s => s.isBreak).length}</strong> recreos</span>
+            </div>
+            <div className="flex gap-2">
+              <span>✅ <strong>{schedules.length}</strong> guardados</span>
+              {tempSchedules.length > 0 && (
+                <span className={isDark ? 'text-orange-400' : 'text-orange-600'}>
+                  ⏳ <strong>{tempSchedules.length}</strong> temporales
+                </span>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );

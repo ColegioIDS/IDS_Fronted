@@ -97,14 +97,14 @@ export function DraggableSchedule({
       className={cn(
         "p-2 rounded-md border transition-all group",
         "cursor-grab active:cursor-grabbing select-none",
-        isDark ? "hover:shadow-lg" : "hover:shadow-md",
+        isDark ? "hover:shadow-lg shadow-black/20" : "hover:shadow-md",
         isTemp
           ? isDark
-            ? "border-orange-800 bg-gradient-to-br from-orange-900/30 to-orange-800/30"
-            : "border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100"
+            ? "border-orange-700 bg-gradient-to-br from-orange-900/40 to-orange-800/40 hover:from-orange-900/50 hover:to-orange-800/50"
+            : "border-orange-300 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200"
           : isDark
-            ? "bg-gray-700 border-blue-800 hover:border-blue-600"
-            : "bg-white border-blue-200 hover:border-blue-300"
+            ? "bg-gray-750 border-blue-700 hover:border-blue-600 hover:bg-gray-700"
+            : "bg-white border-blue-200 hover:border-blue-400 hover:bg-blue-50"
       )}
       onMouseDown={handleMouseDown}
     >
