@@ -5,8 +5,9 @@
 // Centralized exports for the schedules module
 // ============================================================================
 
-// Main component
+// Main components
 export { default as SchedulesPageContent } from './SchedulesPageContent';
+export { default as SchedulesViewContent } from './SchedulesViewContent';
 
 // Calendar components
 export { ScheduleGrid } from './calendar/ScheduleGrid';

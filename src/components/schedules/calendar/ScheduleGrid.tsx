@@ -124,11 +124,16 @@ export function ScheduleGrid({
                           </>
                         )}
                         {isBreakTime && (
-                          <span className={`font-sans font-semibold ${
-                            isDark ? 'text-gray-400' : 'text-gray-500'
-                          }`}>
-                            {timeSlot.label}
-                          </span>
+                          <>
+                            <span className="block">{timeSlot.start}</span>
+                            <span className={isDark ? 'text-gray-600' : 'text-gray-400'}>-</span>
+                            <span className="block">{timeSlot.end}</span>
+                            <span className={`font-sans font-semibold mt-1 block ${
+                              isDark ? 'text-gray-400' : 'text-gray-500'
+                            }`}>
+                              {timeSlot.label}
+                            </span>
+                          </>
                         )}
                       </div>
                     </div>

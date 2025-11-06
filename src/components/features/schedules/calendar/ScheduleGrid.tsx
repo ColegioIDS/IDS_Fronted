@@ -2,8 +2,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { useTheme } from "next-themes";
 import { Card, CardContent } from "@/components/ui/card";
+import { Calendar, Clock, BookOpen, Coffee, CheckCircle2, Clock3 } from "lucide-react";
 import type { 
   Schedule, 
   DayOfWeek, 
@@ -41,9 +41,6 @@ export function ScheduleGrid({
   canEdit = true,
   canDelete = true,
 }: ScheduleGridProps) {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   const currentTimeSlots = timeSlots || DEFAULT_TIME_SLOTS;
   
   // Convert working days from number[] to DayObject[]
@@ -72,19 +69,23 @@ export function ScheduleGrid({
       return schedule;
     };
     
-    // Add saved schedules
-    schedules.forEach(schedule => {
-      const key = `${schedule.dayOfWeek}-${schedule.startTime}`;
-      if (!grid[key]) grid[key] = [];
-      grid[key].push(enrichSchedule(schedule));
-    });
+    // Add saved schedules (filter out undefined)
+    schedules
+      .filter((schedule): schedule is Schedule => schedule !== undefined && schedule !== null)
+      .forEach(schedule => {
+        const key = `${schedule.dayOfWeek}-${schedule.startTime}`;
+        if (!grid[key]) grid[key] = [];
+        grid[key].push(enrichSchedule(schedule));
+      });
     
-    // Add temp schedules
-    tempSchedules.forEach(schedule => {
-      const key = `${schedule.dayOfWeek}-${schedule.startTime}`;
-      if (!grid[key]) grid[key] = [];
-      grid[key].push(enrichSchedule(schedule));
-    });
+    // Add temp schedules (filter out undefined)
+    tempSchedules
+      .filter((schedule): schedule is TempSchedule => schedule !== undefined && schedule !== null)
+      .forEach(schedule => {
+        const key = `${schedule.dayOfWeek}-${schedule.startTime}`;
+        if (!grid[key]) grid[key] = [];
+        grid[key].push(enrichSchedule(schedule));
+      });
     
     return grid;
   }, [schedules, tempSchedules, courseAssignments]);
@@ -117,50 +118,32 @@ export function ScheduleGrid({
     }
   };
 
-  console.log('🟢 ScheduleGrid rendering:', {
-    schedules: schedules.length,
-    tempSchedules: tempSchedules.length,
-    timeSlots: currentTimeSlots.length,
-    workingDays: currentWorkingDays.map(d => d.shortLabel).join(', '),
-    courseAssignments: courseAssignments.length,
-  });
+ 
 
   return (
-    <Card className={`backdrop-blur-sm border-0 shadow-xl overflow-hidden ${
-      isDark ? 'bg-gray-800/95' : 'bg-white/95'
-    }`}>
+    <Card className="backdrop-blur-sm border-0 shadow-xl overflow-hidden bg-white/95 dark:bg-gray-800/95">
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <div className="min-w-[900px]">
             {/* Header */}
-            <div className={`grid border-b ${
-              isDark 
-                ? 'bg-gradient-to-r from-gray-800 to-gray-700 border-gray-700' 
-                : 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200'
-            }`} 
+            <div className="grid border-b bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 border-gray-200 dark:border-gray-700" 
                  style={{ gridTemplateColumns: `120px repeat(${currentWorkingDays.length}, 1fr)` }}>
-              <div className={`p-4 font-semibold border-r flex items-center justify-center ${
-                isDark 
-                  ? 'text-gray-300 border-gray-700' 
-                  : 'text-gray-700 border-gray-200'
-              }`}>
-                <span className="text-sm uppercase tracking-wide">Horario</span>
+              <div className="p-4 font-semibold border-r flex items-center justify-center text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700">
+                <span className="text-sm uppercase tracking-wide text-gray-700 dark:text-gray-300">Horario</span>
               </div>
               {currentWorkingDays.map((day, index) => (
                 <div
                   key={day.value}
                   className={`p-4 font-semibold text-center ${
                     index !== currentWorkingDays.length - 1 
-                      ? isDark ? 'border-r border-gray-700' : 'border-r border-gray-200'
+                      ? 'border-r border-gray-200 dark:border-gray-700'
                       : ''
                   }`}
                 >
-                  <div className={isDark ? 'text-gray-200' : 'text-gray-800'}>
+                  <div className="text-gray-800 dark:text-gray-200">
                     {day.shortLabel}
                   </div>
-                  <div className={`text-xs font-normal mt-1 ${
-                    isDark ? 'text-gray-400' : 'text-gray-500'
-                  }`}>
+                  <div className="text-xs font-normal mt-1 text-gray-500 dark:text-gray-400">
                     {day.label}
                   </div>
                 </div>
@@ -176,45 +159,40 @@ export function ScheduleGrid({
               return (
                 <div 
                   key={`${timeSlot.start}-${timeSlot.end}`}
-                  className={`grid ${
-                    isDark 
-                      ? 'border-b border-gray-700 last:border-b-0' 
-                      : 'border-b last:border-b-0'
-                  } ${
+                  className={`grid border-b border-gray-200 dark:border-gray-700 last:border-b-0 ${
                     index % 2 === 0 
-                      ? isDark ? 'bg-gray-800' : 'bg-white'
-                      : isDark ? 'bg-gray-750' : 'bg-gray-50/50'
+                      ? 'bg-white dark:bg-gray-800'
+                      : 'bg-gray-50/50 dark:bg-gray-750'
                   }`}
                   style={{ gridTemplateColumns: `120px repeat(${currentWorkingDays.length}, 1fr)` }}
                 >
                   {/* Time column */}
                   <div className={`
                     p-3 text-sm font-medium border-r flex items-center justify-center
-                    ${isDark ? 'border-gray-700' : 'border-gray-200'}
+                    border-gray-200 dark:border-gray-700
                     ${isBreakTime 
-                      ? isDark 
-                        ? 'bg-gradient-to-r from-gray-800 to-gray-700 text-gray-400' 
-                        : 'bg-gradient-to-r from-gray-100 to-gray-50 text-gray-600'
-                      : isDark 
-                        ? 'text-gray-300 bg-gray-800' 
-                        : 'text-gray-700 bg-white'
+                      ? 'bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 text-gray-600 dark:text-gray-400' 
+                      : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800'
                     }
                   `}>
-                    <div className="text-center">
-                      <div className="font-mono text-xs">
+                    <div className="text-center text-gray-700 dark:text-gray-300">
+                      <div className="font-mono text-xs text-gray-600 dark:text-gray-400">
                         {!isBreakTime && (
                           <>
                             <span className="block">{timeSlot.start}</span>
-                            <span className={isDark ? 'text-gray-600' : 'text-gray-400'}>-</span>
+                            <span className="text-gray-400 dark:text-gray-600">-</span>
                             <span className="block">{timeSlot.end}</span>
                           </>
                         )}
                         {isBreakTime && (
-                          <span className={`font-sans font-semibold ${
-                            isDark ? 'text-gray-400' : 'text-gray-500'
-                          }`}>
-                            {timeSlot.label}
-                          </span>
+                          <>
+                            <span className="block">{timeSlot.start}</span>
+                            <span className="text-gray-400 dark:text-gray-600">-</span>
+                            <span className="block">{timeSlot.end}</span>
+                            <span className="block font-sans font-semibold text-gray-500 dark:text-gray-400 mt-1">
+                              {timeSlot.label}
+                            </span>
+                          </>
                         )}
                       </div>
                     </div>
@@ -245,24 +223,36 @@ export function ScheduleGrid({
         </div>
 
         {/* Footer */}
-        <div className={`px-4 py-2 border-t text-xs ${
-          isDark 
-            ? 'bg-gray-800 border-gray-700 text-gray-400' 
-            : 'bg-gray-50 border-gray-200 text-gray-600'
-        }`}>
-          <div className="flex flex-wrap gap-4 items-center justify-between">
-            <div className="flex gap-4">
-              <span>📅 <strong>{currentWorkingDays.length}</strong> días laborales</span>
-              <span>⏰ <strong>{currentTimeSlots.length}</strong> slots de tiempo</span>
-              <span>📚 <strong>{currentTimeSlots.filter(s => !s.isBreak).length}</strong> períodos de clase</span>
-              <span>☕ <strong>{currentTimeSlots.filter(s => s.isBreak).length}</strong> recreos</span>
+        <div className="px-4 py-3 border-t text-xs bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+          <div className="flex flex-wrap gap-6 items-center justify-between">
+            <div className="flex gap-6">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <span><strong>{currentWorkingDays.length}</strong> días laborales</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span><strong>{currentTimeSlots.length}</strong> slots de tiempo</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                <span><strong>{currentTimeSlots.filter(s => !s.isBreak).length}</strong> períodos de clase</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Coffee className="h-4 w-4" />
+                <span><strong>{currentTimeSlots.filter(s => s.isBreak).length}</strong> recreos</span>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <span>✅ <strong>{schedules.length}</strong> guardados</span>
+            <div className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <span><strong>{schedules.length}</strong> guardados</span>
+              </div>
               {tempSchedules.length > 0 && (
-                <span className={isDark ? 'text-orange-400' : 'text-orange-600'}>
-                  ⏳ <strong>{tempSchedules.length}</strong> temporales
-                </span>
+                <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                  <Clock3 className="h-4 w-4" />
+                  <span><strong>{tempSchedules.length}</strong> temporales</span>
+                </div>
               )}
             </div>
           </div>

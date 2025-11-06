@@ -2,8 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Save, Plus, Trash2, Clock, Calendar } from "lucide-react";
-import { useTheme } from "next-themes";
+import { X, Save, Plus, Trash2, Clock, Calendar, BookOpen, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ScheduleConfig, BreakSlot, DayOfWeek } from "@/types/schedules.types";
 import { toast } from "sonner";
@@ -71,9 +70,6 @@ export function ScheduleConfigModal({
   onSave,
   onClose
 }: ScheduleConfigModalProps) {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   const [formData, setFormData] = useState({
     workingDays: [1, 2, 3, 4, 5] as number[],
     startTime: '07:00',
@@ -242,29 +238,19 @@ export function ScheduleConfigModal({
     }
   };
 
-  const inputClasses = `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-    isDark 
-      ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-400' 
-      : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
-  }`;
+  const inputClasses = `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-blue-400`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className={`rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto ${
-        isDark ? 'bg-gray-800' : 'bg-white'
-      }`}>
+      <div className="rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800">
         {/* Header */}
-        <div className={`p-6 border-b rounded-t-xl ${
-          isDark 
-            ? 'bg-gradient-to-r from-blue-900 to-purple-900 border-gray-700' 
-            : 'bg-gradient-to-r from-blue-600 to-purple-600 border-gray-200'
-        } text-white`}>
+        <div className="p-6 border-b rounded-t-xl bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-900 dark:to-purple-900 border-gray-200 dark:border-gray-700 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Calendar className="h-6 w-6" />
               <div>
                 <h2 className="text-xl font-bold">Configurar Horarios</h2>
-                <p className={isDark ? "text-blue-200" : "text-blue-100"}>
+                <p className="text-blue-100 dark:text-blue-200">
                   Sección: {sectionName}
                 </p>
               </div>
@@ -281,10 +267,8 @@ export function ScheduleConfigModal({
         <div className="p-6 space-y-8">
           {/* Configuraciones Predefinidas */}
           <div className="space-y-4">
-            <h3 className={`text-lg font-semibold flex items-center gap-2 ${
-              isDark ? 'text-gray-100' : 'text-gray-800'
-            }`}>
-              <Clock className={`h-5 w-5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+            <h3 className="text-lg font-semibold flex items-center gap-2 text-gray-800 dark:text-gray-100">
+              <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               Configuraciones Predefinidas
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -292,23 +276,24 @@ export function ScheduleConfigModal({
                 <button
                   key={key}
                   onClick={() => handlePresetLoad(key as keyof typeof PRESET_CONFIGS)}
-                  className={`p-4 border rounded-lg transition-colors text-left ${
-                    isDark
-                      ? 'border-gray-700 hover:border-blue-600 hover:bg-blue-900/30'
-                      : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-                  }`}
+                  className="p-4 border rounded-lg transition-colors text-left border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                 >
-                  <div className={`font-medium mb-2 ${
-                    isDark ? 'text-gray-100' : 'text-gray-800'
-                  }`}>
+                  <div className="font-medium mb-2 text-gray-800 dark:text-gray-100">
                     {preset.label}
                   </div>
-                  <div className={`text-sm space-y-1 ${
-                    isDark ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
-                    <div>📅 {preset.workingDays.length} días</div>
-                    <div>⏰ {preset.startTime} - {preset.endTime}</div>
-                    <div>📚 {preset.classDuration} min/clase</div>
+                  <div className="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>{preset.workingDays.length} días</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      <span>{preset.startTime} - {preset.endTime}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4" />
+                      <span>{preset.classDuration} min/clase</span>
+                    </div>
                   </div>
                 </button>
               ))}
@@ -317,36 +302,28 @@ export function ScheduleConfigModal({
 
           {/* Días de Trabajo */}
           <div className="space-y-4">
-            <h3 className={`text-lg font-semibold ${
-              isDark ? 'text-gray-100' : 'text-gray-800'
-            }`}>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
               Días de Trabajo
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
               {DAYS_OF_WEEK.map((day) => (
                 <button
                   key={day.value}
-                  onClick={() => handleDayToggle(day.value)}
                   className={`p-3 rounded-lg border-2 transition-all text-center ${
                     formData.workingDays.includes(day.value)
-                      ? isDark
-                        ? 'border-blue-600 bg-blue-900/50 text-blue-300'
-                        : 'border-blue-500 bg-blue-50 text-blue-700'
-                      : isDark
-                        ? 'border-gray-700 hover:border-gray-600 text-gray-300'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      ? 'border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300'
                   }`}
+                  onClick={() => handleDayToggle(day.value)}
                 >
                   <div className="font-medium">{day.shortLabel}</div>
-                  <div className={`text-xs ${
-                    isDark ? 'text-gray-400' : 'text-gray-500'
-                  }`}>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
                     {day.label}
                   </div>
                 </button>
               ))}
             </div>
-            <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
               Días seleccionados: {formData.workingDays.map(d => 
                 DAYS_OF_WEEK.find(day => day.value === d)?.shortLabel
               ).join(', ')}
@@ -356,9 +333,7 @@ export function ScheduleConfigModal({
           {/* Horarios y Duración */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <label className={`block text-sm font-medium ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }`}>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Hora de Inicio
               </label>
               <input
@@ -369,9 +344,7 @@ export function ScheduleConfigModal({
               />
             </div>
             <div className="space-y-2">
-              <label className={`block text-sm font-medium ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }`}>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Hora de Fin
               </label>
               <input
@@ -382,9 +355,7 @@ export function ScheduleConfigModal({
               />
             </div>
             <div className="space-y-2">
-              <label className={`block text-sm font-medium ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }`}>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Duración por Clase (min)
               </label>
               <select
@@ -405,9 +376,7 @@ export function ScheduleConfigModal({
           {/* Recreos y Descansos */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className={`text-lg font-semibold ${
-                isDark ? 'text-gray-100' : 'text-gray-800'
-              }`}>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
                 Recreos y Descansos
               </h3>
               <Button
@@ -421,13 +390,9 @@ export function ScheduleConfigModal({
             
             <div className="space-y-3">
               {formData.breakSlots.map((slot, index) => (
-                <div key={index} className={`grid grid-cols-1 md:grid-cols-4 gap-3 p-4 rounded-lg ${
-                  isDark ? 'bg-gray-700' : 'bg-gray-50'
-                }`}>
+                <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
                   <div className="space-y-1">
-                    <label className={`block text-xs font-medium ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
                       Inicio
                     </label>
                     <input
@@ -438,9 +403,7 @@ export function ScheduleConfigModal({
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className={`block text-xs font-medium ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
                       Fin
                     </label>
                     <input
@@ -451,9 +414,7 @@ export function ScheduleConfigModal({
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className={`block text-xs font-medium ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
                       Etiqueta
                     </label>
                     <input
@@ -469,11 +430,7 @@ export function ScheduleConfigModal({
                       onClick={() => handleRemoveBreakSlot(index)}
                       variant="outline"
                       size="sm"
-                      className={`${
-                        isDark
-                          ? 'text-red-400 hover:bg-red-900/50 border-gray-600'
-                          : 'text-red-600 hover:bg-red-50'
-                      }`}
+                      className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50 border-gray-300 dark:border-gray-600"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -484,54 +441,42 @@ export function ScheduleConfigModal({
           </div>
 
           {/* Vista Previa */}
-          <div className={`p-4 rounded-lg ${
-            isDark ? 'bg-blue-900/30' : 'bg-blue-50'
-          }`}>
-            <h4 className={`font-medium mb-2 ${
-              isDark ? 'text-blue-300' : 'text-blue-800'
-            }`}>
+          <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/30">
+            <h4 className="font-medium mb-2 text-blue-800 dark:text-blue-300">
               Vista Previa
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
-                <span className={`font-medium ${
-                  isDark ? 'text-blue-400' : 'text-blue-600'
-                }`}>
+                <span className="font-medium text-blue-600 dark:text-blue-400">
                   Días:
                 </span>
-                <div className={isDark ? 'text-gray-300' : 'text-gray-700'}>
+                <div className="text-gray-700 dark:text-gray-300">
                   {formData.workingDays.map(d => 
                     DAYS_OF_WEEK.find(day => day.value === d)?.shortLabel
                   ).join(', ')}
                 </div>
               </div>
               <div>
-                <span className={`font-medium ${
-                  isDark ? 'text-blue-400' : 'text-blue-600'
-                }`}>
+                <span className="font-medium text-blue-600 dark:text-blue-400">
                   Horario:
                 </span>
-                <div className={isDark ? 'text-gray-300' : 'text-gray-700'}>
+                <div className="text-gray-700 dark:text-gray-300">
                   {formData.startTime} - {formData.endTime}
                 </div>
               </div>
               <div>
-                <span className={`font-medium ${
-                  isDark ? 'text-blue-400' : 'text-blue-600'
-                }`}>
+                <span className="font-medium text-blue-600 dark:text-blue-400">
                   Duración:
                 </span>
-                <div className={isDark ? 'text-gray-300' : 'text-gray-700'}>
+                <div className="text-gray-700 dark:text-gray-300">
                   {formData.classDuration} min
                 </div>
               </div>
               <div>
-                <span className={`font-medium ${
-                  isDark ? 'text-blue-400' : 'text-blue-600'
-                }`}>
+                <span className="font-medium text-blue-600 dark:text-blue-400">
                   Total Slots:
                 </span>
-                <div className={isDark ? 'text-gray-300' : 'text-gray-700'}>
+                <div className="text-gray-700 dark:text-gray-300">
                   ~{calculateTotalSlots()} clases/día
                 </div>
               </div>
@@ -540,17 +485,13 @@ export function ScheduleConfigModal({
         </div>
 
         {/* Footer */}
-        <div className={`p-6 border-t rounded-b-xl ${
-          isDark 
-            ? 'bg-gray-750 border-gray-700' 
-            : 'bg-gray-50 border-gray-200'
-        }`}>
+        <div className="p-6 border-t rounded-b-xl bg-gray-50 dark:bg-gray-750 border-gray-200 dark:border-gray-700">
           <div className="flex justify-end gap-3">
             <Button
               onClick={onClose}
               variant="outline"
               disabled={isSaving}
-              className={isDark ? 'border-gray-600 hover:bg-gray-600' : ''}
+              className="border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600"
             >
               Cancelar
             </Button>

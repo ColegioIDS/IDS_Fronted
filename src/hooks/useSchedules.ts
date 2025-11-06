@@ -111,6 +111,14 @@ export interface UseSchedulesReturn {
 
   // Error handling
   clearError: () => void;
+
+  // Validation actions
+  validateConfigurationChange: (
+    oldConfig: ScheduleConfig,
+    newConfig: ScheduleConfig
+  ) => Promise<any>;
+  deleteInvalidSchedules: (scheduleIds: number[]) => Promise<any>;
+  adjustInvalidSchedules: (oldConfig: ScheduleConfig, newConfig: ScheduleConfig) => Promise<any>;
 }
 
 // ============================================================================
@@ -334,6 +342,7 @@ export function useSchedules(options: UseSchedulesOptions = {}): UseSchedulesRet
         return newSchedule;
       } catch (err) {
         handleError(err, 'Error al crear horario');
+        console.error('Error details:', err);
         return null;
       } finally {
         setIsSubmitting(false);
@@ -382,26 +391,28 @@ export function useSchedules(options: UseSchedulesOptions = {}): UseSchedulesRet
     try {
       const result = await batchSaveSchedules(items);
       
-      // Update schedules with new data
-      if (result.created.length > 0) {
-        setSchedules((prev) => [...prev, ...result.created]);
+      // Update schedules with new data from new structure
+      // NOTE: result is BatchSaveResult which has { success, message, data: { stats, items } }
+      const items_data = result?.data?.items;
+      
+      if (items_data?.created && items_data.created.length > 0) {
+        setSchedules((prev) => [...prev, ...items_data.created]);
       }
-      if (result.updated.length > 0) {
+      if (items_data?.updated && items_data.updated.length > 0) {
         setSchedules((prev) =>
           prev.map((s) => {
-            const updated = result.updated.find((u) => u.id === s.id);
+            const updated = items_data.updated.find((u: any) => u.id === s.id);
             return updated || s;
           })
         );
       }
-      if (result.deleted.length > 0) {
+      if (items_data?.deleted && items_data.deleted.length > 0) {
         setSchedules((prev) =>
-          prev.filter((s) => !result.deleted.includes(s.id))
+          prev.filter((s) => !items_data.deleted.includes(s.id))
         );
       }
 
-      const message = `${result.created.length} creados, ${result.updated.length} actualizados, ${result.deleted.length} eliminados`;
-      handleSuccess(message);
+      // Return result without showing toasts - let caller handle notifications
       return result;
     } catch (err) {
       handleError(err, 'Error al guardar horarios');
@@ -460,6 +471,136 @@ export function useSchedules(options: UseSchedulesOptions = {}): UseSchedulesRet
   }, []);
 
   // =========================================================================
+  // VALIDATION OPERATIONS
+  // =========================================================================
+
+  const validateConfigurationChange = useCallback(
+    async (oldConfig: ScheduleConfig, newConfig: ScheduleConfig) => {
+      try {
+        const { ScheduleConfigValidator } = await import('@/utils/scheduleValidator');
+        
+        // Get schedules for this section
+        const sectionSchedules = schedules.filter(s => s.sectionId === oldConfig.sectionId);
+        
+        // Validate
+        const validation = ScheduleConfigValidator.validateSchedulesAgainstConfig(
+          sectionSchedules,
+          oldConfig,
+          newConfig
+        );
+        
+        return validation;
+      } catch (err) {
+        handleError(err, 'Error validando cambios de configuración');
+        return null;
+      }
+    },
+    [schedules]
+  );
+
+  const deleteInvalidSchedules = useCallback(
+    async (scheduleIds: number[]) => {
+      try {
+        setIsSubmitting(true);
+        
+        let successCount = 0;
+        const errors = [];
+        
+        for (const id of scheduleIds) {
+          try {
+            await deleteScheduleItem(id);
+            successCount++;
+          } catch (err) {
+            errors.push({
+              id,
+              error: err instanceof Error ? err.message : 'Error desconocido'
+            });
+          }
+        }
+        
+        setSchedules(prev => prev.filter(s => !scheduleIds.includes(s.id)));
+        
+        if (errors.length === 0) {
+          handleSuccess(`${successCount} horario(s) eliminado(s) exitosamente`);
+        } else {
+          handleError(
+            new Error(`Eliminados ${successCount}, Errores: ${errors.length}`),
+            'Se eliminaron algunos horarios pero hubo errores'
+          );
+        }
+        
+        return { successCount, errors };
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [deleteScheduleItem, handleSuccess, handleError]
+  );
+
+  const adjustInvalidSchedules = useCallback(
+    async (oldConfig: ScheduleConfig, newConfig: ScheduleConfig) => {
+      try {
+        setIsSubmitting(true);
+        const { ScheduleConfigValidator } = await import('@/utils/scheduleValidator');
+        
+        let adjustedCount = 0;
+        const errors = [];
+        
+        const sectionSchedules = schedules.filter(s => s.sectionId === oldConfig.sectionId);
+        
+        for (const schedule of sectionSchedules) {
+          const validation = ScheduleConfigValidator.validateSingleSchedule(schedule, newConfig);
+          
+          if (validation && !validation.isValid) {
+            const suggestion = ScheduleConfigValidator.suggestValidTimeSlot(schedule, newConfig);
+            
+            if (suggestion) {
+              try {
+                await updateScheduleItem(schedule.id, {
+                  courseAssignmentId: schedule.courseAssignmentId,
+                  dayOfWeek: schedule.dayOfWeek,
+                  startTime: suggestion.startTime,
+                  endTime: suggestion.endTime,
+                  classroom: schedule.classroom || undefined,
+                });
+                adjustedCount++;
+              } catch (err) {
+                errors.push({
+                  scheduleId: schedule.id,
+                  error: err instanceof Error ? err.message : 'Error desconocido'
+                });
+              }
+            } else {
+              errors.push({
+                scheduleId: schedule.id,
+                error: 'No se pudo encontrar un slot válido para este horario'
+              });
+            }
+          }
+        }
+        
+        if (adjustedCount > 0) {
+          await loadSchedulesBySection(oldConfig.sectionId);
+        }
+        
+        if (errors.length === 0) {
+          handleSuccess(`${adjustedCount} horario(s) ajustado(s) automáticamente`);
+        } else {
+          handleError(
+            new Error(`Ajustados ${adjustedCount}, Errores: ${errors.length}`),
+            'Se ajustaron algunos horarios pero hubo errores'
+          );
+        }
+        
+        return { adjustedCount, errors };
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [schedules, updateScheduleItem, loadSchedulesBySection, handleSuccess, handleError]
+  );
+
+  // =========================================================================
   // RETURN HOOK API
   // =========================================================================
 
@@ -510,6 +651,11 @@ export function useSchedules(options: UseSchedulesOptions = {}): UseSchedulesRet
 
     // Error handling
     clearError,
+
+    // Validation actions
+    validateConfigurationChange,
+    deleteInvalidSchedules,
+    adjustInvalidSchedules,
   };
 }
 

@@ -1,6 +1,6 @@
 // src/services/schedules.service.ts
 // ============================================================================
-// 📅 Schedules Service (Consolidated)
+// 📅 Schedules Service (Consolidated & Clean)
 // ============================================================================
 // Unified service for all Schedule and ScheduleConfig operations.
 // Single point of entry for all schedule-related API calls.
@@ -33,7 +33,6 @@ import { ApiResponse } from '@/types/api';
 // API CLIENT SETUP
 // ============================================================================
 
-// Use the configured API client from config
 const apiClient = api;
 
 // ============================================================================
@@ -41,28 +40,35 @@ const apiClient = api;
 // ============================================================================
 
 /**
- * Unified error handler for API calls
+ * Extract error details from response or axios error
  */
-function handleApiError(error: unknown, fallbackMessage: string): never {
+function extractErrorDetails(error: unknown): { message: string; details: string[] } {
   if (axios.isAxiosError(error)) {
-    const message = error.response?.data?.message || error.message || fallbackMessage;
+    const message = error.response?.data?.message || error.message || 'Error en la solicitud';
     const details = error.response?.data?.details || [];
-    const err = new Error(message);
-    (err as any).details = details;
-    (err as any).status = error.response?.status;
-    throw err;
+    return { message, details };
   }
-  if (error instanceof Error) throw error;
-  throw new Error(fallbackMessage);
+  
+  if (error instanceof Error) {
+    return { message: error.message, details: [] };
+  }
+  
+  return { message: 'Error desconocido', details: [] };
+}
+
+/**
+ * Throw error with details attached
+ */
+function throwWithDetails(message: string, details: string[] = []): never {
+  const err = new Error(message);
+  (err as any).details = details;
+  throw err;
 }
 
 // ============================================================================
 // 📋 SCHEDULE CONFIG OPERATIONS
 // ============================================================================
 
-/**
- * Get paginated list of ScheduleConfigs
- */
 export const getScheduleConfigs = async (
   query: ScheduleConfigQuery = {}
 ): Promise<PaginatedScheduleConfigs> => {
@@ -78,38 +84,26 @@ export const getScheduleConfigs = async (
       `/api/schedule-configs?${params.toString()}`
     );
 
-    if (!data.success) {
-      throw new Error(data.message || 'Error al obtener configuraciones de horarios');
-    }
-
     return data.data;
   } catch (error) {
-    handleApiError(error, 'Error al obtener configuraciones de horarios');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
-/**
- * Get ScheduleConfig by ID
- */
 export const getScheduleConfigById = async (id: number): Promise<ScheduleConfig> => {
   try {
     const { data } = await apiClient.get<ApiResponse<ScheduleConfig>>(
       `/api/schedule-configs/${id}`
     );
 
-    if (!data.success) {
-      throw new Error(data.message || 'Error al obtener la configuración');
-    }
-
     return data.data;
   } catch (error) {
-    handleApiError(error, 'Error al obtener la configuración de horario');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
-/**
- * Get ScheduleConfig for a specific section
- */
 export const getScheduleConfigBySection = async (
   sectionId: number
 ): Promise<ScheduleConfig | null> => {
@@ -118,22 +112,16 @@ export const getScheduleConfigBySection = async (
       `/api/schedule-configs/section/${sectionId}`
     );
 
-    if (!data.success) {
-      return null;
-    }
-
     return data.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
       return null;
     }
-    handleApiError(error, 'Error al obtener configuración de sección');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
-/**
- * Create a new ScheduleConfig
- */
 export const createScheduleConfig = async (
   dto: CreateScheduleConfigDto
 ): Promise<ScheduleConfig> => {
@@ -143,21 +131,13 @@ export const createScheduleConfig = async (
       dto
     );
 
-    if (!data.success) {
-      const err = new Error(data.message || 'Error al crear configuración');
-      (err as any).details = data.details || [];
-      throw err;
-    }
-
     return data.data;
   } catch (error) {
-    handleApiError(error, 'Error al crear configuración de horario');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
-/**
- * Update a ScheduleConfig
- */
 export const updateScheduleConfig = async (
   id: number,
   dto: UpdateScheduleConfigDto
@@ -168,30 +148,21 @@ export const updateScheduleConfig = async (
       dto
     );
 
-    if (!data.success) {
-      throw new Error(data.message || 'Error al actualizar configuración');
-    }
-
     return data.data;
   } catch (error) {
-    handleApiError(error, 'Error al actualizar configuración de horario');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
-/**
- * Delete a ScheduleConfig
- */
 export const deleteScheduleConfig = async (id: number): Promise<void> => {
   try {
-    const { data } = await apiClient.delete<ApiResponse<void>>(
+    await apiClient.delete<ApiResponse<void>>(
       `/api/schedule-configs/${id}`
     );
-
-    if (!data.success) {
-      throw new Error(data.message || 'Error al eliminar configuración');
-    }
   } catch (error) {
-    handleApiError(error, 'Error al eliminar configuración de horario');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
@@ -199,9 +170,6 @@ export const deleteScheduleConfig = async (id: number): Promise<void> => {
 // 📚 SCHEDULE OPERATIONS
 // ============================================================================
 
-/**
- * Get schedules with optional filters
- */
 export const getSchedules = async (filters?: ScheduleFilters): Promise<Schedule[]> => {
   try {
     const params = new URLSearchParams();
@@ -215,149 +183,104 @@ export const getSchedules = async (filters?: ScheduleFilters): Promise<Schedule[
       `/api/schedules?${params.toString()}`
     );
 
-    if (!data.success) {
-      throw new Error(data.message || 'Error al obtener horarios');
-    }
-
     return data.data;
   } catch (error) {
-    handleApiError(error, 'Error al obtener horarios');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
-/**
- * Get a specific schedule by ID
- */
 export const getScheduleById = async (id: number): Promise<Schedule> => {
   try {
     const { data } = await apiClient.get<ApiResponse<Schedule>>(`/api/schedules/${id}`);
 
-    if (!data.success) {
-      throw new Error(data.message || 'Error al obtener el horario');
-    }
-
     return data.data;
   } catch (error) {
-    handleApiError(error, 'Error al obtener el horario');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
-/**
- * Get all schedules for a specific section
- */
 export const getSchedulesBySection = async (sectionId: number): Promise<Schedule[]> => {
   try {
     const { data } = await apiClient.get<ApiResponse<Schedule[]>>(
       `/api/schedules/section/${sectionId}`
     );
 
-    if (!data.success) {
-      throw new Error(data.message || 'Error al obtener horarios de la sección');
-    }
-
     return data.data;
   } catch (error) {
-    handleApiError(error, 'Error al obtener horarios de la sección');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
-/**
- * Get all schedules for a specific teacher
- */
 export const getSchedulesByTeacher = async (teacherId: number): Promise<Schedule[]> => {
   try {
     const { data } = await apiClient.get<ApiResponse<Schedule[]>>(
       `/api/schedules/teacher/${teacherId}`
     );
 
-    if (!data.success) {
-      throw new Error(data.message || 'Error al obtener horarios del maestro');
-    }
-
     return data.data;
   } catch (error) {
-    handleApiError(error, 'Error al obtener horarios del maestro');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
-/**
- * Create a new schedule
- * CRITICAL: Must include courseAssignmentId
- */
 export const createSchedule = async (dto: ScheduleFormValues): Promise<Schedule> => {
   try {
     const { data } = await apiClient.post<ApiResponse<Schedule>>('/api/schedules', dto);
 
-    if (!data.success) {
-      const err = new Error(data.message || 'Error al crear horario');
-      (err as any).details = data.details || [];
-      throw err;
-    }
-
     return data.data;
   } catch (error) {
-    handleApiError(error, 'Error al crear horario');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
-/**
- * Update an existing schedule
- */
 export const updateSchedule = async (
   id: number,
   dto: Partial<ScheduleFormValues>
 ): Promise<Schedule> => {
   try {
+    // Remove fields that shouldn't be updated (courseAssignmentId is immutable after creation)
+    const { courseAssignmentId, ...updateData } = dto;
+    
     const { data } = await apiClient.patch<ApiResponse<Schedule>>(
       `/api/schedules/${id}`,
-      dto
+      updateData
     );
-
-    if (!data.success) {
-      throw new Error(data.message || 'Error al actualizar horario');
-    }
 
     return data.data;
   } catch (error) {
-    handleApiError(error, 'Error al actualizar horario');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
-/**
- * Delete a schedule
- */
 export const deleteSchedule = async (id: number): Promise<void> => {
   try {
-    const { data } = await apiClient.delete<ApiResponse<void>>(`/api/schedules/${id}`);
-
-    if (!data.success) {
-      throw new Error(data.message || 'Error al eliminar horario');
-    }
+    await apiClient.delete<ApiResponse<void>>(`/api/schedules/${id}`);
   } catch (error) {
-    handleApiError(error, 'Error al eliminar horario');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
-/**
- * Delete all schedules for a section, optionally keeping specific IDs
- */
 export const deleteSchedulesBySection = async (
   sectionId: number,
   keepIds: number[] = []
 ): Promise<void> => {
   try {
-    const { data } = await apiClient.delete<ApiResponse<void>>(
+    await apiClient.delete<ApiResponse<void>>(
       `/api/schedules/section/${sectionId}`,
       {
         data: { keepIds },
       }
     );
-
-    if (!data.success) {
-      throw new Error(data.message || 'Error al limpiar horarios');
-    }
   } catch (error) {
-    handleApiError(error, 'Error al limpiar horarios de la sección');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
@@ -367,6 +290,13 @@ export const deleteSchedulesBySection = async (
 
 /**
  * Batch save multiple schedules
+ * 
+ * Returns FULL response even when success=false
+ * Allows access to data.items.errors and data.stats
+ * 
+ * CRITICAL: This function NEVER throws for valid server responses.
+ * It always returns the server's response data, even when success=false,
+ * so the caller can access error details via data.items.errors and data.stats
  */
 export const batchSaveSchedules = async (
   schedules: ScheduleFormValues[]
@@ -377,13 +307,105 @@ export const batchSaveSchedules = async (
       { schedules }
     );
 
-    if (!data.success) {
-      throw new Error(data.message || 'Error al guardar horarios');
-    }
+    console.log('✅ Batch response received:', data);
+    
+    // The response from the API is wrapped as { success, message, data: {...} }
+    // The complete BatchSaveResult should be: { success, message, data: { stats, items } }
+    const batchResult: BatchSaveResult = {
+      success: data.success ?? true,  // Default to true if not specified
+      message: data.message || 'Operación completada',
+      data: (data.data || {
+        stats: { created: 0, updated: 0, deleted: 0, errors: 0 },
+        items: { created: [], updated: [], deleted: [], errors: [] }
+      }) as any
+    };
+    
+    console.log('✅ Returning BatchSaveResult:', batchResult);
+    return batchResult;
+  } catch (error: any) {
+    console.log('❌ Batch error caught:', {
+      isAxiosError: axios.isAxiosError(error),
+      status: error.response?.status,
+      errorData: error.response?.data,
+      message: error.message,
+    });
 
-    return data.data;
-  } catch (error) {
-    handleApiError(error, 'Error al guardar horarios masivamente');
+    // If it's an axios error, try to extract the response data
+    if (axios.isAxiosError(error)) {
+      // Case 1: Backend returned wrapped response { success, message, data: {...} }
+      if (error.response?.data?.data && error.response.data.data.stats) {
+        console.log('✅ Case 1: Found error.response.data.data with proper structure');
+        return error.response.data.data;
+      }
+      
+      // Case 2: Backend returned flat structure { success, message, stats, items }
+      if (error.response?.data?.stats && error.response?.data?.items) {
+        console.log('✅ Case 2: Found flat structure in error.response.data');
+        return {
+          success: error.response.data.success ?? false,
+          message: error.response.data.message || 'Error en batch',
+          data: {
+            stats: error.response.data.stats,
+            items: error.response.data.items
+          }
+        };
+      }
+      
+      // Case 3: Backend might have nested differently
+      if (error.response?.data?.items?.errors && error.response?.data?.stats) {
+        console.log('✅ Case 3: Found items and stats separately');
+        return {
+          success: error.response.data.success ?? false,
+          message: error.response.data.message || 'Operación completada con errores',
+          data: {
+            stats: error.response.data.stats,
+            items: error.response.data.items
+          }
+        };
+      }
+      
+      // Case 4: Only have items, construct stats from it
+      if (error.response?.data?.items?.errors) {
+        console.log('✅ Case 4: Found only items.errors, constructing minimal response');
+        return {
+          success: false,
+          message: error.response.data.message || 'Operación completada con errores',
+          data: {
+            stats: error.response.data.stats || { 
+              created: 0, 
+              updated: 0, 
+              deleted: 0, 
+              errors: error.response.data.items.errors.length 
+            },
+            items: error.response.data.items
+          }
+        };
+      }
+      
+      // Case 5: Generic error - create minimal batch result
+      const message = error.response?.data?.message || error.message || 'Error al guardar horarios';
+      const details = error.response?.data?.details || [];
+      
+      console.log('⚠️ Case 5: Generic error, creating minimal result');
+      
+      return {
+        success: false,
+        message,
+        data: {
+          stats: { created: 0, updated: 0, deleted: 0, errors: 1 },
+          items: {
+            created: [],
+            updated: [],
+            deleted: [],
+            errors: [{ itemId: 0, error: message, details }]
+          }
+        }
+      };
+    }
+    
+    // If it's not an axios error, throw
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
@@ -393,6 +415,21 @@ export const batchSaveSchedules = async (
 
 /**
  * Get consolidated form data for schedule module
+ * 
+ * Expected response structure (B+ format):
+ * {
+ *   activeCycle: {...},
+ *   cycles: [...],
+ *   grades: [...],
+ *   sections: [{ id, name, capacity, gradeId, teacherId, courseAssignments: [...] }],
+ *   scheduleConfigs: [...],
+ *   existingSchedules: [...]
+ * }
+ * 
+ * Allows flexible cascading filters:
+ * - Ciclo → Grado → Sección
+ * - Grado → Sección (skip cycle)
+ * - Sección directo
  */
 export const getScheduleFormData = async (): Promise<ScheduleFormData> => {
   try {
@@ -400,32 +437,23 @@ export const getScheduleFormData = async (): Promise<ScheduleFormData> => {
       '/api/schedules/form-data'
     );
 
-    if (!data.success) {
-      throw new Error(data.message || 'Error al obtener datos del formulario');
-    }
-
     return data.data;
   } catch (error) {
-    handleApiError(error, 'Error al obtener datos del formulario');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
-/**
- * Get teacher availability/conflicts
- */
 export const getTeacherAvailability = async (): Promise<TeacherAvailability> => {
   try {
     const { data } = await apiClient.get<ApiResponse<TeacherAvailability>>(
       '/api/schedules/teacher-availability'
     );
 
-    if (!data.success) {
-      throw new Error(data.message || 'Error al obtener disponibilidad');
-    }
-
     return data.data;
   } catch (error) {
-    handleApiError(error, 'Error al obtener disponibilidad de maestros');
+    const { message, details } = extractErrorDetails(error);
+    throwWithDetails(message, details);
   }
 };
 
@@ -433,10 +461,6 @@ export const getTeacherAvailability = async (): Promise<TeacherAvailability> => 
 // ✨ SERVICE EXPORT
 // ============================================================================
 
-/**
- * Unified schedules service
- * Provides all schedule-related operations
- */
 export const schedulesService = {
   // Config operations
   getScheduleConfigs,

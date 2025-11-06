@@ -203,17 +203,29 @@ export interface ScheduleChange {
 
 /**
  * Result of batch save operation
+ * New structure: success flag + data object with stats and items
  */
 export interface BatchSaveResult {
-  created: Schedule[];
-  updated: Schedule[];
-  deleted: number[];
-  errors: {
-    itemId: string | number;
-    error: string;
-  }[];
   success: boolean;
-  message?: string;
+  message: string;
+  data: {
+    stats: {
+      created: number;
+      updated: number;
+      deleted: number;
+      errors: number;
+    };
+    items: {
+      created: Schedule[];
+      updated: Schedule[];
+      deleted: number[];
+      errors: Array<{
+        itemId: string | number;
+        error: string;
+        details?: string[];
+      }>;
+    };
+  };
 }
 
 // ============================================================================
@@ -285,6 +297,7 @@ export interface Section {
   capacity: number;
   gradeId: number;
   teacherId?: number | null;
+  courseAssignments?: CourseAssignment[];  // Nested for convenience
 }
 
 export interface Grade {
@@ -324,13 +337,19 @@ export interface SchoolCycle {
 
 /**
  * Consolidated data for schedule form
+ * Structure C: Clean mapping with gradeCycles junction table
+ * 
+ * Allows flexible filtering:
+ * - Ciclo → (buscar en gradeCycles) → Grados → Secciones
+ * - Ciclo + Grado → Secciones del grado
+ * - Sección directa
  */
 export interface ScheduleFormData {
-  activeCycle: SchoolCycle;
+  activeCycle?: SchoolCycle;
+  cycles: SchoolCycle[];
+  gradeCycles: Array<{ cycleId: number; gradeId: number }>;
+  grades: Grade[];
   sections: Section[];
-  courses: Course[];
-  teachers: Teacher[];
-  courseAssignments: CourseAssignment[];
   scheduleConfigs: ScheduleConfig[];
   existingSchedules: Schedule[];
 }
@@ -414,6 +433,9 @@ export class ScheduleTimeGenerator {
     let currentMins = startMin;
     const endTotalMins = endHour * 60 + endMin;
 
+    // First, add break slots directly from config
+    const breakSlotsToPush = [...config.breakSlots];
+
     while (currentHours * 60 + currentMins < endTotalMins) {
       const nextMins = currentMins + config.classDuration;
       const nextHours = currentHours + Math.floor(nextMins / 60);
@@ -424,18 +446,51 @@ export class ScheduleTimeGenerator {
       const startStr = `${String(currentHours).padStart(2, '0')}:${String(currentMins).padStart(2, '0')}`;
       const endStr = `${String(nextHours).padStart(2, '0')}:${String(nextMins % 60).padStart(2, '0')}`;
 
-      const isBreak = config.breakSlots.some((b) => b.start === startStr && b.end === endStr);
+      // Convert times to minutes for comparison
+      const slotStartMins = currentHours * 60 + currentMins;
+      const slotEndMins = nextTotalMins;
 
-      slots.push({
-        start: startStr,
-        end: endStr,
-        label: `${startStr} - ${endStr}`,
-        isBreak,
+      // Check if this slot overlaps with any break slot
+      const isInBreak = config.breakSlots.some((b) => {
+        const [bStartHour, bStartMin] = b.start.split(':').map(Number);
+        const [bEndHour, bEndMin] = b.end.split(':').map(Number);
+        const breakStartMins = bStartHour * 60 + bStartMin;
+        const breakEndMins = bEndHour * 60 + bEndMin;
+
+        // Check if slot overlaps with break (even partially)
+        return slotStartMins < breakEndMins && slotEndMins > breakStartMins;
       });
+
+      // Only add class slots that don't overlap with breaks
+      if (!isInBreak) {
+        slots.push({
+          start: startStr,
+          end: endStr,
+          label: `${startStr} - ${endStr}`,
+          isBreak: false,
+        });
+      }
 
       currentHours = nextHours;
       currentMins = nextMins % 60;
     }
+
+    // Now add break slots directly from config
+    breakSlotsToPush.forEach((breakSlot) => {
+      slots.push({
+        start: breakSlot.start,
+        end: breakSlot.end,
+        label: breakSlot.label || 'BREAK',
+        isBreak: true,
+      });
+    });
+
+    // Sort slots by start time for proper display
+    slots.sort((a, b) => {
+      const aTime = parseInt(a.start.replace(':', ''));
+      const bTime = parseInt(b.start.replace(':', ''));
+      return aTime - bTime;
+    });
 
     return slots;
   }
