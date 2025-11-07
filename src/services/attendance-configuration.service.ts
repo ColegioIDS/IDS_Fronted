@@ -50,7 +50,7 @@ export const attendanceConfigurationService = {
    */
   async getSectionsByGrade(gradeId: number): Promise<Section[]> {
     try {
-      const url = `${BASE_URL}/configuration/grades/${gradeId}/sections`;
+      const url = `${BASE_URL}/configuration/sections/${gradeId}`;
       const response = await api.get<{ success: boolean; data: Section[]; message?: string }>(url);
       
       if (!response.data?.success) {

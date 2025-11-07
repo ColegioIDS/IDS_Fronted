@@ -2,7 +2,7 @@
 // ✅ Hook aislado para cargar días festivos
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Holiday } from '@/types/attendance.types';
 import { attendanceConfigurationService } from '@/services/attendance-configuration.service';
 
@@ -79,6 +79,11 @@ export function useHolidaysData(): UseHolidaysDataReturn {
     },
     []
   );
+
+  // Auto-fetch en mount
+  useEffect(() => {
+    fetchHolidays();
+  }, [fetchHolidays]);
 
   return {
     holidays,

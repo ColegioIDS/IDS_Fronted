@@ -6,9 +6,10 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Save, X } from 'lucide-react';
+import { Loader2, Save, X, ChevronDownIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parse } from 'date-fns';
+import { es } from 'date-fns/locale';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import DatePicker from '@/components/form/date-picker';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { CycleSelector } from '@/components/shared/selectors/CycleSelector';
 import { CycleInfo } from '@/components/shared/info/CycleInfo';
 import { bimesterService } from '@/services/bimester.service';
@@ -80,12 +86,14 @@ export function BimesterForm({
   const [selectedCycleId, setSelectedCycleId] = useState<number | null>(
     editingBimester?.schoolCycleId || null
   );
-  const [startDate, setStartDate] = useState<string>(
-    editingBimester?.startDate ? format(new Date(editingBimester.startDate), 'dd/MM/yyyy') : ''
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    editingBimester?.startDate ? new Date(editingBimester.startDate) : undefined
   );
-  const [endDate, setEndDate] = useState<string>(
-    editingBimester?.endDate ? format(new Date(editingBimester.endDate), 'dd/MM/yyyy') : ''
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    editingBimester?.endDate ? new Date(editingBimester.endDate) : undefined
   );
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
 
   const isEditing = !!editingBimester;
 
@@ -124,35 +132,16 @@ export function BimesterForm({
     try {
       setIsLoading(true);
 
-      // Convertir fechas de dd/MM/yyyy a ISO
-      let startDateISO: string;
-      let endDateISO: string;
-
-      try {
-        // Si las fechas vienen en formato dd/MM/yyyy, parsear
-        if (startDate.includes('/')) {
-          const parsedStart = parse(startDate, 'dd/MM/yyyy', new Date());
-          startDateISO = parsedStart.toISOString();
-        } else {
-          startDateISO = new Date(data.startDate).toISOString();
-        }
-
-        if (endDate.includes('/')) {
-          const parsedEnd = parse(endDate, 'dd/MM/yyyy', new Date());
-          endDateISO = parsedEnd.toISOString();
-        } else {
-          endDateISO = new Date(data.endDate).toISOString();
-        }
-      } catch (dateError) {
-        toast.error('Error al procesar las fechas. Usa el formato dd/mm/aaaa');
+      if (!startDate || !endDate) {
+        toast.error('Debes seleccionar ambas fechas');
         return;
       }
 
       const payload = {
         number: data.number,
         name: data.name,
-        startDate: startDateISO,
-        endDate: endDateISO,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
         isActive: data.isActive,
         weeksCount: data.weeksCount,
       };
@@ -168,8 +157,8 @@ export function BimesterForm({
       }
 
       reset();
-      setStartDate('');
-      setEndDate('');
+      setStartDate(undefined);
+      setEndDate(undefined);
       onOpenChange(false);
       onSuccess?.();
     } catch (err: any) {
@@ -248,42 +237,76 @@ export function BimesterForm({
               {/* Fechas */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <DatePicker
-                    id="startDate"
-                    label="Fecha Inicio"
-                    required
-                    defaultDate={editingBimester?.startDate ? new Date(editingBimester.startDate) : undefined}
-                    placeholder="dd/mm/aaaa"
-                    onChange={(selectedDates) => {
-                      if (selectedDates && selectedDates.length > 0) {
-                        const date = selectedDates[0];
-                        const formatted = format(date, 'dd/MM/yyyy');
-                        setStartDate(formatted);
-                        setValue('startDate', date.toISOString());
-                      }
-                    }}
-                  />
+                  <Label htmlFor="startDate">
+                    Fecha Inicio <span className="text-red-500">*</span>
+                  </Label>
+                  <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        id="startDate"
+                        className="w-full justify-between font-normal bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+                      >
+                        {startDate ? format(startDate, 'dd/MM/yyyy') : 'Seleccionar fecha'}
+                        <ChevronDownIcon className="h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={(date) => {
+                          setStartDate(date);
+                          setValue('startDate', date ? date.toISOString() : '');
+                          setStartDateOpen(false);
+                        }}
+                        disabled={(date) =>
+                          selectedCycleId !== null &&
+                          date < new Date('1900-01-01')
+                        }
+                        initialFocus
+                        locale={es}
+                      />
+                    </PopoverContent>
+                  </Popover>
                   {errors.startDate && (
                     <p className="text-sm text-red-600 dark:text-red-400">{errors.startDate.message}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <DatePicker
-                    id="endDate"
-                    label="Fecha Fin"
-                    required
-                    defaultDate={editingBimester?.endDate ? new Date(editingBimester.endDate) : undefined}
-                    placeholder="dd/mm/aaaa"
-                    onChange={(selectedDates) => {
-                      if (selectedDates && selectedDates.length > 0) {
-                        const date = selectedDates[0];
-                        const formatted = format(date, 'dd/MM/yyyy');
-                        setEndDate(formatted);
-                        setValue('endDate', date.toISOString());
-                      }
-                    }}
-                  />
+                  <Label htmlFor="endDate">
+                    Fecha Fin <span className="text-red-500">*</span>
+                  </Label>
+                  <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        id="endDate"
+                        className="w-full justify-between font-normal bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+                      >
+                        {endDate ? format(endDate, 'dd/MM/yyyy') : 'Seleccionar fecha'}
+                        <ChevronDownIcon className="h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={(date) => {
+                          setEndDate(date);
+                          setValue('endDate', date ? date.toISOString() : '');
+                          setEndDateOpen(false);
+                        }}
+                        disabled={(date) =>
+                          selectedCycleId !== null &&
+                          date < new Date('1900-01-01')
+                        }
+                        initialFocus
+                        locale={es}
+                      />
+                    </PopoverContent>
+                  </Popover>
                   {errors.endDate && (
                     <p className="text-sm text-red-600 dark:text-red-400">{errors.endDate.message}</p>
                   )}

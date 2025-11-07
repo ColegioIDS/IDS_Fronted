@@ -31,12 +31,12 @@ export function useGradesAndSections(): UseGradesAndSectionsReturn {
     setLoading(true);
     setError(null);
     try {
-      // Intentar obtener del caché primero
-      const cached = attendanceConfigurationService.getCachedGrades();
-      if (cached) {
-        setGrades(cached);
-        return;
-      }
+      // ⚠️ DEVELOPMENT: Deshabilitamos caché para ver las llamadas al API
+      // const cached = attendanceConfigurationService.getCachedGrades();
+      // if (cached) {
+      //   setGrades(cached);
+      //   return;
+      // }
 
       // Si no hay caché, obtener del API
       const data = await attendanceConfigurationService.getGrades();

@@ -47,9 +47,11 @@ export const useAttendanceData = () => {
   const fetchAttendances = useCallback(
     async (query: AttendanceQuery | AttendanceQueryWithScope = {}) => {
       setState((prev) => ({ ...prev, loading: true, error: null }));
+      console.log('📡 fetchAttendances llamado con query:', query);
 
       try {
         const result: PaginatedAttendance = await attendanceService.getAttendances(query);
+        console.log('✅ Respuesta de asistencias:', result);
 
         setState((prev) => ({
           ...prev,
@@ -62,6 +64,7 @@ export const useAttendanceData = () => {
         return result;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+        console.error('❌ Error fetchAttendances:', errorMessage);
         setState((prev) => ({
           ...prev,
           error: errorMessage,

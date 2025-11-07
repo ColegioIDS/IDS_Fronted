@@ -31,6 +31,16 @@ export default function AttendancePageWrapper() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
+  // DEBUG: Log del estado principal
+  console.log('🎯 Estado de attendance-grid:', {
+    selectedGradeId,
+    selectedSectionId,
+    selectedDate: selectedDate.toISOString().split('T')[0],
+    attendancesCount: attendances.length,
+    loading,
+    error,
+  });
+
   // ========== VERIFICACIÓN DE FESTIVOS ==========
   const currentHoliday = useMemo(() => {
     return getHolidayInfo(selectedDate);
@@ -42,10 +52,19 @@ export default function AttendancePageWrapper() {
 
   // ========== CARGAR ASISTENCIAS CUANDO CAMBIA SECCIÓN/FECHA ==========
   useEffect(() => {
-    if (!selectedSectionId) return;
+    if (!selectedSectionId) {
+      console.log('⚠️ No hay sección seleccionada');
+      return;
+    }
 
     // Construir query con fecha seleccionada
     const isoDate = selectedDate.toISOString().split('T')[0];
+    console.log('🔄 Cargando asistencias:', {
+      sectionId: selectedSectionId,
+      dateFrom: isoDate,
+      dateTo: isoDate,
+    });
+    
     fetchAttendances({
       sectionId: selectedSectionId,
       dateFrom: isoDate,
@@ -57,15 +76,18 @@ export default function AttendancePageWrapper() {
 
   // ========== HANDLERS ==========
   const handleGradeChange = (gradeId: number | null) => {
+    console.log('📍 handleGradeChange:', gradeId);
     setSelectedGradeId(gradeId);
     setSelectedSectionId(null);
   };
 
   const handleSectionChange = (sectionId: number | null) => {
+    console.log('📍 handleSectionChange:', sectionId);
     setSelectedSectionId(sectionId);
   };
 
   const handleDateChange = (date: Date) => {
+    console.log('📍 handleDateChange:', date);
     setSelectedDate(date);
   };
 
