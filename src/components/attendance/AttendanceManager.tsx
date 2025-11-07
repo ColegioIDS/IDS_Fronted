@@ -27,21 +27,264 @@ export default function AttendanceManager() {
   );
 
   // ============================================
+  // Datos estáticos para demostración
+  // ============================================
+
+  const staticData = {
+    grades: [
+      {
+        id: 1,
+        cycleId: 1,
+        gradeId: 1,
+        grade: {
+          id: 1,
+          name: "Primer Grado",
+          level: "Primaria",
+          sections: [
+            {
+              id: 1,
+              name: "A",
+              capacity: 30,
+              gradeId: 1,
+              teacherId: 1,
+              enrollments: [
+                {
+                  id: 1,
+                  student: {
+                    id: 1,
+                    codeSIRE: "001",
+                    givenNames: "Juan",
+                    lastNames: "García López",
+                    gender: "M",
+                    birthDate: "2015-05-10",
+                  },
+                },
+                {
+                  id: 2,
+                  student: {
+                    id: 2,
+                    codeSIRE: "002",
+                    givenNames: "María",
+                    lastNames: "Rodríguez Pérez",
+                    gender: "F",
+                    birthDate: "2015-08-20",
+                  },
+                },
+                {
+                  id: 3,
+                  student: {
+                    id: 3,
+                    codeSIRE: "003",
+                    givenNames: "Carlos",
+                    lastNames: "Martinez González",
+                    gender: "M",
+                    birthDate: "2015-03-15",
+                  },
+                },
+              ],
+              courseAssignments: [
+                {
+                  id: 1,
+                  course: {
+                    id: 1,
+                    code: "ESP-101",
+                    name: "Español",
+                    color: "#FF6B6B",
+                    area: "Lenguaje",
+                    isActive: true,
+                  },
+                },
+                {
+                  id: 2,
+                  course: {
+                    id: 2,
+                    code: "MAT-101",
+                    name: "Matemática",
+                    color: "#4ECDC4",
+                    area: "Matemática",
+                    isActive: true,
+                  },
+                },
+                {
+                  id: 3,
+                  course: {
+                    id: 3,
+                    code: "CC-101",
+                    name: "Ciencias",
+                    color: "#95E1D3",
+                    area: "Ciencias",
+                    isActive: true,
+                  },
+                },
+              ],
+            },
+            {
+              id: 2,
+              name: "B",
+              capacity: 30,
+              gradeId: 1,
+              teacherId: 2,
+              enrollments: [
+                {
+                  id: 4,
+                  student: {
+                    id: 4,
+                    codeSIRE: "004",
+                    givenNames: "Ana",
+                    lastNames: "López Fernández",
+                    gender: "F",
+                    birthDate: "2015-06-25",
+                  },
+                },
+                {
+                  id: 5,
+                  student: {
+                    id: 5,
+                    codeSIRE: "005",
+                    givenNames: "Luis",
+                    lastNames: "Hernández Sánchez",
+                    gender: "M",
+                    birthDate: "2015-09-12",
+                  },
+                },
+              ],
+              courseAssignments: [
+                {
+                  id: 4,
+                  course: {
+                    id: 1,
+                    code: "ESP-101",
+                    name: "Español",
+                    color: "#FF6B6B",
+                    area: "Lenguaje",
+                    isActive: true,
+                  },
+                },
+                {
+                  id: 5,
+                  course: {
+                    id: 2,
+                    code: "MAT-101",
+                    name: "Matemática",
+                    color: "#4ECDC4",
+                    area: "Matemática",
+                    isActive: true,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: 2,
+        cycleId: 1,
+        gradeId: 2,
+        grade: {
+          id: 2,
+          name: "Segundo Grado",
+          level: "Primaria",
+          sections: [
+            {
+              id: 3,
+              name: "A",
+              capacity: 30,
+              gradeId: 2,
+              teacherId: 3,
+              enrollments: [
+                {
+                  id: 6,
+                  student: {
+                    id: 6,
+                    codeSIRE: "006",
+                    givenNames: "Pedro",
+                    lastNames: "Jiménez Ramírez",
+                    gender: "M",
+                    birthDate: "2014-04-18",
+                  },
+                },
+                {
+                  id: 7,
+                  student: {
+                    id: 7,
+                    codeSIRE: "007",
+                    givenNames: "Sofia",
+                    lastNames: "Torres Navarro",
+                    gender: "F",
+                    birthDate: "2014-07-22",
+                  },
+                },
+              ],
+              courseAssignments: [
+                {
+                  id: 6,
+                  course: {
+                    id: 1,
+                    code: "ESP-101",
+                    name: "Español",
+                    color: "#FF6B6B",
+                    area: "Lenguaje",
+                    isActive: true,
+                  },
+                },
+                {
+                  id: 7,
+                  course: {
+                    id: 2,
+                    code: "MAT-101",
+                    name: "Matemática",
+                    color: "#4ECDC4",
+                    area: "Matemática",
+                    isActive: true,
+                  },
+                },
+                {
+                  id: 8,
+                  course: {
+                    id: 4,
+                    code: "EF-101",
+                    name: "Educación Física",
+                    color: "#FFE66D",
+                    area: "Educación",
+                    isActive: true,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  };
+
+  // ============================================
   // Detectar scope del usuario
   // ============================================
 
   const attendancePermission = user?.role?.permissions?.find(
     (p) => p.permission?.module === "attendance"
   );
-  const userScope = attendancePermission?.scope || null;
+  const userScope = attendancePermission?.scope || "all"; // Por defecto admin para testing
   const isAdmin = userScope === "all";
 
   // ============================================
   // Queries según scope
   // ============================================
 
-  const fullCycleQuery = useGlobal.getFullCycleStructure(1, isAdmin);
-  const myCoursesQuery = useGlobal.getMyCoursesWithStudents(1, !isAdmin);
+  // Simulamos data de queries con datos estáticos
+  const fullCycleQuery = {
+    data: isAdmin ? staticData : null,
+    isLoading: false,
+  };
+
+  const myCoursesQuery = {
+    data: !isAdmin ? staticData.grades[0].grade.sections[0].courseAssignments.map((ca: any) => ({
+      course: ca.course,
+      section: staticData.grades[0].grade.sections[0],
+      students: staticData.grades[0].grade.sections[0].enrollments.map((e: any) => e.student),
+    })) : null,
+    isLoading: false,
+  };
 
   // ============================================
   // Hook de lógica de asistencia
