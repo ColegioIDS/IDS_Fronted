@@ -7,7 +7,7 @@ import Breadcrumb from '@/components/common/Breadcrumb';
 import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
 
 const AttendanceManagerWrapper = dynamic(
-  () => import('@/components/attendance/AttendanceManagerWrapper'),
+  () => import('@/components/features/attendance/attendance-grid').then(mod => mod.default),
   {
     loading: () => <ProfileSkeleton type="meta" />,
     ssr: false,

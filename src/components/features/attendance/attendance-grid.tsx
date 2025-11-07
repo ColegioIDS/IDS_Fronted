@@ -9,6 +9,7 @@ import {
   useAttendanceData,
   useAttendanceFilters,
   useAttendanceActions,
+  useHolidaysData,
 } from '@/hooks/attendance';
 import AttendanceHeader from './components/attendance-header/AttendanceHeader';
 import AttendanceTable from './components/attendance-grid/AttendanceTable';
@@ -17,12 +18,12 @@ import {
   NoGradeSelectedState,
   NoSectionSelectedState,
 } from './components/attendance-states/EmptyState';
-import { isHolidayDate } from './data/mockData';
 
 export default function AttendancePageWrapper() {
   // ========== NUEVOS HOOKS FASE 2 ==========
   const { attendances, stats, loading, error, fetchAttendances } = useAttendanceData();
   const { filters, setFilter } = useAttendanceFilters();
+  const { getHolidayInfo, isHoliday: isHolidayDate } = useHolidaysData();
 
   // ========== ESTADOS LOCALES ==========
   const [selectedGradeId, setSelectedGradeId] = useState<number | null>(null);
@@ -32,8 +33,8 @@ export default function AttendancePageWrapper() {
 
   // ========== VERIFICACIÓN DE FESTIVOS ==========
   const currentHoliday = useMemo(() => {
-    return isHolidayDate(selectedDate);
-  }, [selectedDate]);
+    return getHolidayInfo(selectedDate);
+  }, [selectedDate, getHolidayInfo]);
 
   const isHoliday = useMemo(() => {
     return !!currentHoliday;
@@ -156,7 +157,12 @@ export default function AttendancePageWrapper() {
                   sectionId={selectedSectionId}
                   selectedDate={selectedDate}
                   isHoliday={isHoliday}
-                  holiday={currentHoliday}
+                  holiday={currentHoliday ? {
+                    id: currentHoliday.id,
+                    date: currentHoliday.date,
+                    description: currentHoliday.name,
+                    isRecovered: currentHoliday.isRecovered,
+                  } : undefined}
                   onDateChange={handleDateChange}
                   data={attendances}
                   loading={loading}
@@ -167,7 +173,12 @@ export default function AttendancePageWrapper() {
                   sectionId={selectedSectionId}
                   selectedDate={selectedDate}
                   isHoliday={isHoliday}
-                  holiday={currentHoliday}
+                  holiday={currentHoliday ? {
+                    id: currentHoliday.id,
+                    date: currentHoliday.date,
+                    description: currentHoliday.name,
+                    isRecovered: currentHoliday.isRecovered,
+                  } : undefined}
                   onDateChange={handleDateChange}
                   data={attendances}
                   loading={loading}

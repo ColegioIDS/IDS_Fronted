@@ -313,3 +313,95 @@ export interface AttendanceError {
   details?: any;
   statusCode?: number;
 }
+
+// ============================================
+// CONFIGURATION TYPES - Configuración del Sistema
+// ============================================
+
+// ✅ Grado Escolar
+export interface Grade {
+  id: number;
+  name: string;
+  level: string; // e.g., 'PRIMARIA', 'SECUNDARIA'
+  abbreviation?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ✅ Sección
+export interface Section {
+  id: number;
+  name: string;
+  gradeId: number;
+  grade?: Grade;
+  capacity?: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ✅ Día Festivo
+export interface Holiday {
+  id: number;
+  date: string; // ISO date format
+  name: string;
+  description?: string;
+  isRecovered: boolean; // Si será día de recuperación
+  recoveryDate?: string; // Fecha en que se recupera
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================
+// CONFIGURATION QUERY & RESPONSE TYPES
+// ============================================
+
+// ✅ Query para cargar configuración
+export interface ConfigurationQuery {
+  schoolCycleId?: number;
+  bimesterId?: number;
+  includeInactive?: boolean;
+}
+
+// ✅ Respuesta con grados y secciones
+export interface GradesAndSectionsResponse {
+  success: boolean;
+  data: {
+    grades: Grade[];
+    sections: Section[];
+  };
+  message?: string;
+}
+
+// ✅ Respuesta con días festivos
+export interface HolidaysResponse {
+  success: boolean;
+  data: Holiday[];
+  message?: string;
+}
+
+// ✅ Respuesta con configuración completa
+export interface AttendanceConfigurationResponse {
+  success: boolean;
+  data: {
+    grades: Grade[];
+    sections: Section[];
+    holidays: Holiday[];
+    schoolCycle?: {
+      id: number;
+      name: string;
+      startDate: string;
+      endDate: string;
+    };
+    bimester?: {
+      id: number;
+      name: string;
+      startDate: string;
+      endDate: string;
+    };
+  };
+  message?: string;
+}
+

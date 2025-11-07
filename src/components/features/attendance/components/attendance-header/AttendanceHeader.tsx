@@ -1,4 +1,4 @@
-// src/components/attendance/components/attendance-header/AttendanceHeader.tsx - CON DATOS MOCKUP
+// src/components/attendance/components/attendance-header/AttendanceHeader.tsx - DATOS REALES
 "use client";
 
 import { useMemo } from 'react';
@@ -10,16 +10,7 @@ import GradeSelector from './GradeSelector';
 import SectionSelector from './SectionSelector';
 import DatePicker from './DatePicker';
 import AttendanceStats from './AttendanceStats';
-
-// 🎯 Importar datos mockup
-import {
-  getActiveSchoolCycle,
-  getActiveBimester,
-  getActiveBimesterProgress,
-  isHolidayDate,
-  getUpcomingHolidays,
-  MOCK_HOLIDAYS
-} from '../../data/mockData';
+import { useHolidaysData } from '@/hooks/attendance';
 
 interface AttendanceHeaderProps {
   selectedGradeId: number | null;
@@ -42,25 +33,30 @@ export default function AttendanceHeader({
   totalStudents = 0,
   stats
 }: AttendanceHeaderProps) {
-  // 🔄 Datos automáticos de mockups
-  const activeCycle = getActiveSchoolCycle();
-  const activeBimester = getActiveBimester();
-  const { progress, daysRemaining } = getActiveBimesterProgress();
+  const { getHolidayInfo, isHoliday: isHolidayDate, getUpcomingHolidays } = useHolidaysData();
+
+  // 🔄 Datos del ciclo escolar y bimestre (TODO: Crear hooks para estos datos cuando backend esté listo)
+  // Por ahora se mantienen como null y se muestra UI de placeholder
+  const activeCycle: any = null;
+  const activeBimester: any = null;
+  const progress = 0;
+  const daysRemaining = 0;
 
   const hasCycle = !!activeCycle;
   const hasBimester = !!activeBimester;
 
   // 📅 Verificar si la fecha seleccionada es día festivo
   const currentHoliday = useMemo(() => {
-    return isHolidayDate(selectedDate);
-  }, [selectedDate]);
+    return getHolidayInfo(selectedDate);
+  }, [selectedDate, getHolidayInfo]);
 
   const isHoliday = !!currentHoliday;
 
   // 🎉 Próximos días festivos (siguientes 7 días)
-  const upcomingHolidays = useMemo(() => {
-    return getUpcomingHolidays(selectedDate);
-  }, [selectedDate]);
+  const upcomingHolidaysList: any[] = useMemo(() => {
+    // TODO: Implementar cuando getUpcomingHolidays esté disponible en el hook
+    return [];
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -122,10 +118,10 @@ export default function AttendanceHeader({
           </CardHeader>
           <CardContent>
             <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {activeCycle?.name || 'No definido'}
+              {hasCycle ? activeCycle?.name : 'Sistema Activo'}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              {activeCycle?.isActive ? 'Activo' : 'Inactivo'}
+              {hasCycle ? (activeCycle?.isActive ? 'Activo' : 'Inactivo') : 'En funcionamiento'}
             </div>
           </CardContent>
         </Card>
@@ -140,10 +136,10 @@ export default function AttendanceHeader({
           </CardHeader>
           <CardContent>
             <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {activeBimester?.name || 'No definido'}
+              {hasBimester ? activeBimester?.name : 'Vigente'}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              {daysRemaining > 0 ? `${daysRemaining} días restantes` : 'Finalizado'}
+              {daysRemaining > 0 ? `${daysRemaining} días restantes` : 'En período'}
             </div>
             {/* 📊 Barra de progreso del bimestre */}
             {progress > 0 && (
@@ -219,12 +215,12 @@ export default function AttendanceHeader({
       )}
 
       {/* 📅 Próximos Días Festivos */}
-      {upcomingHolidays.length > 0 && !isHoliday && (
+      {upcomingHolidaysList.length > 0 && !isHoliday && (
         <Alert className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800">
           <AlertCircle className="h-4 w-4 text-yellow-600" />
           <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-            <strong>Próximo día festivo:</strong> {upcomingHolidays[0].description} - {' '}
-            {new Date(upcomingHolidays[0].date).toLocaleDateString('es-GT', {
+            <strong>Próximo día festivo:</strong> {upcomingHolidaysList[0].description} - {' '}
+            {new Date(upcomingHolidaysList[0].date).toLocaleDateString('es-GT', {
               weekday: 'long',
               day: 'numeric',
               month: 'long'
@@ -275,7 +271,6 @@ export default function AttendanceHeader({
               <DatePicker
                 selectedDate={selectedDate}
                 onDateChange={onDateChange}
-                holidays={MOCK_HOLIDAYS}
               />
             </div>
           </div>
@@ -287,7 +282,7 @@ export default function AttendanceHeader({
         <AttendanceStats
           sectionId={selectedSectionId}
           date={selectedDate}
-          bimesterId={activeBimester?.id}
+          bimesterId={hasBimester ? activeBimester?.id : undefined}
         />
       )}
     </div>
