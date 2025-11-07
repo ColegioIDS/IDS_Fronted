@@ -11,6 +11,7 @@ import SectionSelector from './SectionSelector';
 import DatePicker from './DatePicker';
 import AttendanceStats from './AttendanceStats';
 import { useHolidaysData } from '@/hooks/attendance';
+import { useActiveCycle } from '@/hooks/attendance/useActiveCycle';
 
 interface AttendanceHeaderProps {
   selectedGradeId: number | null;
@@ -34,16 +35,9 @@ export default function AttendanceHeader({
   stats
 }: AttendanceHeaderProps) {
   const { getHolidayInfo, isHoliday: isHolidayDate, getUpcomingHolidays } = useHolidaysData();
-
-  // 🔄 Datos del ciclo escolar y bimestre (TODO: Crear hooks para estos datos cuando backend esté listo)
-  // Por ahora se mantienen como null y se muestra UI de placeholder
-  const activeCycle: any = null;
-  const activeBimester: any = null;
-  const progress = 0;
-  const daysRemaining = 0;
-
-  const hasCycle = !!activeCycle;
-  const hasBimester = !!activeBimester;
+  
+  // 🔄 Datos reales del ciclo escolar y bimestre activos
+  const { cycle: activeCycle, activeBimester, progress, daysRemaining, hasCycle, hasBimester, error, loading } = useActiveCycle();
 
   // 📅 Verificar si la fecha seleccionada es día festivo
   const currentHoliday = useMemo(() => {
