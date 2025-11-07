@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, X, Filter, AlertCircle } from 'lucide-react';
+import { Search, X, Filter, AlertCircle, Calendar } from 'lucide-react';
 import { EnrollmentsQuery } from '@/types/enrollments.types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 interface EnrollmentFiltersProps {
   onFiltersChange: (filters: EnrollmentsQuery) => void;
   onCycleChange?: (cycleId: number | null) => void;
+  onGradeChange?: (gradeId: number | null) => void;
   loading?: boolean;
   cycles?: Array<{ id: number; name: string }>;
   grades?: Array<{ id: number; name: string }>;
@@ -27,6 +28,7 @@ interface EnrollmentFiltersProps {
 export const EnrollmentFilters = ({ 
   onFiltersChange, 
   onCycleChange,
+  onGradeChange,
   loading = false,
   cycles = [
     { id: 1, name: 'Ciclo escolar 2025' },
@@ -47,7 +49,7 @@ export const EnrollmentFilters = ({
   const [cycleId, setCycleId] = useState<string>('');
   const [gradeId, setGradeId] = useState<string>('');
   const [sectionId, setSectionId] = useState<string>('');
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const activeFilters = [search, status, gradeId, sectionId].filter(Boolean).length;
   const hasCycleSelected = !!cycleId;
@@ -114,6 +116,7 @@ export const EnrollmentFilters = ({
           variant="ghost"
           size="sm"
           onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
           className="text-xs"
         >
           {isExpanded ? 'Ocultar' : 'Mostrar'}
@@ -122,16 +125,17 @@ export const EnrollmentFilters = ({
 
       {/* Filtros expandibles */}
       {isExpanded && (
-        <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-800">
+        <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
           {/* Ciclo - OBLIGATORIO */}
           <div>
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
-              📅 Ciclo Escolar <span className="text-red-500">*</span>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+              Ciclo Escolar <span className="text-red-500">*</span>
             </label>
             <Select value={cycleId} onValueChange={setCycleId} disabled={loading}>
               <SelectTrigger className={cn(
-                'text-sm',
-                !cycleId && 'border-red-300 dark:border-red-700'
+                'text-sm focus-visible:ring-1',
+                !cycleId && 'border-red-300 dark:border-red-700 focus-visible:ring-red-500'
               )}>
                 <SelectValue placeholder="Seleccionar ciclo..." />
               </SelectTrigger>
@@ -189,7 +193,16 @@ export const EnrollmentFilters = ({
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
                   Grado
                 </label>
-                <Select value={gradeId} onValueChange={setGradeId} disabled={loading}>
+                <Select 
+                  value={gradeId} 
+                  onValueChange={(value) => {
+                    setGradeId(value);
+                    if (onGradeChange) {
+                      onGradeChange(value === 'ALL' ? null : parseInt(value));
+                    }
+                  }} 
+                  disabled={loading}
+                >
                   <SelectTrigger className="text-sm">
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
@@ -232,9 +245,10 @@ export const EnrollmentFilters = ({
               <Button
                 onClick={handleApplyFilters}
                 disabled={loading}
-                className="flex-1 text-sm"
+                className="flex-1 text-sm gap-2"
                 size="sm"
               >
+                <Filter className="h-3.5 w-3.5" />
                 Aplicar Filtros
               </Button>
               {activeFilters > 0 && (

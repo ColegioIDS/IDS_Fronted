@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useEnrollments } from '@/hooks/data/useEnrollments';
 import { useCycles } from '@/hooks/data/useCycles';
+import { useEnrollmentGrades } from '@/hooks/data/useEnrollmentGrades';
+import { useEnrollmentSections } from '@/hooks/data/useEnrollmentSections';
 import { EnrollmentTable } from './EnrollmentTable';
 import { EnrollmentFilters } from './EnrollmentFilters';
 import { EnrollmentStatistics } from './EnrollmentStatistics';
@@ -21,6 +23,7 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  BookOpen,
 } from 'lucide-react';
 import { enrollmentsService } from '@/services/enrollments.service';
 import { EnrollmentResponse } from '@/types/enrollments.types';
@@ -31,6 +34,8 @@ export const EnrollmentsPageContent = () => {
   const { enrollment, fetchDetail } = useEnrollmentDetail();
   const { statistics, fetchStatistics } = useEnrollmentStatistics();
   const { cycles, loading: cyclesLoading } = useCycles();
+  const { grades, loading: gradesLoading, refetch: refetchGrades } = useEnrollmentGrades();
+  const { sections, loading: sectionsLoading, refetch: refetchSections } = useEnrollmentSections();
 
   // Estados de diálogos
   const [detailOpen, setDetailOpen] = useState(false);
@@ -41,27 +46,24 @@ export const EnrollmentsPageContent = () => {
 
   // Estado de ciclo seleccionado
   const [selectedCycleId, setSelectedCycleId] = useState<number | null>(null);
+  const [selectedGradeId, setSelectedGradeId] = useState<number | null>(null);
 
-  // Datos estáticos (en producción vendrían del backend)
-  const grades = [
-    { id: 1, name: 'Preescolar' },
-    { id: 2, name: 'Primer Grado' },
-    { id: 3, name: 'Segundo Grado' },
-    { id: 4, name: 'Tercero Primaria' },
-  ];
-
-  const sections = [
-    { id: 1, name: 'A' },
-    { id: 2, name: 'B' },
-    { id: 3, name: 'C' },
-  ];
-
-  // Cargar estadísticas cuando hay ciclo seleccionado
+  // Cargar estadísticas y grados cuando hay ciclo seleccionado
   useEffect(() => {
     if (selectedCycleId) {
       fetchStatistics(selectedCycleId);
+      refetchGrades(selectedCycleId);
+      // Resetear grado y secciones cuando cambia el ciclo
+      setSelectedGradeId(null);
     }
-  }, [selectedCycleId, fetchStatistics]);
+  }, [selectedCycleId, fetchStatistics, refetchGrades]);
+
+  // Cargar secciones cuando hay ciclo y grado seleccionado
+  useEffect(() => {
+    if (selectedCycleId && selectedGradeId) {
+      refetchSections(selectedCycleId, selectedGradeId);
+    }
+  }, [selectedCycleId, selectedGradeId, refetchSections]);
 
   // Handlers de acciones
   const handleView = async (enrollment: EnrollmentResponse) => {
@@ -142,7 +144,7 @@ export const EnrollmentsPageContent = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -156,16 +158,13 @@ export const EnrollmentsPageContent = () => {
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
-          <Button disabled={loading || actionLoading}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Matrícula
-          </Button>
+        
         </div>
       </div>
 
       {/* Estadísticas */}
       {selectedCycleId && (
-        <Card>
+        <Card className="border-slate-200 dark:border-slate-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
@@ -180,11 +179,12 @@ export const EnrollmentsPageContent = () => {
       )}
 
       {/* Filtros */}
-      <Card>
-        <CardContent className="pt-6">
+      <Card className="sticky top-0 z-30 border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900/90 supports-[backdrop-filter]:backdrop-blur">
+        <CardContent className="pt-4">
           <EnrollmentFilters 
             onFiltersChange={fetchEnrollments}
             onCycleChange={setSelectedCycleId}
+            onGradeChange={setSelectedGradeId}
             loading={loading}
             cycles={cycles}
             grades={grades}
@@ -195,10 +195,10 @@ export const EnrollmentsPageContent = () => {
 
       {/* Tabla */}
       {!selectedCycleId ? (
-        <Card>
+        <Card className="border-slate-200 dark:border-slate-800">
           <CardContent className="pt-12 pb-12">
             <div className="flex flex-col items-center justify-center text-center gap-3">
-              <div className="text-5xl opacity-10">📚</div>
+              <BookOpen className="h-16 w-16 text-slate-300 dark:text-slate-700" />
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 Selecciona un ciclo escolar
               </h3>
@@ -209,7 +209,7 @@ export const EnrollmentsPageContent = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="border-slate-200 dark:border-slate-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />

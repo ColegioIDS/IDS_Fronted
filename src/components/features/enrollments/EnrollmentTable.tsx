@@ -23,6 +23,8 @@ import {
   XCircle,
   Award,
   Repeat2,
+  Users,
+  Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -32,6 +34,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface EnrollmentTableProps {
   enrollments: EnrollmentResponse[];
@@ -92,8 +95,8 @@ export const EnrollmentTable = ({
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-slate-300 dark:border-slate-600 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin" />
-          <p className="text-sm text-slate-600 dark:text-slate-400">Cargando matrículas...</p>
+          <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin" />
+          <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Cargando matrículas...</p>
         </div>
       </div>
     );
@@ -103,8 +106,8 @@ export const EnrollmentTable = ({
     return (
       <div className="flex items-center justify-center h-64 border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-900/50">
         <div className="text-center">
-          <div className="text-4xl mb-2 opacity-20">📋</div>
-          <p className="text-slate-600 dark:text-slate-400">No hay matrículas disponibles</p>
+          <Users className="h-12 w-12 mx-auto mb-3 text-slate-300 dark:text-slate-700" />
+          <p className="text-slate-600 dark:text-slate-400 font-medium">No hay matrículas disponibles</p>
         </div>
       </div>
     );
@@ -190,11 +193,18 @@ export const EnrollmentTable = ({
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="Acciones">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="text-xs">Acciones</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <DropdownMenuContent align="end" className="w-48">
                       {onView && (
                         <DropdownMenuItem

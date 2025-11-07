@@ -219,9 +219,9 @@ const navItems: NavItem[] = [
   {
     icon: <ClipboardList className="w-5 h-5" />,
     name: "Matrículas",
+    requiredPermission: { module: 'enrollments', action: 'read' },
     subItems: [
-      { name: "Lista de Matrículas", path: "/enrollments/list", pro: false },
-      { name: "Crear Matrícula", path: "/enrollments/create", pro: false },
+      { name: "Matrículas", path: "/enrollments", requiredPermission: { module: 'enrollments', action: 'read' } },
     ]
   },
   {

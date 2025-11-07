@@ -24,6 +24,8 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  History,
+  Info,
 } from 'lucide-react';
 
 interface EnrollmentDetailDialogProps {
@@ -75,6 +77,7 @@ export const EnrollmentDetailDialog = ({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             Detalle de Matrícula
           </DialogTitle>
           <DialogDescription>
@@ -160,7 +163,10 @@ export const EnrollmentDetailDialog = ({
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">Historial de Cambios</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <History className="h-5 w-5" />
+                      Historial de Cambios
+                    </CardTitle>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -183,7 +189,7 @@ export const EnrollmentDetailDialog = ({
                           className="pb-3 border-b border-slate-200 dark:border-slate-800 last:border-0 last:pb-0"
                         >
                           <div className="flex items-start gap-3">
-                            <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+                            <div className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 mt-2 flex-shrink-0" />
                             <div className="flex-1">
                               <p className="font-medium text-slate-900 dark:text-slate-100">
                                 {item.action === 'status_change' && 'Cambio de Estado'}

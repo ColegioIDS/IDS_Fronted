@@ -82,18 +82,19 @@ export interface EnrollmentHistoryItem {
 export interface EnrollmentStatistics {
   total: number;
   byStatus: Record<string, number>;
+  byCycle: Record<string, number>;
   byGrade: Array<{
     gradeId: number;
     gradeName: string;
     count: number;
   }>;
-  sectionOccupancy: Array<{
+  bySection?: Array<{
     sectionId: number;
     sectionName: string;
+    count: number;
     capacity: number;
-    enrolled: number;
-    percentage: number;
   }>;
+  utilizationPercentage?: number;
 }
 
 export interface SectionCapacity {

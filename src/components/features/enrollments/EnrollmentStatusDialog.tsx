@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, RefreshCcw } from 'lucide-react';
 
 interface EnrollmentStatusDialogProps {
   enrollment: EnrollmentResponse | null;
@@ -94,7 +94,10 @@ export const EnrollmentStatusDialog = ({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Cambiar Estado de Matrícula</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <RefreshCcw className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            Cambiar Estado de Matrícula
+          </DialogTitle>
           <DialogDescription>
             Estudiante: {enrollment.student.givenNames} {enrollment.student.lastNames}
           </DialogDescription>
@@ -147,7 +150,7 @@ export const EnrollmentStatusDialog = ({
               disabled={loading}
               className="min-h-24 text-sm"
             />
-            <p className="text-xs text-slate-500 mt-1">{reason.length}/500 caracteres</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{reason.length}/500 caracteres</p>
           </div>
 
           {/* Notas */}

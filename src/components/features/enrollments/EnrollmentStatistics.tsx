@@ -2,8 +2,9 @@
 
 import type { EnrollmentStatistics as IEnrollmentStatistics } from '@/types/enrollments.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, TrendingUp, Award, AlertCircle } from 'lucide-react';
+import { Users, TrendingUp, Award, AlertCircle, BookOpen, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 interface EnrollmentStatisticsProps {
   statistics: IEnrollmentStatistics | null;
@@ -12,15 +13,15 @@ interface EnrollmentStatisticsProps {
 
 const COLORS = {
   ACTIVE: '#10b981',
+  SUSPENDED: '#f59e0b',
   INACTIVE: '#64748b',
-  GRADUATED: '#3b82f6',
   TRANSFERRED: '#a855f7',
 };
 
 const statusLabels = {
   ACTIVE: 'Activo',
+  SUSPENDED: 'Suspendido',
   INACTIVE: 'Inactivo',
-  GRADUATED: 'Graduado',
   TRANSFERRED: 'Transferido',
 };
 
@@ -28,6 +29,12 @@ export const EnrollmentStatistics = ({
   statistics,
   loading = false,
 }: EnrollmentStatisticsProps) => {
+  const iconColorClasses: Record<string, string> = {
+    blue: 'text-blue-600 dark:text-blue-400',
+    emerald: 'text-emerald-600 dark:text-emerald-400',
+    amber: 'text-amber-600 dark:text-amber-400',
+    slate: 'text-slate-600 dark:text-slate-400',
+  };
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -49,38 +56,47 @@ export const EnrollmentStatistics = ({
     return null;
   }
 
-  // Preparar datos para gráfico de estados
-  const statusData = Object.entries(statistics.byStatus).map(([key, value]) => ({
-    key: key as keyof typeof COLORS,
-    name: statusLabels[key as keyof typeof statusLabels] || key,
-    value,
-  }));
+  // Calcular utilización si no viene del backend
+  let utilizationPercentage = statistics.utilizationPercentage || 0;
+  
+  if (!statistics.utilizationPercentage && statistics.bySection && statistics.bySection.length > 0) {
+    const totalCapacity = statistics.bySection.reduce((sum, s) => sum + (s.capacity || 0), 0);
+    utilizationPercentage = totalCapacity > 0 ? (statistics.total / totalCapacity) * 100 : 0;
+  }
 
-  // Preparar datos para grado - manejar si es array u objeto
-  const gradeData = Array.isArray(statistics.byGrade) 
-    ? statistics.byGrade.map((g: any) => ({
-        name: g.gradeName.split(' ')[0],
-        count: g.count,
-      }))
-    : [];
+  // Preparar datos para estados (filtrando solo los que tienen valor)
+  const statusData = Object.entries(statistics.byStatus)
+    .filter(([_, value]) => value > 0)
+    .map(([key, value]) => ({
+      key: key as keyof typeof COLORS,
+      name: statusLabels[key as keyof typeof statusLabels] || key,
+      value,
+    }));
+
+  // Calcular porcentaje de cada estado
+  const getStatusPercentage = (value: number) => {
+    return statistics.total > 0 ? ((value / statistics.total) * 100).toFixed(1) : '0';
+  };
 
   const StatCard = ({
     icon: Icon,
     label,
     value,
     subtitle,
+    color = 'blue',
   }: {
     icon: any;
     label: string;
     value: string | number;
     subtitle?: string;
+    color?: 'blue' | 'emerald' | 'amber' | 'slate';
   }) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
           {label}
         </CardTitle>
-        <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+        <Icon className={cn('h-5 w-5', iconColorClasses[color] || iconColorClasses.slate)} />
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{value}</div>
@@ -91,47 +107,81 @@ export const EnrollmentStatistics = ({
 
   return (
     <div className="space-y-6">
-      {/* Tarjetas resumen */}
+      {/* Tarjetas resumen principal */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Users}
           label="Total de Matrículas"
           value={statistics.total}
-          subtitle="Todos los ciclos activos"
+          subtitle={`${utilizationPercentage.toFixed(1)}% utilización`}
+          color="blue"
         />
         <StatCard
           icon={TrendingUp}
           label="Activos"
           value={statistics.byStatus.ACTIVE || 0}
-          subtitle={`${((statistics.byStatus.ACTIVE || 0 / statistics.total) * 100).toFixed(1)}% del total`}
+          subtitle={`${getStatusPercentage(statistics.byStatus.ACTIVE || 0)}% del total`}
+          color="emerald"
         />
         <StatCard
           icon={Award}
-          label="Graduados"
-          value={statistics.byStatus.GRADUATED || 0}
-          subtitle="Este ciclo"
+          label="Suspendidos"
+          value={statistics.byStatus.SUSPENDED || 0}
+          subtitle={`${getStatusPercentage(statistics.byStatus.SUSPENDED || 0)}% del total`}
+          color="amber"
         />
         <StatCard
           icon={AlertCircle}
           label="Inactivos"
           value={statistics.byStatus.INACTIVE || 0}
-          subtitle="Requieren atención"
+          subtitle={`${getStatusPercentage(statistics.byStatus.INACTIVE || 0)}% del total`}
+          color="slate"
         />
       </div>
+
+      {/* Barra de utilización general */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Layers className="h-5 w-5" />
+            Utilización General
+          </CardTitle>
+          <CardDescription>Porcentaje de ocupación de toda la institución</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-end justify-between">
+              <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                Capacidad utilizada
+              </span>
+              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {utilizationPercentage.toFixed(1)}%
+              </span>
+            </div>
+            <Progress 
+              value={Math.min(utilizationPercentage, 100)} 
+              className="h-3"
+            />
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {statistics.total} matrículas registradas
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Distribución por estado */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Distribución por Estado</CardTitle>
-          <CardDescription>Desglose de matrículas activas</CardDescription>
+          <CardDescription>Desglose detallado de matrículas</CardDescription>
         </CardHeader>
         <CardContent>
           {statusData.length > 0 ? (
             <div className="space-y-4">
               {statusData.map((item) => {
-                const percentage = ((item.value / statistics.total) * 100).toFixed(1);
+                const percentage = getStatusPercentage(item.value);
                 return (
-                  <div key={item.name} className="space-y-2">
+                  <div key={item.key} className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="font-medium text-slate-900 dark:text-slate-100">
                         {item.name}
@@ -140,9 +190,9 @@ export const EnrollmentStatistics = ({
                         {item.value} ({percentage}%)
                       </span>
                     </div>
-                    <div className="w-full h-3 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full"
+                        className="h-full rounded-full transition-all"
                         style={{
                           width: `${percentage}%`,
                           backgroundColor: COLORS[item.key] || '#8884d8',
@@ -154,7 +204,7 @@ export const EnrollmentStatistics = ({
               })}
             </div>
           ) : (
-            <div className="h-32 flex items-center justify-center text-slate-500">
+            <div className="h-20 flex items-center justify-center text-slate-500">
               Sin datos disponibles
             </div>
           )}
@@ -164,26 +214,38 @@ export const EnrollmentStatistics = ({
       {/* Matrículas por grado */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Matrículas por Grado</CardTitle>
-          <CardDescription>Distribución de estudiantes</CardDescription>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            Matrículas por Grado
+          </CardTitle>
+          <CardDescription>Distribución de estudiantes por nivel académico</CardDescription>
         </CardHeader>
         <CardContent>
-          {gradeData.length > 0 ? (
-            <div className="space-y-3">
-              {gradeData.map((item: any) => {
-                const maxCount = Math.max(...gradeData.map((g: any) => g.count));
-                const percentage = (item.count / maxCount) * 100;
+          {statistics.byGrade && statistics.byGrade.length > 0 ? (
+            <div className="space-y-4">
+              {statistics.byGrade.map((grade) => {
+                const maxCount = Math.max(...statistics.byGrade.map((g) => g.count));
+                const percentage = (grade.count / maxCount) * 100;
+                const gradePercentage = ((grade.count / statistics.total) * 100).toFixed(1);
+                
                 return (
-                  <div key={item.name} className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium text-slate-900 dark:text-slate-100">
-                        {item.name}
+                  <div key={grade.gradeId} className="space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-slate-900 dark:text-slate-100">
+                          {grade.gradeName}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {grade.count} estudiantes ({gradePercentage}% del total)
+                        </p>
+                      </div>
+                      <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                        {grade.count}
                       </span>
-                      <span className="text-slate-600 dark:text-slate-400">{item.count}</span>
                     </div>
                     <div className="w-full h-3 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-blue-500 transition-all"
+                        className="h-full rounded-full bg-blue-600 dark:bg-blue-500 transition-all"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
@@ -192,45 +254,90 @@ export const EnrollmentStatistics = ({
               })}
             </div>
           ) : (
-            <div className="h-32 flex items-center justify-center text-slate-500">
+            <div className="h-24 flex items-center justify-center text-slate-500">
               Sin datos disponibles
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Capacidad por sección */}
-      {Array.isArray(statistics.sectionOccupancy) && statistics.sectionOccupancy.length > 0 && (
+      {/* Ocupación de secciones */}
+      {statistics.bySection && statistics.bySection.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Ocupación de Secciones</CardTitle>
-            <CardDescription>Capacidad actual vs máxima</CardDescription>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Layers className="h-5 w-5" />
+              Ocupación por Sección
+            </CardTitle>
+            <CardDescription>Capacidad actual vs máxima por sección</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {statistics.sectionOccupancy.map((section) => (
-                <div key={section.sectionId} className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium text-slate-900 dark:text-slate-100">
-                      {section.sectionName}
-                    </span>
-                    <span className="text-slate-600 dark:text-slate-400">
-                      {section.enrolled}/{section.capacity}
-                    </span>
+              {statistics.bySection.map((section) => {
+                const percentage = (section.count / section.capacity) * 100;
+                const statusColor = percentage > 90 
+                  ? 'bg-red-500' 
+                  : percentage > 70 
+                    ? 'bg-yellow-500' 
+                    : 'bg-emerald-500';
+
+                return (
+                  <div key={section.sectionId} className="space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-slate-900 dark:text-slate-100">
+                          Sección {section.sectionName}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {section.count} de {section.capacity} estudiantes
+                        </p>
+                      </div>
+                      <span className={cn(
+                        'text-sm font-semibold px-2 py-1 rounded',
+                        percentage > 90 ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200' :
+                        percentage > 70 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200' :
+                        'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200'
+                      )}>
+                        {percentage.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div
+                        className={cn('h-full rounded-full transition-all', statusColor)}
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      className={cn(
-                        'h-full rounded-full transition-all',
-                        section.percentage > 90
-                          ? 'bg-red-500'
-                          : section.percentage > 70
-                            ? 'bg-yellow-500'
-                            : 'bg-emerald-500'
-                      )}
-                      style={{ width: `${section.percentage}%` }}
-                    />
-                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Ciclos escolares */}
+      {statistics.byCycle && Object.keys(statistics.byCycle).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Matrículas por Ciclo Escolar</CardTitle>
+            <CardDescription>Distribución entre ciclos activos</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Object.entries(statistics.byCycle).map(([cycle, count]) => (
+                <div 
+                  key={cycle} 
+                  className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg"
+                >
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
+                    {cycle}
+                  </p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    {count}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                    {((count / statistics.total) * 100).toFixed(1)}% del total
+                  </p>
                 </div>
               ))}
             </div>

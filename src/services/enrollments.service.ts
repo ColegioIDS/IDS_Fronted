@@ -129,8 +129,8 @@ export const enrollmentsService = {
         // Calcular por estado
         const byStatus: Record<string, number> = {
           ACTIVE: 0,
+          SUSPENDED: 0,
           INACTIVE: 0,
-          GRADUATED: 0,
           TRANSFERRED: 0,
         };
 
@@ -139,9 +139,9 @@ export const enrollmentsService = {
         });
 
         // Calcular por grado
-        const gradeMap = new Map<string, { gradeName: string; count: number }>();
+        const gradeMap = new Map<number, { gradeName: string; count: number }>();
         enrollments.forEach((e) => {
-          const key = `${e.grade.id}`;
+          const key = e.grade.id;
           if (!gradeMap.has(key)) {
             gradeMap.set(key, { gradeName: e.grade.name, count: 0 });
           }
@@ -149,42 +149,57 @@ export const enrollmentsService = {
           grade.count += 1;
         });
 
-        const byGrade = Array.from(gradeMap.values()).map((g, idx) => ({
-          gradeId: idx + 1,
+        const byGrade = Array.from(gradeMap.entries()).map(([gradeId, g]) => ({
+          gradeId,
           gradeName: g.gradeName,
           count: g.count,
         }));
 
-        // Calcular ocupación por sección
-        const sectionMap = new Map<string, { sectionName: string; capacity: number; enrolled: number }>();
+        // Calcular por ciclo
+        const cycleMap = new Map<string, number>();
         enrollments.forEach((e) => {
-          const key = `${e.section.id}`;
+          const cycleName = e.cycle?.name || 'Ciclo Desconocido';
+          cycleMap.set(cycleName, (cycleMap.get(cycleName) || 0) + 1);
+        });
+
+        const byCycle = Object.fromEntries(cycleMap);
+
+        // Calcular ocupación por sección
+        const sectionMap = new Map<number, { sectionName: string; capacity: number; count: number }>();
+        enrollments.forEach((e) => {
+          const key = e.section.id;
           if (!sectionMap.has(key)) {
             sectionMap.set(key, { 
               sectionName: e.section.name, 
-              capacity: e.section.capacity,
-              enrolled: 0 
+              capacity: e.section.capacity || 30,
+              count: 0 
             });
           }
           const section = sectionMap.get(key)!;
-          section.enrolled += 1;
+          section.count += 1;
         });
 
-        const sectionOccupancy = Array.from(sectionMap.entries()).map(([id, s]) => ({
-          sectionId: parseInt(id),
+        const bySection = Array.from(sectionMap.entries()).map(([sectionId, s]) => ({
+          sectionId,
           sectionName: s.sectionName,
           capacity: s.capacity,
-          enrolled: s.enrolled,
-          percentage: (s.enrolled / s.capacity) * 100,
+          count: s.count,
         }));
+
+        // Calcular utilización general
+        const totalCapacity = bySection.reduce((sum, s) => sum + s.capacity, 0);
+        const utilizationPercentage = totalCapacity > 0 ? (enrollments.length / totalCapacity) * 100 : 0;
 
         return {
           total: enrollments.length,
           byStatus,
+          byCycle,
           byGrade,
-          sectionOccupancy,
+          bySection,
+          utilizationPercentage,
         };
       } catch (fallbackError) {
+        console.error('Error en fallback de estadísticas:', fallbackError);
         throw new Error('Error al cargar estadísticas y calcular fallback');
       }
     }
@@ -283,6 +298,90 @@ export const enrollmentsService = {
     }
 
     return response.data.data as EnrollmentDetailResponse;
+  },
+
+  // ✅ LECTURA - GRADOS Y SECCIONES
+
+  /**
+   * Obtener grados disponibles para un ciclo específico
+   * GET /api/enrollments/grades?cycleId={cycleId}
+   * 
+   * Retorna estructura completa de grado + ciclo
+   */
+  async getGrades(cycleId?: number): Promise<Array<{ 
+    id: number; 
+    name: string;
+    level?: string;
+    cycleId?: number;
+    cycleName?: string;
+  }>> {
+    try {
+      const params = cycleId ? `?cycleId=${cycleId}` : '';
+      const response = await api.get<ApiResponse<Array<{ 
+        id: number; 
+        name: string;
+        level?: string;
+        cycleId?: number;
+        cycleName?: string;
+      }>>>(
+        `/api/enrollments/grades${params}`
+      );
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Error al obtener grados');
+      }
+
+      return response.data.data || [];
+    } catch (error: any) {
+      console.error('Error al obtener grados:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Obtener secciones disponibles para un ciclo específico
+   * GET /api/enrollments/sections?cycleId={cycleId}&gradeId={gradeId}
+   * 
+   * Retorna estructura completa de sección + grado + ciclo
+   * Si se proporciona gradeId, filtra solo las secciones de ese grado
+   */
+  async getSections(cycleId?: number, gradeId?: number): Promise<Array<{ 
+    id: number; 
+    name: string;
+    capacity: number;
+    gradeId?: number;
+    gradeName?: string;
+    cycleId?: number;
+    cycleName?: string;
+  }>> {
+    try {
+      const params = new URLSearchParams();
+      if (cycleId) params.append('cycleId', cycleId.toString());
+      if (gradeId) params.append('gradeId', gradeId.toString());
+      
+      const queryString = params.toString() ? `?${params.toString()}` : '';
+      
+      const response = await api.get<ApiResponse<Array<{ 
+        id: number; 
+        name: string;
+        capacity: number;
+        gradeId?: number;
+        gradeName?: string;
+        cycleId?: number;
+        cycleName?: string;
+      }>>>(
+        `/api/enrollments/sections${queryString}`
+      );
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Error al obtener secciones');
+      }
+
+      return response.data.data || [];
+    } catch (error: any) {
+      console.error('Error al obtener secciones:', error);
+      return [];
+    }
   },
 
   // ✅ ELIMINAR
