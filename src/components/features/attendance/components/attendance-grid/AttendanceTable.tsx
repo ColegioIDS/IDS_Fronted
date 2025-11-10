@@ -386,6 +386,7 @@ export default function AttendanceTable({
           enrollmentId,
           date: isoDate,
           attendanceStatusId,  // ✅ CAMBIO: Usar ID en lugar de código
+          ...(selectedCourseIds.length > 0 && { courseAssignmentIds: selectedCourseIds }), // ✅ NUEVO: Agregar cursos seleccionados
         }, true);
 
         // Success toast
@@ -419,7 +420,7 @@ export default function AttendanceTable({
         });
       }
     },
-    [upsertAttendance, selectedDate, filteredStudents, onRefresh, ATTENDANCE_CONFIG]
+    [upsertAttendance, selectedDate, filteredStudents, onRefresh, ATTENDANCE_CONFIG, selectedCourseIds]
   );
 
   const handleBulkAction = useCallback(

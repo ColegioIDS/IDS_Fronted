@@ -22,6 +22,8 @@ import {
   AttendanceStats,
   AttendanceStatusCode,
   BulkAttendanceByCourseDto,
+  BulkBySchedulesDto,
+  BulkBySchedulesResponse,
 } from '@/types/attendance.types';
 
 export const attendanceService = {
@@ -507,4 +509,50 @@ export const attendanceService = {
 
     return response.data;
   },
+
+  /**
+   * ✅ NUEVO FLUJO: Registrar asistencia por horarios
+   * 
+   * Endpoint: POST /api/attendance/bulk-by-schedules
+   * 
+   * Crea:
+   * - 1 StudentAttendance por estudiante (resumen del día)
+   * - 1 StudentClassAttendance por estudiante × horario
+   * - 1 StudentAttendanceReport (resumen de estadísticas)
+   * 
+   * @param data - DTO con fecha, scheduleIds y attendances
+   * @returns Response con información de registros creados
+   * 
+   * @example
+   * await attendanceService.bulkBySchedules({
+   *   date: '2025-11-10',
+   *   scheduleIds: [15, 16, 17, 18],
+   *   attendances: [
+   *     { enrollmentId: 1, attendanceStatusId: 1, arrivalTime: '07:30' },
+   *     { enrollmentId: 2, attendanceStatusId: 2 },
+   *   ]
+   * })
+   */
+  async bulkBySchedules(data: BulkBySchedulesDto): Promise<BulkBySchedulesResponse> {
+    console.log('[AttendanceService] bulkBySchedules iniciado:', {
+      date: data.date,
+      scheduleCount: data.scheduleIds.length,
+      studentCount: data.attendances.length,
+    });
+
+    try {
+      const response = await api.post('/api/attendance/bulk-by-schedules', data);
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Error al registrar asistencia por horarios');
+      }
+
+      console.log('[AttendanceService] bulkBySchedules completado:', response.data.data);
+      return response.data;
+    } catch (error) {
+      console.error('[AttendanceService] Error en bulkBySchedules:', error);
+      throw error;
+    }
+  },
 };
+
