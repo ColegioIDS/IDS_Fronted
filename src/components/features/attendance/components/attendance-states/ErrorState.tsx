@@ -388,7 +388,7 @@ export default function ErrorState({
           {(type === 'save-failed' || type === 'load-failed') && (
             <div className="mt-8 p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                ⚠️ Importante:
+                Importante:
               </h4>
               <p className="text-xs text-gray-600 dark:text-gray-400">
                 {type === 'save-failed' 

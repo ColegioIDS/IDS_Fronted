@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Search, Check, X, AlertCircle, Clock, Users, Loader2 } from 'lucide-react';
+import { Search, Check, X, AlertCircle, Clock, Users, Loader2, BookOpen, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -388,8 +388,8 @@ export default function AttendanceTable({
           attendanceStatusId,  // ✅ CAMBIO: Usar ID en lugar de código
         }, true);
 
-        // ✅ Success toast
-        toast.success(`✓ ${studentName} marcado como ${statusConfig?.code}`, {
+        // Success toast
+        toast.success(`${studentName} marcado como ${statusConfig?.code}`, {
           id: loadingToast,
           description: `Asistencia registrada para ${isoDate}`,
         });
@@ -424,67 +424,138 @@ export default function AttendanceTable({
 
   const handleBulkAction = useCallback(
     async (enrollmentIds: number[], attendanceStatusId: number) => {
+      // Validación: Verificar que haya cursos seleccionados
+      if (selectedCourseIds.length === 0) {
+        toast.error('Selecciona al menos un curso', {
+          description: 'Debes seleccionar uno o más cursos antes de registrar asistencia',
+        });
+        return;
+      }
+
+      const statusConfig = ATTENDANCE_CONFIG[attendanceStatusId];
+      const dateStr = selectedDate.toISOString().split('T')[0];
+
+      // Mostrar dialog de confirmación
+      const result = await new Promise((resolve) => {
+        const timer = setTimeout(() => resolve(false), 30000); // Timeout 30s
+
+        // Crear overlay de confirmación
+        const overlay = document.createElement('div');
+        overlay.className =
+          'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+
+        const dialog = document.createElement('div');
+        dialog.className =
+          'bg-white rounded-lg shadow-lg max-w-sm w-full mx-4 p-6 space-y-4';
+
+        dialog.innerHTML = `
+          <div class="space-y-3">
+            <p class="font-medium text-gray-900">Confirmar registro de asistencia masiva</p>
+            <div class="space-y-2 text-sm text-gray-600">
+              <div class="flex items-center gap-2">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 19H9a6 6 0 016-6v.001"></path></svg>
+                <span>${enrollmentIds.length} estudiante(s)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C6.5 6.253 2 10.998 2 17s4.5 10.747 10 10.747c5.5 0 10-4.998 10-10.747S17.5 6.253 12 6.253z"></path></svg>
+                <span>${selectedCourseIds.length} curso(s)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span>${dateStr}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span>Estado: ${statusConfig?.code}</span>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500">Se crearán ${enrollmentIds.length * selectedCourseIds.length} registros de asistencia</p>
+          </div>
+          <div class="flex gap-3 pt-4 border-t">
+            <button id="cancel-btn" class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+              Cancelar
+            </button>
+            <button id="confirm-btn" class="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
+              Confirmar
+            </button>
+          </div>
+        `;
+
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        const cancelBtn = dialog.querySelector('#cancel-btn');
+        const confirmBtn = dialog.querySelector('#confirm-btn');
+
+        cancelBtn?.addEventListener('click', () => {
+          clearTimeout(timer);
+          overlay.remove();
+          resolve(false);
+        });
+
+        confirmBtn?.addEventListener('click', () => {
+          clearTimeout(timer);
+          overlay.remove();
+          resolve(true);
+        });
+
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) {
+            clearTimeout(timer);
+            overlay.remove();
+            resolve(false);
+          }
+        });
+      });
+
+      if (!result) {
+        console.log('[AttendanceTable] Carga masiva cancelada por el usuario');
+        return;
+      }
+
       const newUpdatingIds = new Set(enrollmentIds);
       setUpdatingIds(prev => new Set([...prev, ...newUpdatingIds]));
       const loadingToast = toast.loading(`Marcando ${enrollmentIds.length} estudiante(s)...`);
-      
-      try {
-        const statusConfig = ATTENDANCE_CONFIG[attendanceStatusId];
-        const dateStr = selectedDate.toISOString().split('T')[0];
-        
-        // ✅ NUEVO: Si hay cursos seleccionados, usar bulkByCourses
-        if (selectedCourseIds.length > 0) {
-          console.log('[AttendanceTable] Usando bulkByCourses para', selectedCourseIds.length, 'cursos');
-          
-          await bulkByCourses({
-            date: dateStr,
-            courseAssignmentIds: selectedCourseIds,
-            attendances: enrollmentIds.map(id => ({
-              enrollmentId: id,
-              attendanceStatusId,
-            })),
-          });
-          
-          toast.success(
-            `✓ ${enrollmentIds.length} estudiante(s) marcado(s) en ${selectedCourseIds.length} curso(s) como ${statusConfig?.code}`,
-            {
-              id: loadingToast,
-              description: `Acción masiva completada exitosamente`,
-            }
-          );
-        } else {
-          // Comportamiento original: sin cursos específicos
-          console.log('[AttendanceTable] Usando bulkApplyStatus (sin cursos específicos)');
-          
-          await bulkApplyStatus({
-            enrollmentIds,
-            attendanceStatusId,
-            date: dateStr,
-          });
-          
-          toast.success(`✓ ${enrollmentIds.length} estudiante(s) marcado(s) como ${statusConfig?.code}`, {
-            id: loadingToast,
-            description: `Acción masiva completada exitosamente`,
-          });
-        }
 
-        // 🔄 Refrescar datos si está disponible el callback
+      try {
+        console.log('[AttendanceTable] Iniciando carga masiva...');
+        console.log(`[AttendanceTable] Estudiantes: ${enrollmentIds.length}, Cursos: ${selectedCourseIds.length}`);
+
+        await bulkByCourses({
+          date: dateStr,
+          courseAssignmentIds: selectedCourseIds,
+          attendances: enrollmentIds.map(id => ({
+            enrollmentId: id,
+            attendanceStatusId,
+          })),
+        });
+
+        toast.success(
+          `${enrollmentIds.length} estudiante(s) marcado(s) en ${selectedCourseIds.length} curso(s) como ${statusConfig?.code}`,
+          {
+            id: loadingToast,
+            description: `${enrollmentIds.length * selectedCourseIds.length} registros creados exitosamente`,
+          }
+        );
+
+        console.log('[AttendanceTable] Carga masiva completada exitosamente');
+
+        // Refrescar datos si está disponible el callback
         if (onRefresh) {
-          console.log('[AttendanceTable] Refrescando datos después de acción masiva...');
+          console.log('[AttendanceTable] Refrescando datos...');
           await onRefresh();
         }
-        
+
         setSelectedStudents([]);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-        
-        // ❌ Error toast
-        toast.error(`Error en acción masiva`, {
+
+        toast.error(`Error en carga masiva`, {
           id: loadingToast,
           description: errorMessage,
         });
 
-        console.error('Error en acción masiva:', err);
+        console.error('[AttendanceTable] Error en carga masiva:', err);
       } finally {
         setUpdatingIds(prev => {
           const next = new Set(prev);
@@ -493,7 +564,7 @@ export default function AttendanceTable({
         });
       }
     },
-    [bulkApplyStatus, bulkByCourses, selectedDate, selectedCourseIds, onRefresh, ATTENDANCE_CONFIG]
+    [bulkByCourses, selectedDate, selectedCourseIds, onRefresh, ATTENDANCE_CONFIG]
   );
 
   // 🎉 Si es día festivo, mostrar componente especial
@@ -569,7 +640,7 @@ export default function AttendanceTable({
         sectionId={sectionId}
         selectedCourseIds={selectedCourseIds}
         onSelectionChange={setSelectedCourseIds}
-        disabled={selectedStudents.length === 0}
+        disabled={false}
       />
 
       {/* ⚡ Acciones masivas */}
@@ -668,7 +739,7 @@ export default function AttendanceTable({
                         <span>{student.studentName}</span>
                         {student.attendanceStatusId && ATTENDANCE_CONFIG[student.attendanceStatusId] && (
                           <span className={`inline-block px-2 py-1 ${ATTENDANCE_CONFIG[student.attendanceStatusId]?.badgeColor} text-xs font-semibold rounded`}>
-                            ✓ {ATTENDANCE_CONFIG[student.attendanceStatusId]?.code}
+                            {ATTENDANCE_CONFIG[student.attendanceStatusId]?.code}
                           </span>
                         )}
                       </div>

@@ -3,6 +3,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ChevronDown, ChevronRight, AlertCircle, Check, X, Clock, User, Info } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AttendanceCourse } from '@/types/attendance.types';
 import { useAttendanceCourses } from '@/hooks/attendance/useAttendanceCourses';
 
@@ -48,8 +50,9 @@ export function CourseSelector({
 
   if (error) {
     return (
-      <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
-        ⚠️ Error al cargar cursos: {error.message}
+      <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 flex items-center gap-2">
+        <AlertCircle className="h-4 w-4 flex-shrink-0" />
+        <span>Error al cargar cursos: {error.message}</span>
       </div>
     );
   }
@@ -73,13 +76,19 @@ export function CourseSelector({
   const someSelected = selectedCourseIds.length > 0 && selectedCourseIds.length < courses.length;
 
   return (
-    <div className="border-b border-gray-200 bg-blue-50 p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <div>
-          <h3 className="font-semibold text-gray-900">
-            📚 Seleccionar Cursos ({selectedCourseIds.length}/{courses.length})
-          </h3>
-          <p className="text-xs text-gray-600">
+    <div className="border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 p-4 rounded-lg">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-1">
+            <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
+              Seleccionar Cursos
+            </h3>
+            <span className="inline-flex items-center justify-center bg-blue-600 dark:bg-blue-500 text-white text-xs font-bold rounded-full h-6 w-6">
+              {selectedCourseIds.length}/{courses.length}
+            </span>
+          </div>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
             {selectedCourseIds.length === 0
               ? 'Selecciona uno o más cursos para registrar asistencia en múltiples clases'
               : `Registrarás asistencia en ${selectedCourseIds.length} curso${selectedCourseIds.length !== 1 ? 's' : ''}`}
@@ -88,81 +97,134 @@ export function CourseSelector({
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="text-blue-600 hover:text-blue-800"
+          className="ml-4 p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           aria-label={expanded ? 'Contraer' : 'Expandir'}
         >
-          {expanded ? '▼' : '▶'}
+          {expanded ? <ChevronDown className="h-6 w-6" /> : <ChevronRight className="h-6 w-6" />}
         </button>
       </div>
 
       {expanded && (
-        <div className="space-y-2">
+        <div className="mt-4 space-y-3">
           {/* Botones de control */}
-          <div className="flex gap-2 pb-3">
+          <div className="flex gap-2">
             <button
               type="button"
               onClick={toggleSelectAll}
               disabled={disabled}
-              className="inline-flex items-center gap-1 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {allSelected ? '☑️' : someSelected ? '☐' : '☐'} Todos
+              {allSelected ? <Check className="h-4 w-4 text-green-600 dark:text-green-400" /> : <X className="h-4 w-4 text-gray-400 dark:text-gray-500" />}
+              Todos
             </button>
             {selectedCourseIds.length > 0 && (
               <button
                 type="button"
                 onClick={() => onSelectionChange([])}
                 disabled={disabled}
-                className="inline-flex items-center gap-1 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
-                ✕ Limpiar
+                <X className="h-4 w-4" />
+                Limpiar
               </button>
             )}
           </div>
 
-          {/* Lista de cursos */}
-          <div className="grid gap-2">
-            {courses.map(course => (
-              <label
-                key={course.id}
-                className="flex cursor-pointer items-start gap-3 rounded-md border border-gray-200 bg-white p-2.5 hover:border-blue-300 hover:bg-blue-50"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedCourseIds.includes(course.id)}
-                  onChange={() => toggleCourse(course.id)}
-                  disabled={disabled}
-                  className="mt-1 h-4 w-4 cursor-pointer rounded border-gray-300"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    {course.color && (
-                      <div
-                        className="h-3 w-3 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: course.color }}
-                        title="Color del curso"
-                      />
-                    )}
-                    <span className="font-medium text-gray-900">{course.name}</span>
-                    <span className="text-xs font-mono text-gray-500">({course.code})</span>
-                  </div>
-                  <div className="mt-1 text-xs text-gray-600">
-                    {course.startTime && course.endTime && (
-                      <span>🕐 {course.startTime} - {course.endTime}</span>
-                    )}
-                    {course.teacherName && (
-                      <span className="ml-2">👨‍🏫 {course.teacherName}</span>
-                    )}
+          {/* Grid de cursos */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {courses.map(course => {
+              const isSelected = selectedCourseIds.includes(course.id);
+              const courseColor = course.color || '#d1d5db'; // Gris claro por defecto
+              
+              return (
+                <div
+                  key={course.id}
+                  onClick={() => toggleCourse(course.id)}
+                  className={`flex flex-col cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-all group ${
+                    isSelected
+                      ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-md'
+                      : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <div className="flex items-start gap-3 w-full">
+                    <Checkbox
+                      checked={selectedCourseIds.includes(course.id)}
+                      onCheckedChange={() => toggleCourse(course.id)}
+                      disabled={disabled}
+                      className="mt-0.5"
+                    />
+                    <div className="flex-1 min-w-0">
+                      {/* Nombre y código */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <div
+                          className={`h-5 w-5 rounded-full flex-shrink-0 ring-2 transition-all ${
+                            isSelected 
+                              ? 'ring-blue-400 dark:ring-blue-300 scale-110' 
+                              : 'ring-offset-1 dark:ring-offset-gray-800 ring-gray-200 dark:ring-gray-600'
+                          }`}
+                          style={{ backgroundColor: courseColor }}
+                          title="Color del curso"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-semibold truncate transition-colors ${
+                            isSelected
+                              ? 'text-blue-900 dark:text-blue-100'
+                              : 'text-gray-900 dark:text-white'
+                          }`}>
+                            {course.name}
+                          </p>
+                          <p className="text-xs font-mono text-gray-500 dark:text-gray-400">
+                            {course.code}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Detalles */}
+                      <div className="space-y-1.5">
+                        {course.startTime && course.endTime && (
+                          <div className={`flex items-center gap-2 text-xs transition-colors ${
+                            isSelected
+                              ? 'text-blue-700 dark:text-blue-300'
+                              : 'text-gray-600 dark:text-gray-400'
+                          }`}>
+                            <Clock className={`h-3.5 w-3.5 flex-shrink-0 ${
+                              isSelected
+                                ? 'text-blue-600 dark:text-blue-400'
+                                : 'text-blue-500 dark:text-blue-400'
+                            }`} />
+                            <span>{course.startTime} - {course.endTime}</span>
+                          </div>
+                        )}
+                        {course.teacherName && (
+                          <div className={`flex items-center gap-2 text-xs transition-colors ${
+                            isSelected
+                              ? 'text-blue-700 dark:text-blue-300'
+                              : 'text-gray-600 dark:text-gray-400'
+                          }`}>
+                            <User className={`h-3.5 w-3.5 flex-shrink-0 ${
+                              isSelected
+                                ? 'text-purple-600 dark:text-purple-400'
+                                : 'text-purple-500 dark:text-purple-400'
+                            }`} />
+                            <span className="truncate">{course.teacherName}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </label>
-            ))}
+              );
+            })}
           </div>
 
           {/* Información útil */}
           {selectedCourseIds.length > 0 && (
-            <div className="mt-3 rounded-md bg-blue-100 p-2 text-xs text-blue-800">
-              ℹ️ Se registrará asistencia para <strong>{selectedCourseIds.length}</strong> curso
-              {selectedCourseIds.length !== 1 ? 's' : ''} de cada estudiante seleccionado.
+            <div className="mt-3 flex items-start gap-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 p-3">
+              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <span className="text-sm text-blue-900 dark:text-blue-200">
+                Se registrará asistencia para <strong>{selectedCourseIds.length}</strong> curso
+                {selectedCourseIds.length !== 1 ? 's' : ''} de cada estudiante seleccionado.
+              </span>
             </div>
           )}
         </div>

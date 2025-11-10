@@ -1,6 +1,9 @@
 // src/hooks/attendance/useAttendanceCourses.ts
 
+'use client';
+
 import { useState, useEffect } from 'react';
+import { api } from '@/config/api';
 import { AttendanceCourse } from '@/types/attendance.types';
 
 interface UseAttendanceCoursesReturn {
@@ -12,6 +15,9 @@ interface UseAttendanceCoursesReturn {
 
 /**
  * Hook para cargar los cursos disponibles de una sección
+ * ✅ ARREGLADO: Usa la instancia 'api' configurada con el puerto correcto (5000)
+ * No más fetch() directo que usa puerto 3000
+ * 
  * @param sectionId - ID de la sección
  * @returns Cursos, estado de carga, error y función para recargar
  */
@@ -30,20 +36,30 @@ export function useAttendanceCourses(sectionId?: number): UseAttendanceCoursesRe
       setLoading(true);
       setError(null);
 
-      const response = await fetch(
+      // ✅ ARREGLADO: Usar la instancia 'api' que tiene baseURL configurada
+      // Esto respeta: process.env.NEXT_PUBLIC_API_URL o http://localhost:5000
+      const response = await api.get<{ success: boolean; data: AttendanceCourse[]; message?: string }>(
         `/api/attendance/configuration/courses-for-section/${sectionId}`
       );
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch courses: ${response.statusText}`);
+      if (!response.data?.success) {
+        throw new Error(
+          response.data?.message || `Failed to fetch courses: ${response.status}`
+        );
       }
 
-      const data = await response.json();
-      setCourses(Array.isArray(data) ? data : data.data || []);
+      const courseData = response.data.data || [];
+      setCourses(Array.isArray(courseData) ? courseData : []);
+      
+      console.log(
+        `[useAttendanceCourses] ✅ Cursos cargados para sección ${sectionId}:`,
+        courseData.length,
+        'cursos'
+      );
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error occurred');
       setError(error);
-      console.error('Error fetching courses:', error);
+      console.error('[useAttendanceCourses] ❌ Error fetching courses:', error);
       setCourses([]);
     } finally {
       setLoading(false);

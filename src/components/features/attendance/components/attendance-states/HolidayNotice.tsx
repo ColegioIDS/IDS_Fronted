@@ -80,7 +80,7 @@ export default function HolidayNotice({
           </div>
           
           <CardTitle className={`text-2xl font-bold ${style.textColor}`}>
-            {holiday.isRecovered ? '📚 Día de Recuperación' : '🎉 Día Festivo'}
+            {holiday.isRecovered ? 'Día de Recuperación' : 'Día Festivo'}
           </CardTitle>
           
           <div className="space-y-2">
@@ -134,7 +134,7 @@ export default function HolidayNotice({
 
             <div className={`p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg border ${style.borderColor}`}>
               <h3 className={`font-medium ${style.textColor} mb-2`}>
-                📚 Clases
+                Clases
               </h3>
               <Badge variant={holiday.isRecovered ? "default" : "secondary"}>
                 {holiday.isRecovered ? 'Clases Normales' : 'Sin Clases'}
@@ -219,12 +219,12 @@ export default function HolidayNotice({
         </Card>
       )}
 
-      {/* 🎨 Elemento decorativo */}
+      {/* Elemento decorativo */}
       <div className="text-center">
         <div className="inline-flex items-center space-x-2 text-gray-400 dark:text-gray-600">
           <div className="w-8 h-px bg-gray-300 dark:bg-gray-600"></div>
           <span className="text-xs">
-            {holiday.isRecovered ? '📚' : '🎉'}
+            {holiday.isRecovered ? '—' : '•'}
           </span>
           <div className="w-8 h-px bg-gray-300 dark:bg-gray-600"></div>
         </div>

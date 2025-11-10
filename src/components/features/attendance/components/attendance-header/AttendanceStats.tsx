@@ -397,7 +397,7 @@ export default function AttendanceStats({
                   Meta: 85%
                 </span>
                 <span className={`text-xs font-medium ${parseFloat(bimesterStats.attendanceRate) >= 85 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`}>
-                  {parseFloat(bimesterStats.attendanceRate) >= 85 ? '✅ Meta alcanzada' : '⚠️ Por debajo de la meta'}
+                  {parseFloat(bimesterStats.attendanceRate) >= 85 ? 'Meta alcanzada' : 'Por debajo de la meta'}
                 </span>
               </div>
             </div>
