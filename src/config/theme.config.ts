@@ -561,3 +561,23 @@ export const getCourseTheme = (area: string = 'default') => {
   const normalizedArea = area.toLowerCase();
   return courseThemes[normalizedArea as keyof typeof courseThemes] || courseThemes.default;
 };
+
+
+export const STATUS_COLORS = {
+  light: {
+    success: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
+    error: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
+    warning: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
+    info: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
+    pending: { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700' },
+  },
+  dark: {
+    success: { bg: 'bg-green-950/30', border: 'border-green-800', text: 'text-green-400' },
+    error: { bg: 'bg-red-950/30', border: 'border-red-800', text: 'text-red-400' },
+    warning: { bg: 'bg-amber-950/30', border: 'border-amber-800', text: 'text-amber-400' },
+    info: { bg: 'bg-blue-950/30', border: 'border-blue-800', text: 'text-blue-400' },
+    pending: { bg: 'bg-gray-950/30', border: 'border-gray-800', text: 'text-gray-400' },
+  },
+};
+
+export type StatusType = keyof typeof STATUS_COLORS.light;

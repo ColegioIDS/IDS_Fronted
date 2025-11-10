@@ -36,6 +36,10 @@ export function useBimesterCycles(initialQuery: QueryAvailableCyclesDto = {}) {
       setCycles(result.data);
       setMeta(result.meta);
 
+  // Debug: log loaded cycles
+  // eslint-disable-next-line no-console
+  console.log('[useBimesterCycles] loaded cycles ids:', result.data.map((c) => c.id));
+
       // Auto-seleccionar el ciclo activo si existe
       const active = result.data.find((cycle) => cycle.isActive);
       if (active) {

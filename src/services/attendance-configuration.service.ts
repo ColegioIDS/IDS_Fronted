@@ -65,6 +65,34 @@ export const attendanceConfigurationService = {
   },
 
   /**
+   * Obtener estudiantes matriculados en una sección
+   * @param gradeId ID del grado
+   * @param sectionId ID de la sección
+   * @returns Array de estudiantes con datos de matrícula
+   */
+  async getStudentsBySection(gradeId: number, sectionId: number): Promise<any[]> {
+    try {
+      const url = `${BASE_URL}/configuration/students/${gradeId}/${sectionId}`;
+      console.log('[AttendanceConfig] 🔍 Llamando endpoint:', url);
+      
+      const response = await api.get<{ success: boolean; data: any[]; message?: string }>(url);
+      
+      console.log('[AttendanceConfig] ✅ Response recibido:', response.status, response.data);
+      
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Error al cargar estudiantes');
+      }
+      
+      console.log(`[AttendanceConfig] 📊 Estudiantes cargados para grado ${gradeId}, sección ${sectionId}:`, response.data.data?.length || 0, 'estudiantes');
+      
+      return response.data.data || [];
+    } catch (error) {
+      console.error(`[AttendanceConfig] ❌ Error loading students for grade ${gradeId}, section ${sectionId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
    * Obtener todos los grados y secciones
    * @returns Objeto con grados y secciones agrupadas
    */
@@ -229,8 +257,67 @@ export const attendanceConfigurationService = {
       localStorage.removeItem('attendance_grades_cache');
       localStorage.removeItem('attendance_sections_cache');
       localStorage.removeItem('attendance_holidays_cache');
+      localStorage.removeItem('attendance_statuses_cache');
     } catch (error) {
       console.warn('Failed to clear cache:', error);
+    }
+  },
+
+  /**
+   * Obtener estados de asistencia desde el backend
+   * Endpoint: GET /api/attendance/configuration/statuses
+   * @returns Array de estados de asistencia disponibles
+   */
+  async getAttendanceStatuses(): Promise<any[]> {
+    try {
+      const url = `${BASE_URL}/configuration/statuses`;
+      const response = await api.get<{ success: boolean; data: any[]; message?: string }>(url);
+      
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Error al cargar estados de asistencia');
+      }
+      
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Error loading attendance statuses:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Cachear estados en localStorage
+   */
+  setCachedStatuses(statuses: any[], ttlMinutes: number = 60): void {
+    try {
+      const cache = {
+        data: statuses,
+        timestamp: Date.now(),
+        ttl: ttlMinutes * 60 * 1000,
+      };
+      localStorage.setItem('attendance_statuses_cache', JSON.stringify(cache));
+    } catch (error) {
+      console.warn('Failed to cache statuses:', error);
+    }
+  },
+
+  /**
+   * Obtener estados en caché si existen y no han expirado
+   */
+  getCachedStatuses(): any[] | null {
+    try {
+      const cached = localStorage.getItem('attendance_statuses_cache');
+      if (!cached) return null;
+      
+      const { data, timestamp, ttl } = JSON.parse(cached);
+      if (Date.now() - timestamp > ttl) {
+        localStorage.removeItem('attendance_statuses_cache');
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.warn('Failed to retrieve cached statuses:', error);
+      return null;
     }
   },
 };

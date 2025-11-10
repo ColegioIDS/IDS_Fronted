@@ -6,8 +6,8 @@
  * ============================================
  */
 
-// ✅ Status de asistencia
-export type AttendanceStatusCode = 'A' | 'I' | 'IJ' | 'TI' | 'TJ';
+// ✅ Status de asistencia (CÓDIGOS DEL BACKEND)
+export type AttendanceStatusCode = 'P' | 'I' | 'IJ' | 'T' | 'TJ' | 'E' | 'M' | 'A';
 
 export interface AttendanceStatusInfo {
   code: AttendanceStatusCode;
@@ -17,13 +17,29 @@ export interface AttendanceStatusInfo {
   isActive: boolean;
 }
 
+// ✅ AttendanceStatus completo desde BD
+export interface AttendanceStatus {
+  id: number;
+  code: AttendanceStatusCode;
+  name: string;
+  description?: string | null;
+  requiresJustification: boolean;
+  canHaveNotes: boolean;
+  isNegative: boolean;
+  isExcused: boolean;
+  isTemporal: boolean;
+  colorCode?: string | null;
+  order: number;
+  isActive: boolean;
+}
+
 // ✅ Asistencia base
 export interface StudentAttendance {
   id: number;
   enrollmentId: number;
   date: string; // ISO format
   courseAssignmentId?: number | null;
-  statusCode: AttendanceStatusCode;
+  attendanceStatusId: number;  // ✅ CAMBIO: ID numérico en lugar de código string
   notes?: string | null;
   arrivalTime?: string | null; // HH:mm format
   minutesLate?: number | null;
@@ -149,6 +165,7 @@ export interface AttendanceQuery {
   studentId?: number;
   sectionId?: number;
   courseId?: number;
+  bimesterId?: number;
   dateFrom?: string;
   dateTo?: string;
   statusCode?: AttendanceStatusCode;
@@ -192,7 +209,7 @@ export interface AttendanceListResponse {
 export interface CreateAttendanceDto {
   enrollmentId: number;
   date: string; // ISO format
-  statusCode: AttendanceStatusCode;
+  attendanceStatusId: number;  // ✅ CAMBIO: ID numérico en lugar de código string
   courseAssignmentId?: number;
   notes?: string;
   arrivalTime?: string; // HH:mm format
@@ -202,7 +219,7 @@ export interface CreateAttendanceDto {
 
 // ✅ DTOs - Actualizar asistencia
 export interface UpdateAttendanceDto {
-  statusCode?: AttendanceStatusCode;
+  attendanceStatusId?: number;  // ✅ CAMBIO: ID numérico en lugar de código string
   notes?: string;
   arrivalTime?: string;
   minutesLate?: number;
@@ -218,7 +235,7 @@ export interface BulkCreateAttendanceDto {
 // ✅ DTOs - Actualizar múltiples
 export interface BulkUpdateAttendanceDto {
   ids: number[];
-  statusCode?: AttendanceStatusCode;
+  attendanceStatusId?: number;  // ✅ CAMBIO: ID numérico en lugar de código string
   notes?: string;
   changeReason?: string;
 }
@@ -232,8 +249,33 @@ export interface BulkDeleteAttendanceDto {
 export interface BulkApplyStatusDto {
   enrollmentIds: number[];
   date: string;
-  statusCode: AttendanceStatusCode;
+  attendanceStatusId: number;  // ✅ CAMBIO: ID numérico en lugar de código string
+  courseAssignmentIds?: number[];  // ✅ NUEVO: Soporte para múltiples cursos
   notes?: string;
+}
+
+// ✅ DTOs - Aplicar asistencia por múltiples cursos
+export interface BulkAttendanceByCourseDto {
+  date: string;
+  courseAssignmentIds: number[];
+  attendances: Array<{
+    enrollmentId: number;
+    attendanceStatusId: number;
+    notes?: string;
+  }>;
+}
+
+// ✅ Curso disponible para una sección
+export interface AttendanceCourse {
+  id: number;
+  courseId: number;
+  name: string;
+  code: string;
+  color?: string;
+  teacherId: number;
+  teacherName: string;
+  startTime?: string;
+  endTime?: string;
 }
 
 // ✅ Respuesta de operaciones bulk

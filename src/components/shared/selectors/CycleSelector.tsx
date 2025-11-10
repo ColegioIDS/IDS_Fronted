@@ -58,11 +58,57 @@ export function CycleSelector({
   showDateRange = true,
   className = '',
 }: CycleSelectorProps) {
-  const { cycles, activeCycle, isLoading, error } = useBimesterCycles();
+  const { cycles, activeCycle, isLoading, error, getCycleDetails } = useBimesterCycles();
+
+  // Local merged list so we can inject a missing selected cycle (when editing)
+  const [localCycles, setLocalCycles] = React.useState(cycles);
+  const fetchedMissing = React.useRef<Set<number>>(new Set());
+
+  // Keep localCycles in sync when cycles update
+  React.useEffect(() => {
+    setLocalCycles(cycles);
+  }, [cycles]);
+
+  // DEBUG: log value/localCycles to help diagnose missing selection when editing
+  React.useEffect(() => {
+    try {
+      // eslint-disable-next-line no-console
+      console.debug('[CycleSelector] value:', value, 'localCycles ids:', localCycles.map((c) => c.id));
+    } catch (e) {
+      /* ignore */
+    }
+  }, [value, localCycles]);
+
+  // If there's a selected value that's not in the list, try to fetch it and append
+  React.useEffect(() => {
+    const selectedId = value ?? undefined;
+    // guard: only positive ids are valid (avoid 0 or negative)
+    if (selectedId == null || typeof selectedId !== 'number' || selectedId <= 0) return;
+
+    const exists = localCycles.some((c) => c.id === selectedId);
+    if (!exists && !fetchedMissing.current.has(selectedId) && getCycleDetails) {
+      fetchedMissing.current.add(selectedId);
+      (async () => {
+        try {
+          const cycle = await getCycleDetails(selectedId);
+          setLocalCycles((prev) => {
+            // avoid duplicates
+            if (prev.some((c) => c.id === cycle.id)) return prev;
+            return [...prev, cycle];
+          });
+        } catch (err) {
+          // ignore: if cycle can't be loaded, selector will simply not show it
+          // eslint-disable-next-line no-console
+          console.error('Failed to fetch selected cycle details', err);
+        }
+      })();
+    }
+  }, [value, localCycles, getCycleDetails]);
 
   // Auto-seleccionar el ciclo activo si no hay valor
+  // Auto-select active cycle only when value is null/undefined (not when it's 0)
   React.useEffect(() => {
-    if (!value && activeCycle && !disabled) {
+    if ((value === null || value === undefined) && activeCycle && !disabled) {
       onValueChange(activeCycle.id);
     }
   }, [activeCycle, value, onValueChange, disabled]);
@@ -110,7 +156,7 @@ export function CycleSelector({
       <Select
         value={value?.toString()}
         onValueChange={(val) => onValueChange(Number(val))}
-        disabled={disabled || isLoading || cycles.length === 0}
+        disabled={disabled || isLoading || localCycles.length === 0}
         required={required}
       >
         <SelectTrigger
@@ -128,13 +174,13 @@ export function CycleSelector({
         </SelectTrigger>
 
         <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
-          {cycles.length === 0 && !isLoading && (
+          {localCycles.length === 0 && !isLoading && (
             <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
               No hay ciclos disponibles
             </div>
           )}
 
-          {cycles.map((cycle) => (
+          {localCycles.map((cycle) => (
             <SelectItem
               key={cycle.id}
               value={cycle.id.toString()}
@@ -168,10 +214,10 @@ export function CycleSelector({
       </Select>
 
       {/* Info adicional del ciclo seleccionado */}
-      {value && showDateRange && cycles.length > 0 && (
+      {value && showDateRange && localCycles.length > 0 && (
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 pl-1">
           {(() => {
-            const selectedCycle = cycles.find((c) => c.id === value);
+            const selectedCycle = localCycles.find((c) => c.id === value);
             if (!selectedCycle) return null;
 
             const bimestersCount = selectedCycle._count?.bimesters || 0;

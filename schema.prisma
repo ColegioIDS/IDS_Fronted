@@ -909,8 +909,10 @@ model AttendanceStatus {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  rolePermissions    RoleAttendancePermission[]
-  studentAttendances StudentAttendance[]
+  rolePermissions        RoleAttendancePermission[]
+  studentAttendances     StudentAttendance[]
+  attendanceChangesBefore StudentAttendanceChange[] @relation("AttendanceChangeBefore")
+  attendanceChangesAfter  StudentAttendanceChange[] @relation("AttendanceChangeAfter")
 
   @@index([code])
   @@map("attendance_statuses")
@@ -978,7 +980,7 @@ model StudentAttendance {
 
   courseAssignmentId Int? // Opcional, para asistencia específica de curso
 
-  statusCode String
+  attendanceStatusId Int // Clave foránea a AttendanceStatus
 
   notes         String?
   arrivalTime   String?
@@ -1000,7 +1002,7 @@ model StudentAttendance {
   enrollment       Enrollment                @relation("StudentAttendance", fields: [enrollmentId], references: [id], onDelete: Cascade)
   recordedByUser   User                      @relation("RecordedByAttendance", fields: [recordedBy], references: [id])
   modifiedByUser   User?                     @relation("ModifiedByAttendance", fields: [lastModifiedBy], references: [id])
-  status           AttendanceStatus          @relation(fields: [statusCode], references: [code])
+  status           AttendanceStatus          @relation(fields: [attendanceStatusId], references: [id])
   justification    StudentJustification?     @relation(fields: [justificationId], references: [id])
   changeHistory    StudentAttendanceChange[]
   classAttendances StudentClassAttendance[]
@@ -1008,7 +1010,7 @@ model StudentAttendance {
   @@unique([enrollmentId, date, courseAssignmentId], name: "unique_student_attendance")
   @@index([enrollmentId])
   @@index([date])
-  @@index([statusCode])
+  @@index([attendanceStatusId])
   @@index([recordedBy])
   @@map("student_attendances")
 }
@@ -1084,8 +1086,8 @@ model StudentAttendanceChange {
   id                  Int @id @default(autoincrement())
   studentAttendanceId Int
 
-  statusCodeBefore String
-  statusCodeAfter  String
+  attendanceStatusIdBefore Int
+  attendanceStatusIdAfter  Int
 
   notesBefore String?
   notesAfter  String?
@@ -1104,6 +1106,8 @@ model StudentAttendanceChange {
 
   studentAttendance StudentAttendance @relation(fields: [studentAttendanceId], references: [id], onDelete: Cascade)
   changedByUser     User              @relation("AttendanceChangedBy", fields: [changedBy], references: [id])
+  statusBefore      AttendanceStatus  @relation("AttendanceChangeBefore", fields: [attendanceStatusIdBefore], references: [id])
+  statusAfter       AttendanceStatus  @relation("AttendanceChangeAfter", fields: [attendanceStatusIdAfter], references: [id])
 
   @@index([studentAttendanceId])
   @@index([changedAt])

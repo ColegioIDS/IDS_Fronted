@@ -7,19 +7,161 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
 
-import { StudentAttendanceWithRelations, AttendanceStatusCode } from '@/types/attendance.types';
-import { useAttendanceActions } from '@/hooks/attendance';
+import { AttendanceStatusCode } from '@/types/attendance.types';
+import { useAttendanceActions, useAttendanceStatuses } from '@/hooks/attendance';
+import { cn } from '@/lib/utils';
 
-import { AttendanceStudentAvatar } from './StudentAvatar';
 import HolidayNotice from '../attendance-states/HolidayNotice';
 import { NoStudentsState, NoSearchResultsState } from '../attendance-states/EmptyState';
 import BulkActions from '../attendance-controls/BulkActions';
+import { CourseSelector } from '../attendance-controls/CourseSelector';
+
+// 🧑 Avatar con iniciales del estudiante
+const AVATAR_COLORS = [
+  'bg-blue-500', 'bg-purple-500', 'bg-pink-500', 'bg-red-500', 'bg-orange-500',
+  'bg-yellow-500', 'bg-green-500', 'bg-teal-500', 'bg-cyan-500', 'bg-indigo-500',
+];
+
+// 🎨 Iconos para cada código de estado (constante global)
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  'P': Check,
+  'I': X,
+  'T': Clock,
+  'IJ': AlertCircle,
+  'TJ': Clock,
+  'E': AlertCircle,
+  'M': AlertCircle,
+  'A': AlertCircle,
+};
+
+// 🎨 Mapeo de colores hex a clases Tailwind (constante global)
+const HEX_TO_TAILWIND: Record<string, { bg: string; hover: string; text: string; badge: string }> = {
+  '#10b981': { // Verde (P - Presente)
+    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
+    hover: 'hover:bg-emerald-200 dark:hover:bg-emerald-800',
+    text: 'text-emerald-900 dark:text-emerald-100',
+    badge: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200'
+  },
+  '#ef4444': { // Rojo (I - Inasistencia)
+    bg: 'bg-red-100 dark:bg-red-900/30',
+    hover: 'hover:bg-red-200 dark:hover:bg-red-800',
+    text: 'text-red-900 dark:text-red-100',
+    badge: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+  },
+  '#eab308': { // Amarillo (T - Tardanza)
+    bg: 'bg-yellow-100 dark:bg-yellow-900/30',
+    hover: 'hover:bg-yellow-200 dark:hover:bg-yellow-800',
+    text: 'text-yellow-900 dark:text-yellow-100',
+    badge: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+  },
+  '#f59e0b': { // Ámbar (IJ - Inasistencia Justificada)
+    bg: 'bg-amber-100 dark:bg-amber-900/30',
+    hover: 'hover:bg-amber-200 dark:hover:bg-amber-800',
+    text: 'text-amber-900 dark:text-amber-100',
+    badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200'
+  },
+  '#84cc16': { // Lima (TJ - Tardanza Justificada)
+    bg: 'bg-lime-100 dark:bg-lime-900/30',
+    hover: 'hover:bg-lime-200 dark:hover:bg-lime-800',
+    text: 'text-lime-900 dark:text-lime-100',
+    badge: 'bg-lime-100 dark:bg-lime-900/30 text-lime-800 dark:text-lime-200'
+  },
+  '#3b82f6': { // Azul (E - Excusado)
+    bg: 'bg-blue-100 dark:bg-blue-900/30',
+    hover: 'hover:bg-blue-200 dark:hover:bg-blue-800',
+    text: 'text-blue-900 dark:text-blue-100',
+    badge: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
+  },
+  '#8b5cf6': { // Violeta (M - Permiso Médico)
+    bg: 'bg-violet-100 dark:bg-violet-900/30',
+    hover: 'hover:bg-violet-200 dark:hover:bg-violet-800',
+    text: 'text-violet-900 dark:text-violet-100',
+    badge: 'bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-200'
+  },
+  '#6366f1': { // Indigo (A - Permiso Administrativo)
+    bg: 'bg-indigo-100 dark:bg-indigo-900/30',
+    hover: 'hover:bg-indigo-200 dark:hover:bg-indigo-800',
+    text: 'text-indigo-900 dark:text-indigo-100',
+    badge: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200'
+  },
+};
+
+// 🎨 Función para convertir cualquier color HEX a variables CSS dinámicas
+// Esta función genera clases Tailwind dinámicamente basadas en colores hex del backend
+function hexToTailwindClasses(hexColor: string): { bg: string; hover: string; text: string; badge: string } {
+  // Si el color está en nuestro mapeo predefinido, usarlo
+  if (HEX_TO_TAILWIND[hexColor]) {
+    return HEX_TO_TAILWIND[hexColor];
+  }
+
+  // Si no está en el mapeo, generar clases dinámicamente usando valores CSS
+  // Convertir hex a RGB para poder usar con opacity
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  const rgb = `${r},${g},${b}`;
+
+  // Generar clases con estilos inline como fallback
+  return {
+    bg: `bg-[rgb(${rgb}/0.1)] dark:bg-[rgb(${rgb}/0.2)]`,
+    hover: `hover:bg-[rgb(${rgb}/0.2)] dark:hover:bg-[rgb(${rgb}/0.3)]`,
+    text: `text-[rgb(${rgb}/0.9)] dark:text-[rgb(${rgb}/0.95)]`,
+    badge: `bg-[rgb(${rgb}/0.1)] dark:bg-[rgb(${rgb}/0.2)] text-[rgb(${rgb}/0.9)] dark:text-[rgb(${rgb}/0.95)]`
+  };
+}
+
+function getInitials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0]?.[0]?.toUpperCase() ?? '?';
+  return ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase();
+}
+
+function getColorByName(fullName: string): string {
+  const hash = fullName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length] ?? 'bg-blue-500';
+}
+
+function StudentAvatarInitials({ name, size = 'md' }: { name: string; size?: 'md' | 'lg' }) {
+  const initials = getInitials(name);
+  const color = getColorByName(name);
+  const sizeClass = size === 'lg' ? 'w-12 h-12 text-lg' : 'w-10 h-10 text-base';
+
+  return (
+    <div className={cn('flex items-center justify-center rounded-full font-semibold text-white', color, sizeClass)} title={name}>
+      {initials}
+    </div>
+  );
+}
+
+// 📋 Interface para los datos que devuelve el backend
+// Backend devuelve: { id, enrollmentId, studentId, studentName, date, attendanceStatusId, ... }
+interface StudentData {
+  id?: number;                  // Attendance record ID
+  enrollmentId: number;         // Enrollment ID
+  studentId?: number;           // Student ID (agregado por el backend)
+  studentName: string;          // Student full name
+  grade?: string;               // Grade (opcional)
+  section?: string;             // Section (opcional)
+  date?: string;                // Attendance date
+  attendanceStatusId?: number;  // ✅ CAMBIO: ID numérico en lugar de statusCode
+  notes?: string | null;
+  arrivalTime?: string | null;
+  minutesLate?: number | null;
+  departureTime?: string | null;
+  hasJustification?: boolean;
+  recordedAt?: string;
+  lastModifiedAt?: string;
+}
 
 interface AttendanceTableProps {
   sectionId?: number;
   selectedDate: Date;
   onDateChange?: (date: Date) => void;
+  onRefresh?: () => Promise<any>; // ✅ Callback para refrescar datos (retorna Promise)
   isHoliday?: boolean;
   holiday?: {
     id: number;
@@ -27,46 +169,64 @@ interface AttendanceTableProps {
     description: string;
     isRecovered: boolean;
   };
-  data?: StudentAttendanceWithRelations[];
+  data?: any[];  // Backend devuelve datos con studentName, enrollmentId, attendanceStatusId, etc
   loading?: boolean;
   error?: string | null;
 }
 
-const ATTENDANCE_CONFIG: Record<AttendanceStatusCode, {
+const ATTENDANCE_CONFIG_FALLBACK: Record<AttendanceStatusCode, {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
   badgeColor: string;
 }> = {
-  'A': {
+  'P': {
     label: 'Presente',
     icon: Check,
     color: 'bg-green-100 hover:bg-green-200 dark:bg-green-900 dark:hover:bg-green-800 text-green-900 dark:text-green-100 border-green-200 dark:border-green-700',
     badgeColor: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300',
   },
   'I': {
-    label: 'Ausente',
+    label: 'Inasistencia',
     icon: X,
     color: 'bg-red-100 hover:bg-red-200 dark:bg-red-900 dark:hover:bg-red-800 text-red-900 dark:text-red-100 border-red-200 dark:border-red-700',
     badgeColor: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300',
   },
-  'TI': {
-    label: 'Tardío',
+  'T': {
+    label: 'Tardanza',
     icon: Clock,
     color: 'bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900 dark:hover:bg-yellow-800 text-yellow-900 dark:text-yellow-100 border-yellow-200 dark:border-yellow-700',
     badgeColor: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300',
   },
   'IJ': {
-    label: 'Ausente Just.',
+    label: 'Inasistencia Justificada',
     icon: AlertCircle,
     color: 'bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-900 dark:text-blue-100 border-blue-200 dark:border-blue-700',
     badgeColor: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
   },
   'TJ': {
-    label: 'Tardío Just.',
+    label: 'Tardanza Justificada',
     icon: Clock,
     color: 'bg-purple-100 hover:bg-purple-200 dark:bg-purple-900 dark:hover:bg-purple-800 text-purple-900 dark:text-purple-100 border-purple-200 dark:border-purple-700',
     badgeColor: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300',
+  },
+  'E': {
+    label: 'Excusado',
+    icon: AlertCircle,
+    color: 'bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 text-indigo-900 dark:text-indigo-100 border-indigo-200 dark:border-indigo-700',
+    badgeColor: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-300',
+  },
+  'M': {
+    label: 'Permiso Médico',
+    icon: AlertCircle,
+    color: 'bg-violet-100 hover:bg-violet-200 dark:bg-violet-900 dark:hover:bg-violet-800 text-violet-900 dark:text-violet-100 border-violet-200 dark:border-violet-700',
+    badgeColor: 'bg-violet-100 text-violet-800 dark:bg-violet-900/20 dark:text-violet-300',
+  },
+  'A': {
+    label: 'Permiso Administrativo',
+    icon: AlertCircle,
+    color: 'bg-cyan-100 hover:bg-cyan-200 dark:bg-cyan-900 dark:hover:bg-cyan-800 text-cyan-900 dark:text-cyan-100 border-cyan-200 dark:border-cyan-700',
+    badgeColor: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/20 dark:text-cyan-300',
   },
 };
 
@@ -74,6 +234,7 @@ export default function AttendanceTable({
   sectionId,
   selectedDate,
   onDateChange,
+  onRefresh, // ✅ Callback para refrescar
   isHoliday = false,
   holiday,
   data = [],
@@ -82,40 +243,117 @@ export default function AttendanceTable({
 }: AttendanceTableProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
+  const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]); // ✅ NUEVO
   const [updatingIds, setUpdatingIds] = useState<Set<number>>(new Set());
-  const { updateAttendance, bulkApplyStatus } = useAttendanceActions();
+  const { updateAttendance, createAttendance, upsertAttendance, bulkApplyStatus, bulkByCourses } = useAttendanceActions();
+  
+  // 📡 Cargar estados dinámicamente desde el backend
+  const { statuses, loading: statusesLoading } = useAttendanceStatuses();
+  
+  // 🎨 Generar configuración dinámica de asistencia desde los estados cargados
+  const ATTENDANCE_CONFIG = useMemo<Record<number, {
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    color: string;
+    hexColor: string;
+    badgeColor: string;
+    code: AttendanceStatusCode;
+  }>>(() => {
+    const config: Record<number, any> = {};
+    
+    // Si los estados están cargados, usar sus nombres y colores dinámicos
+    if (statuses.length > 0) {
+      statuses.forEach(status => {
+        const colorHex = status.colorCode || '#6b7280';
+        // Usar la función para obtener colores (mapeo predefinido o generado dinámicamente)
+        const tailwindColors = hexToTailwindClasses(colorHex);
+        
+        config[status.id] = {  // ✅ CAMBIO: Usar ID en lugar de code
+          code: status.code as AttendanceStatusCode,
+          label: status.name,
+          icon: ICON_MAP[status.code] || Check,
+          hexColor: colorHex,
+          color: `${tailwindColors.bg} ${tailwindColors.hover} ${tailwindColors.text} border-2 border-gray-200 dark:border-gray-700`,
+          badgeColor: tailwindColors.badge,
+        };
+      });
+    } else {
+      // Fallback si no hay estados cargados
+      config[1] = { 
+        code: 'P' as AttendanceStatusCode,
+        label: 'Presente', 
+        icon: Check, 
+        hexColor: '#10b981',
+        color: 'bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 dark:hover:bg-emerald-800 text-emerald-900 dark:text-emerald-100 border-2 border-gray-200 dark:border-gray-700',
+        badgeColor: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200'
+      };
+    }
+    
+    return config;
+  }, [statuses]);
 
   // Filtros de búsqueda
   const filteredStudents = useMemo(() => {
-    return data.filter(att => {
-      if (!att.enrollment?.student) return false;
-      const fullName = `${att.enrollment.student.givenNames} ${att.enrollment.student.lastNames}`.toLowerCase();
+    if (!data || data.length === 0) return [];
+    
+    return data.filter(student => {
+      // Validar que studentName existe
+      if (!student || !student.studentName) return false;
+      
+      const fullName = student.studentName.toLowerCase();
       const query = searchQuery.toLowerCase();
       return fullName.includes(query);
     });
   }, [data, searchQuery]);
 
-  // Estadísticas actuales
+  // DEBUG: Log inicial para ver qué datos llegan
+  console.log('🔍 [AttendanceTable DEBUG]', {
+    dataLength: data.length,
+    filteredStudentsLength: filteredStudents.length,
+    firstStudent: data[0],
+  });
+
+  // Estadísticas actuales - DINÁMICAS POR ID DE ESTADO
   const currentStats = useMemo(() => {
-    const stats = {
+    // Crear contador dinámico para cada estado por ID
+    const stats: Record<string | number, number> = {
       total: filteredStudents.length,
-      present: 0,
-      absent: 0,
-      late: 0,
-      excused: 0,
-      pending: 0,
     };
 
-    filteredStudents.forEach(att => {
-      if (att.statusCode === 'A') stats.present++;
-      else if (att.statusCode === 'I') stats.absent++;
-      else if (att.statusCode === 'TI' || att.statusCode === 'TJ') stats.late++;
-      else if (att.statusCode === 'IJ') stats.excused++;
-      else stats.pending++;
+    // Inicializar contador para cada estado activo del backend (por ID)
+    if (statuses.length > 0) {
+      statuses.forEach(status => {
+        stats[status.id] = 0;
+      });
+    } else {
+      // Fallback si los estados no cargaron
+      stats[1] = 0;
+      stats[2] = 0;
+      stats[3] = 0;
+      stats[4] = 0;
+      stats[5] = 0;
+      stats[6] = 0;
+      stats[7] = 0;
+      stats[8] = 0;
+    }
+
+    // 📊 CONTAR ESTUDIANTES POR ESTADO ACTUAL (por ID)
+    // Recorrer estudiantes filtrados y contar por attendanceStatusId
+    filteredStudents.forEach(student => {
+      if (student.attendanceStatusId) {
+        stats[student.attendanceStatusId] = (stats[student.attendanceStatusId] || 0) + 1;
+      }
+    });
+
+    console.log('[AttendanceTable Stats Debug]', {
+      filteredStudentsLength: filteredStudents.length,
+      statusesLength: statuses.length,
+      statusesIds: statuses.map(s => ({ id: s.id, code: s.code })),
+      finalStats: stats,
     });
 
     return stats;
-  }, [filteredStudents]);
+  }, [filteredStudents, statuses]);
 
   const handleStudentSelection = useCallback((enrollmentId: number, selected: boolean) => {
     setSelectedStudents(prev =>
@@ -126,9 +364,7 @@ export default function AttendanceTable({
   }, []);
 
   const handleSelectAll = useCallback(() => {
-    setSelectedStudents(filteredStudents
-      .filter(s => s.enrollment?.id)
-      .map(s => s.enrollment!.id));
+    setSelectedStudents(filteredStudents.map(s => s.enrollmentId));
   }, [filteredStudents]);
 
   const handleClearSelection = useCallback(() => {
@@ -136,12 +372,45 @@ export default function AttendanceTable({
   }, []);
 
   const handleAttendanceChange = useCallback(
-    async (enrollmentId: number, statusCode: AttendanceStatusCode) => {
+    async (enrollmentId: number, attendanceStatusId: number) => {
       setUpdatingIds(prev => new Set([...prev, enrollmentId]));
+      const loadingToast = toast.loading(`Registrando asistencia...`);
+      
       try {
-        await updateAttendance(enrollmentId, { statusCode });
+        const isoDate = selectedDate.toISOString().split('T')[0];
+        const student = filteredStudents.find(s => s.enrollmentId === enrollmentId);
+        const studentName = student?.studentName || 'Estudiante';
+        const statusConfig = ATTENDANCE_CONFIG[attendanceStatusId];
+        
+        await upsertAttendance({
+          enrollmentId,
+          date: isoDate,
+          attendanceStatusId,  // ✅ CAMBIO: Usar ID en lugar de código
+        }, true);
+
+        // ✅ Success toast
+        toast.success(`✓ ${studentName} marcado como ${statusConfig?.code}`, {
+          id: loadingToast,
+          description: `Asistencia registrada para ${isoDate}`,
+        });
+
+        // 🔄 Refrescar datos si está disponible el callback
+        if (onRefresh) {
+          console.log('[AttendanceTable] Refrescando datos después de upsert...');
+          await onRefresh();
+        }
+
+        console.log(`[AttendanceTable] Asistencia registrada exitosamente para enrollmentId ${enrollmentId}`);
       } catch (err) {
-        console.error('Error actualizando asistencia:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+        
+        // ❌ Error toast
+        toast.error(`Error al registrar asistencia`, {
+          id: loadingToast,
+          description: errorMessage,
+        });
+
+        console.error('Error registrando asistencia:', err);
       } finally {
         setUpdatingIds(prev => {
           const next = new Set(prev);
@@ -150,22 +419,71 @@ export default function AttendanceTable({
         });
       }
     },
-    [updateAttendance]
+    [upsertAttendance, selectedDate, filteredStudents, onRefresh, ATTENDANCE_CONFIG]
   );
 
   const handleBulkAction = useCallback(
-    async (enrollmentIds: number[], statusCode: AttendanceStatusCode) => {
+    async (enrollmentIds: number[], attendanceStatusId: number) => {
       const newUpdatingIds = new Set(enrollmentIds);
       setUpdatingIds(prev => new Set([...prev, ...newUpdatingIds]));
+      const loadingToast = toast.loading(`Marcando ${enrollmentIds.length} estudiante(s)...`);
       
       try {
-        await bulkApplyStatus({
-          enrollmentIds,
-          statusCode,
-          date: selectedDate.toISOString().split('T')[0],
-        });
+        const statusConfig = ATTENDANCE_CONFIG[attendanceStatusId];
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        
+        // ✅ NUEVO: Si hay cursos seleccionados, usar bulkByCourses
+        if (selectedCourseIds.length > 0) {
+          console.log('[AttendanceTable] Usando bulkByCourses para', selectedCourseIds.length, 'cursos');
+          
+          await bulkByCourses({
+            date: dateStr,
+            courseAssignmentIds: selectedCourseIds,
+            attendances: enrollmentIds.map(id => ({
+              enrollmentId: id,
+              attendanceStatusId,
+            })),
+          });
+          
+          toast.success(
+            `✓ ${enrollmentIds.length} estudiante(s) marcado(s) en ${selectedCourseIds.length} curso(s) como ${statusConfig?.code}`,
+            {
+              id: loadingToast,
+              description: `Acción masiva completada exitosamente`,
+            }
+          );
+        } else {
+          // Comportamiento original: sin cursos específicos
+          console.log('[AttendanceTable] Usando bulkApplyStatus (sin cursos específicos)');
+          
+          await bulkApplyStatus({
+            enrollmentIds,
+            attendanceStatusId,
+            date: dateStr,
+          });
+          
+          toast.success(`✓ ${enrollmentIds.length} estudiante(s) marcado(s) como ${statusConfig?.code}`, {
+            id: loadingToast,
+            description: `Acción masiva completada exitosamente`,
+          });
+        }
+
+        // 🔄 Refrescar datos si está disponible el callback
+        if (onRefresh) {
+          console.log('[AttendanceTable] Refrescando datos después de acción masiva...');
+          await onRefresh();
+        }
+        
         setSelectedStudents([]);
       } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+        
+        // ❌ Error toast
+        toast.error(`Error en acción masiva`, {
+          id: loadingToast,
+          description: errorMessage,
+        });
+
         console.error('Error en acción masiva:', err);
       } finally {
         setUpdatingIds(prev => {
@@ -175,7 +493,7 @@ export default function AttendanceTable({
         });
       }
     },
-    [bulkApplyStatus, selectedDate]
+    [bulkApplyStatus, bulkByCourses, selectedDate, selectedCourseIds, onRefresh, ATTENDANCE_CONFIG]
   );
 
   // 🎉 Si es día festivo, mostrar componente especial
@@ -246,12 +564,18 @@ export default function AttendanceTable({
   // ✅ RENDERIZADO NORMAL - Tabla con estudiantes
   return (
     <div className="space-y-4">
+      {/* ✅ NUEVO: Selector de cursos */}
+      <CourseSelector
+        sectionId={sectionId}
+        selectedCourseIds={selectedCourseIds}
+        onSelectionChange={setSelectedCourseIds}
+        disabled={selectedStudents.length === 0}
+      />
+
       {/* ⚡ Acciones masivas */}
       <BulkActions
         selectedStudents={selectedStudents}
-        allStudents={filteredStudents
-          .filter(s => s.enrollment?.id)
-          .map(s => s.enrollment!.id)}
+        allStudents={filteredStudents.map(s => s.enrollmentId)}
         totalStudents={currentStats.total}
         onBulkAction={handleBulkAction}
         onSelectAll={handleSelectAll}
@@ -281,15 +605,9 @@ export default function AttendanceTable({
                 <span className="text-gray-500">estudiantes</span>
               </div>
 
-              {currentStats.pending > 0 && (
-                <Badge variant="outline" className="bg-gray-50 dark:bg-gray-800">
-                  {currentStats.pending} pendientes
-                </Badge>
-              )}
-
-              {currentStats.present > 0 && (
-                <Badge className={ATTENDANCE_CONFIG['A'].badgeColor}>
-                  {currentStats.present} presentes
+              {statuses.length > 0 && statuses[0]?.id && ATTENDANCE_CONFIG[statuses[0].id] && currentStats[statuses[0].id] > 0 && (
+                <Badge className={ATTENDANCE_CONFIG[statuses[0].id]?.badgeColor}>
+                  {currentStats[statuses[0].id]} {statuses[0].name}
                 </Badge>
               )}
             </div>
@@ -314,66 +632,74 @@ export default function AttendanceTable({
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {filteredStudents.map((att, index) => {
-              const enrollment = att.enrollment;
-              if (!enrollment?.student || !enrollment?.id) return null;
+            {filteredStudents.map((student, index) => {
+              const isSelected = selectedStudents.includes(student.enrollmentId);
+              const isUpdating = updatingIds.has(student.enrollmentId);
+              
+              // Obtener el color del status si existe
+              const statusConfig = student.attendanceStatusId ? ATTENDANCE_CONFIG[student.attendanceStatusId] : null;
+              const rowBgColor = statusConfig ? statusConfig.color.split(' ').filter((c: string) => c.includes('bg-')).join(' ') : 'border-gray-200 dark:border-gray-700';
+              const rowBorderColor = statusConfig ? statusConfig.color.split(' ').filter((c: string) => c.includes('border-')).join(' ') : 'border-gray-200 dark:border-gray-700';
 
               return (
                 <div
-                  key={att.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  key={student.enrollmentId}
+                  className={`flex items-center justify-between p-4 border rounded-lg hover:opacity-80 transition-colors ${
+                    student.attendanceStatusId 
+                      ? `${rowBgColor} ${rowBorderColor}` 
+                      : 'border-gray-200 dark:border-gray-700'
+                  }`}
                 >
                   <div className="flex items-center space-x-4 flex-1">
                     <input
                       type="checkbox"
-                      checked={selectedStudents.includes(enrollment.id)}
-                      onChange={(e) => handleStudentSelection(enrollment.id, e.target.checked)}
+                      checked={isSelected}
+                      onChange={(e) => handleStudentSelection(student.enrollmentId, e.target.checked)}
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
                     />
 
-                    <AttendanceStudentAvatar
-                      student={enrollment.student}
-                      onClick={() => console.log('Ver perfil del estudiante')}
+                    <StudentAvatarInitials
+                      name={student.studentName}
+                      size="md"
                     />
 
                     <div className="flex-1">
-                      <div className="font-medium text-gray-900 dark:text-gray-100">
-                        {enrollment.student.givenNames} {enrollment.student.lastNames}
+                      <div className="font-medium text-gray-900 dark:text-gray-100 flex items-center space-x-2">
+                        <span>{student.studentName}</span>
+                        {student.attendanceStatusId && ATTENDANCE_CONFIG[student.attendanceStatusId] && (
+                          <span className={`inline-block px-2 py-1 ${ATTENDANCE_CONFIG[student.attendanceStatusId]?.badgeColor} text-xs font-semibold rounded`}>
+                            ✓ {ATTENDANCE_CONFIG[student.attendanceStatusId]?.code}
+                          </span>
+                        )}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center space-x-2">
-                        <span>#{index + 1}</span>
+                        <span>Grado {student.grade} - Sección {student.section}</span>
                       </div>
                     </div>
-
-                    {att.statusCode && (
-                      <Badge className={ATTENDANCE_CONFIG[att.statusCode].badgeColor}>
-                        {ATTENDANCE_CONFIG[att.statusCode].label}
-                      </Badge>
-                    )}
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    {(Object.entries(ATTENDANCE_CONFIG) as [AttendanceStatusCode, typeof ATTENDANCE_CONFIG[AttendanceStatusCode]][]).map(([statusCode, config]) => {
-                      const Icon = config.icon;
-                      const isActive = att.statusCode === statusCode;
-                      const isUpdating = updatingIds.has(enrollment.id);
+                  <div className="flex items-center space-x-1 flex-wrap">
+                    {statuses.map((status) => {
+                      const config = ATTENDANCE_CONFIG[status.id];
+                      const Icon = config?.icon || AlertCircle;
+                      const isCurrentStatus = student.attendanceStatusId === status.id;
 
                       return (
                         <Button
-                          key={statusCode}
-                          variant={isActive ? "default" : "outline"}
+                          key={status.id}
+                          variant={isCurrentStatus ? "default" : "outline"}
                           size="sm"
-                          onClick={() => handleAttendanceChange(enrollment.id, statusCode)}
+                          onClick={() => handleAttendanceChange(student.enrollmentId, status.id)}
                           disabled={isUpdating}
-                          className={isActive ? config.color : "hover:bg-gray-100 dark:hover:bg-gray-800"}
-                          title={config.label}
+                          className={isCurrentStatus ? config?.color : `border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700`}
+                          title={config?.label}
                         >
                           {isUpdating ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Icon className="h-4 w-4" />
                           )}
-                          <span className="ml-1 hidden md:inline">{config.label}</span>
+                          <span className="ml-1 hidden md:inline text-xs">{config?.code}</span>
                         </Button>
                       );
                     })}
@@ -385,30 +711,43 @@ export default function AttendanceTable({
         </CardContent>
       </Card>
 
-      {/* 📊 Resumen final */}
+      {/* 📊 Resumen final dinámico */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{currentStats.total}</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>
+        <CardHeader>
+          <CardTitle className="text-lg">Resumen de Asistencia</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Total de estudiantes */}
+            <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-900/30 rounded-lg border border-gray-200 dark:border-gray-700">
+              <span className="font-medium text-gray-700 dark:text-gray-300">Total:</span>
+              <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{currentStats.total}</span>
             </div>
-            <div>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">{currentStats.present}</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Presentes</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-red-600 dark:text-red-400">{currentStats.absent}</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Ausentes</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{currentStats.late}</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Tardíos</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{currentStats.excused}</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Justificados</div>
-            </div>
+
+            {/* Estadísticas por estado */}
+            {statuses && statuses.length > 0 && (
+              <>
+                {statuses.map((status) => {
+                  const config = ATTENDANCE_CONFIG[status.id];
+                  const textColorClass = config?.color?.split(' ').find((c: string) => c.startsWith('text-')) || 'text-gray-900 dark:text-gray-100';
+                  const count = currentStats[status.id] || 0;
+                  const Icon = config?.icon || AlertCircle;
+                  const bgClass = config?.color.split(' ').filter((c: string) => c.includes('bg-')).join(' ') || 'bg-gray-50 dark:bg-gray-900/30';
+                  const borderClass = config?.color.split(' ').filter((c: string) => c.includes('border-')).join(' ') || 'border-gray-200 dark:border-gray-700';
+
+                  return (
+                    <div
+                      key={status.id}
+                      className={`flex items-center space-x-2 p-3 rounded-lg border ${bgClass} ${borderClass}`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span className="text-sm font-medium">{status.code}:</span>
+                      <span className={`font-bold ${textColorClass}`}>{count}</span>
+                    </div>
+                  );
+                })}
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

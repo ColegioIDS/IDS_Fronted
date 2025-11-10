@@ -16,6 +16,7 @@ import {
   CreateJustificationDto,
   UpdateJustificationDto,
   StudentJustification,
+  BulkAttendanceByCourseDto,
 } from '@/types/attendance.types';
 
 interface ActionState {
@@ -41,6 +42,23 @@ export const useAttendanceActions = () => {
 
     try {
       const result = await attendanceService.createAttendance(data);
+      setState({ loading: false, error: null, success: true });
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setState({ loading: false, error: errorMessage, success: false });
+      throw err;
+    }
+  }, []);
+
+  /**
+   * Crear o actualizar asistencia (UPSERT)
+   */
+  const upsertAttendance = useCallback(async (data: CreateAttendanceDto, allowUpdate: boolean = true) => {
+    setState({ loading: true, error: null, success: false });
+
+    try {
+      const result = await attendanceService.upsertAttendance(data, allowUpdate);
       setState({ loading: false, error: null, success: true });
       return result;
     } catch (err) {
@@ -152,6 +170,24 @@ export const useAttendanceActions = () => {
   }, []);
 
   /**
+   * ✅ NUEVO: Aplicar asistencia a múltiples cursos
+   * Registra asistencia para múltiples estudiantes en múltiples cursos
+   */
+  const bulkByCourses = useCallback(async (data: BulkAttendanceByCourseDto) => {
+    setState({ loading: true, error: null, success: false });
+
+    try {
+      const result = await attendanceService.bulkByCourses(data);
+      setState({ loading: false, error: null, success: true });
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setState({ loading: false, error: errorMessage, success: false });
+      throw err;
+    }
+  }, []);
+
+  /**
    * Crear justificante
    */
   const createJustification = useCallback(async (data: CreateJustificationDto) => {
@@ -239,12 +275,14 @@ export const useAttendanceActions = () => {
   return {
     ...state,
     createAttendance,
+    upsertAttendance,
     updateAttendance,
     deleteAttendance,
     bulkCreateAttendances,
     bulkUpdateAttendances,
     bulkDeleteAttendances,
     bulkApplyStatus,
+    bulkByCourses,
     createJustification,
     updateJustification,
     approveJustification,

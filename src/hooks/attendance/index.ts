@@ -14,3 +14,6 @@ export { useAttendanceActions } from './useAttendanceActions';
 export { useGradesAndSections } from './useGradesAndSections';
 export { useHolidaysData } from './useHolidaysData';
 
+// Hooks de estados (PHASE 3 - Dynamic Status Management)
+export { useAttendanceStatuses } from './useAttendanceStatuses';
+

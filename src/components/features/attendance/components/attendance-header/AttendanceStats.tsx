@@ -1,12 +1,13 @@
 // src/components/attendance/components/attendance-header/AttendanceStats.tsx - REFACTORIZADO FASE 3
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { BarChart3, TrendingUp, Users, Clock, CheckCircle, XCircle, AlertCircle, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useAttendanceData } from '@/hooks/attendance';
+import { useAttendanceStatuses } from '@/hooks/attendance';
 import { AttendanceStatusCode } from '@/types/attendance.types';
 
 interface AttendanceStatsProps {
@@ -30,23 +31,124 @@ export default function AttendanceStats({
   bimesterId
 }: AttendanceStatsProps) {
   // 📊 Obtener datos de asistencia del hook
-  const { attendances, stats, loading, error } = useAttendanceData();
+  const { attendances, stats, loading, error, fetchSectionAttendances, fetchStats } = useAttendanceData();
 
-  // 📊 Calcular estadísticas del día a partir de datos reales
+  // 📡 Cargar datos cuando cambia la sección
+  useEffect(() => {
+    if (sectionId) {
+      const dateStr = date.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+      console.log('📡 Cargando asistencia para sección:', sectionId, 'fecha:', dateStr);
+      fetchSectionAttendances(sectionId, {
+        dateFrom: dateStr,
+        dateTo: dateStr
+      }).catch(err => console.error('Error cargando asistencia:', err));
+    }
+  }, [sectionId, date, fetchSectionAttendances]);
+
+  // 📊 Cargar estadísticas acumuladas del bimestre
+  useEffect(() => {
+    if (sectionId && bimesterId) {
+      console.log('📈 Cargando estadísticas del bimestre:', sectionId, bimesterId);
+      fetchStats({
+        sectionId,
+        bimesterId
+      }).catch(err => console.error('Error cargando stats:', err));
+    }
+  }, [sectionId, bimesterId, fetchStats]);
+
+  // 📡 Cargar estados dinámicamente desde el backend
+  const { statuses } = useAttendanceStatuses();
+
+  // 🎨 Función para oscurecer colores hex
+  const getDarkenColor = (hex: string | null | undefined): string => {
+    if (!hex) return '#6b7280';
+    
+    try {
+      // Convertir hex a RGB
+      const rgb = parseInt(hex.slice(1), 16);
+      const r = (rgb >> 16) & 255;
+      const g = (rgb >> 8) & 255;
+      const b = rgb & 255;
+
+      // Oscurecer el color multiplicando por 0.7 (70% más fuerte)
+      const darkR = Math.max(0, Math.floor(r * 0.7));
+      const darkG = Math.max(0, Math.floor(g * 0.7));
+      const darkB = Math.max(0, Math.floor(b * 0.7));
+
+      // Convertir de vuelta a hex
+      return `#${[darkR, darkG, darkB]
+        .map(x => x.toString(16).padStart(2, '0'))
+        .join('')}`;
+    } catch {
+      return '#6b7280';
+    }
+  };
+
+  // 📊 Mapear estatuses para categorías dinámicas
+  const statusCategories = useMemo(() => {
+    const categories = {
+      presentStatuses: [] as AttendanceStatusCode[],
+      absentStatuses: [] as AttendanceStatusCode[],
+      lateStatuses: [] as AttendanceStatusCode[],
+      excusedStatuses: [] as AttendanceStatusCode[],
+    };
+
+    statuses.forEach((status: any) => {
+      // 📋 Categoría 1: PRESENTES - no negativo, no excusado
+      if (!status.isNegative && !status.isExcused) {
+        categories.presentStatuses.push(status.code);
+      }
+      // ❌ Categoría 2: AUSENTES - es negativo pero NO comienza con 'T' (no es tardanza)
+      else if (status.isNegative && !status.code.startsWith('T')) {
+        categories.absentStatuses.push(status.code);
+      }
+      // ⏰ Categoría 3: TARDÍOS - código comienza con 'T' y no es excusado
+      else if (status.code.startsWith('T') && !status.isExcused) {
+        categories.lateStatuses.push(status.code);
+      }
+      // 📋 Categoría 4: EXCUSADOS - cualquier estado que sea excusado (IJ, TJ, E, M, A, etc)
+      if (status.isExcused) {
+        categories.excusedStatuses.push(status.code);
+      }
+    });
+
+    console.log('📊 Categorías mapeadas:', categories);
+    return categories;
+  }, [statuses]);
+
+  // �📊 Calcular estadísticas del día a partir de datos reales
   const dailyStats = useMemo<StatsType | null>(() => {
     if (!attendances || attendances.length === 0) return null;
 
-    // Contar por código de estado de asistencia
-    const present = attendances.filter(r => r.statusCode === 'A').length;
-    const absent = attendances.filter(r => r.statusCode === 'I').length;
-    const absentJustified = attendances.filter(r => r.statusCode === 'IJ').length;
-    const late = attendances.filter(r => r.statusCode === 'TI').length;
-    const lateJustified = attendances.filter(r => r.statusCode === 'TJ').length;
+    // Crear mapeo de ID → código para las categorías
+    const statusCodeMap = new Map(statuses.map(s => [s.id, s.code]));
+    
+    // Contar dinámicamente según categorías de estados
+    const present = attendances.filter(r => {
+      const code = statusCodeMap.get(r.attendanceStatusId);
+      return code && statusCategories.presentStatuses.includes(code);
+    }).length;
+    
+    const absent = attendances.filter(r => {
+      const code = statusCodeMap.get(r.attendanceStatusId);
+      return code && statusCategories.absentStatuses.includes(code);
+    }).length;
+    
+    const late = attendances.filter(r => {
+      const code = statusCodeMap.get(r.attendanceStatusId);
+      return code && statusCategories.lateStatuses.includes(code);
+    }).length;
+    
+    const excused = attendances.filter(r => {
+      const code = statusCodeMap.get(r.attendanceStatusId);
+      return code && statusCategories.excusedStatuses.includes(code);
+    }).length;
 
     const total = attendances.length;
-    const excused = absentJustified + lateJustified;
-
     const attendanceRate = ((present + late) / total * 100).toFixed(1);
+
+    console.log('📊 Estadísticas del día:', { present, absent, late, excused, total, attendanceRate });
+    console.log('📋 Registros por ID:', attendances.map(r => r.attendanceStatusId));
 
     return {
       total,
@@ -56,19 +158,22 @@ export default function AttendanceStats({
       excused,
       attendanceRate
     };
-  }, [attendances]);
+  }, [attendances, statusCategories, statuses]);
 
-  // 📈 Usar estadísticas del servidor si están disponibles
+  // 📈 Calcular estadísticas acumuladas (si hay datos del bimestre)
   const bimesterStats = useMemo<StatsType | null>(() => {
-    if (!stats || !bimesterId) return null;
+    if (!stats || stats.total === 0) return null;
 
+    // Usar datos del servidor directamente
     const total = stats.total || 0;
     const present = stats.present || 0;
     const late = stats.late || 0;
-    const excused = stats.absentJustified + stats.lateJustified;
-    const absent = total - present - late - excused;
+    const excused = (stats.absentJustified || 0) + (stats.lateJustified || 0);
+    const absent = stats.absent || 0;
 
     const attendanceRate = total > 0 ? ((present + late) / total * 100).toFixed(1) : "0";
+
+    console.log('📈 Estadísticas del Bimestre:', { present, late, absent, excused, total, attendanceRate });
 
     return {
       total,
@@ -78,7 +183,7 @@ export default function AttendanceStats({
       excused,
       attendanceRate
     };
-  }, [stats, bimesterId]);
+  }, [stats]);
 
   // 📊 Función para calcular porcentajes
   const calculatePercentage = (value: number, total: number) => {
@@ -112,13 +217,24 @@ export default function AttendanceStats({
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-              No hay datos de asistencia disponibles
-            </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">
-              Seleccione una sección válida para ver las estadísticas
-            </p>
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                  Cargando datos de asistencia...
+                </p>
+              </>
+            ) : (
+              <>
+                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                  {error ? `Error: ${error}` : 'No hay datos de asistencia disponibles'}
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  {error ? 'Intenta recargar la página' : 'Seleccione una sección válida para ver las estadísticas'}
+                </p>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -286,41 +402,52 @@ export default function AttendanceStats({
               </div>
             </div>
 
-            {/* 📊 Comparativa */}
-            <div className="grid grid-cols-4 gap-2 text-center">
-              <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                  {bimesterStats.present}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Presentes</div>
-              </div>
-
-              <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                <div className="text-lg font-semibold text-red-600 dark:text-red-400">
-                  {bimesterStats.absent}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Ausentes</div>
-              </div>
-
-              <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                <div className="text-lg font-semibold text-yellow-600 dark:text-yellow-400">
-                  {bimesterStats.late}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Tardíos</div>
-              </div>
-
-              <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                <div className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                  {bimesterStats.excused}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Justif.</div>
+            {/* 📊 Desglose por código de estado */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Desglose de Asistencia</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {statuses
+                  .filter(s => s.isActive)
+                  .sort((a, b) => a.order - b.order)
+                  .map(status => {
+                    const darkenedColor = getDarkenColor(status.colorCode);
+                    const count = stats?.byStatus?.[status.code] || 0;
+                    const percentage = bimesterStats.total > 0 ? ((count / bimesterStats.total) * 100).toFixed(1) : '0';
+                    
+                    return (
+                      <div 
+                        key={status.code}
+                        className="p-2 rounded border transition-all"
+                        style={{
+                          backgroundColor: status.colorCode + '26', // 15% opacity
+                          borderColor: status.colorCode || '#d1d5db',
+                        }}
+                      >
+                        <div 
+                          className="text-lg font-bold"
+                          style={{ color: darkenedColor }}
+                        >
+                          {count}
+                        </div>
+                        <div 
+                          className="text-xs font-medium"
+                          style={{ color: darkenedColor }}
+                        >
+                          {status.code}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {percentage}%
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
 
             {/* ℹ️ Nota informativa */}
             <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-xs text-blue-800 dark:text-blue-200">
-                <strong>Nota:</strong> Las estadísticas del bimestre son datos simulados para demostración.
+                <strong>Datos Acumulados:</strong> Estos son los totales registrados hasta el momento para esta sección. Los datos se actualizan en tiempo real.
               </p>
             </div>
           </CardContent>

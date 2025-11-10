@@ -11,6 +11,8 @@ import {
   useAttendanceActions,
   useHolidaysData,
 } from '@/hooks/attendance';
+import { useStudentsBySection } from '@/hooks/data';
+import { AttendanceStatusProvider } from '@/context/AttendanceStatusContext';
 import AttendanceHeader from './components/attendance-header/AttendanceHeader';
 import AttendanceTable from './components/attendance-grid/AttendanceTable';
 import AttendanceCards from './components/attendance-grid/AttendanceCards';
@@ -19,7 +21,7 @@ import {
   NoSectionSelectedState,
 } from './components/attendance-states/EmptyState';
 
-export default function AttendancePageWrapper() {
+function AttendanceGridContent() {
   // ========== NUEVOS HOOKS FASE 2 ==========
   const { attendances, stats, loading, error, fetchAttendances } = useAttendanceData();
   const { filters, setFilter } = useAttendanceFilters();
@@ -31,14 +33,20 @@ export default function AttendancePageWrapper() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
+  // ========== CARGAR ESTUDIANTES DE LA SECCIÓN ==========
+  const { students, loading: loadingStudents, error: studentsError } = useStudentsBySection(selectedGradeId, selectedSectionId);
+
   // DEBUG: Log del estado principal
   console.log('🎯 Estado de attendance-grid:', {
     selectedGradeId,
     selectedSectionId,
     selectedDate: selectedDate.toISOString().split('T')[0],
+    studentsCount: students.length,
     attendancesCount: attendances.length,
     loading,
+    loadingStudents,
     error,
+    studentsError,
   });
 
   // ========== VERIFICACIÓN DE FESTIVOS ==========
@@ -49,6 +57,48 @@ export default function AttendancePageWrapper() {
   const isHoliday = useMemo(() => {
     return !!currentHoliday;
   }, [currentHoliday]);
+
+  // ========== FUSIONAR ESTUDIANTES CON ASISTENCIAS ==========
+  // Empezar con lista de estudiantes (todos de la sección)
+  // Para cada uno, buscar si tiene asistencia registrada ese día
+  // Si tiene, combinar datos; si no, devolver estudiante sin marcar
+  const mergedAttendanceData = useMemo(() => {
+    console.log('[Attendance] Fusionando datos:', {
+      studentsCount: students.length,
+      attendancesCount: attendances.length,
+    });
+
+    // Si no hay estudiantes, no hay nada que mostrar
+    if (students.length === 0) {
+      console.log('[Attendance] ❌ Sin estudiantes cargados');
+      return [];
+    }
+
+    // Fusionar: Para cada estudiante, buscar asistencia registrada
+    const merged = students.map((student) => {
+      // Buscar asistencia para este estudiante en esta fecha
+      const attendance = attendances.find(
+        (att) => att.enrollmentId === student.enrollmentId
+      );
+
+      // Si hay asistencia, combinar datos
+      if (attendance) {
+        console.log(`[Attendance] ✅ ${student.studentName}: Asistencia encontrada - ${attendance.attendanceStatusId}`);
+        return {
+          ...attendance,      // id, date, attendanceStatusId, recordedAt, etc
+          ...student,         // Sobrescribir con datos del estudiante original (incluido studentName correcto)
+          enrollmentId: student.enrollmentId, // Asegurar que enrollmentId sea del estudiante
+        };
+      }
+
+      // Si no hay asistencia, devolver estudiante sin marcar
+      console.log(`[Attendance] ⭕ ${student.studentName}: Sin marcar`);
+      return student;
+    });
+
+    console.log('[Attendance] 📊 Datos fusionados:', merged.length, 'estudiantes');
+    return merged;
+  }, [students, attendances]);
 
   // ========== CARGAR ASISTENCIAS CUANDO CAMBIA SECCIÓN/FECHA ==========
   useEffect(() => {
@@ -108,7 +158,7 @@ export default function AttendancePageWrapper() {
           onGradeChange={handleGradeChange}
           onSectionChange={handleSectionChange}
           onDateChange={handleDateChange}
-          totalStudents={attendances.length}
+          totalStudents={mergedAttendanceData.length}
           stats={stats}
         />
 
@@ -186,9 +236,18 @@ export default function AttendancePageWrapper() {
                     isRecovered: currentHoliday.isRecovered,
                   } : undefined}
                   onDateChange={handleDateChange}
-                  data={attendances}
-                  loading={loading}
-                  error={error}
+                  onRefresh={async () => {
+                    await fetchAttendances({
+                      sectionId: selectedSectionId!,
+                      dateFrom: selectedDate.toISOString().split('T')[0],
+                      dateTo: selectedDate.toISOString().split('T')[0],
+                      page: 1,
+                      limit: 50,
+                    });
+                  }}
+                  data={mergedAttendanceData}
+                  loading={loading || loadingStudents}
+                  error={error || studentsError}
                 />
               ) : (
                 <AttendanceCards
@@ -202,9 +261,18 @@ export default function AttendancePageWrapper() {
                     isRecovered: currentHoliday.isRecovered,
                   } : undefined}
                   onDateChange={handleDateChange}
-                  data={attendances}
-                  loading={loading}
-                  error={error}
+                  onRefresh={async () => {
+                    await fetchAttendances({
+                      sectionId: selectedSectionId!,
+                      dateFrom: selectedDate.toISOString().split('T')[0],
+                      dateTo: selectedDate.toISOString().split('T')[0],
+                      page: 1,
+                      limit: 50,
+                    });
+                  }}
+                  data={mergedAttendanceData}
+                  loading={loading || loadingStudents}
+                  error={error || studentsError}
                 />
               )}
             </div>
@@ -212,5 +280,17 @@ export default function AttendancePageWrapper() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Wrapper que proporciona el contexto de estados de asistencia
+ * a todos los componentes hijos
+ */
+export default function AttendancePageWrapper() {
+  return (
+    <AttendanceStatusProvider>
+      <AttendanceGridContent />
+    </AttendanceStatusProvider>
   );
 }

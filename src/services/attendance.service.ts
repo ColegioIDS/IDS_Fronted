@@ -20,6 +20,8 @@ import {
   StudentClassAttendance,
   AttendanceReport,
   AttendanceStats,
+  AttendanceStatusCode,
+  BulkAttendanceByCourseDto,
 } from '@/types/attendance.types';
 
 export const attendanceService = {
@@ -127,26 +129,108 @@ export const attendanceService = {
    * Crear asistencia
    */
   async createAttendance(data: CreateAttendanceDto): Promise<StudentAttendance> {
+    console.log('[AttendanceService] Creando asistencia:', data);
     const response = await api.post('/api/attendance', data);
 
     if (!response.data?.success) {
       throw new Error(response.data?.message || 'Error al crear la asistencia');
     }
 
+    console.log('[AttendanceService] Asistencia creada exitosamente:', response.data.data);
     return response.data.data;
   },
 
   /**
-   * Actualizar asistencia
+   * Crear o actualizar asistencia (UPSERT)
+   * Si ya existe para ese estudiante en esa fecha, actualiza
+   * Si no existe, crea
+   * 
+   * @param data - Datos de asistencia
+   * @param allowUpdate - Si false, solo crea (rechaza si existe). Default: true
    */
-  async updateAttendance(id: number, data: UpdateAttendanceDto): Promise<StudentAttendance> {
-    const response = await api.patch(`/api/attendance/${id}`, data);
+  async upsertAttendance(data: CreateAttendanceDto, allowUpdate: boolean = true): Promise<StudentAttendance> {
+    console.log('[AttendanceService] Upsertando asistencia:', { data, allowUpdate });
+    const response = await api.post(`/api/attendance/upsert?allowUpdate=${allowUpdate}`, data);
 
     if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Error al actualizar la asistencia');
+      throw new Error(response.data?.message || 'Error al registrar la asistencia');
     }
 
+    console.log('[AttendanceService] Asistencia guardada exitosamente:', response.data.data);
     return response.data.data;
+  },
+
+  /**
+   * Actualizar asistencia - con fallback a crear si no existe
+   */
+  async updateAttendance(id: number, data: UpdateAttendanceDto): Promise<StudentAttendance> {
+    console.log(`[AttendanceService] Intentando actualizar asistencia ID ${id}:`, data);
+    try {
+      const response = await api.patch(`/api/attendance/${id}`, data);
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Error al actualizar la asistencia');
+      }
+
+      console.log('[AttendanceService] Asistencia actualizada exitosamente:', response.data.data);
+      return response.data.data;
+    } catch (error) {
+      // Si falla porque no existe el registro, intentar crear con el id como enrollmentId
+      const errorMsg = (error as any).response?.data?.message || (error as Error).message;
+      
+      if (errorMsg?.includes('No se encontró') || (error as any).response?.status === 404) {
+        console.log(
+          `[AttendanceService] Registro no encontrado (${errorMsg}). Intentando crear como nuevo registro con enrollmentId=${id}`
+        );
+        
+        // Crear un nuevo registro usando el id como enrollmentId
+        return this.createAttendance({
+          enrollmentId: id,
+          date: new Date().toISOString().split('T')[0],
+          attendanceStatusId: data.attendanceStatusId || 1,
+          ...data,
+        } as CreateAttendanceDto);
+      }
+      
+      throw error;
+    }
+  },
+
+  /**
+   * Crear o actualizar asistencia (upsert inteligente)
+   * Si existe el registro por ID, lo actualiza
+   * Si no existe y tenemos enrollmentId, crea uno nuevo
+   */
+  async smartUpdateAttendance(
+    attendanceId: number | undefined,
+    enrollmentId: number,
+    attendanceStatusId: number,
+    selectedDate: Date
+  ): Promise<StudentAttendance> {
+    const isoDate = selectedDate.toISOString().split('T')[0];
+    
+    // Si tenemos ID de asistencia, intentar actualizar
+    if (attendanceId) {
+      try {
+        console.log(`[AttendanceService] Intentando actualizar asistencia ID: ${attendanceId}`);
+        return await this.updateAttendance(attendanceId, { attendanceStatusId });
+      } catch (error) {
+        console.log(
+          `[AttendanceService] Actualización falló (${(error as Error).message}), intentando crear nuevo registro`
+        );
+        // Continuar a crear
+      }
+    }
+
+    // Si no hay ID o la actualización falló, crear nuevo
+    console.log(
+      `[AttendanceService] Creando nuevo registro de asistencia para enrollmentId: ${enrollmentId}`
+    );
+    return this.createAttendance({
+      enrollmentId,
+      date: isoDate,
+      attendanceStatusId,
+    });
   },
 
   /**
@@ -211,6 +295,22 @@ export const attendanceService = {
 
     if (!response.data?.success) {
       throw new Error(response.data?.message || 'Error al aplicar estado de asistencia');
+    }
+
+    return response.data.data;
+  },
+
+  /**
+   * ✅ NUEVO: Aplicar asistencia a múltiples cursos simultáneamente
+   * Registra asistencia para múltiples estudiantes en múltiples cursos
+   */
+  async bulkByCourses(data: BulkAttendanceByCourseDto): Promise<BulkAttendanceResponse> {
+    const response = await api.post('/api/attendance/bulk-by-courses', data);
+
+    if (!response.data?.success) {
+      throw new Error(
+        response.data?.message || 'Error al aplicar asistencia por cursos'
+      );
     }
 
     return response.data.data;

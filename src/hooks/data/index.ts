@@ -3,3 +3,4 @@ export { useEnrollmentDetail } from './useEnrollmentDetail';
 export { useEnrollmentStatistics } from './useEnrollmentStatistics';
 export { useEnrollmentGrades } from './useEnrollmentGrades';
 export { useEnrollmentSections } from './useEnrollmentSections';
+export { useStudentsBySection } from './useStudentsBySection';

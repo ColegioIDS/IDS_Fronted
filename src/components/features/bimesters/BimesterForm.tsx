@@ -33,6 +33,7 @@ import { CycleInfo } from '@/components/shared/info/CycleInfo';
 import { bimesterService } from '@/services/bimester.service';
 import { handleApiError, handleApiSuccess } from '@/utils/handleApiError';
 import { Bimester } from '@/types/bimester.types';
+import { useBimesterCycles } from '@/hooks/data/useBimesterCycles';
 
 // ============================================
 // SCHEMA ZOD
@@ -83,9 +84,7 @@ export function BimesterForm({
   onSuccess,
 }: BimesterFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedCycleId, setSelectedCycleId] = useState<number | null>(
-    editingBimester?.schoolCycleId || null
-  );
+  // cycle id is managed by react-hook-form; we'll read it via watch('cycleId')
   const [startDate, setStartDate] = useState<Date | undefined>(
     editingBimester?.startDate ? new Date(editingBimester.startDate) : undefined
   );
@@ -96,6 +95,16 @@ export function BimesterForm({
   const [endDateOpen, setEndDateOpen] = useState(false);
 
   const isEditing = !!editingBimester;
+
+  // Some APIs return the parent cycle id as `schoolCycleId` and others as `cycleId`.
+  // Normalize to `editingCycleId` so the form uses the correct value when editing.
+  const editingCycleId: number | undefined = React.useMemo(() => {
+    if (!editingBimester) return undefined;
+    // prefer schoolCycleId, fallback to cycleId (loose cast for runtime shapes)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyB = editingBimester as any;
+    return (editingBimester.schoolCycleId ?? anyB.cycleId) as number | undefined;
+  }, [editingBimester]);
 
   // Form setup
   const {
@@ -108,24 +117,85 @@ export function BimesterForm({
   } = useForm<BimesterFormData>({
     resolver: zodResolver(bimesterFormSchema),
     defaultValues: {
-      cycleId: editingBimester?.schoolCycleId || 0,
+  cycleId: editingCycleId ?? undefined,
       number: editingBimester?.number || 1,
       name: editingBimester?.name || '',
-      startDate: editingBimester?.startDate?.split('T')[0] || '',
-      endDate: editingBimester?.endDate?.split('T')[0] || '',
+      // Keep full ISO string for consistency with onSelect (toISOString)
+      startDate: editingBimester?.startDate || '',
+      endDate: editingBimester?.endDate || '',
       isActive: editingBimester?.isActive ?? false,
       weeksCount: editingBimester?.weeksCount || 8,
     },
   });
 
-  const isActive = watch('isActive');
-
-  // Sincronizar cycleId con el selector
+  // Sync form and local state when editingBimester changes (or when opening/closing)
   React.useEffect(() => {
-    if (selectedCycleId) {
-      setValue('cycleId', selectedCycleId);
+  // Debug
+  // eslint-disable-next-line no-console
+  console.log('[BimesterForm] editingBimester changed:', editingBimester);
+
+    if (editingBimester) {
+      setStartDate(editingBimester.startDate ? new Date(editingBimester.startDate) : undefined);
+      setEndDate(editingBimester.endDate ? new Date(editingBimester.endDate) : undefined);
+
+      // eslint-disable-next-line no-console
+      console.log('[BimesterForm] resetting form with cycleId:', editingCycleId);
+
+      reset({
+        cycleId: editingCycleId ?? undefined,
+        number: editingBimester.number || 1,
+        name: editingBimester.name || '',
+        startDate: editingBimester.startDate || '',
+        endDate: editingBimester.endDate || '',
+        isActive: editingBimester.isActive ?? false,
+        weeksCount: editingBimester.weeksCount || 8,
+      });
+    } else {
+      // If not editing (creating new) reset to defaults
+  // eslint-disable-next-line no-console
+  console.log('[BimesterForm] resetting to create defaults');
+      reset({
+        cycleId: undefined,
+        number: 1,
+        name: '',
+        startDate: '',
+        endDate: '',
+        isActive: false,
+        weeksCount: 8,
+      });
+      setStartDate(undefined);
+      setEndDate(undefined);
     }
-  }, [selectedCycleId, setValue]);
+  }, [editingBimester, reset]);
+
+  // Log when dialog opens so we can see timing vs data arrival
+  React.useEffect(() => {
+    if (open) {
+      // eslint-disable-next-line no-console
+      console.log('[BimesterForm] dialog opened. editingBimester:', editingBimester, 'form cycleId:', watch('cycleId'));
+    }
+  }, [open, editingBimester, watch]);
+
+  const isActive = watch('isActive');
+  const cycleId = watch('cycleId');
+
+  // Ensure a sensible default when creating: prefer activeCycle or first available
+  const { cycles, activeCycle } = useBimesterCycles();
+
+  React.useEffect(() => {
+    // Only run in create mode and when dialog opens / cycles change
+    if (open && !isEditing && cycles && cycles.length > 0) {
+      const current = watch('cycleId');
+      if (current == null) {
+        const defaultId = activeCycle?.id ?? cycles[0]?.id;
+        if (defaultId != null) {
+          // eslint-disable-next-line no-console
+          console.log('[BimesterForm] setting default cycleId for create:', defaultId);
+          setValue('cycleId', defaultId);
+        }
+      }
+    }
+  }, [open, isEditing, cycles, activeCycle, setValue, watch]);
 
   // Submit handler
   const onSubmit = async (data: BimesterFormData) => {
@@ -188,8 +258,8 @@ export function BimesterForm({
             <div className="space-y-4">
               {/* Selector de Ciclo */}
               <CycleSelector
-                value={selectedCycleId}
-                onValueChange={setSelectedCycleId}
+                value={cycleId}
+                onValueChange={(id) => setValue('cycleId', id)}
                 label="Ciclo Escolar"
                 required
                 disabled={isLoading || isEditing}
@@ -261,7 +331,7 @@ export function BimesterForm({
                           setStartDateOpen(false);
                         }}
                         disabled={(date) =>
-                          selectedCycleId !== null &&
+                          cycleId != null &&
                           date < new Date('1900-01-01')
                         }
                         initialFocus
@@ -299,7 +369,7 @@ export function BimesterForm({
                           setEndDateOpen(false);
                         }}
                         disabled={(date) =>
-                          selectedCycleId !== null &&
+                          cycleId != null &&
                           date < new Date('1900-01-01')
                         }
                         initialFocus
@@ -347,11 +417,11 @@ export function BimesterForm({
             </div>
 
             {/* Columna Derecha: Info del Ciclo */}
-            {selectedCycleId && (
+            {cycleId ? (
               <div>
-                <CycleInfo cycleId={selectedCycleId} showBimesters showStats />
+                <CycleInfo cycleId={cycleId} showBimesters showStats />
               </div>
-            )}
+            ) : null}
           </div>
 
           <DialogFooter>
@@ -367,7 +437,7 @@ export function BimesterForm({
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || !selectedCycleId}
+              disabled={isLoading || !cycleId}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {isLoading ? (
