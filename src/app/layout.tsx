@@ -6,6 +6,7 @@ import "./globals.css";
 import { SidebarProvider } from "@/context/SidebarContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { QueryProvider } from "@/providers/QueryProvider";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -33,13 +34,15 @@ export default function RootLayout({
         className={`${outfit.className} dark:bg-gray-900 overflow-x-hidden`}
         suppressHydrationWarning
       >
-        <ThemeProvider>
-          <AuthProvider>
-            <SidebarProvider>
-              {children}
-            </SidebarProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <SidebarProvider>
+                {children}
+              </SidebarProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

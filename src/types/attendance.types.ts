@@ -211,6 +211,7 @@ export interface CreateAttendanceDto {
   date: string; // ISO format
   attendanceStatusId: number;  // ✅ CAMBIO: ID numérico en lugar de código string
   courseAssignmentId?: number;
+  courseAssignmentIds?: number[]; // ✅ NUEVO: Lista de cursos seleccionados
   notes?: string;
   arrivalTime?: string; // HH:mm format
   minutesLate?: number;
@@ -447,3 +448,59 @@ export interface AttendanceConfigurationResponse {
   message?: string;
 }
 
+// ============================================
+// BULK BY SCHEDULES - NUEVO FLUJO
+// ============================================
+
+// ✅ Información de un horario
+export interface Schedule {
+  id: number;
+  sectionId: number;
+  courseAssignmentId: number;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  classroom?: string | null;
+  course?: {
+    name: string;
+    code?: string;
+  };
+  teacher?: {
+    id: number;
+    givenNames: string;
+    lastNames: string;
+  };
+}
+
+// ✅ DTO para registro individual de asistencia por horario
+export interface BulkBySchedulesAttendanceItem {
+  enrollmentId: number;
+  attendanceStatusId: number;
+  arrivalTime?: string;  // HH:MM format
+  notes?: string;
+}
+
+// ✅ DTO principal para el endpoint bulk-by-schedules
+export interface BulkBySchedulesDto {
+  date: string;  // YYYY-MM-DD format
+  scheduleIds: number[];
+  attendances: BulkBySchedulesAttendanceItem[];
+}
+
+// ✅ Respuesta del servidor
+export interface BulkBySchedulesResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    totalRecords: number;
+    schedules: number[];
+    studentCount: number;
+    created: number;
+    updated: number;
+    errors?: Array<{
+      enrollmentId?: number;
+      scheduleId?: number;
+      error: string;
+    }>;
+  };
+}

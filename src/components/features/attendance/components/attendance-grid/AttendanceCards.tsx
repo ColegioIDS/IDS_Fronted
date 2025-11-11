@@ -14,6 +14,7 @@ import { useAttendanceActions, useAttendanceStatuses } from '@/hooks/attendance'
 
 import HolidayNotice from '../attendance-states/HolidayNotice';
 import BulkActions from '../attendance-controls/BulkActions';
+import { CourseSelector } from '../attendance-controls/CourseSelector'; // ✅ NUEVO
 import { MediumStudentAvatar } from './StudentAvatar';
 import { NoStudentsState, NoSearchResultsState } from '../attendance-states/EmptyState';
 
@@ -121,6 +122,7 @@ export default function AttendanceCards({
 }: AttendanceCardsProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
+  const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]); // ✅ NUEVO
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const [updatingIds, setUpdatingIds] = useState<Set<number>>(new Set());
   const { upsertAttendance, bulkApplyStatus } = useAttendanceActions();
@@ -331,6 +333,7 @@ export default function AttendanceCards({
           enrollmentId,
           date: isoDate,
           attendanceStatusId,
+          ...(selectedCourseIds.length > 0 && { courseAssignmentIds: selectedCourseIds }), // ✅ NUEVO: Agregar cursos seleccionados
         }, true);
         if (onRefresh) await onRefresh();
       } catch (err) {
@@ -343,7 +346,7 @@ export default function AttendanceCards({
         });
       }
     },
-    [upsertAttendance, selectedDate, onRefresh]
+    [upsertAttendance, selectedDate, onRefresh, selectedCourseIds] // ✅ NUEVO: Agregar selectedCourseIds a las dependencias
   );
 
   const handleBulkAction = useCallback(
@@ -451,6 +454,14 @@ export default function AttendanceCards({
   // ✅ RENDERIZADO NORMAL - Tarjetas con estudiantes
   return (
     <div className="space-y-4">
+      {/* ✅ NUEVO: Selector de cursos */}
+      <CourseSelector
+        sectionId={sectionId}
+        selectedCourseIds={selectedCourseIds}
+        onSelectionChange={setSelectedCourseIds}
+        disabled={false}
+      />
+
       {/* ⚡ Acciones masivas */}
       <BulkActions
         selectedStudents={selectedStudents}

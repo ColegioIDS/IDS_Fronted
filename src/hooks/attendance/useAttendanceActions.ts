@@ -17,6 +17,8 @@ import {
   UpdateJustificationDto,
   StudentJustification,
   BulkAttendanceByCourseDto,
+  BulkBySchedulesDto,
+  BulkBySchedulesResponse,
 } from '@/types/attendance.types';
 
 interface ActionState {
@@ -272,6 +274,24 @@ export const useAttendanceActions = () => {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
+  /**
+   * ✅ NUEVO: Registrar asistencia por horarios (bulk-by-schedules)
+   * Endpoint recomendado para el nuevo flujo
+   */
+  const bulkBySchedules = useCallback(async (data: BulkBySchedulesDto): Promise<BulkBySchedulesResponse> => {
+    setState({ loading: true, error: null, success: false });
+
+    try {
+      const result = await attendanceService.bulkBySchedules(data);
+      setState({ loading: false, error: null, success: true });
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setState({ loading: false, error: errorMessage, success: false });
+      throw err;
+    }
+  }, []);
+
   return {
     ...state,
     createAttendance,
@@ -283,6 +303,7 @@ export const useAttendanceActions = () => {
     bulkDeleteAttendances,
     bulkApplyStatus,
     bulkByCourses,
+    bulkBySchedules,
     createJustification,
     updateJustification,
     approveJustification,
