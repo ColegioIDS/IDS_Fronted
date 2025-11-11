@@ -2,13 +2,16 @@
 'use client';
 
 import { AttendanceStatus } from '@/types/attendance-status.types';
-import { useTheme } from 'next-themes';
-import { Check, X, Clock, AlertCircle } from 'lucide-react';
+import { Check, X, Clock, AlertCircle, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { ATTENDANCE_THEME, getStatusTypeStyle } from '@/constants/attendance-statuses-theme';
+import { BaseCard } from '@/components/features/attendance-statuses/card/base-card';
 
 interface AttendanceStatusCardProps {
   status: AttendanceStatus;
   onEdit?: (status: AttendanceStatus) => void;
   onDelete?: (id: number) => void;
+  onToggleActive?: (id: number, isActive: boolean) => void;
   isCompact?: boolean;
 }
 
@@ -16,163 +19,231 @@ export const AttendanceStatusCard = ({
   status,
   onEdit,
   onDelete,
+  onToggleActive,
   isCompact = false,
 }: AttendanceStatusCardProps) => {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  // Obtener estilo según tipo de estado
+  const statusTypeStyle = getStatusTypeStyle(status.isNegative, status.isExcused, status.isTemporal);
 
-  const bgColor = isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
-  const textColor = isDark ? 'text-slate-100' : 'text-slate-900';
-  const mutedColor = isDark ? 'text-slate-400' : 'text-slate-600';
-  const hoverColor = isDark
-    ? 'hover:bg-slate-700 hover:border-slate-600'
-    : 'hover:bg-slate-50 hover:border-slate-300';
-
+  // Icono dinámico según tipo de estado
   const getStatusIcon = () => {
-    if (status.isExcused) return <Check className="w-5 h-5 text-blue-500" />;
-    if (status.isNegative) return <X className="w-5 h-5 text-red-500" />;
-    if (status.isTemporal) return <Clock className="w-5 h-5 text-orange-500" />;
-    return <AlertCircle className="w-5 h-5 text-slate-500" />;
+    if (status.isExcused) return <Check className="w-5 h-5" />;
+    if (status.isNegative) return <X className="w-5 h-5" />;
+    if (status.isTemporal) return <Clock className="w-5 h-5" />;
+    return <AlertCircle className="w-5 h-5" />;
   };
 
+  // Versión compacta para listas
   if (isCompact) {
     return (
-      <div
-        className={`flex items-center gap-3 p-3 rounded-lg border ${bgColor} ${hoverColor} transition-colors`}
-      >
-        <div
-          className="w-4 h-4 rounded-full border-2"
-          style={{
-            backgroundColor: status.colorCode || '#9CA3AF',
-            borderColor: status.colorCode || '#9CA3AF',
-          }}
-        />
-        <div className="flex-1">
-          <p className={`font-medium ${textColor}`}>{status.code}</p>
-          <p className={`text-sm ${mutedColor}`}>{status.name}</p>
+      <BaseCard variant="compact" isHoverable>
+        <div className="flex items-center gap-3">
+          {/* Color Indicator */}
+          <div
+            className={cn(
+              'w-4 h-4 rounded-full border-2',
+              ATTENDANCE_THEME.radius.full
+            )}
+            style={{
+              backgroundColor: status.colorCode || '#9CA3AF',
+              borderColor: status.colorCode || '#9CA3AF',
+            }}
+          />
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <p className={cn('font-semibold text-sm', ATTENDANCE_THEME.base.text.primary)}>
+              {status.code}
+            </p>
+            <p className={cn('text-xs truncate', ATTENDANCE_THEME.base.text.muted)}>
+              {status.name}
+            </p>
+          </div>
+
+          {/* Icon */}
+          <div className={statusTypeStyle.color}>
+            {getStatusIcon()}
+          </div>
         </div>
-        {getStatusIcon()}
-      </div>
+      </BaseCard>
     );
   }
 
+  // Versión completa
   return (
-    <div
-      className={`p-4 rounded-lg border ${bgColor} ${hoverColor} transition-all duration-200 group`}
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3 flex-1">
+    <BaseCard variant="default" className="group overflow-hidden">
+      {/* ============================================
+          SECCIÓN: HEADER CON CÓDIGO Y DESCRIPCIÓN
+          ============================================ */}
+      <div className="flex items-start justify-between mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex items-start gap-4 flex-1 min-w-0">
+          {/* Badge con Código y Color */}
           <div
-            className="w-10 h-10 rounded-full border-2 flex items-center justify-center"
+            className={cn(
+              'w-12 h-12 rounded-lg border-2 flex items-center justify-center flex-shrink-0',
+              'font-bold text-white'
+            )}
             style={{
               backgroundColor: status.colorCode || '#9CA3AF',
               borderColor: status.colorCode || '#9CA3AF',
             }}
           >
-            <span className={`text-sm font-bold text-white`}>{status.code}</span>
+            {status.code}
           </div>
-          <div>
-            <h3 className={`font-semibold ${textColor}`}>{status.name}</h3>
-            <p className={`text-sm ${mutedColor}`}>{status.description || 'Sin descripción'}</p>
+
+          {/* Título y Descripción */}
+          <div className="flex-1 min-w-0">
+            <h3 className={cn('font-semibold text-base', ATTENDANCE_THEME.base.text.primary)}>
+              {status.name}
+            </h3>
+            <p className={cn('text-sm mt-1 line-clamp-2', ATTENDANCE_THEME.base.text.muted)}>
+              {status.description || 'Sin descripción'}
+            </p>
           </div>
         </div>
-        {getStatusIcon()}
+
+        {/* Icono de Tipo de Estado (esquina superior derecha) */}
+        <div className={statusTypeStyle.color}>
+          {getStatusIcon()}
+        </div>
       </div>
 
-      {/* Metadata */}
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="flex items-center gap-2">
-          <span className={`text-xs ${mutedColor}`}>Estado:</span>
-          <span
-            className={`px-2 py-1 rounded text-xs font-medium ${
-              status.isActive
-                ? isDark
-                  ? 'bg-green-900 text-green-200'
-                  : 'bg-green-100 text-green-800'
-                : isDark
-                  ? 'bg-red-900 text-red-200'
-                  : 'bg-red-100 text-red-800'
-            }`}
-          >
+      {/* ============================================
+          SECCIÓN: METADATOS (Estado y Orden)
+          ============================================ */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        {/* Estado (Activo/Inactivo) */}
+        <div className="space-y-1">
+          <p className={cn('text-xs font-medium', ATTENDANCE_THEME.base.text.muted)}>
+            Estado
+          </p>
+          <div className={cn(
+            'px-2 py-1 rounded text-xs font-medium w-fit',
+            status.isActive
+              ? ATTENDANCE_THEME.status.active.bg + ' ' + ATTENDANCE_THEME.status.active.text
+              : ATTENDANCE_THEME.status.inactive.bg + ' ' + ATTENDANCE_THEME.status.inactive.text
+          )}>
             {status.isActive ? 'Activo' : 'Inactivo'}
-          </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className={`text-xs ${mutedColor}`}>Orden:</span>
-          <span className={`text-xs font-medium ${textColor}`}>{status.order}</span>
+
+        {/* Orden */}
+        <div className="space-y-1">
+          <p className={cn('text-xs font-medium', ATTENDANCE_THEME.base.text.muted)}>
+            Orden
+          </p>
+          <p className={cn('text-sm font-semibold', ATTENDANCE_THEME.base.text.primary)}>
+            {status.order}
+          </p>
         </div>
       </div>
 
-      {/* Flags */}
-      <div className="flex flex-wrap gap-2 mb-3">
+      {/* ============================================
+          SECCIÓN: BADGES CON PROPIEDADES
+          ============================================ */}
+      <div className="flex flex-wrap gap-2 mb-4">
         {status.isNegative && (
-          <span
-            className={`px-2 py-1 text-xs font-medium rounded ${
-              isDark ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800'
-            }`}
-          >
+          <span className={cn(
+            'px-2 py-1 text-xs font-medium rounded',
+            ATTENDANCE_THEME.operations.delete.badge
+          )}>
             Ausencia
           </span>
         )}
         {status.requiresJustification && (
-          <span
-            className={`px-2 py-1 text-xs font-medium rounded ${
-              isDark ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'
-            }`}
-          >
+          <span className={cn(
+            'px-2 py-1 text-xs font-medium rounded',
+            ATTENDANCE_THEME.operations.update.badge
+          )}>
             Requiere Justificación
           </span>
         )}
         {status.isTemporal && (
-          <span
-            className={`px-2 py-1 text-xs font-medium rounded ${
-              isDark ? 'bg-orange-900 text-orange-200' : 'bg-orange-100 text-orange-800'
-            }`}
-          >
+          <span className={cn(
+            'px-2 py-1 text-xs font-medium rounded',
+            'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200'
+          )}>
             Temporal
           </span>
         )}
         {status.isExcused && (
-          <span
-            className={`px-2 py-1 text-xs font-medium rounded ${
-              isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
-            }`}
-          >
+          <span className={cn(
+            'px-2 py-1 text-xs font-medium rounded',
+            'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+          )}>
             Excusado
           </span>
         )}
       </div>
 
-      {/* Actions */}
-      {(onEdit || onDelete) && (
-        <div className="flex gap-2 pt-3 border-t border-slate-600 group-hover:block hidden">
+      {/* ============================================
+          SECCIÓN: ACCIONES (Visible en hover)
+          ============================================ */}
+      {(onEdit || onDelete || onToggleActive) && (
+        <div className={cn(
+          'flex gap-2 pt-4 border-t border-slate-200 dark:border-slate-700',
+          'opacity-0 group-hover:opacity-100 transition-opacity duration-200'
+        )}>
+          {/* Botón Activar/Desactivar */}
+          {onToggleActive && (
+            <button
+              onClick={() => onToggleActive(status.id, !status.isActive)}
+              className={cn(
+                'p-2 rounded transition-colors flex-1',
+                status.isActive
+                  ? ATTENDANCE_THEME.operations.read.button
+                  : ATTENDANCE_THEME.operations.read.button,
+                'text-white text-sm font-medium flex items-center justify-center gap-2'
+              )}
+              title={status.isActive ? 'Desactivar' : 'Activar'}
+            >
+              {status.isActive ? (
+                <>
+                  <Eye className="w-4 h-4" />
+                  <span className="hidden sm:inline">Activo</span>
+                </>
+              ) : (
+                <>
+                  <EyeOff className="w-4 h-4" />
+                  <span className="hidden sm:inline">Inactivo</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Botón Editar */}
           {onEdit && (
             <button
               onClick={() => onEdit(status)}
-              className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
-                isDark
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
-              }`}
+              className={cn(
+                'p-2 rounded transition-colors flex-1',
+                ATTENDANCE_THEME.operations.update.button,
+                'text-white text-sm font-medium flex items-center justify-center gap-2'
+              )}
+              title="Editar"
             >
-              Editar
+              <Edit2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Editar</span>
             </button>
           )}
+
+          {/* Botón Eliminar */}
           {onDelete && (
             <button
               onClick={() => onDelete(status.id)}
-              className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
-                isDark
-                  ? 'bg-red-600 hover:bg-red-700 text-white'
-                  : 'bg-red-500 hover:bg-red-600 text-white'
-              }`}
+              className={cn(
+                'p-2 rounded transition-colors flex-1',
+                ATTENDANCE_THEME.operations.delete.button,
+                'text-white text-sm font-medium flex items-center justify-center gap-2'
+              )}
+              title="Eliminar"
             >
-              Eliminar
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Eliminar</span>
             </button>
           )}
         </div>
       )}
-    </div>
+    </BaseCard>
   );
 };

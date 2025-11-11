@@ -2,11 +2,16 @@
 'use client';
 
 import { useState } from 'react';
-import { useTheme } from 'next-themes';
-import { Plus, AlertCircle } from 'lucide-react';
+import { Plus, AlertCircle, Grid3x3, List } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { AttendanceStatus, AttendanceStatusQuery } from '@/types/attendance-status.types';
 import { useAttendanceStatuses, useAttendanceStatusPermissions } from '@/hooks/data';
 import { attendanceStatusesService } from '@/services/attendance-statuses.service';
+import { ATTENDANCE_THEME } from '@/constants/attendance-statuses-theme';
+import { BaseCard } from '@/components/features/attendance-statuses/card/base-card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { AttendanceStatusCard } from './AttendanceStatusCard';
 import { AttendanceStatusTable } from './AttendanceStatusTable';
 import { AttendanceStatusForm } from './AttendanceStatusForm';
@@ -16,11 +21,12 @@ import { DeleteStatusDialog } from './DeleteStatusDialog';
 type ViewMode = 'list' | 'grid' | 'form';
 
 export const AttendanceStatusesPageContent = () => {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   const { canReadStatuses, canCreateStatus, canUpdateStatus, canDeleteStatus } =
     useAttendanceStatusPermissions();
+
+  // ============================================
+  // ESTADO
+  // ============================================
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [filters, setFilters] = useState<AttendanceStatusQuery>({ page: 1, limit: 10 });
   const [editingStatus, setEditingStatus] = useState<AttendanceStatus | undefined>();
@@ -28,12 +34,17 @@ export const AttendanceStatusesPageContent = () => {
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
   const [isOperating, setIsOperating] = useState(false);
 
+  // ============================================
+  // DATOS
+  // ============================================
   const { data: statusesData, isLoading, error, refresh, updateQuery } = useAttendanceStatuses(filters);
 
   const statuses = statusesData?.data || [];
   const meta = statusesData?.meta;
 
-  // Handlers
+  // ============================================
+  // HANDLERS - CREATE
+  // ============================================
   const handleCreate = async (data: any) => {
     try {
       setIsOperating(true);
@@ -42,12 +53,14 @@ export const AttendanceStatusesPageContent = () => {
       refresh();
     } catch (error) {
       console.error('Error creating status:', error);
-      alert('Error al crear estado');
     } finally {
       setIsOperating(false);
     }
   };
 
+  // ============================================
+  // HANDLERS - UPDATE
+  // ============================================
   const handleUpdate = async (data: any) => {
     if (!editingStatus) return;
     try {
@@ -58,12 +71,14 @@ export const AttendanceStatusesPageContent = () => {
       refresh();
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Error al actualizar estado');
     } finally {
       setIsOperating(false);
     }
   };
 
+  // ============================================
+  // HANDLERS - DELETE
+  // ============================================
   const handleDeleteClick = (id: number, name: string) => {
     setDeleteTarget({ id, name });
     setDeleteDialogOpen(true);
@@ -79,12 +94,14 @@ export const AttendanceStatusesPageContent = () => {
       refresh();
     } catch (error) {
       console.error('Error deleting status:', error);
-      alert('Error al eliminar estado');
     } finally {
       setIsOperating(false);
     }
   };
 
+  // ============================================
+  // HANDLERS - TOGGLE ACTIVE
+  // ============================================
   const handleToggleActive = async (id: number, isActive: boolean) => {
     try {
       setIsOperating(true);
@@ -96,228 +113,274 @@ export const AttendanceStatusesPageContent = () => {
       refresh();
     } catch (error) {
       console.error('Error toggling status:', error);
-      alert('Error al cambiar estado');
     } finally {
       setIsOperating(false);
     }
   };
 
-  // Theme variables
-  const bgColor = isDark ? 'bg-slate-900' : 'bg-white';
-  const textColor = isDark ? 'text-slate-100' : 'text-slate-900';
-  const mutedColor = isDark ? 'text-slate-400' : 'text-slate-600';
-  const borderColor = isDark ? 'border-slate-700' : 'border-slate-200';
-
-  // Check permissions
+  // ============================================
+  // VALIDACIÓN DE PERMISOS
+  // ============================================
   if (!canReadStatuses) {
     return (
-      <div className={`flex items-center gap-3 p-6 rounded-lg border ${borderColor} ${bgColor}`}>
-        <AlertCircle className="w-5 h-5 text-orange-500" />
-        <div>
-          <h3 className={`font-semibold ${textColor}`}>Acceso Denegado</h3>
-          <p className={mutedColor}>No tienes permisos para ver los estados de asistencia</p>
+      <BaseCard className={cn(
+        'flex items-center gap-4 p-6',
+        ATTENDANCE_THEME.operations.delete.bg,
+        'border',
+        ATTENDANCE_THEME.operations.delete.border
+      )}>
+        <div className={cn(
+          'p-3 rounded-lg',
+          ATTENDANCE_THEME.operations.delete.bg
+        )}>
+          <AlertCircle className={cn(
+            'w-6 h-6',
+            ATTENDANCE_THEME.operations.delete.muted
+          )} />
         </div>
-      </div>
+        <div>
+          <h3 className={cn('font-semibold', ATTENDANCE_THEME.base.text.primary)}>
+            Acceso Denegado
+          </h3>
+          <p className={ATTENDANCE_THEME.base.text.muted}>
+            No tienes permisos para ver los estados de asistencia
+          </p>
+        </div>
+      </BaseCard>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      {/* ============================================
+          SECCIÓN: HEADER
+          ============================================ */}
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
-          <h1 className={`text-3xl font-bold ${textColor}`}>Estados de Asistencia</h1>
-          <p className={`mt-1 ${mutedColor}`}>Gestiona los estados de asistencia del sistema</p>
+          <h1 className={cn('text-3xl font-bold', ATTENDANCE_THEME.base.text.primary)}>
+            Estados de Asistencia
+          </h1>
+          <p className={cn('mt-2', ATTENDANCE_THEME.base.text.muted)}>
+            Gestiona los estados de asistencia disponibles en el sistema
+          </p>
         </div>
 
-        <div className="flex gap-2">
-          {viewMode !== 'form' && canCreateStatus && (
-            <button
-              onClick={() => {
-                setEditingStatus(undefined);
-                setViewMode('form');
-              }}
-              className="flex items-center gap-2 px-4 py-2 rounded font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              Crear Estado
-            </button>
-          )}
+        {/* Botón Crear (solo visible si no estamos en formulario) */}
+        {viewMode !== 'form' && canCreateStatus && (
+          <Button
+            onClick={() => {
+              setEditingStatus(undefined);
+              setViewMode('form');
+            }}
+            className={cn(
+              ATTENDANCE_THEME.operations.create.button,
+              'text-white gap-2'
+            )}
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Crear Estado</span>
+            <span className="sm:hidden">Crear</span>
+          </Button>
+        )}
 
-          {viewMode === 'form' && (
-            <button
-              onClick={() => {
-                setViewMode('list');
-                setEditingStatus(undefined);
-              }}
-              className={`px-4 py-2 rounded font-medium transition-colors ${
-                isDark
-                  ? 'bg-slate-700 hover:bg-slate-600 text-white'
-                  : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
-              }`}
-            >
-              Volver
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Form View */}
-      {viewMode === 'form' && (
-        <div>
-          <AttendanceStatusForm
-            initialData={editingStatus}
-            onSubmit={editingStatus ? handleUpdate : handleCreate}
-            onCancel={() => {
+        {/* Botón Volver (solo visible si estamos en formulario) */}
+        {viewMode === 'form' && (
+          <Button
+            variant="outline"
+            onClick={() => {
               setViewMode('list');
               setEditingStatus(undefined);
             }}
-            isLoading={isOperating}
-          />
-        </div>
+          >
+            Volver a Lista
+          </Button>
+        )}
+      </div>
+
+      {/* ============================================
+          SECCIÓN: FORMULARIO
+          ============================================ */}
+      {viewMode === 'form' && (
+        <AttendanceStatusForm
+          initialData={editingStatus}
+          onSubmit={editingStatus ? handleUpdate : handleCreate}
+          onCancel={() => {
+            setViewMode('list');
+            setEditingStatus(undefined);
+          }}
+          isLoading={isOperating}
+        />
       )}
 
-      {/* List/Grid View */}
+      {/* ============================================
+          SECCIÓN: LISTA/GRID
+          ============================================ */}
       {viewMode !== 'form' && (
         <>
-          {/* Filters */}
+          {/* FILTROS */}
           <AttendanceStatusFilters filters={filters} onFilterChange={setFilters} />
 
-          {/* View Toggle */}
-          <div className={`flex gap-2 p-3 rounded-lg border ${borderColor} ${bgColor}`}>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-4 py-2 rounded font-medium transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-blue-600 text-white'
-                  : isDark
-                    ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Lista
-            </button>
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`px-4 py-2 rounded font-medium transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-blue-600 text-white'
-                  : isDark
-                    ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Cuadrícula
-            </button>
-          </div>
+          {/* TOGGLE DE VISTA (TABS) - PEQUEÑO A LA DERECHA */}
+          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)} className="w-full">
+            <TabsList className={cn(
+              'grid grid-cols-2 w-fit ml-auto gap-1 p-0.5 bg-slate-100 dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700'
+            )}>
+              <TabsTrigger 
+                value="list" 
+                className={cn(
+                  'gap-1 py-1.5 px-2.5 text-xs transition-all',
+                  viewMode === 'list' 
+                    ? 'bg-white dark:bg-slate-700 shadow-sm' 
+                    : ''
+                )}
+              >
+                <List className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Lista</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="grid" 
+                className={cn(
+                  'gap-1 py-1.5 px-2.5 text-xs transition-all',
+                  viewMode === 'grid' 
+                    ? 'bg-white dark:bg-slate-700 shadow-sm' 
+                    : ''
+                )}
+              >
+                <Grid3x3 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Cuadrícula</span>
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Error */}
-          {error && (
-            <div className={`flex items-center gap-3 p-4 rounded-lg border ${borderColor} ${bgColor}`}>
-              <AlertCircle className="w-5 h-5 text-red-500" />
-              <div>
-                <h3 className={`font-semibold ${textColor}`}>Error al cargar</h3>
-                <p className={mutedColor}>{error}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Content */}
-          {!error && (
-            <>
-              {viewMode === 'list' ? (
-                <AttendanceStatusTable
-                  statuses={statuses}
-                  loading={isLoading}
-                  onEdit={(status) => {
-                    setEditingStatus(status);
-                    setViewMode('form');
-                  }}
-                  onDelete={(id) => {
-                    const status = statuses.find((s) => s.id === id);
-                    if (status) handleDeleteClick(id, status.name);
-                  }}
-                  onToggleActive={handleToggleActive}
-                />
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {isLoading ? (
-                    <p className={mutedColor}>Cargando...</p>
-                  ) : (
-                    statuses.map((status) => (
-                      <AttendanceStatusCard
-                        key={status.id}
-                        status={status}
-                        onEdit={(s) => {
-                          setEditingStatus(s);
-                          setViewMode('form');
-                        }}
-                        onDelete={(id) => {
-                          const status = statuses.find((s) => s.id === id);
-                          if (status) handleDeleteClick(id, status.name);
-                        }}
-                      />
-                    ))
-                  )}
-                </div>
-              )}
-
-              {/* Pagination */}
-              {meta && meta.totalPages > 1 && (
-                <div
-                  className={`flex items-center justify-between p-4 rounded-lg border ${borderColor} ${bgColor}`}
-                >
-                  <p className={`text-sm ${mutedColor}`}>
-                    Página {meta.page} de {meta.totalPages} ({meta.total} total)
+            {/* ESTADO DE ERROR */}
+            {error && (
+              <BaseCard className={cn(
+                'flex items-center gap-4 p-4',
+                ATTENDANCE_THEME.operations.delete.bg,
+                'border',
+                ATTENDANCE_THEME.operations.delete.border
+              )}>
+                <AlertCircle className={cn(
+                  'w-5 h-5 flex-shrink-0',
+                  ATTENDANCE_THEME.operations.delete.muted
+                )} />
+                <div>
+                  <h3 className={cn('font-semibold', ATTENDANCE_THEME.operations.delete.text)}>
+                    Error al cargar
+                  </h3>
+                  <p className={cn('text-sm', ATTENDANCE_THEME.operations.delete.muted)}>
+                    {error}
                   </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        updateQuery({
-                          page: Math.max(1, (filters.page || 1) - 1),
-                        })
-                      }
-                      disabled={meta.page === 1}
-                      className={`px-4 py-2 rounded font-medium transition-colors ${
-                        meta.page === 1
-                          ? isDark
-                            ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                          : isDark
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                            : 'bg-blue-500 hover:bg-blue-600 text-white'
-                      }`}
-                    >
-                      Anterior
-                    </button>
-                    <button
-                      onClick={() =>
-                        updateQuery({
-                          page: Math.min(meta.totalPages, (filters.page || 1) + 1),
-                        })
-                      }
-                      disabled={meta.page === meta.totalPages}
-                      className={`px-4 py-2 rounded font-medium transition-colors ${
-                        meta.page === meta.totalPages
-                          ? isDark
-                            ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                          : isDark
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                            : 'bg-blue-500 hover:bg-blue-600 text-white'
-                      }`}
-                    >
-                      Siguiente
-                    </button>
-                  </div>
                 </div>
-              )}
-            </>
+              </BaseCard>
+            )}
+
+            {/* CONTENIDO */}
+            {!error && (
+              <>
+                {/* VISTA LISTA */}
+                <TabsContent value="list" className="space-y-4">
+                  <AttendanceStatusTable
+                    statuses={statuses}
+                    loading={isLoading}
+                    onEdit={(status) => {
+                      setEditingStatus(status);
+                      setViewMode('form');
+                    }}
+                    onDelete={(id) => {
+                      const status = statuses.find((s) => s.id === id);
+                      if (status) handleDeleteClick(id, status.name);
+                    }}
+                    onToggleActive={handleToggleActive}
+                  />
+                </TabsContent>
+
+                {/* VISTA GRID */}
+                <TabsContent value="grid">
+                  {isLoading ? (
+                    <div className={cn(
+                      'flex items-center justify-center p-12 rounded-lg border',
+                      ATTENDANCE_THEME.base.bg.secondary,
+                      ATTENDANCE_THEME.base.border.light
+                    )}>
+                      <div className="text-center">
+                        <div className="animate-spin h-8 w-8 border-4 border-slate-300 dark:border-slate-600 border-t-blue-600 dark:border-t-blue-400 rounded-full mx-auto mb-3" />
+                        <p className={ATTENDANCE_THEME.base.text.muted}>Cargando...</p>
+                      </div>
+                    </div>
+                  ) : statuses.length === 0 ? (
+                    <div className={cn(
+                      'flex items-center justify-center p-12 rounded-lg border',
+                      ATTENDANCE_THEME.base.bg.secondary,
+                      ATTENDANCE_THEME.base.border.light
+                    )}>
+                      <p className={ATTENDANCE_THEME.base.text.muted}>
+                        No hay estados de asistencia registrados
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {statuses.map((status) => (
+                        <AttendanceStatusCard
+                          key={status.id}
+                          status={status}
+                          onEdit={(s) => {
+                            setEditingStatus(s);
+                            setViewMode('form');
+                          }}
+                          onDelete={(id) => {
+                            const status = statuses.find((s) => s.id === id);
+                            if (status) handleDeleteClick(id, status.name);
+                          }}
+                          onToggleActive={handleToggleActive}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </>
+            )}
+          </Tabs>
+
+          {/* ============================================
+              SECCIÓN: PAGINACIÓN
+              ============================================ */}
+          {meta && meta.totalPages > 1 && (
+            <BaseCard className="flex items-center justify-between flex-wrap gap-4 p-4">
+              <p className={cn('text-sm', ATTENDANCE_THEME.base.text.muted)}>
+                Página {meta.page} de {meta.totalPages} ({meta.total} registros)
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() =>
+                    updateQuery({
+                      page: Math.max(1, (filters.page || 1) - 1),
+                    })
+                  }
+                  disabled={meta.page === 1}
+                  variant={meta.page === 1 ? 'ghost' : 'outline'}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  onClick={() =>
+                    updateQuery({
+                      page: Math.min(meta.totalPages, (filters.page || 1) + 1),
+                    })
+                  }
+                  disabled={meta.page === meta.totalPages}
+                  variant={meta.page === meta.totalPages ? 'ghost' : 'outline'}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </BaseCard>
           )}
         </>
       )}
 
-      {/* Delete Dialog */}
+      {/* ============================================
+          SECCIÓN: DIÁLOGO CONFIRMACIÓN ELIMINACIÓN
+          ============================================ */}
       <DeleteStatusDialog
         isOpen={deleteDialogOpen}
         statusName={deleteTarget?.name || ''}
