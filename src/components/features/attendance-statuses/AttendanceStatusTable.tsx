@@ -95,8 +95,17 @@ export const AttendanceStatusTable = ({
   if (loading) {
     return (
       <Card className="shadow-lg">
-        <CardContent className="p-8 text-center text-muted-foreground">
-          Cargando estados de asistencia...
+        <CardContent className="flex flex-col items-center justify-center py-16 px-6">
+          <div className="relative mb-6">
+            <div className="h-16 w-16 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600 dark:border-blue-900 dark:border-t-blue-400"></div>
+            <div className="absolute inset-0 h-16 w-16 animate-ping rounded-full bg-blue-600/20 opacity-20"></div>
+          </div>
+          <p className="text-base font-medium text-gray-700 dark:text-gray-300">
+            Cargando estados de asistencia...
+          </p>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Por favor espera un momento
+          </p>
         </CardContent>
       </Card>
     );
@@ -104,9 +113,32 @@ export const AttendanceStatusTable = ({
 
   if (statuses.length === 0) {
     return (
-      <Card className="shadow-lg">
-        <CardContent className="p-8 text-center text-muted-foreground">
-          No hay estados de asistencia registrados
+      <Card className="shadow-lg border-dashed">
+        <CardContent className="flex flex-col items-center justify-center py-16 px-6">
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-blue-100 dark:bg-blue-900/20 rounded-full blur-2xl opacity-50"></div>
+            <div className="relative bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 p-5 rounded-full">
+              <FileText className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+          
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            No hay estados registrados
+          </h3>
+          
+          <p className="text-sm text-gray-600 dark:text-gray-400 text-center max-w-md mb-6">
+            Aún no se han creado estados de asistencia. Comienza agregando tu primer estado.
+          </p>
+          
+          {onAdd && (
+            <Button
+              onClick={onAdd}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Crear primer estado
+            </Button>
+          )}
         </CardContent>
       </Card>
     );

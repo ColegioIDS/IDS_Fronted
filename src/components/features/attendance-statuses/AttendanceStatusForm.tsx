@@ -130,7 +130,7 @@ export const AttendanceStatusForm = ({
               <h3 className="text-lg font-semibold text-foreground">Información Básica</h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-4">
+            <div className="space-y-4 pl-4">
               {/* Código */}
               <div className="space-y-2">
                 <Label htmlFor="code" className="font-semibold">
@@ -145,7 +145,7 @@ export const AttendanceStatusForm = ({
                   placeholder="Ej: P, I, R"
                   maxLength={10}
                   disabled={isLoading || !!initialData}
-                  className="h-10"
+                  className="h-10 w-full"
                 />
                 {errors.code && (
                   <p className="text-sm text-destructive flex items-center gap-1">
@@ -168,7 +168,7 @@ export const AttendanceStatusForm = ({
                   onChange={handleChange}
                   placeholder="Ej: Presente"
                   disabled={isLoading}
-                  className="h-10"
+                  className="h-10 w-full"
                 />
                 {errors.name && (
                   <p className="text-sm text-destructive flex items-center gap-1">
@@ -177,29 +177,29 @@ export const AttendanceStatusForm = ({
                   </p>
                 )}
               </div>
-            </div>
 
-            {/* Descripción */}
-            <div className="pl-4">
-              <Label htmlFor="description" className="font-semibold">
-                Descripción
-              </Label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Describe este estado de asistencia..."
-                rows={3}
-                disabled={isLoading}
-                className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mt-2"
-              />
-              {errors.description && (
-                <p className="text-sm text-destructive mt-1 flex items-center gap-1">
-                  <AlertCircle className="h-4 w-4" />
-                  {errors.description}
-                </p>
-              )}
+              {/* Descripción */}
+              <div className="space-y-2">
+                <Label htmlFor="description" className="font-semibold">
+                  Descripción
+                </Label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Describe este estado de asistencia..."
+                  rows={3}
+                  disabled={isLoading}
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+                {errors.description && (
+                  <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.description}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 

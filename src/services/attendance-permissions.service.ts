@@ -408,31 +408,60 @@ export const attendancePermissionsService = {
   },
 
   /**
-   * Obtener lista de roles
+   * Obtener lista de roles (usando endpoint centralizado de attendance-permissions)
+   * Esto evita problemas de permisos cuando el usuario tiene acceso a attendance-permissions pero no a roles
    */
-  async getRoles(page = 1, limit = 100): Promise<any> {
-    const params = cleanParams({ page, limit });
-    const response = await api.get('/api/roles', { params });
+  async getRoles(page = 1, limit = 100, search?: string): Promise<any> {
+    const params = cleanParams({ page, limit, search });
+    const response = await api.get('/api/attendance-permissions/teachers/list', { params });
 
     if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Error al obtener roles');
+      throw new Error(response.data?.message || 'Error al obtener roles de profesores');
     }
 
     return Array.isArray(response.data.data) ? response.data.data : [];
   },
 
   /**
-   * Obtener lista de estados de asistencia
+   * Obtener lista de estados de asistencia (usando endpoint centralizado de attendance-permissions)
+   * Esto evita problemas de permisos cuando el usuario tiene acceso a attendance-permissions pero no a attendance-statuses
    */
-  async getAttendanceStatuses(page = 1, limit = 100): Promise<any> {
-    const params = cleanParams({ page, limit });
-    const response = await api.get('/api/attendance-statuses', { params });
+  async getAttendanceStatuses(page = 1, limit = 100, search?: string, isActive?: boolean): Promise<any> {
+    const params = cleanParams({ page, limit, search, isActive });
+    const response = await api.get('/api/attendance-permissions/statuses/list/all', { params });
 
     if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Error al obtener estados');
+      throw new Error(response.data?.message || 'Error al obtener estados de asistencia');
     }
 
     return Array.isArray(response.data.data) ? response.data.data : [];
+  },
+
+  /**
+   * Obtener estados de asistencia activos (sin paginación)
+   * Útil para selectores y formularios
+   */
+  async getActiveAttendanceStatuses(): Promise<any> {
+    const response = await api.get('/api/attendance-permissions/statuses/active');
+
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || 'Error al obtener estados activos');
+    }
+
+    return Array.isArray(response.data.data) ? response.data.data : [];
+  },
+
+  /**
+   * Obtener un estado de asistencia específico por ID
+   */
+  async getAttendanceStatusById(id: number): Promise<any> {
+    const response = await api.get(`/api/attendance-permissions/statuses/${id}`);
+
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || 'Error al obtener el estado');
+    }
+
+    return response.data.data;
   },
 };
 

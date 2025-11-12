@@ -259,16 +259,88 @@ export const AttendancePermissionsPageContent: React.FC<
             </DialogDescription>
           </DialogHeader>
           {loadingData ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="ml-2">Cargando datos...</span>
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="relative">
+                <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+                <div className="absolute inset-0 h-12 w-12 animate-ping opacity-20 rounded-full bg-blue-600"></div>
+              </div>
+              <p className="mt-4 text-base font-medium text-gray-700 dark:text-gray-300">
+                Cargando datos...
+              </p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Por favor espera un momento
+              </p>
             </div>
           ) : roles.length === 0 || statuses.length === 0 ? (
-            <div className="text-center py-8">
-              <AlertCircle className="h-8 w-8 mx-auto mb-2 text-amber-600" />
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                No hay roles o estados disponibles. Por favor, intenta de nuevo más tarde.
+            <div className="flex flex-col items-center justify-center py-12 px-6">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-amber-100 dark:bg-amber-900/20 rounded-full blur-2xl opacity-50"></div>
+                <div className="relative bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 p-4 rounded-full">
+                  <AlertCircle className="h-12 w-12 text-amber-600 dark:text-amber-500" />
+                </div>
+              </div>
+              
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Datos no disponibles
+              </h3>
+              
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center max-w-md mb-6">
+                No se encontraron roles o estados de asistencia disponibles en este momento.
               </p>
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowForm(false);
+                    setSelectedPermission(null);
+                  }}
+                  className="min-w-[120px]"
+                >
+                  Cerrar
+                </Button>
+                <Button
+                  onClick={async () => {
+                    setLoadingData(true);
+                    try {
+                      const rolesData = await getRoles();
+                      const statusesData = await getAttendanceStatuses();
+                      
+                      if (rolesData && Array.isArray(rolesData)) {
+                        setRoles(rolesData);
+                      }
+                      
+                      if (statusesData && Array.isArray(statusesData)) {
+                        setStatuses(statusesData);
+                      }
+                      
+                      // Validar si realmente se cargaron datos
+                      if (rolesData?.length > 0 && statusesData?.length > 0) {
+                        toast.success('Datos cargados correctamente');
+                      } else if (!rolesData?.length && !statusesData?.length) {
+                        toast.warning('No se encontraron datos disponibles');
+                      } else if (!rolesData?.length) {
+                        toast.warning('No se encontraron roles disponibles');
+                      } else {
+                        toast.warning('No se encontraron estados de asistencia disponibles');
+                      }
+                    } catch (error) {
+                      console.error('Error al cargar datos:', error);
+                      toast.error('Error al conectar con el servidor');
+                    } finally {
+                      setLoadingData(false);
+                    }
+                  }}
+                  className="min-w-[120px] bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Reintentar
+                </Button>
+              </div>
+              
+              <div className="mt-6 text-xs text-gray-500 dark:text-gray-500 text-center">
+                Si el problema persiste, contacta con el administrador del sistema
+              </div>
             </div>
           ) : (
             <AttendancePermissionForm
