@@ -279,3 +279,55 @@ export function useAttendanceUtils() {
     [dateUtils, statusUtils, statsUtils, validation]
   );
 }
+
+// =========================
+===================================================     // UTILITY FUNCTIONS (Standalone, not hooks)
+// =========================
+===================================================     
+
+/**
+ * Format a Date object to ISO string (YYYY-MM-DD)
+ * Standalone utility function (not a hook)
+ */
+export function formatDateISO(date: Date | string): string {
+  if (typeof date === 'string') return date;
+  return date.toISOString().split('T')[0];
+}
+
+/**
+ * Parse ISO string to Date object
+ * Standalone utility function (not a hook)
+ */
+export function parseISO(dateStr: string): Date {
+  return new Date(dateStr + 'T00:00:00Z');
+}
+
+/**
+ * Check if date is today
+ * Standalone utility function (not a hook)
+ */
+export function isToday(date: Date | string): boolean {
+  const dateISO = formatDateISO(date);
+  const todayISO = formatDateISO(new Date());
+  return dateISO === todayISO;
+}
+
+/**
+ * Check if date is in the past
+ * Standalone utility function (not a hook)
+ */
+export function isPast(date: Date | string): boolean {
+  const dateISO = formatDateISO(date);
+  const todayISO = formatDateISO(new Date());
+  return dateISO < todayISO;
+}
+
+/**
+ * Check if date is in the future
+ * Standalone utility function (not a hook)
+ */
+export function isFuture(date: Date | string): boolean {
+  const dateISO = formatDateISO(date);
+  const todayISO = formatDateISO(new Date());
+  return dateISO > todayISO;
+}

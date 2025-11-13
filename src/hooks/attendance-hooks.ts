@@ -43,13 +43,19 @@ export {
   configKeys,
 } from './useAttendanceConfigHook';
 
-// Utility hooks
+// Utility hooks and functions
 export {
   useAttendanceDateUtils,
   useAttendanceStatusUtils,
   useAttendanceStatsUtils,
   useAttendanceValidation,
   useAttendanceUtils,
+  // Standalone utility functions
+  formatDateISO,
+  parseISO,
+  isToday,
+  isPast,
+  isFuture,
 } from './useAttendanceUtils';
 
 // Re-export types for convenience
