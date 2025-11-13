@@ -13,13 +13,13 @@ import {
 } from '@/hooks/attendance';
 import { useStudentsBySection } from '@/hooks/data';
 import { AttendanceStatusProvider } from '@/context/AttendanceStatusContext';
-import AttendanceHeader from './components/layout/AttendanceHeader';
-import AttendanceTable from './components/display/AttendanceTable';
-import AttendanceCards from './components/display/AttendanceCards';
+import AttendanceHeader from './components/header/AttendanceHeader';
+import AttendanceTable from './components/table/AttendanceTable';
+import AttendanceCards from './components/index';
 import {
   NoGradeSelectedState,
   NoSectionSelectedState,
-} from './components/states/EmptyState';
+
 
 function AttendanceGridContent() {
   // ========== NUEVOS HOOKS FASE 2 ==========
