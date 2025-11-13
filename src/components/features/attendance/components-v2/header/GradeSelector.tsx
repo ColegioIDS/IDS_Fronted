@@ -22,18 +22,9 @@ export default function GradeSelector({
   disabled = false,
 }: GradeSelectorProps) {
   const {
-    useGradesAndSections,
-  } = useAttendanceConfig();
-
-  const {
-    data: config,
+    grades = [],
     isLoading,
-  } = useGradesAndSections();
-
-  const grades = useMemo(
-    () => config?.grades || [],
-    [config?.grades]
-  );
+  } = useAttendanceConfig();
 
   return (
     <div className="flex flex-col gap-2">
@@ -50,7 +41,7 @@ export default function GradeSelector({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="">Todos los grados</SelectItem>
-          {grades.map((grade) => (
+          {grades.map((grade: any) => (
             <SelectItem key={grade.id} value={String(grade.id)}>
               {grade.name}
             </SelectItem>

@@ -37,45 +37,49 @@ export default function AttendanceManager({
   const [selectedGradeId, setSelectedGradeId] = useState<number | null>(null);
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
 
-  // Load attendance data
+  // Load attendance data using composite hook
   const {
-    history,
+    history = [],
     historyLoading,
     historyError,
-    report,
-    reportLoading,
-    reportError,
   } = useAttendance(enrollmentId ? parseInt(enrollmentId) : 0);
 
+  // Load configuration data  
   const {
-    data: history = [],
-    isLoading: historyLoading,
-    error: historyError,
-  } = useAttendanceHistory();
-
-  // Load configuration data
-  const {
-    statuses,
-    grades,
-    sections,
-    holidays,
+    statuses = [],
+    grades = [],
+    sections = [],
+    holidays = [],
     isLoading: configLoading,
+    isHoliday: checkIsHoliday,
   } = useAttendanceConfig();
 
-  // Check permissions
-  const { canCreate, canUpdate, canDelete, canUseScope } = useAttendancePermissions();
+  // Check permissions with current user context
+  // Using default params - in real app would come from auth context
+  const { canCreate, canUpdate, canDelete } = useAttendancePermissions({
+    userRole: 'teacher', // TODO: Get from auth context
+    scope: 'GRADE',
+  });
 
   // Load utilities
-  const { useAttendanceDateUtils } = useAttendanceUtils();
-  const { isHoliday, formatDateISO } = useAttendanceDateUtils();
+  const {
+    formatDateISO,
+    isPast,
+    isFuture,
+    isToday: isDateToday,
+  } = useAttendanceUtils();
 
   // Handle loading and errors
   const loading = historyLoading || configLoading;
   const error = historyError;
 
+  // Check if today is a holiday
   const isHolidayToday = useMemo(
-    () => isHoliday(selectedDate),
-    [selectedDate, isHoliday]
+    () => {
+      const dateStr = formatDateISO(selectedDate);
+      return holidays.some((h: any) => h.date === dateStr);
+    },
+    [selectedDate, holidays, formatDateISO]
   );
 
   if (error) {
@@ -92,7 +96,7 @@ export default function AttendanceManager({
 
   // Filter data based on selection
   const filteredData = useMemo(() => {
-    return history.filter((record) => {
+    return history.filter((record: any) => {
       if (selectedGradeId && record.grade?.id !== selectedGradeId) return false;
       if (selectedSectionId && record.section?.id !== selectedSectionId) return false;
       return true;
@@ -155,9 +159,9 @@ export default function AttendanceManager({
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">Total Estudiantes</div>
               </div>
-              {config?.statuses?.slice(0, 3).map((status) => {
+              {statuses.slice(0, 3).map((status: any) => {
                 const count = filteredData.filter(
-                  (r) => r.attendanceStatusId === status.id
+                  (r: any) => r.attendanceStatusId === status.id
                 ).length;
                 return (
                   <div key={status.id} className="text-center">

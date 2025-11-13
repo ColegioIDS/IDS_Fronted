@@ -24,19 +24,15 @@ export default function SectionSelector({
   disabled = false,
 }: SectionSelectorProps) {
   const {
-    useGradesAndSections,
+    grades = [],
+    isLoading,
   } = useAttendanceConfig();
 
-  const {
-    data: config,
-    isLoading,
-  } = useGradesAndSections();
-
   const sections = useMemo(() => {
-    if (!config?.grades) return [];
-    const grade = config.grades.find((g) => g.id === gradeId);
+    if (!grades) return [];
+    const grade = grades.find((g: any) => g.id === gradeId);
     return grade?.sections || [];
-  }, [config?.grades, gradeId]);
+  }, [grades, gradeId]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -53,7 +49,7 @@ export default function SectionSelector({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="">Todas las secciones</SelectItem>
-          {sections.map((section) => (
+          {sections.map((section: any) => (
             <SelectItem key={section.id} value={String(section.id)}>
               {section.name}
             </SelectItem>

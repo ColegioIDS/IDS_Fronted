@@ -36,7 +36,8 @@ export default function AttendanceHeader({
   readOnly = false,
 }: AttendanceHeaderProps) {
   const {
-    data: config,
+    grades = [],
+    sections = [],
     isLoading: configLoading,
   } = useAttendanceConfig();
 
@@ -117,12 +118,12 @@ export default function AttendanceHeader({
           {/* Date Display */}
           <div className="text-sm text-gray-600 dark:text-gray-400">
             <span className="font-medium capitalize">{dateFormatted}</span>
-            {isDateToday(selectedDate) && (
+            {isDateToday(formatDateISO(selectedDate)) && (
               <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs rounded">
                 Hoy
               </span>
             )}
-            {isPast(selectedDate) && !isDateToday(selectedDate) && (
+            {isPast(formatDateISO(selectedDate)) && !isDateToday(formatDateISO(selectedDate)) && (
               <span className="ml-2 text-xs text-gray-500">Fecha pasada</span>
             )}
           </div>
