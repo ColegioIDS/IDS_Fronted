@@ -1,374 +1,207 @@
-// src/hooks/useAttendance.ts
+/**
+ * =========================
+ * ATTENDANCE HOOKS - Core Hook
+ * =========================
+ * 
+ * Main hook for attendance operations with React Query
+ * Handles queries and mutations
+ */
 
-'use client';
-
-import { useState, useCallback, useRef } from 'react';
-import { z } from 'zod';
-import attendanceService from '@/services/attendanceService';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  StudentAttendance,
-  CreateAttendanceDto,
-  UpdateAttendanceDto,
-  BulkCreateAttendanceDto,
-  BulkDeleteAttendanceDto,
-  BulkApplyStatusDto,
-  AttendanceChangeRecord,
-  BulkAttendanceResponse,
-} from '@/types/attendance';
+  registerAttendance,
+  updateAttendance,
+  bulkUpdateAttendance,
+  bulkApplyStatus,
+  bulkDeleteAttendance,
+  getAttendanceHistory,
+  getAttendanceReport,
+  getSectionAttendanceStats,
+  formatAttendanceError,
+} from '@/services/attendance.service';
+import {
+  CreateAttendancePayload,
+  BulkCreateAttendancePayload,
+  UpdateAttendancePayload,
+  BulkUpdateAttendancePayload,
+  BulkApplyStatusPayload,
+  BulkDeleteAttendancePayload,
+  AttendanceQueryWithScope,
+} from '@/types/attendance.types';
 
-// ============================================
-// VALIDATION SCHEMAS (Zod)
-// ============================================
+// ============================================================================
+// QUERY KEYS
+// ============================================================================
 
-const createAttendanceSchema = z.object({
-  enrollmentId: z.number().int().positive('ID de matrícula inválido'),
-  date: z.string().datetime('Fecha inválida'),
-  statusCode: z.enum(['A', 'I', 'IJ', 'TI', 'TJ'], {
-    errorMap: () => ({ message: 'Código de estado inválido' }),
-  }),
-  courseAssignmentId: z.number().int().optional(),
-  notes: z.string().max(500, 'Las notas no pueden exceder 500 caracteres').optional(),
-  arrivalTime: z.string().regex(/^\d{2}:\d{2}$/, 'Formato de hora inválido').optional(),
-  minutesLate: z.number().int().nonnegative().optional(),
-});
-
-const updateAttendanceSchema = createAttendanceSchema.partial().omit({ enrollmentId: true });
-
-type UseAttendanceError = {
-  message: string;
-  code?: string;
-  details?: any;
+export const attendanceKeys = {
+  all: ['attendance'] as const,
+  histories: () => [...attendanceKeys.all, 'histories'] as const,
+  history: (enrollmentId: number) => [...attendanceKeys.histories(), enrollmentId] as const,
+  reports: () => [...attendanceKeys.all, 'reports'] as const,
+  report: (enrollmentId: number) => [...attendanceKeys.reports(), enrollmentId] as const,
+  stats: () => [...attendanceKeys.all, 'stats'] as const,
+  sectionStats: (sectionId: number) => [...attendanceKeys.stats(), sectionId] as const,
 };
 
-// ============================================
-// HOOK PRINCIPAL
-// ============================================
+// ============================================================================
+// QUERY HOOKS
+// ============================================================================
 
-export const useAttendance = () => {
-  // Estados principales
-  const [attendance, setAttendance] = useState<StudentAttendance | null>(null);
-  const [attendanceList, setAttendanceList] = useState<StudentAttendance[]>([]);
-  const [history, setHistory] = useState<AttendanceChangeRecord[]>([]);
+export function useAttendanceHistory(
+  enrollmentId: number,
+  params?: AttendanceQueryWithScope
+) {
+  return useQuery({
+    queryKey: attendanceKeys.history(enrollmentId),
+    queryFn: () => getAttendanceHistory(enrollmentId, params),
+    enabled: !!enrollmentId,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+  });
+}
 
-  // Estados de carga y error
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<UseAttendanceError | null>(null);
+export function useAttendanceReport(
+  enrollmentId: number,
+  {
+    dateFrom,
+    dateTo,
+    bimesterId,
+  }: { dateFrom?: string; dateTo?: string; bimesterId?: number } = {}
+) {
+  return useQuery({
+    queryKey: attendanceKeys.report(enrollmentId),
+    queryFn: () =>
+      getAttendanceReport(enrollmentId, {
+        dateFrom,
+        dateTo,
+        bimesterId,
+      }),
+    enabled: !!enrollmentId,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
+  });
+}
 
-  // Estados de bulk operations
-  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
-  const [bulkError, setBulkError] = useState<string | null>(null);
+export function useSectionAttendanceStats(
+  sectionId: number,
+  params?: AttendanceQueryWithScope
+) {
+  return useQuery({
+    queryKey: attendanceKeys.sectionStats(sectionId),
+    queryFn: () => getSectionAttendanceStats(sectionId, params),
+    enabled: !!sectionId,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+  });
+}
 
-  // Ref para cancelar operaciones
-  const abortControllerRef = useRef<AbortController | null>(null);
+// ============================================================================
+// MUTATION HOOKS
+// ============================================================================
 
-  // ============================================
-  // HELPERS
-  // ============================================
+export function useCreateAttendance() {
+  const queryClient = useQueryClient();
 
-  const resetError = useCallback(() => {
-    setError(null);
-  }, []);
-
-  const handleError = useCallback((err: unknown): UseAttendanceError => {
-    let error: UseAttendanceError;
-
-    if (err instanceof z.ZodError) {
-      error = {
-        message: 'Validación fallida',
-        code: 'VALIDATION_ERROR',
-        details: err.errors,
-      };
-    } else if (err instanceof Error) {
-      error = {
-        message: err.message,
-        code: 'SERVICE_ERROR',
-      };
-    } else {
-      error = {
-        message: 'Error desconocido',
-        code: 'UNKNOWN_ERROR',
-      };
-    }
-
-    setError(error);
-    return error;
-  }, []);
-
-  // ============================================
-  // OPERACIONES SIMPLES
-  // ============================================
-
-  /**
-   * Obtiene la asistencia de un estudiante
-   */
-  const getStudentAttendance = useCallback(
-    async (enrollmentId: number, page: number = 1, limit: number = 10) => {
-      resetError();
-      setLoading(true);
-
-      try {
-        const data = await attendanceService.getStudentAttendance(enrollmentId, page, limit);
-        setAttendanceList(data);
-        return data;
-      } catch (err) {
-        handleError(err);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+  return useMutation({
+    mutationFn: (payload: CreateAttendancePayload | BulkCreateAttendancePayload) =>
+      registerAttendance(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: attendanceKeys.all });
     },
-    [resetError, handleError]
-  );
-
-  /**
-   * Crea un nuevo registro de asistencia
-   */
-  const createAttendance = useCallback(
-    async (dto: CreateAttendanceDto) => {
-      resetError();
-      setLoading(true);
-
-      try {
-        // Validar con Zod
-        const validated = createAttendanceSchema.parse(dto);
-
-        const data = await attendanceService.createAttendance(validated);
-        setAttendance(data);
-
-        // Actualizar lista si existe
-        setAttendanceList((prev) => [data, ...prev]);
-
-        return data;
-      } catch (err) {
-        handleError(err);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+    onError: (error) => {
+      console.error('Create attendance error:', formatAttendanceError(error));
     },
-    [resetError, handleError]
-  );
+  });
+}
 
-  /**
-   * Actualiza un registro de asistencia
-   */
-  const updateAttendance = useCallback(
-    async (id: number, dto: UpdateAttendanceDto, reason?: string) => {
-      resetError();
-      setLoading(true);
+export function useUpdateAttendance() {
+  const queryClient = useQueryClient();
 
-      try {
-        // Validar con Zod
-        const validated = updateAttendanceSchema.parse(dto);
-
-        const data = await attendanceService.updateAttendance(id, validated, reason);
-        setAttendance(data);
-
-        // Actualizar en lista
-        setAttendanceList((prev) =>
-          prev.map((item) => (item.id === id ? data : item))
-        );
-
-        return data;
-      } catch (err) {
-        handleError(err);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: UpdateAttendancePayload }) =>
+      updateAttendance(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: attendanceKeys.all });
     },
-    [resetError, handleError]
-  );
-
-  /**
-   * Obtiene el historial de cambios
-   */
-  const getHistory = useCallback(async (id: number) => {
-    resetError();
-    setLoading(true);
-
-    try {
-      const data = await attendanceService.getAttendanceHistory(id);
-      setHistory(data);
-      return data;
-    } catch (err) {
-      handleError(err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [resetError, handleError]);
-
-  // ============================================
-  // OPERACIONES BULK
-  // ============================================
-
-  /**
-   * Crea múltiples registros de asistencia
-   */
-  const bulkCreate = useCallback(
-    async (attendances: CreateAttendanceDto[]) => {
-      resetError();
-      setBulkError(null);
-      setLoading(true);
-      setBulkProgress({ current: 0, total: attendances.length });
-
-      try {
-        // Validar cada registro
-        const validated = attendances.map((item) => {
-          const result = createAttendanceSchema.safeParse(item);
-          if (!result.success) {
-            throw new Error(`Validación fallida: ${result.error.message}`);
-          }
-          return result.data;
-        });
-
-        const dto: BulkCreateAttendanceDto = { attendances: validated };
-        const response = await attendanceService.bulkCreateAttendance(dto);
-
-        // Actualizar progreso
-        setBulkProgress({ current: validated.length, total: validated.length });
-
-        return response;
-      } catch (err) {
-        const error = handleError(err);
-        setBulkError(error.message);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+    onError: (error) => {
+      console.error('Update attendance error:', formatAttendanceError(error));
     },
-    [handleError]
-  );
+  });
+}
 
-  /**
-   * Actualiza múltiples registros de asistencia
-   */
-  const bulkUpdate = useCallback(
-    async (updates: Array<{ id: number } & UpdateAttendanceDto>) => {
-      resetError();
-      setBulkError(null);
-      setLoading(true);
+export function useBulkUpdateAttendance() {
+  const queryClient = useQueryClient();
 
-      try {
-        const dto = { updates };
-        const response = await attendanceService.bulkUpdateAttendance(dto);
-        return response;
-      } catch (err) {
-        const error = handleError(err);
-        setBulkError(error.message);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+  return useMutation({
+    mutationFn: (payload: BulkUpdateAttendancePayload) => bulkUpdateAttendance(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: attendanceKeys.all });
     },
-    [handleError]
-  );
-
-  /**
-   * Elimina múltiples registros
-   */
-  const bulkDelete = useCallback(
-    async (ids: number[]) => {
-      if (!ids.length) {
-        throw new Error('Debe proporcionar al menos un ID');
-      }
-
-      resetError();
-      setBulkError(null);
-      setLoading(true);
-
-      try {
-        const dto: BulkDeleteAttendanceDto = { ids };
-        const response = await attendanceService.bulkDeleteAttendance(dto);
-
-        // Actualizar lista local
-        setAttendanceList((prev) => prev.filter((item) => !ids.includes(item.id)));
-
-        return response;
-      } catch (err) {
-        const error = handleError(err);
-        setBulkError(error.message);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+    onError: (error) => {
+      console.error('Bulk update error:', formatAttendanceError(error));
     },
-    [resetError, handleError]
-  );
+  });
+}
 
-  /**
-   * Aplica un estado a múltiples estudiantes
-   */
-  const bulkApplyStatus = useCallback(
-    async (
-      enrollmentIds: number[],
-      statusCode: string,
-      startDate: string,
-      endDate: string,
-      notes?: string
-    ) => {
-      if (!enrollmentIds.length) {
-        throw new Error('Debe proporcionar al menos un estudiante');
-      }
+export function useBulkApplyStatus() {
+  const queryClient = useQueryClient();
 
-      resetError();
-      setBulkError(null);
-      setLoading(true);
-
-      try {
-        const dto: BulkApplyStatusDto = {
-          enrollmentIds,
-          statusCode,
-          startDate,
-          endDate,
-          notes,
-        };
-
-        const response = await attendanceService.bulkApplyStatus(dto);
-        return response;
-      } catch (err) {
-        const error = handleError(err);
-        setBulkError(error.message);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+  return useMutation({
+    mutationFn: (payload: BulkApplyStatusPayload) => bulkApplyStatus(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: attendanceKeys.all });
     },
-    [resetError, handleError]
-  );
+    onError: (error) => {
+      console.error('Apply status error:', formatAttendanceError(error));
+    },
+  });
+}
 
-  // ============================================
-  // RETORNO
-  // ============================================
+export function useBulkDeleteAttendance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: BulkDeleteAttendancePayload) => bulkDeleteAttendance(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: attendanceKeys.all });
+    },
+    onError: (error) => {
+      console.error('Delete attendance error:', formatAttendanceError(error));
+    },
+  });
+}
+
+// ============================================================================
+// COMPOSITE HOOK
+// ============================================================================
+
+export function useAttendance(enrollmentId: number) {
+  const historyQuery = useAttendanceHistory(enrollmentId);
+  const reportQuery = useAttendanceReport(enrollmentId);
+  const createMutation = useCreateAttendance();
+  const updateMutation = useUpdateAttendance();
+  const bulkUpdateMutation = useBulkUpdateAttendance();
+  const deleteMutation = useBulkDeleteAttendance();
+  const applyStatusMutation = useBulkApplyStatus();
 
   return {
-    // Estados
-    attendance,
-    attendanceList,
-    history,
-    loading,
-    error,
-    bulkProgress,
-    bulkError,
-
-    // Acciones simples
-    getStudentAttendance,
-    createAttendance,
-    updateAttendance,
-    getHistory,
-
-    // Acciones bulk
-    bulkCreate,
-    bulkUpdate,
-    bulkDelete,
-    bulkApplyStatus,
-
-    // Utilidades
-    resetError,
-    clearAttendance: () => setAttendance(null),
-    clearList: () => setAttendanceList([]),
+    history: historyQuery.data,
+    historyLoading: historyQuery.isLoading,
+    historyError: historyQuery.error,
+    report: reportQuery.data,
+    reportLoading: reportQuery.isLoading,
+    reportError: reportQuery.error,
+    createAttendance: createMutation.mutate,
+    createLoading: createMutation.isPending,
+    updateAttendance: updateMutation.mutate,
+    updateLoading: updateMutation.isPending,
+    bulkUpdate: bulkUpdateMutation.mutate,
+    bulkUpdateLoading: bulkUpdateMutation.isPending,
+    bulkDelete: deleteMutation.mutate,
+    bulkDeleteLoading: deleteMutation.isPending,
+    applyStatus: applyStatusMutation.mutate,
+    applyStatusLoading: applyStatusMutation.isPending,
+    isLoading:
+      historyQuery.isLoading || reportQuery.isLoading || createMutation.isPending || updateMutation.isPending,
   };
-};
-
-export default useAttendance;
+}
