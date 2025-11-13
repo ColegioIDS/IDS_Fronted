@@ -26,7 +26,7 @@ export default function GradeSelector({
   };
 
   // Agrupar grados por nivel desde datos reales
-  const gradesByLevel = grades.reduce((acc, grade) => {
+  const gradesByLevel = (grades || []).reduce((acc, grade) => {
     const level = grade.level || 'Sin Clasificar';
     if (!acc[level]) {
       acc[level] = [];
@@ -84,7 +84,7 @@ export default function GradeSelector({
         </SelectItem>
 
         {/* Grados agrupados por nivel desde API */}
-        {grades.length === 0 && !loading ? (
+        {(!grades || grades.length === 0) && !loading ? (
           <div className="px-2 py-2 text-sm text-gray-500">
             No hay grados disponibles
           </div>
@@ -128,7 +128,7 @@ export default function GradeSelector({
             </span>
           ) : (
             <span>
-              {grades.length} grado{grades.length !== 1 ? 's' : ''} disponible{grades.length !== 1 ? 's' : ''}
+              {(grades || []).length} grado{(grades || []).length !== 1 ? 's' : ''} disponible{(grades || []).length !== 1 ? 's' : ''}
             </span>
           )}
         </div>
