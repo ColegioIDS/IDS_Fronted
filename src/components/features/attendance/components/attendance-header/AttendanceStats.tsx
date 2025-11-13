@@ -6,8 +6,8 @@ import { BarChart3, TrendingUp, Users, Clock, CheckCircle, XCircle, AlertCircle,
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { useAttendanceData } from '@/hooks/attendance';
-import { useAttendanceStatuses } from '@/hooks/attendance';
+import { useAttendanceData } from '@/hooks/attendance-hooks';
+import { useAttendanceConfig } from '@/hooks/attendance-hooks';
 import { AttendanceStatusCode } from '@/types/attendance.types';
 
 interface AttendanceStatsProps {
@@ -57,7 +57,7 @@ export default function AttendanceStats({
   }, [sectionId, bimesterId, fetchStats]);
 
   // 📡 Cargar estados dinámicamente desde el backend
-  const { statuses } = useAttendanceStatuses();
+  const { statuses } = useAttendanceConfig();
 
   // 🎨 Función para oscurecer colores hex
   const getDarkenColor = (hex: string | null | undefined): string => {

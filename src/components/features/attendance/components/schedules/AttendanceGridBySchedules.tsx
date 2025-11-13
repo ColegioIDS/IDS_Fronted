@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Schedule } from '@/types/attendance.types';
-import { useAttendanceStatuses } from '@/hooks/attendance';
+import { useAttendanceConfig } from '@/hooks/attendance-hooks';
 
 interface StudentRecord {
   enrollmentId: number;
@@ -41,7 +41,7 @@ export function AttendanceGridBySchedules({
 }: AttendanceGridBySchedulesProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
-  const { statuses } = useAttendanceStatuses();
+  const { statuses } = useAttendanceConfig();
 
   // Filtrar estudiantes por búsqueda
   const filteredStudents = useMemo(() => {

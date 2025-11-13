@@ -13,7 +13,7 @@ import {
   Briefcase,
   Heart,
 } from 'lucide-react';
-import { useAttendanceStatuses } from '@/hooks/attendance';
+import { useAttendanceConfig } from '@/hooks/attendance-hooks';
 
 interface StatusOption {
   id: number;
@@ -40,7 +40,7 @@ export function QuickStatusBar({
   onStatusSelect,
   disabled = false,
 }: QuickStatusBarProps) {
-  const { statuses } = useAttendanceStatuses();
+  const { statuses } = useAttendanceConfig();
 
   // Mapeo de códigos a iconos
   const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {

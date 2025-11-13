@@ -9,8 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 
-import { AttendanceStatusCode } from '@/types/attendance.types';
-import { useAttendanceActions, useAttendanceStatuses } from '@/hooks/attendance';
+import { string } from '@/types/attendance.types';
+import { useAttendance, useAttendanceConfig } from '@/hooks/attendance-hooks';
 import { cn } from '@/lib/utils';
 
 import HolidayNotice from '../attendance-states/HolidayNotice';
@@ -174,7 +174,7 @@ interface AttendanceTableProps {
   error?: string | null;
 }
 
-const ATTENDANCE_CONFIG_FALLBACK: Record<AttendanceStatusCode, {
+const ATTENDANCE_CONFIG_FALLBACK: Record<string, {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
@@ -245,10 +245,10 @@ export default function AttendanceTable({
   const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
   const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]); // ✅ NUEVO
   const [updatingIds, setUpdatingIds] = useState<Set<number>>(new Set());
-  const { updateAttendance, createAttendance, upsertAttendance, bulkApplyStatus, bulkByCourses } = useAttendanceActions();
+  const { updateAttendance, createAttendance, upsertAttendance, bulkApplyStatus, bulkByCourses } = useAttendance();
   
   // 📡 Cargar estados dinámicamente desde el backend
-  const { statuses, loading: statusesLoading } = useAttendanceStatuses();
+  const { statuses, loading: statusesLoading } = useAttendanceConfig();
   
   // 🎨 Generar configuración dinámica de asistencia desde los estados cargados
   const ATTENDANCE_CONFIG = useMemo<Record<number, {
@@ -257,7 +257,7 @@ export default function AttendanceTable({
     color: string;
     hexColor: string;
     badgeColor: string;
-    code: AttendanceStatusCode;
+    code: string;
   }>>(() => {
     const config: Record<number, any> = {};
     
@@ -269,7 +269,7 @@ export default function AttendanceTable({
         const tailwindColors = hexToTailwindClasses(colorHex);
         
         config[status.id] = {  // ✅ CAMBIO: Usar ID en lugar de code
-          code: status.code as AttendanceStatusCode,
+          code: status.code as string,
           label: status.name,
           icon: ICON_MAP[status.code] || Check,
           hexColor: colorHex,
@@ -280,7 +280,7 @@ export default function AttendanceTable({
     } else {
       // Fallback si no hay estados cargados
       config[1] = { 
-        code: 'P' as AttendanceStatusCode,
+        code: 'P' as string,
         label: 'Presente', 
         icon: Check, 
         hexColor: '#10b981',

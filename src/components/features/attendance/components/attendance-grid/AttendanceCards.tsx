@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 
 import { StudentAttendanceWithRelations, AttendanceStatusCode } from '@/types/attendance.types';
-import { useAttendanceActions, useAttendanceStatuses } from '@/hooks/attendance';
+import { useAttendance, useAttendanceConfig } from '@/hooks/attendance-hooks';
 
 import HolidayNotice from '../attendance-states/HolidayNotice';
 import BulkActions from '../attendance-controls/BulkActions';
@@ -125,10 +125,10 @@ export default function AttendanceCards({
   const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]); // ✅ NUEVO
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const [updatingIds, setUpdatingIds] = useState<Set<number>>(new Set());
-  const { upsertAttendance, bulkApplyStatus } = useAttendanceActions();
+  const { upsertAttendance, bulkApplyStatus } = useAttendance();
   
   // 📡 Cargar estados dinámicamente desde el backend
-  const { statuses, loading: statusesLoading } = useAttendanceStatuses();
+  const { statuses, loading: statusesLoading } = useAttendanceConfig();
   
   // 🎨 Generar configuración dinámica de asistencia desde los estados cargados
   const ATTENDANCE_CONFIG = useMemo<Record<number, {

@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 
 import { AttendanceStatusCode } from '@/types/attendance.types';
-import { useAttendanceActions, useAttendanceStatuses } from '@/hooks/attendance';
+import { useAttendance, useAttendanceConfig } from '@/hooks/attendance-hooks';
 import { cn } from '@/lib/utils';
 
 import HolidayNotice from '../attendance-states/HolidayNotice';
@@ -245,10 +245,10 @@ export default function AttendanceTable({
   const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
   const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]); // ✅ NUEVO
   const [updatingIds, setUpdatingIds] = useState<Set<number>>(new Set());
-  const { updateAttendance, createAttendance, upsertAttendance, bulkApplyStatus, bulkByCourses } = useAttendanceActions();
+  const { updateAttendance, createAttendance, upsertAttendance, bulkApplyStatus, bulkByCourses } = useAttendance();
   
   // 📡 Cargar estados dinámicamente desde el backend
-  const { statuses, loading: statusesLoading } = useAttendanceStatuses();
+  const { statuses, loading: statusesLoading } = useAttendanceConfig();
   
   // 🎨 Generar configuración dinámica de asistencia desde los estados cargados
   const ATTENDANCE_CONFIG = useMemo<Record<number, {

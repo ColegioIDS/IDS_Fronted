@@ -10,8 +10,8 @@ import GradeSelector from './GradeSelector';
 import SectionSelector from './SectionSelector';
 import DatePicker from './DatePicker';
 import AttendanceStats from './AttendanceStats';
-import { useHolidaysData } from '@/hooks/attendance';
-import { useActiveCycle } from '@/hooks/attendance/useActiveCycle';
+import { useAttendanceConfig } from '@/hooks/attendance-hooks';
+import { useAttendanceConfig } from '@/hooks/attendance/useAttendanceConfig';
 
 interface AttendanceHeaderProps {
   selectedGradeId: number | null;
@@ -34,10 +34,10 @@ export default function AttendanceHeader({
   totalStudents = 0,
   stats
 }: AttendanceHeaderProps) {
-  const { getHolidayInfo, isHoliday: isHolidayDate, getUpcomingHolidays } = useHolidaysData();
+  const { getHolidayInfo, isHoliday: isHolidayDate, getUpcomingHolidays } = useAttendanceConfig();
   
   // 🔄 Datos reales del ciclo escolar y bimestre activos
-  const { cycle: activeCycle, activeBimester, progress, daysRemaining, hasCycle, hasBimester, error, loading } = useActiveCycle();
+  const { cycle: activeCycle, activeBimester, progress, daysRemaining, hasCycle, hasBimester, error, loading } = useAttendanceConfig();
 
   // 📅 Verificar si la fecha seleccionada es día festivo
   const currentHoliday = useMemo(() => {

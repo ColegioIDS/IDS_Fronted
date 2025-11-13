@@ -3,7 +3,7 @@
 import { GraduationCap, AlertCircle, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useGradesAndSections } from '@/hooks/attendance';
+import { useGradesAndSections } from '@/hooks/attendance-hooks';
 
 interface GradeSelectorProps {
   selectedGradeId: number | null;

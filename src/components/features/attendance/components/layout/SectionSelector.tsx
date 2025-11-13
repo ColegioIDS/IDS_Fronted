@@ -4,7 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { BookOpen, Users, AlertCircle, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useGradesAndSections } from '@/hooks/attendance';
+import { useGradesAndSections } from '@/hooks/attendance-hooks';
 
 interface SectionSelectorProps {
   selectedGradeId: number | null;

@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
-import { useHolidaysData } from '@/hooks/attendance';
+import { useAttendanceConfig } from '@/hooks/attendance-hooks';
 
 interface DatePickerProps {
   selectedDate: Date;
@@ -22,7 +22,7 @@ export default function DatePicker({
   onDateChange,
 }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { holidays, error, isHoliday, getHolidayInfo } = useHolidaysData();
+  const { holidays, error, isHoliday, getHolidayInfo } = useAttendanceConfig();
 
   // Verificar si es fin de semana
   const isWeekend = (date: Date) => {

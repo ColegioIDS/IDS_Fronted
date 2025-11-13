@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AttendanceStatusCode } from '@/types/attendance.types';
-import { useAttendanceStatuses } from '@/hooks/attendance';
+import { useAttendanceConfig } from '@/hooks/attendance-hooks';
 
 interface BulkActionsProps {
   selectedStudents: number[]; // Array de enrollmentIds seleccionados
@@ -112,7 +112,7 @@ export default function BulkActions({
   const [isExecuting, setIsExecuting] = useState(false);
   
   // 📡 Cargar estados dinámicamente desde el backend
-  const { statuses, loading: statusesLoading, error: statusesError, getStatusLabel, getStatusColor } = useAttendanceStatuses();
+  const { statuses, loading: statusesLoading, error: statusesError, getStatusLabel, getStatusColor } = useAttendanceConfig();
 
   // 🎨 Generar acciones masivas dinámicamente desde los estados cargados
   const BULK_ACTIONS = useMemo(() => {
