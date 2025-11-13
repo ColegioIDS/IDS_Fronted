@@ -31,7 +31,7 @@ import {
   AttendanceConfigurationResponse,
   GradesAndSectionsResponse,
   HolidaysResponse,
-} from './attendance.types';
+} from '../types/attendance.types';
 import {
   validateCreateAttendance,
   validateUpdateAttendance,
@@ -39,7 +39,7 @@ import {
   validateBulkTeacherAttendance,
   validateBulkBySchedules,
   formatValidationErrors,
-} from './attendance.schemas';
+} from '../types/attendance.schemas';
 
 // ============================================================================
 // API ENDPOINTS
