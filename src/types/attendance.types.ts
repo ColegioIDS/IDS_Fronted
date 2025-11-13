@@ -1,24 +1,52 @@
-// src/types/attendance.types.ts
-
 /**
- * ============================================
+ * =========================
  * ATTENDANCE TYPES - Sistema de Asistencia
- * ============================================
+ * =========================
+ * 
+ * Aligned with backend DTOs and best practices
+ * Uses numerical IDs for all references
+ * Includes full audit trail support
  */
 
-// ✅ Status de asistencia (CÓDIGOS DEL BACKEND)
-export type AttendanceStatusCode = 'P' | 'I' | 'IJ' | 'T' | 'TJ' | 'E' | 'M' | 'A';
+// ============================================================================
+// ENUMS & CONSTANTS
+// ============================================================================
 
-export interface AttendanceStatusInfo {
-  code: AttendanceStatusCode;
-  name: string;
-  description: string | null;
-  color?: string;
-  isActive: boolean;
+export enum AttendanceStatusCode {
+  PRESENT = 'P',
+  ABSENT = 'I',
+  ABSENT_JUSTIFIED = 'IJ',
+  TARDY = 'T',
+  TARDY_JUSTIFIED = 'TJ',
+  EXCUSED = 'E',
+  MEDICAL = 'M',
+  ABSENCE = 'A',
 }
 
-// ✅ AttendanceStatus completo desde BD
-export interface AttendanceStatus {
+export enum JustificationStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
+export enum AttendanceReportStatus {
+  EXCELLENT = 'excellent',
+  GOOD = 'good',
+  FAIR = 'fair',
+  POOR = 'poor',
+}
+
+export type AttendanceScope = 'ALL' | 'GRADE' | 'SECTION' | 'OWN' | 'DEPARTMENT';
+
+// ============================================================================
+// BASE TYPES FROM BACKEND
+// ============================================================================
+
+/**
+ * AttendanceStatus - Información del estado de asistencia
+ * Viene directamente de la BD (tabla AttendanceStatus)
+ */
+export interface AttendanceStatusInfo {
   id: number;
   code: AttendanceStatusCode;
   name: string;
@@ -33,32 +61,42 @@ export interface AttendanceStatus {
   isActive: boolean;
 }
 
-// ✅ Asistencia base
+// ============================================================================
+// STUDENT ATTENDANCE RECORDS
+// ============================================================================
+
+/**
+ * StudentAttendance - Registro base de asistencia
+ * Representa un único registro de asistencia de un estudiante en una fecha
+ */
 export interface StudentAttendance {
   id: number;
   enrollmentId: number;
-  date: string; // ISO format
+  date: string; // ISO format (YYYY-MM-DD)
   courseAssignmentId?: number | null;
-  attendanceStatusId: number;  // ✅ CAMBIO: ID numérico en lugar de código string
+  attendanceStatusId: number; // ✅ ID numérico (no código string)
   notes?: string | null;
   arrivalTime?: string | null; // HH:mm format
   minutesLate?: number | null;
-  departureTime?: string | null;
+  departureTime?: string | null; // HH:mm format
   hasJustification: boolean;
   justificationId?: number | null;
   recordedBy: number;
-  recordedAt: string;
+  recordedAt: string; // ISO datetime
   lastModifiedBy?: number | null;
-  lastModifiedAt: string;
+  lastModifiedAt: string; // ISO datetime
   createdAt: string;
   updatedAt: string;
 }
 
-// ✅ Asistencia con relaciones
+/**
+ * StudentAttendanceWithRelations - Registro con relaciones cargadas
+ * Incluye información del estudiante, estado, usuario que registró, etc.
+ */
 export interface StudentAttendanceWithRelations extends StudentAttendance {
   enrollment?: {
     id: number;
-    student: {
+    student?: {
       id: number;
       givenNames: string;
       lastNames: string;
@@ -68,7 +106,7 @@ export interface StudentAttendanceWithRelations extends StudentAttendance {
       name: string;
     };
   };
-  status?: AttendanceStatusInfo;
+  attendanceStatus?: AttendanceStatusInfo;
   recordedByUser?: {
     id: number;
     givenNames: string;
@@ -81,17 +119,19 @@ export interface StudentAttendanceWithRelations extends StudentAttendance {
   };
   justification?: StudentJustification;
   changeHistory?: StudentAttendanceChange[];
-  classAttendances?: StudentClassAttendance[];
 }
 
-// ✅ Asistencia por clase
+/**
+ * StudentClassAttendance - Asistencia por clase específica
+ * Permite registrar asistencia más granular por clase dentro de un horario
+ */
 export interface StudentClassAttendance {
   id: number;
   studentAttendanceId: number;
   scheduleId: number;
   courseAssignmentId: number;
   status: string;
-  arrivalTime?: string | null;
+  arrivalTime?: string | null; // HH:mm format
   notes?: string | null;
   recordedBy?: number | null;
   recordedAt: string;
@@ -99,19 +139,25 @@ export interface StudentClassAttendance {
   updatedAt: string;
 }
 
-// ✅ Justificante de asistencia
+// ============================================================================
+// JUSTIFICATIONS
+// ============================================================================
+
+/**
+ * StudentJustification - Justificante de ausencia/tardanza
+ */
 export interface StudentJustification {
   id: number;
   enrollmentId: number;
-  startDate: string;
-  endDate: string;
+  startDate: string; // ISO format
+  endDate: string; // ISO format
   type: string;
   reason: string;
   description?: string | null;
   documentUrl?: string | null;
   documentType?: string | null;
   documentName?: string | null;
-  status: 'pending' | 'approved' | 'rejected';
+  status: JustificationStatus;
   approvedBy?: number | null;
   approvedAt?: string | null;
   rejectionReason?: string | null;
@@ -123,20 +169,29 @@ export interface StudentJustification {
   updatedAt: string;
 }
 
-// ✅ Cambios en asistencia (audit trail)
+// ============================================================================
+// AUDIT TRAIL
+// ============================================================================
+
+/**
+ * StudentAttendanceChange - Registro de cambios en asistencia (Audit Trail)
+ * Mantiene historial completo de todas las modificaciones
+ */
 export interface StudentAttendanceChange {
   id: number;
   studentAttendanceId: number;
-  statusCodeBefore: AttendanceStatusCode;
-  statusCodeAfter: AttendanceStatusCode;
+  attendanceStatusIdBefore: number; // ✅ ID, no código
+  attendanceStatusIdAfter: number; // ✅ ID, no código
   notesBefore?: string | null;
   notesAfter?: string | null;
   arrivalTimeBefore?: string | null;
   arrivalTimeAfter?: string | null;
+  departureTimeBefore?: string | null;
+  departureTimeAfter?: string | null;
   justificationAddedId?: number | null;
-  changeReason?: string | null;
+  changeReason?: string | null; // ✅ MANDATORY para cambios
   changedBy: number;
-  changedAt: string;
+  changedAt: string; // ISO datetime
   createdAt: string;
   changedByUser?: {
     id: number;
@@ -145,20 +200,177 @@ export interface StudentAttendanceChange {
   };
 }
 
-// ✅ Estadísticas de asistencia
+// ============================================================================
+// STATISTICS
+// ============================================================================
+
+/**
+ * AttendanceStats - Estadísticas de asistencia agregadas
+ */
 export interface AttendanceStats {
   total: number;
-  present: number; // 'A'
-  absent: number; // 'I'
-  absentJustified: number; // 'IJ'
-  late: number; // 'TI'
-  lateJustified: number; // 'TJ'
+  present: number; // P
+  absent: number; // I
+  absentJustified: number; // IJ
+  late: number; // T
+  lateJustified: number; // TJ
+  excused: number; // E
+  medical: number; // M
   percentage?: number;
-  byStatus?: Record<AttendanceStatusCode, number>;
+  byStatus?: Record<string, number>;
 }
 
-// ✅ Query params
-export interface AttendanceQuery {
+// ============================================================================
+// DTOs - CREATE OPERATIONS
+// ============================================================================
+
+/**
+ * CreateAttendancePayload - DTO para crear un registro de asistencia
+ * ✅ Alineado con backend createAttendanceSchema
+ */
+export interface CreateAttendancePayload {
+  enrollmentId: number;
+  date: string; // ISO format (YYYY-MM-DD)
+  gradeId: number;
+  sectionId: number;
+  attendanceStatusId: number; // ✅ ID, no código
+  arrivalTime?: string; // HH:mm format
+  departureTime?: string; // HH:mm format
+  notes?: string;
+  courseAssignmentId?: number | null;
+  scope?: AttendanceScope;
+}
+
+/**
+ * BulkCreateAttendancePayload - DTO para crear múltiples registros
+ */
+export interface BulkCreateAttendancePayload {
+  attendances: CreateAttendancePayload[];
+  scope?: AttendanceScope;
+}
+
+/**
+ * BulkTeacherAttendancePayload - DTO para registro masivo desde maestro
+ * ✅ Alineado con backend bulkTeacherAttendanceSchema
+ */
+export interface BulkTeacherAttendancePayload {
+  date: string; // ISO format
+  gradeId: number;
+  sectionId: number;
+  attendanceStatusId: number;
+  arrivalTime?: string; // HH:mm format
+  departureTime?: string; // HH:mm format
+  notes?: string;
+  courseAssignmentIds?: number[] | null; // null = todos los cursos
+}
+
+/**
+ * BulkBySchedulesAttendanceItem - Item individual para registro por horarios
+ */
+export interface BulkBySchedulesAttendanceItem {
+  enrollmentId: number;
+  attendanceStatusId: number;
+  arrivalTime?: string; // HH:mm format
+  notes?: string;
+}
+
+/**
+ * BulkBySchedulesPayload - DTO para registro masivo por horarios
+ */
+export interface BulkBySchedulesPayload {
+  date: string; // ISO format
+  scheduleIds: number[];
+  attendances: BulkBySchedulesAttendanceItem[];
+}
+
+// ============================================================================
+// DTOs - UPDATE OPERATIONS
+// ============================================================================
+
+/**
+ * UpdateAttendancePayload - DTO para actualizar un registro
+ * ✅ Alineado con backend updateAttendanceSchema
+ * ⚠️ changeReason es OBLIGATORIO (auditoría)
+ */
+export interface UpdateAttendancePayload {
+  attendanceStatusId?: number; // ✅ ID, no código
+  notes?: string;
+  arrivalTime?: string; // HH:mm format
+  departureTime?: string; // HH:mm format
+  changeReason: string; // ✅ MANDATORY - min 5, max 500 chars
+}
+
+/**
+ * BulkUpdateAttendancePayload - DTO para actualizar múltiples registros
+ */
+export interface BulkUpdateAttendancePayload {
+  ids: number[];
+  attendanceStatusId?: number;
+  notes?: string;
+  changeReason: string; // ✅ MANDATORY
+}
+
+/**
+ * BulkApplyStatusPayload - DTO para aplicar estado a múltiples estudiantes
+ */
+export interface BulkApplyStatusPayload {
+  enrollmentIds: number[];
+  date: string; // ISO format
+  attendanceStatusId: number;
+  courseAssignmentIds?: number[];
+  notes?: string;
+}
+
+// ============================================================================
+// DTOs - DELETE OPERATIONS
+// ============================================================================
+
+/**
+ * BulkDeleteAttendancePayload - DTO para eliminar múltiples registros
+ */
+export interface BulkDeleteAttendancePayload {
+  ids: number[];
+  changeReason?: string; // Opcional para auditoría
+}
+
+// ============================================================================
+// DTOs - JUSTIFICATION OPERATIONS
+// ============================================================================
+
+/**
+ * CreateJustificationPayload - DTO para crear justificante
+ */
+export interface CreateJustificationPayload {
+  enrollmentId: number;
+  startDate: string; // ISO format
+  endDate: string; // ISO format
+  type: string;
+  reason: string;
+  description?: string;
+  documentUrl?: string;
+  documentType?: string;
+  documentName?: string;
+}
+
+/**
+ * UpdateJustificationPayload - DTO para actualizar justificante
+ */
+export interface UpdateJustificationPayload {
+  status?: JustificationStatus;
+  approvedBy?: number;
+  rejectionReason?: string;
+  needsFollowUp?: boolean;
+  followUpNotes?: string;
+}
+
+// ============================================================================
+// QUERY & FILTERING
+// ============================================================================
+
+/**
+ * AttendanceQueryParams - Parámetros para listar asistencias
+ */
+export interface AttendanceQueryParams {
   page?: number;
   limit?: number;
   enrollmentId?: number;
@@ -168,22 +380,39 @@ export interface AttendanceQuery {
   bimesterId?: number;
   dateFrom?: string;
   dateTo?: string;
-  statusCode?: AttendanceStatusCode;
+  attendanceStatusId?: number; // ✅ ID, no código
   hasJustification?: boolean;
   search?: string;
   sortBy?: 'date' | 'studentName' | 'status' | 'recordedAt';
   sortOrder?: 'asc' | 'desc';
 }
 
-// ✅ Query params con permisos
-export interface AttendanceQueryWithScope extends AttendanceQuery {
-  scope?: 'all' | 'own' | 'grade' | 'section';
+/**
+ * AttendanceQueryWithScope - Query params con validaciones de scope
+ */
+export interface AttendanceQueryWithScope extends AttendanceQueryParams {
+  scope?: AttendanceScope;
   gradeId?: number;
-  sectionIdScope?: number;
+  departmentId?: number;
 }
 
-// ✅ Paginated response
-export interface PaginatedAttendance {
+/**
+ * ConfigurationQuery - Query para cargar configuración
+ */
+export interface ConfigurationQuery {
+  schoolCycleId?: number;
+  bimesterId?: number;
+  includeInactive?: boolean;
+}
+
+// ============================================================================
+// RESPONSES - PAGINATED
+// ============================================================================
+
+/**
+ * PaginatedAttendanceResponse - Respuesta paginada de asistencias
+ */
+export interface PaginatedAttendanceResponse {
   data: StudentAttendanceWithRelations[];
   meta: {
     page: number;
@@ -194,7 +423,9 @@ export interface PaginatedAttendance {
   stats?: AttendanceStats;
 }
 
-// ✅ Respuesta de lista
+/**
+ * AttendanceListResponse - Respuesta de lista simple
+ */
 export interface AttendanceListResponse {
   data: StudentAttendanceWithRelations[];
   meta: {
@@ -205,125 +436,52 @@ export interface AttendanceListResponse {
   };
 }
 
-// ✅ DTOs - Crear asistencia
-export interface CreateAttendanceDto {
-  enrollmentId: number;
-  date: string; // ISO format
-  attendanceStatusId: number;  // ✅ CAMBIO: ID numérico en lugar de código string
-  courseAssignmentId?: number;
-  courseAssignmentIds?: number[]; // ✅ NUEVO: Lista de cursos seleccionados
-  notes?: string;
-  arrivalTime?: string; // HH:mm format
-  minutesLate?: number;
-  departureTime?: string;
-}
-
-// ✅ DTOs - Actualizar asistencia
-export interface UpdateAttendanceDto {
-  attendanceStatusId?: number;  // ✅ CAMBIO: ID numérico en lugar de código string
-  notes?: string;
-  arrivalTime?: string;
-  minutesLate?: number;
-  departureTime?: string;
-  changeReason?: string;
-}
-
-// ✅ DTOs - Crear múltiples asistencias
-export interface BulkCreateAttendanceDto {
-  attendances: CreateAttendanceDto[];
-}
-
-// ✅ DTOs - Actualizar múltiples
-export interface BulkUpdateAttendanceDto {
-  ids: number[];
-  attendanceStatusId?: number;  // ✅ CAMBIO: ID numérico en lugar de código string
-  notes?: string;
-  changeReason?: string;
-}
-
-// ✅ DTOs - Eliminar múltiples
-export interface BulkDeleteAttendanceDto {
-  ids: number[];
-}
-
-// ✅ DTOs - Aplicar status a múltiples
-export interface BulkApplyStatusDto {
-  enrollmentIds: number[];
-  date: string;
-  attendanceStatusId: number;  // ✅ CAMBIO: ID numérico en lugar de código string
-  courseAssignmentIds?: number[];  // ✅ NUEVO: Soporte para múltiples cursos
-  notes?: string;
-}
-
-// ✅ DTOs - Aplicar asistencia por múltiples cursos
-export interface BulkAttendanceByCourseDto {
-  date: string;
-  courseAssignmentIds: number[];
-  attendances: Array<{
-    enrollmentId: number;
-    attendanceStatusId: number;
-    notes?: string;
-  }>;
-}
-
-// ✅ Curso disponible para una sección
-export interface AttendanceCourse {
-  id: number;
-  courseId: number;
-  name: string;
-  code: string;
-  color?: string;
-  teacherId: number;
-  teacherName: string;
-  startTime?: string;
-  endTime?: string;
-}
-
-// ✅ Respuesta de operaciones bulk
+/**
+ * BulkAttendanceResponse - Respuesta de operaciones bulk
+ */
 export interface BulkAttendanceResponse {
+  success: boolean;
+  message: string;
   created?: number;
   updated?: number;
   deleted?: number;
   skipped?: number;
+  totalRecords?: number;
+  data?: StudentAttendanceWithRelations[];
   errors?: Array<{
-    id: number;
+    id?: number;
     error: string;
   }>;
+  timestamp?: string;
 }
 
-// ✅ DTO - Crear justificante
-export interface CreateJustificationDto {
-  enrollmentId: number;
-  startDate: string;
-  endDate: string;
-  type: string;
-  reason: string;
-  description?: string;
-  documentUrl?: string;
-  documentType?: string;
-  documentName?: string;
+/**
+ * BulkBySchedulesResponse - Respuesta de registro por horarios
+ */
+export interface BulkBySchedulesResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    totalRecords: number;
+    schedules: number[];
+    studentCount: number;
+    created: number;
+    updated: number;
+    errors?: Array<{
+      enrollmentId?: number;
+      scheduleId?: number;
+      error: string;
+    }>;
+  };
 }
 
-// ✅ DTO - Actualizar justificante
-export interface UpdateJustificationDto {
-  status?: 'approved' | 'rejected';
-  approvedBy?: number;
-  rejectionReason?: string;
-  needsFollowUp?: boolean;
-  followUpNotes?: string;
-}
+// ============================================================================
+// REPORTS
+// ============================================================================
 
-// ✅ DTO - Crear asistencia por clase
-export interface CreateClassAttendanceDto {
-  studentAttendanceId: number;
-  scheduleId: number;
-  courseAssignmentId: number;
-  status: string;
-  arrivalTime?: string;
-  notes?: string;
-}
-
-// ✅ Reportes de asistencia
+/**
+ * AttendanceReport - Reporte consolidado de asistencia
+ */
 export interface AttendanceReport {
   enrollmentId: number;
   studentName: string;
@@ -337,42 +495,40 @@ export interface AttendanceReport {
   justifiedAbsences: number;
   justifiedLates: number;
   attendancePercentage: number;
-  status: 'excellent' | 'good' | 'fair' | 'poor';
+  status: AttendanceReportStatus;
+  isAtRisk: boolean;
+  lastUpdated: string;
 }
 
-// ✅ Filtros de permisos por scope
-export interface AttendancePermissionScope {
-  scope: 'all' | 'own' | 'grade' | 'section';
-  gradeId?: number;
-  sectionId?: number;
-  userId?: number;
-  metadata?: Record<string, any>;
+/**
+ * AttendanceReportResponse - Respuesta con reporte
+ */
+export interface AttendanceReportResponse {
+  success: boolean;
+  data: AttendanceReport;
+  message?: string;
 }
 
-// ✅ Respuesta de error estandarizada
-export interface AttendanceError {
-  message: string;
-  code?: string;
-  details?: any;
-  statusCode?: number;
-}
+// ============================================================================
+// CONFIGURATION TYPES
+// ============================================================================
 
-// ============================================
-// CONFIGURATION TYPES - Configuración del Sistema
-// ============================================
-
-// ✅ Grado Escolar
+/**
+ * Grade - Grado escolar
+ */
 export interface Grade {
   id: number;
   name: string;
-  level: string; // e.g., 'PRIMARIA', 'SECUNDARIA'
+  level: string; // PRIMARIA, SECUNDARIA, etc.
   abbreviation?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-// ✅ Sección
+/**
+ * Section - Sección dentro de un grado
+ */
 export interface Section {
   id: number;
   name: string;
@@ -384,75 +540,24 @@ export interface Section {
   updatedAt: string;
 }
 
-// ✅ Día Festivo
+/**
+ * Holiday - Día festivo o no laborable
+ */
 export interface Holiday {
   id: number;
-  date: string; // ISO date format
+  date: string; // ISO format
   name: string;
   description?: string;
-  isRecovered: boolean; // Si será día de recuperación
-  recoveryDate?: string; // Fecha en que se recupera
+  isRecovered: boolean;
+  recoveryDate?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-// ============================================
-// CONFIGURATION QUERY & RESPONSE TYPES
-// ============================================
-
-// ✅ Query para cargar configuración
-export interface ConfigurationQuery {
-  schoolCycleId?: number;
-  bimesterId?: number;
-  includeInactive?: boolean;
-}
-
-// ✅ Respuesta con grados y secciones
-export interface GradesAndSectionsResponse {
-  success: boolean;
-  data: {
-    grades: Grade[];
-    sections: Section[];
-  };
-  message?: string;
-}
-
-// ✅ Respuesta con días festivos
-export interface HolidaysResponse {
-  success: boolean;
-  data: Holiday[];
-  message?: string;
-}
-
-// ✅ Respuesta con configuración completa
-export interface AttendanceConfigurationResponse {
-  success: boolean;
-  data: {
-    grades: Grade[];
-    sections: Section[];
-    holidays: Holiday[];
-    schoolCycle?: {
-      id: number;
-      name: string;
-      startDate: string;
-      endDate: string;
-    };
-    bimester?: {
-      id: number;
-      name: string;
-      startDate: string;
-      endDate: string;
-    };
-  };
-  message?: string;
-}
-
-// ============================================
-// BULK BY SCHEDULES - NUEVO FLUJO
-// ============================================
-
-// ✅ Información de un horario
+/**
+ * Schedule - Horario de clase
+ */
 export interface Schedule {
   id: number;
   sectionId: number;
@@ -472,35 +577,157 @@ export interface Schedule {
   };
 }
 
-// ✅ DTO para registro individual de asistencia por horario
-export interface BulkBySchedulesAttendanceItem {
-  enrollmentId: number;
-  attendanceStatusId: number;
-  arrivalTime?: string;  // HH:MM format
-  notes?: string;
+/**
+ * AttendanceCourse - Curso disponible para una sección
+ */
+export interface AttendanceCourse {
+  id: number;
+  courseId: number;
+  name: string;
+  code: string;
+  color?: string;
+  teacherId: number;
+  teacherName: string;
+  startTime?: string;
+  endTime?: string;
 }
 
-// ✅ DTO principal para el endpoint bulk-by-schedules
-export interface BulkBySchedulesDto {
-  date: string;  // YYYY-MM-DD format
-  scheduleIds: number[];
-  attendances: BulkBySchedulesAttendanceItem[];
-}
+// ============================================================================
+// CONFIGURATION RESPONSES
+// ============================================================================
 
-// ✅ Respuesta del servidor
-export interface BulkBySchedulesResponse {
+/**
+ * GradesAndSectionsResponse - Respuesta con grados y secciones
+ */
+export interface GradesAndSectionsResponse {
   success: boolean;
+  data: {
+    grades: Grade[];
+    sections: Section[];
+  };
+  message?: string;
+}
+
+/**
+ * HolidaysResponse - Respuesta con días festivos
+ */
+export interface HolidaysResponse {
+  success: boolean;
+  data: Holiday[];
+  message?: string;
+}
+
+/**
+ * AttendanceConfigurationResponse - Respuesta con configuración completa
+ */
+export interface AttendanceConfigurationResponse {
+  success: boolean;
+  data: {
+    grades: Grade[];
+    sections: Section[];
+    holidays: Holiday[];
+    attendanceStatuses: AttendanceStatusInfo[];
+    schoolCycle?: {
+      id: number;
+      name: string;
+      startDate: string;
+      endDate: string;
+    };
+    bimester?: {
+      id: number;
+      name: string;
+      startDate: string;
+      endDate: string;
+    };
+  };
+  message?: string;
+}
+
+// ============================================================================
+// PERMISSIONS & AUTHORIZATION
+// ============================================================================
+
+/**
+ * AttendancePermissionScope - Información de scope de permisos
+ */
+export interface AttendancePermissionScope {
+  scope: AttendanceScope;
+  gradeId?: number;
+  sectionId?: number;
+  departmentId?: number;
+  userId?: number;
+  metadata?: Record<string, any>;
+}
+
+/**
+ * UserAttendancePermissions - Permisos del usuario para asistencia
+ */
+export interface UserAttendancePermissions {
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+  canViewAll: boolean;
+  canViewOwnOnly: boolean;
+  scopes: AttendanceScope[];
+  restrictedGradeIds?: number[];
+  restrictedSectionIds?: number[];
+}
+
+// ============================================================================
+// ERROR HANDLING
+// ============================================================================
+
+/**
+ * AttendanceError - Error estandarizado
+ */
+export interface AttendanceError {
   message: string;
-  data?: {
-    totalRecords: number;
-    schedules: number[];
-    studentCount: number;
-    created: number;
-    updated: number;
-    errors?: Array<{
-      enrollmentId?: number;
-      scheduleId?: number;
-      error: string;
-    }>;
+  code?: string;
+  details?: any;
+  statusCode?: number;
+}
+
+/**
+ * ValidationError - Error de validación Zod
+ */
+export interface ValidationError {
+  field: string;
+  message: string;
+  code?: string;
+}
+
+/**
+ * AttendanceErrorResponse - Respuesta de error
+ */
+export interface AttendanceErrorResponse {
+  success: false;
+  error: AttendanceError;
+  errors?: ValidationError[];
+}
+
+// ============================================================================
+// TYPE UTILITIES
+// ============================================================================
+
+/**
+ * Utilidad para extraer tipo de respuesta de operación
+ */
+export type AttendanceOperationResult<T> = {
+  success: boolean;
+  data?: T;
+  error?: AttendanceError;
+};
+
+/**
+ * Utilidad para respuestas con auditoría
+ */
+export interface AuditedAttendanceRecord extends StudentAttendance {
+  audit: {
+    changes: StudentAttendanceChange[];
+    lastModifiedBy: {
+      id: number;
+      name: string;
+    };
+    lastModifiedAt: string;
   };
 }
