@@ -3,51 +3,63 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import {
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
-import { useAttendanceConfig } from '@/hooks/attendance-hooks';
+import {
+  useAttendanceConfig,
+  formatDateISO,
+} from '@/hooks/attendance-hooks';
 
 interface DatePickerProps {
   selectedDate: Date;
   onDateChange: (date: Date) => void;
+  disabled?: boolean;
 }
 
 export default function DatePicker({
   selectedDate,
   onDateChange,
+  disabled = false,
 }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { holidays, error, isHoliday, getHolidayInfo } = useAttendanceConfig();
+  const { getHolidayByDate, error } = useAttendanceConfig();
 
-  // Verificar si es fin de semana
-  const isWeekend = (date: Date) => {
-    const day = date.getDay();
-    return day === 0 || day === 6; // Domingo o Sábado
+  const handlePreviousDay = () => {
+    const previousDay = new Date(selectedDate);
+    previousDay.setDate(previousDay.getDate() - 1);
+    onDateChange(previousDay);
   };
 
-  // Obtener ícono/badge para una fecha
-  const getDateBadge = (date: Date) => {
-    if (isHoliday(date)) {
-      const holidayInfo = getHolidayInfo(date);
+  const handleNextDay = () => {
+    const nextDay = new Date(selectedDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    onDateChange(nextDay);
+  };
+
+  const handleToday = () => {
+    onDateChange(new Date());
+  };
+
+  const getWeekendIndicator = (date: Date) => {
+    const day = date.getDay();
+    if (day === 0 || day === 6) {
       return (
-        <Badge 
-          variant="outline" 
-          className="text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 absolute -bottom-1 -right-1 w-5 h-5 p-0 flex items-center justify-center"
-          title={holidayInfo?.name || 'Día Festivo'}
-        >
-          🎉
-        </Badge>
-      );
-    }
-    if (isWeekend(date)) {
-      return (
-        <Badge 
-          variant="outline" 
+        <Badge
+          variant="secondary"
           className="text-xs bg-gray-50 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300 absolute -bottom-1 -right-1 w-5 h-5 p-0 flex items-center justify-center"
           title="Fin de semana"
         >
@@ -68,8 +80,11 @@ export default function DatePicker({
     );
   }
 
-  const displayDate = format(selectedDate, "d 'de' MMMM 'de' yyyy", { locale: es });
-  const selectedDateHoliday = getHolidayInfo(selectedDate);
+  const displayDate = format(selectedDate, "d 'de' MMMM 'de' yyyy", {
+    locale: es,
+  });
+  const dateISO = formatDateISO(selectedDate);
+  const selectedDateHoliday = getHolidayByDate(dateISO);
 
   return (
     <div className="space-y-3">
@@ -78,12 +93,20 @@ export default function DatePicker({
           <Button
             variant="outline"
             className={cn(
-              "w-full justify-start text-left font-normal",
-              !selectedDate && "text-muted-foreground"
+              'w-full justify-start text-left font-normal',
+              !selectedDate && 'text-muted-foreground',
+              disabled && 'opacity-50 cursor-not-allowed',
+              selectedDateHoliday && 'border-orange-300 bg-orange-50 dark:bg-orange-900/10'
             )}
+            disabled={disabled}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {displayDate}
+            {selectedDateHoliday && (
+              <span className="ml-auto text-xs text-orange-600">
+                {selectedDateHoliday.name}
+              </span>
+            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
@@ -96,54 +119,51 @@ export default function DatePicker({
                 setIsOpen(false);
               }
             }}
-            disabled={(date) => {
-              // Deshabilitar fechas muy antiguas o futuras (ej: hace 2 años o en 2 años)
-              const twoYearsAgo = new Date();
-              twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-              
-              const twoYearsAhead = new Date();
-              twoYearsAhead.setFullYear(twoYearsAhead.getFullYear() + 2);
-              
-              return date < twoYearsAgo || date > twoYearsAhead;
-            }}
-            initialFocus
+            disabled={disabled}
+            className="rounded-md border"
           />
-          
-          {/* Leyenda de símbolos */}
-          <div className="border-t p-3 space-y-2 text-xs text-gray-500 dark:text-gray-400">
-            <div className="flex items-center space-x-2">
-              <span>🎉</span>
-              <span>Día Festivo</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span>📅</span>
-              <span>Fin de semana</span>
-            </div>
-          </div>
         </PopoverContent>
       </Popover>
 
-      {/* Mostrar información si es día festivo */}
-      {selectedDateHoliday && (
-        <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
-          <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <AlertDescription className="text-blue-800 dark:text-blue-200">
-            <strong>Día Festivo:</strong> {selectedDateHoliday.name}
-            {selectedDateHoliday.isRecovered && (
-              <span className="ml-2 text-xs bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 px-2 py-0.5 rounded">
-                Día Recuperado
-              </span>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Controles de navegación */}
+      <div className="flex gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handlePreviousDay}
+          disabled={disabled}
+          className="flex-1"
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Anterior
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleToday}
+          disabled={disabled}
+          className="flex-1"
+        >
+          Hoy
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleNextDay}
+          disabled={disabled}
+          className="flex-1"
+        >
+          Siguiente
+          <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+      </div>
 
-      {/* Mostrar información si es fin de semana */}
-      {isWeekend(selectedDate) && !selectedDateHoliday && (
-        <Alert className="border-gray-200 bg-gray-50 dark:bg-gray-900/20 dark:border-gray-800">
-          <AlertCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-          <AlertDescription className="text-gray-800 dark:text-gray-200">
-            Este es un fin de semana. Los registros de asistencia generalmente no aplican.
+      {/* Indicador de día festivo */}
+      {selectedDateHoliday && (
+        <Alert className="border-orange-200 bg-orange-50 dark:bg-orange-900/20">
+          <AlertCircle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-800 dark:text-orange-200">
+            ⚠️ {selectedDateHoliday.name} - No hay asistencia
           </AlertDescription>
         </Alert>
       )}
