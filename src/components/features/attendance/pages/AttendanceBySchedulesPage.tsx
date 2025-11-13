@@ -10,8 +10,6 @@ import { toast } from 'sonner';
 import { Calendar, Loader2, AlertCircle, Save, RotateCcw } from 'lucide-react';
 
 import { Schedule, BulkBySchedulesAttendanceItem } from '@/types/attendance.types';
-import { useSchedulesForDay } from '@/hooks/attendance/useSchedulesForDay';
-import { useAttendanceActions } from '@/hooks/attendance/useAttendanceActions';
 import { useAttendanceStatuses } from '@/hooks/attendance';
 
 import { ScheduleList } from '../components/schedules/ScheduleList';

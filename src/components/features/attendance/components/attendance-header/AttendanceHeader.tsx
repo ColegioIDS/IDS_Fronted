@@ -11,7 +11,6 @@ import SectionSelector from './SectionSelector';
 import DatePicker from './DatePicker';
 import AttendanceStats from './AttendanceStats';
 import { useAttendanceConfig } from '@/hooks/attendance-hooks';
-import { useAttendanceConfig } from '@/hooks/attendance/useAttendanceConfig';
 
 interface AttendanceHeaderProps {
   selectedGradeId: number | null;
