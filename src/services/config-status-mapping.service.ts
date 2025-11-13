@@ -4,6 +4,7 @@ import { api } from '@/config/api';
 export interface CreateConfigStatusMappingDto {
   configId: number;
   statusId: number;
+  mappingType: 'negative' | 'notesRequired'; // ⭐ REQUIRED - Define the type of mapping
   displayOrder?: number;
   isActive?: boolean;
 }
@@ -11,6 +12,7 @@ export interface CreateConfigStatusMappingDto {
 export interface UpdateConfigStatusMappingDto {
   configId?: number;
   statusId?: number;
+  mappingType?: 'negative' | 'notesRequired';
   displayOrder?: number;
   isActive?: boolean;
 }
@@ -19,6 +21,7 @@ export interface ConfigStatusMappingResponseDto {
   id: number;
   configId: number;
   statusId: number;
+  mappingType: 'negative' | 'notesRequired'; // ⭐ Mapping type returned from backend
   displayOrder: number;
   isActive: boolean;
   createdAt: string;
@@ -211,7 +214,7 @@ class ConfigStatusMappingService {
   }
 
   /**
-   * Get setup config - Returns complete config with status mappings
+   * Get setup config - Returns { config, statusMappings, summary }
    * GET /api/config-status-mappings/current/complete
    */
   async getSetupConfig(): Promise<any> {
@@ -221,8 +224,13 @@ class ConfigStatusMappingService {
       throw new Error(`Error fetching setup config: ${response.statusText}`);
     }
 
-    // Direct response - returns { config, statusMappings, summary }
-    return response.data;
+    // Handle wrapper format: { success, message, data: { config, statusMappings, summary } }
+    const unwrappedData = response.data.data || response.data;
+    
+    console.log('getSetupConfig raw response:', response.data);
+    console.log('getSetupConfig unwrapped data:', unwrappedData);
+    
+    return unwrappedData;
   }
 
   /**

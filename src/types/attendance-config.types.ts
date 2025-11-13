@@ -6,6 +6,8 @@
  */
 export interface AttendanceConfig {
   id: number;
+  name: string;
+  description: string | null;
   riskThresholdPercentage: number;
   consecutiveAbsenceAlert: number;
   defaultNotesPlaceholder: string | null;
@@ -40,6 +42,8 @@ export interface AttendanceConfigWithMetadata extends AttendanceConfig {
  * ✅ DTOs para crear/actualizar
  */
 export interface CreateAttendanceConfigDto {
+  name: string;
+  description?: string | null;
   riskThresholdPercentage?: number;
   consecutiveAbsenceAlert?: number;
   defaultNotesPlaceholder?: string | null;

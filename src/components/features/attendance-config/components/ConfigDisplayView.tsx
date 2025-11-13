@@ -12,6 +12,7 @@ import {
   CheckCircle,
   BarChart3,
   Bell,
+  Info,
 } from 'lucide-react';
 import { ATTENDANCE_CONFIG_THEME } from '../attendance-config-theme';
 
@@ -48,6 +49,31 @@ export const ConfigDisplayView: React.FC<ConfigDisplayViewProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Información Básica */}
+      <ConfigCard
+        title="Información Básica"
+        description="Datos generales de la configuración"
+        type="default"
+        icon={Info}
+      >
+        <div className="space-y-4">
+          <ConfigField
+            label="Nombre"
+            value={config.name}
+            type="text"
+            helperText="Identificador de esta configuración"
+          />
+          {config.description && (
+            <ConfigField
+              label="Descripción"
+              value={config.description}
+              type="text"
+              helperText="Notas sobre esta configuración"
+            />
+          )}
+        </div>
+      </ConfigCard>
+
       {/* Header Info */}
       <div
         className={`

@@ -192,4 +192,46 @@ export const attendanceConfigService = {
 
     return response.data.data;
   },
+
+  /**
+   * Obtener la hora límite para marcar como retraso
+   */
+  async getLateThresholdTime(): Promise<string> {
+    const response = await api.get<ApiResponse<{ thresholdTime: string }>>(
+      '/api/attendance-config/late/threshold-time'
+    );
+
+    if (!response.data?.success) {
+      throw new Error(
+        response.data?.message || 'Error al obtener hora límite de retraso'
+      );
+    }
+
+    if (!response.data.data?.thresholdTime) {
+      throw new Error('Hora límite no disponible');
+    }
+
+    return response.data.data.thresholdTime;
+  },
+
+  /**
+   * Obtener el porcentaje de umbral de riesgo de inasistencia
+   */
+  async getRiskThreshold(): Promise<number> {
+    const response = await api.get<ApiResponse<{ riskThreshold: number }>>(
+      '/api/attendance-config/risk/threshold'
+    );
+
+    if (!response.data?.success) {
+      throw new Error(
+        response.data?.message || 'Error al obtener umbral de riesgo'
+      );
+    }
+
+    if (response.data.data?.riskThreshold === undefined) {
+      throw new Error('Umbral de riesgo no disponible');
+    }
+
+    return response.data.data.riskThreshold;
+  },
 };

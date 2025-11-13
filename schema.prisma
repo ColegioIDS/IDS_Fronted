@@ -909,13 +909,35 @@ model AttendanceStatus {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  rolePermissions        RoleAttendancePermission[]
-  studentAttendances     StudentAttendance[]
-  attendanceChangesBefore StudentAttendanceChange[] @relation("AttendanceChangeBefore")
-  attendanceChangesAfter  StudentAttendanceChange[] @relation("AttendanceChangeAfter")
+  rolePermissions         RoleAttendancePermission[]
+  studentAttendances      StudentAttendance[]
+  attendanceChangesBefore StudentAttendanceChange[]  @relation("AttendanceChangeBefore")
+  attendanceChangesAfter  StudentAttendanceChange[]  @relation("AttendanceChangeAfter")
+  configMappings          ConfigStatusMapping[]      @relation("ConfigStatusMapping")
 
   @@index([code])
   @@map("attendance_statuses")
+}
+
+/**
+ * Tabla intermedia para relacionar AttendanceConfig con AttendanceStatus
+ * Maneja qué códigos son negativos y cuáles requieren notas
+ */
+model ConfigStatusMapping {
+  id          Int    @id @default(autoincrement())
+  configId    Int
+  statusId    Int
+  mappingType String // "negative" | "notesRequired"
+
+  config AttendanceConfig @relation("ConfigNegativeStatuses", fields: [configId], references: [id], onDelete: Cascade)
+  status AttendanceStatus @relation("ConfigStatusMapping", fields: [statusId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([configId, statusId, mappingType])
+  @@index([configId])
+  @@index([statusId])
+  @@map("config_status_mappings")
 }
 
 model RoleAttendancePermission {
@@ -949,11 +971,12 @@ model RoleAttendancePermission {
 model AttendanceConfig {
   id Int @id @default(autoincrement())
 
-  negativeStatusCodes     String[] @default(["I", "TI"])
-  riskThresholdPercentage Float    @default(80.0)
-  consecutiveAbsenceAlert Int      @default(3)
+  name        String  @unique
+  description String?
 
-  notesRequiredForStates  String[] @default(["IJ", "TJ"])
+  riskThresholdPercentage Float @default(80.0)
+  consecutiveAbsenceAlert Int   @default(3)
+
   defaultNotesPlaceholder String?
 
   lateThresholdTime       String @default("08:30")
@@ -969,6 +992,8 @@ model AttendanceConfig {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  statusMappings ConfigStatusMapping[] @relation("ConfigNegativeStatuses")
 
   @@map("attendance_configs")
 }
@@ -1007,7 +1032,7 @@ model StudentAttendance {
   changeHistory    StudentAttendanceChange[]
   classAttendances StudentClassAttendance[]
 
-  @@unique([enrollmentId, date, courseAssignmentId], name: "unique_student_attendance")
+  @@unique([enrollmentId, date], name: "unique_student_attendance")
   @@index([enrollmentId])
   @@index([date])
   @@index([attendanceStatusId])

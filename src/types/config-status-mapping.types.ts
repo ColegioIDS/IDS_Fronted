@@ -3,25 +3,21 @@
 export interface CreateConfigStatusMappingDto {
   configId: number;
   statusId: number;
-  displayOrder?: number;
-  isActive?: boolean;
+  mappingType: 'negative' | 'notesRequired'; // ⭐ REQUIRED - Define the type of mapping
 }
 
 export interface UpdateConfigStatusMappingDto {
   configId?: number;
   statusId?: number;
-  displayOrder?: number;
-  isActive?: boolean;
+  mappingType?: 'negative' | 'notesRequired';
 }
 
 export interface ConfigStatusMappingResponseDto {
   id: number;
   configId: number;
   statusId: number;
-  displayOrder: number;
-  isActive: boolean;
+  mappingType: 'negative' | 'notesRequired'; // ⭐ Mapping type returned from backend
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface PaginatedResponse<T> {

@@ -233,6 +233,8 @@ export const AttendanceConfigPage: React.FC<AttendanceConfigPageProps> = ({
           <ConfigEditView
             config={{
               id: 0,
+              name: '',
+              description: null,
               riskThresholdPercentage: 80,
               consecutiveAbsenceAlert: 3,
               defaultNotesPlaceholder: null,

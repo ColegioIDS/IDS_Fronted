@@ -25,6 +25,8 @@ export const ConfigEditView: React.FC<ConfigEditViewProps> = ({
   loading = false,
 }) => {
   const [formData, setFormData] = useState<FormData>({
+    name: config.name || '',
+    description: config.description || '',
     riskThresholdPercentage: config.riskThresholdPercentage,
     consecutiveAbsenceAlert: config.consecutiveAbsenceAlert,
     defaultNotesPlaceholder: config.defaultNotesPlaceholder,
@@ -43,6 +45,12 @@ export const ConfigEditView: React.FC<ConfigEditViewProps> = ({
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
+
+    if (!formData.name || formData.name.trim().length === 0) {
+      newErrors.name = 'El nombre es requerido';
+    } else if (formData.name.length < 3 || formData.name.length > 255) {
+      newErrors.name = 'El nombre debe tener entre 3 y 255 caracteres';
+    }
 
     if (
       typeof formData.riskThresholdPercentage === 'number' &&
@@ -114,6 +122,38 @@ export const ConfigEditView: React.FC<ConfigEditViewProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="p-8 space-y-8">
+      {/* Información Básica */}
+      <ConfigCard
+        title="Información Básica"
+        description="Nombre y descripción de la configuración"
+        type="threshold"
+        icon={AlertCircle}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <ConfigField
+              label="Nombre"
+              value={config.name || ''}
+              editValue={formData.name}
+              isEditing={true}
+              onChange={(value) => handleFieldChange('name', value)}
+              type="text"
+              error={errors.name}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <ConfigField
+              label="Descripción"
+              value={config.description || ''}
+              editValue={formData.description}
+              isEditing={true}
+              onChange={(value) => handleFieldChange('description', value)}
+              type="textarea"
+            />
+          </div>
+        </div>
+      </ConfigCard>
+
       {/* Umbral de Riesgo y Alertas */}
       <ConfigCard
         title="Umbral de Riesgo y Alertas"
