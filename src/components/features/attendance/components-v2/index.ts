@@ -24,3 +24,9 @@ export { default as ErrorState } from './states/ErrorState';
 export { default as LoadingState } from './states/LoadingState';
 export { default as EmptyState } from './states/EmptyState';
 export { default as HolidayNotice } from './states/HolidayNotice';
+
+// Action components
+export { default as StatusSelector } from './actions/StatusSelector';
+export { default as ChangeReasonInput } from './actions/ChangeReasonInput';
+export { default as ConfirmationModal } from './actions/ConfirmationModal';
+export { default as PermissionGuard } from './actions/PermissionGuard';
