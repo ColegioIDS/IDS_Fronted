@@ -52,13 +52,13 @@ export const AttendanceConfigPage: React.FC<AttendanceConfigPageProps> = ({
   }, [loadConfig]);
 
   // Guardar cambios
-  const handleSave = async (data: UpdateAttendanceConfigDto) => {
+  const handleSave = async (data: UpdateAttendanceConfigDto | CreateAttendanceConfigDto | Partial<AttendanceConfig>) => {
     if (!config) return;
 
     setLoading(true);
     setError(null);
     try {
-      const updated = await attendanceConfigService.update(config.id, data);
+      const updated = await attendanceConfigService.update(config.id, data as UpdateAttendanceConfigDto);
       setConfig(updated);
       setViewMode('display');
       setSuccess('Configuración actualizada correctamente');

@@ -32,15 +32,15 @@ export default function GradeSelector({
         Grado
       </label>
       <Select
-        value={selectedGradeId ? String(selectedGradeId) : ''}
-        onValueChange={(value) => onGradeChange(value ? parseInt(value) : null)}
+        value={selectedGradeId ? String(selectedGradeId) : '0'}
+        onValueChange={(value) => onGradeChange(value === '0' ? null : parseInt(value))}
         disabled={disabled || isLoading}
       >
         <SelectTrigger>
           <SelectValue placeholder="Selecciona un grado" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">Todos los grados</SelectItem>
+          <SelectItem value="0">Todos los grados</SelectItem>
           {grades.map((grade: any) => (
             <SelectItem key={grade.id} value={String(grade.id)}>
               {grade.name}

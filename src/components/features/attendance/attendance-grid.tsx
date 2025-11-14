@@ -15,11 +15,9 @@ import { useStudentsBySection } from '@/hooks/data';
 import { AttendanceStatusProvider } from '@/context/AttendanceStatusContext';
 import AttendanceHeader from './components/header/AttendanceHeader';
 import AttendanceTable from './components/table/AttendanceTable';
-import AttendanceCards from './components/index';
-import {
-  NoGradeSelectedState,
-  NoSectionSelectedState,
-
+import EmptyState from './components/states/EmptyState';
+import ErrorState from './components/states/ErrorState';
+import LoadingState from './components/states/LoadingState';
 
 function AttendanceGridContent() {
   // ========== NUEVOS HOOKS FASE 2 ==========
@@ -158,35 +156,21 @@ function AttendanceGridContent() {
           onGradeChange={handleGradeChange}
           onSectionChange={handleSectionChange}
           onDateChange={handleDateChange}
-          totalStudents={mergedAttendanceData.length}
-          stats={stats}
         />
 
         {/* 🎯 Área principal */}
         <div className="space-y-6">
           {/* Estado: Sin grado seleccionado */}
           {!selectedGradeId && (
-            <NoGradeSelectedState
-              action={{
-                label: 'Ver ayuda',
-                onClick: () => alert('Selecciona un grado del menú superior para comenzar'),
-                variant: 'outline',
-              }}
-            />
+            <EmptyState message="Selecciona un grado para ver la asistencia" />
           )}
 
           {/* Estado: Sin sección seleccionada */}
           {selectedGradeId && !selectedSectionId && (
-            <NoSectionSelectedState
-              action={{
-                label: 'Cambiar grado',
-                onClick: () => setSelectedGradeId(null),
-                variant: 'outline',
-              }}
-            />
+            <EmptyState message="Selecciona una sección para ver la asistencia" />
           )}
 
-          {/* Contenido principal: Tabla o Cards */}
+          {/* Contenido principal: Tabla */}
           {selectedGradeId && selectedSectionId && (
             <div className="space-y-4">
               {/* Toggle de vista */}
@@ -223,57 +207,21 @@ function AttendanceGridContent() {
                 </div>
               </div>
 
+              {/* Estados de carga */}
+              {loading && <LoadingState />}
+              {error && <ErrorState error={error} />}
+
               {/* Componentes de asistencia */}
-              {viewMode === 'table' ? (
+              {!loading && viewMode === 'table' && (
                 <AttendanceTable
-                  sectionId={selectedSectionId}
-                  selectedDate={selectedDate}
-                  isHoliday={isHoliday}
-                  holiday={currentHoliday ? {
-                    id: currentHoliday.id,
-                    date: currentHoliday.date,
-                    description: currentHoliday.name,
-                    isRecovered: currentHoliday.isRecovered,
-                  } : undefined}
-                  onDateChange={handleDateChange}
-                  onRefresh={async () => {
-                    await fetchAttendances({
-                      sectionId: selectedSectionId!,
-                      dateFrom: selectedDate.toISOString().split('T')[0],
-                      dateTo: selectedDate.toISOString().split('T')[0],
-                      page: 1,
-                      limit: 50,
-                    });
-                  }}
                   data={mergedAttendanceData}
-                  loading={loading || loadingStudents}
-                  error={error || studentsError}
-                />
-              ) : (
-                <AttendanceCards
-                  sectionId={selectedSectionId}
                   selectedDate={selectedDate}
-                  isHoliday={isHoliday}
-                  holiday={currentHoliday ? {
-                    id: currentHoliday.id,
-                    date: currentHoliday.date,
-                    description: currentHoliday.name,
-                    isRecovered: currentHoliday.isRecovered,
-                  } : undefined}
-                  onDateChange={handleDateChange}
-                  onRefresh={async () => {
-                    await fetchAttendances({
-                      sectionId: selectedSectionId!,
-                      dateFrom: selectedDate.toISOString().split('T')[0],
-                      dateTo: selectedDate.toISOString().split('T')[0],
-                      page: 1,
-                      limit: 50,
-                    });
-                  }}
-                  data={mergedAttendanceData}
-                  loading={loading || loadingStudents}
-                  error={error || studentsError}
                 />
+              )}
+
+              {/* Cards view - para futura implementación */}
+              {!loading && viewMode === 'cards' && (
+                <EmptyState message="Vista en cards próximamente disponible" />
               )}
             </div>
           )}

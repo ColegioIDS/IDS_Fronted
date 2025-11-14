@@ -145,10 +145,10 @@ export const ConfigEditView: React.FC<ConfigEditViewProps> = ({
             <ConfigField
               label="Descripción"
               value={config.description || ''}
-              editValue={formData.description}
+              editValue={formData.description || ''}
               isEditing={true}
               onChange={(value) => handleFieldChange('description', value)}
-              type="textarea"
+              type="text"
             />
           </div>
         </div>

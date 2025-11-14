@@ -53,7 +53,7 @@ export const ConfigDisplayView: React.FC<ConfigDisplayViewProps> = ({
       <ConfigCard
         title="Información Básica"
         description="Datos generales de la configuración"
-        type="default"
+        type="threshold"
         icon={Info}
       >
         <div className="space-y-4">

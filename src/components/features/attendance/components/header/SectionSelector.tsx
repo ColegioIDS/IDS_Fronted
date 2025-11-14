@@ -24,15 +24,13 @@ export default function SectionSelector({
   disabled = false,
 }: SectionSelectorProps) {
   const {
-    grades = [],
+    sections = [],
     isLoading,
   } = useAttendanceConfig();
 
-  const sections = useMemo(() => {
-    if (!grades) return [];
-    const grade = grades.find((g: any) => g.id === gradeId);
-    return grade?.sections || [];
-  }, [grades, gradeId]);
+  const gradeSections = useMemo(() => {
+    return sections.filter((section: any) => section.gradeId === gradeId);
+  }, [sections, gradeId]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -40,16 +38,16 @@ export default function SectionSelector({
         Sección
       </label>
       <Select
-        value={selectedSectionId ? String(selectedSectionId) : ''}
-        onValueChange={(value) => onSectionChange(value ? parseInt(value) : null)}
-        disabled={disabled || isLoading || sections.length === 0}
+        value={selectedSectionId ? String(selectedSectionId) : '0'}
+        onValueChange={(value) => onSectionChange(value === '0' ? null : parseInt(value))}
+        disabled={disabled || isLoading || gradeSections.length === 0}
       >
         <SelectTrigger>
           <SelectValue placeholder="Selecciona una sección" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">Todas las secciones</SelectItem>
-          {sections.map((section: any) => (
+          <SelectItem value="0">Todas las secciones</SelectItem>
+          {gradeSections.map((section: any) => (
             <SelectItem key={section.id} value={String(section.id)}>
               {section.name}
             </SelectItem>
