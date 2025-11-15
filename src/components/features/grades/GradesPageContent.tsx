@@ -329,7 +329,7 @@ export function GradesPageContent() {
                       onClick={() => setPage(pageNum as number)}
                       className={`min-w-[40px] ${
                         pageNum === meta.page
-                          ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white font-bold shadow-lg'
+                          ? 'bg-primary-600 dark:bg-primary-500 text-white font-bold shadow-lg border-2 border-primary-700 dark:border-primary-600'
                           : 'hover:bg-primary-50 hover:border-primary-300 dark:hover:bg-primary-950/30'
                       }`}
                     >
