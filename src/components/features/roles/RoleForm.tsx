@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { rolesService } from '@/services/roles.service';
 import { permissionsService } from '@/services/permissions.service';
-import { CreateRoleDto, UpdateRoleDto } from '@/types/roles.types';
+import { CreateRoleDto, UpdateRoleDto, RoleType } from '@/types/roles.types';
 import { Permission } from '@/types/permissions.types';
 import { getModuleTheme, getActionTheme } from '@/config/theme.config';
 import { toast } from 'sonner';
@@ -40,9 +40,18 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
 const roleSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres').max(100),
   description: z.string().max(500).optional(),
+  roleType: z.enum(['ADMIN', 'TEACHER', 'COORDINATOR', 'PARENT', 'STUDENT', 'STAFF', 'CUSTOM'] as const).optional(),
   isActive: z.boolean()
 });
 
@@ -67,6 +76,7 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
   const [selectedPermissions, setSelectedPermissions] = useState<Map<number, PermissionSelection>>(new Map());
   const [globalError, setGlobalError] = useState<null | { title?: string; message: string; details?: string[] }>(null);
   const [missingDependencies, setMissingDependencies] = useState<Set<number>>(new Set());
+  const [roleTypes, setRoleTypes] = useState<Array<{ value: RoleType; label: string; description: string }>>([]);
 
   const isEdit = !!roleId;
 
@@ -82,14 +92,17 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
     defaultValues: {
       name: '',
       description: '',
+      roleType: 'CUSTOM',
       isActive: true,
     },
   });
 
   const isActive = watch('isActive');
+  const selectedRoleType = watch('roleType');
 
   useEffect(() => {
     loadAvailablePermissions();
+    loadRoleTypes();
   }, []);
 
   useEffect(() => {
@@ -99,6 +112,7 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
       reset({
         name: '',
         description: '',
+        roleType: 'CUSTOM',
         isActive: true,
       });
       setSelectedPermissions(new Map());
@@ -109,6 +123,16 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
   useEffect(() => {
     validateDependencies();
   }, [selectedPermissions, availablePermissions]);
+
+  const loadRoleTypes = async () => {
+    try {
+      const types = await rolesService.getRoleTypes();
+      setRoleTypes(types);
+    } catch (err: any) {
+      handleApiError(err, 'Error al cargar tipos de rol');
+      console.error(err);
+    }
+  };
 
   const loadAvailablePermissions = async () => {
     try {
@@ -430,6 +454,36 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
             {errors.description && (
               <p className="text-sm text-red-600 dark:text-red-400">
                 {errors.description.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="roleType" className="text-gray-700 dark:text-gray-300">
+              Tipo de Rol *
+            </Label>
+            <Select 
+              value={selectedRoleType || 'CUSTOM'} 
+              onValueChange={(value) => setValue('roleType', value as RoleType)}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700">
+                <SelectValue placeholder="Selecciona un tipo de rol" />
+              </SelectTrigger>
+              <SelectContent>
+                {roleTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{type.label}</span>
+                      <span className="text-xs text-gray-500">{type.description}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedRoleType && (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {roleTypes.find(t => t.value === selectedRoleType)?.description}
               </p>
             )}
           </div>

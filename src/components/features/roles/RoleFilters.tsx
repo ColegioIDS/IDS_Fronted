@@ -50,12 +50,14 @@ export function RoleFilters({
   const hasActiveFilters = 
     query.search || 
     query.isActive !== undefined || 
-    query.isSystem !== undefined;
+    query.isSystem !== undefined ||
+    query.roleType !== undefined;
 
   const activeFiltersCount = [
     query.search,
     query.isActive !== undefined,
     query.isSystem !== undefined,
+    query.roleType !== undefined,
   ].filter(Boolean).length;
 
   return (
@@ -118,7 +120,7 @@ export function RoleFilters({
         </div>
 
         {/* Filtros en grid mejorado */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Estado del rol */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -208,6 +210,56 @@ export function RoleFilters({
                     <Users className="w-4 h-4 text-purple-600" />
                     Roles personalizados
                   </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Categoría de Rol */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-gray-500" />
+              Categoría
+            </label>
+            <Select
+              value={query.roleType || 'all'}
+              onValueChange={(value) =>
+                onQueryChange({
+                  roleType: value === 'all' ? undefined : (value as any),
+                  page: 1,
+                })
+              }
+            >
+              <SelectTrigger className="h-11 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 transition-colors">
+                <SelectValue placeholder="Seleccionar categoría" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-gray-900">
+                <SelectItem value="all">
+                  <span className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                    Todas las categorías
+                  </span>
+                </SelectItem>
+                <SelectItem value="ADMIN">
+                  <span>Administrador</span>
+                </SelectItem>
+                <SelectItem value="TEACHER">
+                  <span>Maestro</span>
+                </SelectItem>
+                <SelectItem value="COORDINATOR">
+                  <span>Coordinador</span>
+                </SelectItem>
+                <SelectItem value="PARENT">
+                  <span>Padre de Familia</span>
+                </SelectItem>
+                <SelectItem value="STUDENT">
+                  <span>Estudiante</span>
+                </SelectItem>
+                <SelectItem value="STAFF">
+                  <span>Personal</span>
+                </SelectItem>
+                <SelectItem value="CUSTOM">
+                  <span>Personalizado</span>
                 </SelectItem>
               </SelectContent>
             </Select>

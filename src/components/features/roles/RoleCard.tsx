@@ -147,6 +147,14 @@ export function RoleCard({ role, onUpdate, onEdit }: RoleCardProps) {
         <CardContent className="p-4 space-y-4 bg-white dark:bg-gray-900">
           {/* Badges */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Role Type Badge */}
+            <Badge
+              variant="outline"
+              className="bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700"
+            >
+              {role.roleType || 'CUSTOM'}
+            </Badge>
+
             <Badge
               variant={role.isActive ? 'default' : 'secondary'}
               className={

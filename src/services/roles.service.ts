@@ -12,9 +12,23 @@ import {
   AssignMultiplePermissionsDto,
   RemoveMultiplePermissionsDto,
   RolePermission,
+  RoleTypeInfo,
 } from '@/types/roles.types';
 
 export const rolesService = {
+  /**
+   * Obtener tipos de roles disponibles
+   */
+  async getRoleTypes(): Promise<RoleTypeInfo[]> {
+    const response = await api.get('/api/roles/role-types');
+    
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || 'Error al obtener tipos de rol');
+    }
+
+    return Array.isArray(response.data.data) ? response.data.data : [];
+  },
+
   /**
    * Obtener roles paginados con filtros
    */
@@ -26,6 +40,7 @@ export const rolesService = {
     if (query.search) params.append('search', query.search);
     if (query.isActive !== undefined) params.append('isActive', query.isActive.toString());
     if (query.isSystem !== undefined) params.append('isSystem', query.isSystem.toString());
+    if (query.roleType) params.append('roleType', query.roleType);
     if (query.sortBy) params.append('sortBy', query.sortBy);
     if (query.sortOrder) params.append('sortOrder', query.sortOrder);
 

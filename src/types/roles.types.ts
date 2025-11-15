@@ -1,10 +1,14 @@
 // src/types/roles.types.ts
 
+// ✅ Tipos de rol disponibles
+export type RoleType = 'ADMIN' | 'TEACHER' | 'COORDINATOR' | 'PARENT' | 'STUDENT' | 'STAFF' | 'CUSTOM';
+
 // ✅ Role base
 export interface Role {
   id: number;
   name: string;
   description: string | null;
+  roleType: RoleType;
   isActive: boolean;
   isSystem: boolean;
   createdAt: string;
@@ -65,6 +69,7 @@ export interface RolesQuery {
   search?: string;
   isActive?: boolean;
   isSystem?: boolean;
+  roleType?: RoleType;
   sortBy?: 'name' | 'createdAt' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
 }
@@ -84,12 +89,14 @@ export interface PaginatedRoles {
 export interface CreateRoleDto {
   name: string;
   description?: string;
+  roleType?: RoleType;
   isActive?: boolean;
 }
 
 export interface UpdateRoleDto {
   name?: string;
   description?: string;
+  roleType?: RoleType;
   isActive?: boolean;
 }
 
@@ -106,4 +113,11 @@ export interface AssignMultiplePermissionsDto {
 
 export interface RemoveMultiplePermissionsDto {
   permissionIds: number[];
+}
+
+// ✅ Role Type Info
+export interface RoleTypeInfo {
+  value: RoleType;
+  label: string;
+  description: string;
 }
