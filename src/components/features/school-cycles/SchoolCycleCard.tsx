@@ -123,24 +123,6 @@ export function SchoolCycleCard({
         shadow-lg hover:shadow-2xl hover:-translate-y-1
         transition-all duration-300 ease-out">
 
-        {/* Active Cycle Ribbon */}
-        {cycle.isActive && (
-          <div className="absolute top-4 -right-12 w-40 h-8 bg-emerald-600 dark:bg-emerald-500
-            rotate-45 flex items-center justify-center shadow-lg z-20">
-            <Zap className="w-4 h-4 text-white mr-2 animate-pulse" strokeWidth={2.5} />
-            <span className="text-xs font-bold text-white uppercase tracking-wider">Activo</span>
-          </div>
-        )}
-
-        {/* Archived Ribbon */}
-        {cycle.isArchived && (
-          <div className="absolute top-4 -right-12 w-40 h-8 bg-gray-600 dark:bg-gray-500
-            rotate-45 flex items-center justify-center shadow-lg z-20">
-            <Lock className="w-4 h-4 text-white mr-2" strokeWidth={2.5} />
-            <span className="text-xs font-bold text-white uppercase tracking-wider">Cerrado</span>
-          </div>
-        )}
-
         {/* Progress Indicator - Only for ongoing cycles */}
         {isOngoing && !cycle.isArchived && (
           <div className="absolute top-3 left-3 z-10">

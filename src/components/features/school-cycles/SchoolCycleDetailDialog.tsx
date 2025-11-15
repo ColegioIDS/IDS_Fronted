@@ -1,33 +1,35 @@
 // src/components/features/school-cycles/SchoolCycleDetailDialog.tsx
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/shared/feedback/LoadingSpinner';
 import { ErrorAlert } from '@/components/shared/feedback/ErrorAlert';
 import { SchoolCycle, SchoolCycleStats } from '@/types/school-cycle.types';
 import { schoolCycleService } from '@/services/school-cycle.service';
-import { getModuleTheme } from '@/config/theme.config';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   Calendar,
   BookOpen,
   Users,
-  FileText,
   Clock,
   CheckCircle,
   Lock,
   Zap,
+  GraduationCap,
+  Info,
+  XCircle,
+  CalendarDays,
+  Target,
 } from 'lucide-react';
 
 interface SchoolCycleDetailDialogProps {
@@ -41,7 +43,6 @@ export function SchoolCycleDetailDialog({
   open,
   onOpenChange,
 }: SchoolCycleDetailDialogProps) {
-  const theme = getModuleTheme('school-cycle');
   const [stats, setStats] = useState<SchoolCycleStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,238 +71,283 @@ export function SchoolCycleDetailDialog({
 
   const startDate = new Date(cycle.startDate);
   const endDate = new Date(cycle.endDate);
+  const durationDays = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className={`flex items-center gap-2 ${theme.text}`}>
-            <Calendar className="w-5 h-5" strokeWidth={2.5} />
-            {cycle.name}
-          </DialogTitle>
-          <DialogDescription>
-            Información detallada del ciclo escolar
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[85vh] p-0 bg-white dark:bg-gray-900">
+        {/* Header */}
+        <div className="relative overflow-hidden bg-blue-600 dark:bg-blue-700 border-b-2 border-blue-700 dark:border-blue-600">
+          <DialogHeader className="relative z-10 p-6 space-y-3">
+            <div className="flex items-start gap-4">
+              <div className="relative p-3 rounded-xl bg-blue-500 dark:bg-blue-800
+                border-2 border-blue-400 dark:border-blue-600 shadow-lg">
+                <Calendar className="w-8 h-8 text-white" strokeWidth={2.5} />
+              </div>
 
-        {error && <ErrorAlert message={error} />}
+              <div className="flex-1 space-y-2">
+                <DialogTitle className="text-2xl font-bold text-white">
+                  {cycle.name}
+                </DialogTitle>
 
-        {isLoading ? (
-          <div className="flex justify-center py-8">
-            <LoadingSpinner />
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Estado */}
-            <Card className="border-0 shadow-sm bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Estado General</p>
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">
-                    {cycle.isArchived ? 'Cerrado' : cycle.isActive ? 'Activo' : 'Inactivo'}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Status Badge */}
+                  <Badge className={
+                    cycle.isArchived
+                      ? 'bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600'
+                      : cycle.isActive
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900 dark:text-emerald-200 dark:border-emerald-700'
+                        : 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700'
+                  }>
+                    {cycle.isArchived ? (
+                      <>
+                        <Lock className="w-3 h-3 mr-1" />
+                        Cerrado
+                      </>
+                    ) : cycle.isActive ? (
+                      <>
+                        <Zap className="w-3 h-3 mr-1" />
+                        Activo
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-3 h-3 mr-1" />
+                        Inactivo
+                      </>
+                    )}
+                  </Badge>
+
+                  {/* Enrollment Badge */}
+                  {!cycle.isArchived && (
+                    <Badge className={
+                      cycle.canEnroll
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900 dark:text-emerald-200 dark:border-emerald-700'
+                        : 'bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600'
+                    }>
+                      {cycle.canEnroll ? (
+                        <>
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Matrículas Abiertas
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Matrículas Cerradas
+                        </>
+                      )}
+                    </Badge>
+                  )}
+
+                  <span className="text-xs text-white dark:text-blue-100">
+                    ID: {cycle.id}
+                  </span>
+                </div>
+
+                {cycle.academicYear && (
+                  <p className="text-sm text-white dark:text-blue-100 font-medium">
+                    Año Académico: {cycle.academicYear}
                   </p>
-                </div>
-                <div className="flex gap-2">
-                  {cycle.isActive && (
-                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 flex items-center gap-1">
-                      <Zap className="w-3 h-3" strokeWidth={3} />
-                      Activo
-                    </Badge>
-                  )}
-                  {cycle.isArchived && (
-                    <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-300 flex items-center gap-1">
-                      <Lock className="w-3 h-3" strokeWidth={3} />
-                      Cerrado
-                    </Badge>
-                  )}
-                  {!cycle.isActive && !cycle.isArchived && (
-                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                      Inactivo
-                    </Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                )}
+              </div>
+            </div>
+          </DialogHeader>
 
-            {/* Fechas */}
-            <Card className="border-0 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Calendar className="w-4 h-4" strokeWidth={2.5} />
-                  Fechas
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Fecha de Inicio:</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {format(startDate, 'EEEE, d MMMM yyyy', { locale: es })}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Fecha de Fin:</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {format(endDate, 'EEEE, d MMMM yyyy', { locale: es })}
-                  </span>
-                </div>
-                <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-800">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Duración:</span>
-                  <span className="font-bold text-blue-700 dark:text-blue-300">
-                    {Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))} días
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Decorative elements */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 dark:bg-blue-600
+            opacity-20 rounded-full -mr-16 -mt-16" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-700 dark:bg-blue-800
+            opacity-20 rounded-full -ml-12 -mb-12" />
+        </div>
 
-            {/* Estadísticas */}
-            {stats && (
-              <Card className="border-0 shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileText className="w-4 h-4" strokeWidth={2.5} />
-                    Estadísticas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+        {/* Content with ScrollArea */}
+        <ScrollArea className="max-h-[calc(85vh-180px)]">
+          <div className="p-6 space-y-4">
+            {error && <ErrorAlert message={error} />}
+
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <LoadingSpinner />
+              </div>
+            ) : (
+              <>
+                {/* Date Range Compact */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20
+                    border-2 border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center gap-2 mb-1">
+                      <CalendarDays className="w-4 h-4 text-blue-600 dark:text-blue-400" strokeWidth={2.5} />
+                      <p className="text-xs font-bold uppercase text-blue-700 dark:text-blue-400">Inicio</p>
+                    </div>
+                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                      {format(startDate, 'dd MMM yyyy', { locale: es })}
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20
+                    border-2 border-red-200 dark:border-red-800">
+                    <div className="flex items-center gap-2 mb-1">
+                      <CalendarDays className="w-4 h-4 text-red-600 dark:text-red-400" strokeWidth={2.5} />
+                      <p className="text-xs font-bold uppercase text-red-700 dark:text-red-400">Fin</p>
+                    </div>
+                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                      {format(endDate, 'dd MMM yyyy', { locale: es })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Duration */}
+                <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/20
+                  border-2 border-purple-200 dark:border-purple-800">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Target className="w-5 h-5 text-purple-600 dark:text-purple-400" strokeWidth={2.5} />
+                      <div>
+                        <p className="text-xs font-bold uppercase text-purple-700 dark:text-purple-400">Duración</p>
+                        <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                          {durationDays} días
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      ≈ {Math.round(durationDays / 30)} meses
+                    </p>
+                  </div>
+                </div>
+
+                {/* Statistics Grid */}
+                {stats && (
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="p-3 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Bimestres</p>
-                      <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                    <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20
+                      border-2 border-amber-200 dark:border-amber-800 text-center">
+                      <BookOpen className="w-5 h-5 text-amber-600 dark:text-amber-400 mx-auto mb-1" strokeWidth={2.5} />
+                      <p className="text-xs font-bold uppercase text-amber-700 dark:text-amber-400">Bimestres</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {stats.stats.totalBimesters}
                       </p>
                     </div>
-                    <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Grados</p>
-                      <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+
+                    <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/20
+                      border-2 border-indigo-200 dark:border-indigo-800 text-center">
+                      <GraduationCap className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mx-auto mb-1" strokeWidth={2.5} />
+                      <p className="text-xs font-bold uppercase text-indigo-700 dark:text-indigo-400">Grados</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {stats.stats.totalGrades}
                       </p>
                     </div>
-                    <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Matrículas</p>
-                      <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+
+                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20
+                      border-2 border-emerald-200 dark:border-emerald-800 text-center">
+                      <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mx-auto mb-1" strokeWidth={2.5} />
+                      <p className="text-xs font-bold uppercase text-emerald-700 dark:text-emerald-400">Matrículas</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {stats.stats.totalEnrollments}
                       </p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                )}
 
-            {/* Bimestres */}
-            {cycle.bimesters && cycle.bimesters.length > 0 && (
-              <Card className="border-0 shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <BookOpen className="w-4 h-4" strokeWidth={2.5} />
-                    Bimestres ({cycle.bimesters.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {cycle.bimesters.map((bimester) => (
-                    <div
-                      key={bimester.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                          {bimester.number}
-                        </Badge>
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">
-                            {bimester.name}
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            {format(new Date(bimester.startDate), 'dd MMM', { locale: es })} -
-                            {' '}
-                            {format(new Date(bimester.endDate), 'dd MMM yyyy', { locale: es })}
+                {/* Bimestres List - Compact */}
+                {cycle.bimesters && cycle.bimesters.length > 0 && (
+                  <Card className="border-2 border-gray-200 dark:border-gray-800">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-bold flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" strokeWidth={2.5} />
+                        Bimestres ({cycle.bimesters.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {cycle.bimesters.map((bimester) => (
+                        <div
+                          key={bimester.id}
+                          className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800/50
+                            rounded-lg border border-gray-200 dark:border-gray-700"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 font-bold">
+                              {bimester.number}
+                            </Badge>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {bimester.name}
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                {format(new Date(bimester.startDate), 'dd MMM', { locale: es })} -
+                                {' '}
+                                {format(new Date(bimester.endDate), 'dd MMM yyyy', { locale: es })}
+                              </p>
+                            </div>
+                          </div>
+                          {bimester.isActive && (
+                            <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 text-xs">
+                              <Zap className="w-3 h-3 mr-1" strokeWidth={2.5} />
+                              Activo
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Metadata - Compact */}
+                <Card className="border-2 border-gray-200 dark:border-gray-800">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" strokeWidth={2.5} />
+                      Información Adicional
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    {cycle.description && (
+                      <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded border border-gray-200 dark:border-gray-700">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Descripción:</p>
+                        <p className="text-gray-900 dark:text-white">{cycle.description}</p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded border border-gray-200 dark:border-gray-700">
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Creado:</p>
+                        <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                          {format(new Date(cycle.createdAt), 'dd MMM yyyy', { locale: es })}
+                        </p>
+                      </div>
+
+                      {cycle.createdBy && (
+                        <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded border border-gray-200 dark:border-gray-700">
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Por:</p>
+                          <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">
+                            {cycle.createdBy.givenNames} {cycle.createdBy.lastNames}
                           </p>
                         </div>
-                      </div>
-                      {bimester.isActive && (
-                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 flex items-center gap-1">
-                          <Zap className="w-3 h-3" strokeWidth={3} />
-                          Activo
-                        </Badge>
                       )}
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
 
-            {/* Metadata */}
-            <Card className="border-0 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Clock className="w-4 h-4" strokeWidth={2.5} />
-                  Información
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">ID del Ciclo:</span>
-                  <span className="font-mono text-gray-900 dark:text-white">{cycle.id}</span>
-                </div>
-                {cycle.academicYear && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Año Académico:</span>
-                    <span className="text-gray-900 dark:text-white">{cycle.academicYear}</span>
-                  </div>
-                )}
-                {cycle.description && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Descripción:</span>
-                    <span className="text-gray-900 dark:text-white">{cycle.description}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Matrículas:</span>
-                  <span className={cycle.canEnroll ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                    {cycle.canEnroll ? 'Abiertas' : 'Cerradas'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Creado:</span>
-                  <span className="text-gray-900 dark:text-white">
-                    {format(new Date(cycle.createdAt), 'dd MMM yyyy HH:mm', { locale: es })}
-                  </span>
-                </div>
-                {cycle.createdBy && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Por:</span>
-                    <span className="text-gray-900 dark:text-white">
-                      {cycle.createdBy.givenNames} {cycle.createdBy.lastNames}
-                    </span>
-                  </div>
-                )}
-                {cycle.isArchived && cycle.archivedAt && (
-                  <>
-                    <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-800">
-                      <span className="text-gray-600 dark:text-gray-400">Archivado:</span>
-                      <span className="text-gray-900 dark:text-white">
-                        {format(new Date(cycle.archivedAt), 'dd MMM yyyy HH:mm', { locale: es })}
-                      </span>
-                    </div>
-                    {cycle.archiveReason && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Razón:</span>
-                        <span className="text-gray-900 dark:text-white">{cycle.archiveReason}</span>
+                    {/* Archive info */}
+                    {cycle.isArchived && cycle.archivedAt && (
+                      <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded border border-gray-200 dark:border-gray-700">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Archivado:</p>
+                        <p className="text-xs font-semibold text-gray-900 dark:text-white mb-1">
+                          {format(new Date(cycle.archivedAt), 'dd MMM yyyy', { locale: es })}
+                        </p>
+                        {cycle.archiveReason && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            Razón: {cycle.archiveReason}
+                          </p>
+                        )}
+                        {cycle.archivedByUser && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            Por: {cycle.archivedByUser.givenNames} {cycle.archivedByUser.lastNames}
+                          </p>
+                        )}
                       </div>
                     )}
-                    {cycle.archivedByUser && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Por:</span>
-                        <span className="text-gray-900 dark:text-white">
-                          {cycle.archivedByUser.givenNames} {cycle.archivedByUser.lastNames}
-                        </span>
-                      </div>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
-        )}  
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
