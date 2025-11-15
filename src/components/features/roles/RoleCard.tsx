@@ -52,13 +52,22 @@ export function RoleCard({ role, onUpdate, onEdit }: RoleCardProps) {
 
   return (
     <>
-      <Card className="overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-200">
+      <Card className="group relative overflow-hidden border-2 border-gray-200 dark:border-gray-800
+        hover:border-purple-400 dark:hover:border-purple-600
+        shadow-lg hover:shadow-2xl hover:-translate-y-1
+        transition-all duration-300 ease-out">
         {/* Header */}
-        <CardHeader className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+        <CardHeader className="bg-white dark:bg-gray-900 border-b-2 border-gray-200 dark:border-gray-700
+          group-hover:border-purple-200 dark:group-hover:border-purple-800 transition-colors duration-300">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-lg bg-purple-100 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800">
-                <Shield className="w-6 h-6 text-purple-600 dark:text-purple-400" strokeWidth={2.5} />
+            <div className="flex items-center gap-4">
+              <div className="relative p-4 rounded-xl bg-purple-100 dark:bg-purple-900/30
+                border-2 border-purple-200 dark:border-purple-800
+                shadow-md group-hover:shadow-lg group-hover:scale-110
+                transition-all duration-300 ease-out">
+                <Shield className="w-7 h-7 text-purple-600 dark:text-purple-400" strokeWidth={2.5} />
+                <div className="absolute inset-0 bg-purple-400 dark:bg-purple-500 opacity-0
+                  group-hover:opacity-10 rounded-xl transition-opacity duration-300" />
               </div>
               
               <div>
@@ -189,29 +198,45 @@ export function RoleCard({ role, onUpdate, onEdit }: RoleCardProps) {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-              <div className="p-2 rounded-md bg-blue-100 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-700">
-                <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="relative flex items-center gap-3 p-4 rounded-xl
+              bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800
+              shadow-sm hover:shadow-md transition-all duration-200 group/stat overflow-hidden">
+              <div className="relative z-10 p-2.5 rounded-lg bg-blue-100 dark:bg-blue-900/50
+                border-2 border-blue-300 dark:border-blue-700
+                group-hover/stat:scale-110 transition-transform duration-200">
+                <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" strokeWidth={2.5} />
               </div>
-              <div>
-                <p className="text-xs font-medium text-blue-600 dark:text-blue-400">Usuarios</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+              <div className="relative z-10">
+                <p className="text-xs font-bold uppercase tracking-wide text-blue-700 dark:text-blue-400">
+                  Usuarios
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {role._count?.users || 0}
                 </p>
               </div>
+              <div className="absolute inset-0 bg-blue-100 dark:bg-blue-800 opacity-0
+                group-hover/stat:opacity-20 transition-opacity duration-200" />
             </div>
 
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-              <div className="p-2 rounded-md bg-purple-100 dark:bg-purple-900/50 border border-purple-200 dark:border-purple-700">
-                <Key className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <div className="relative flex items-center gap-3 p-4 rounded-xl
+              bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800
+              shadow-sm hover:shadow-md transition-all duration-200 group/stat overflow-hidden">
+              <div className="relative z-10 p-2.5 rounded-lg bg-purple-100 dark:bg-purple-900/50
+                border-2 border-purple-300 dark:border-purple-700
+                group-hover/stat:scale-110 transition-transform duration-200">
+                <Key className="w-5 h-5 text-purple-600 dark:text-purple-400" strokeWidth={2.5} />
               </div>
-              <div>
-                <p className="text-xs font-medium text-purple-600 dark:text-purple-400">Permisos</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+              <div className="relative z-10">
+                <p className="text-xs font-bold uppercase tracking-wide text-purple-700 dark:text-purple-400">
+                  Permisos
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {role._count?.permissions || 0}
                 </p>
               </div>
+              <div className="absolute inset-0 bg-purple-100 dark:bg-purple-800 opacity-0
+                group-hover/stat:opacity-20 transition-opacity duration-200" />
             </div>
           </div>
 

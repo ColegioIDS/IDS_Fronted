@@ -61,13 +61,16 @@ export function RoleFilters({
   ].filter(Boolean).length;
 
   return (
-    <Card className="border-gray-200 dark:border-gray-800">
+    <Card className="border-2 border-gray-200 dark:border-gray-800 shadow-lg">
       <CardContent className="p-6 space-y-6">
         {/* Header con contador de resultados */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800">
-              <Filter className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+          <div className="flex items-center gap-4">
+            <div className="relative p-3 rounded-xl bg-purple-100 dark:bg-purple-900/30
+              border-2 border-purple-200 dark:border-purple-800 shadow-md">
+              <Filter className="w-6 h-6 text-purple-600 dark:text-purple-400" strokeWidth={2.5} />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-600 dark:bg-purple-500
+                rounded-full animate-pulse" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -98,23 +101,35 @@ export function RoleFilters({
         </div>
 
         {/* Barra de búsqueda destacada */}
-        <div className="relative">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2">
-            <Search className="w-5 h-5 text-gray-400" />
+        <div className="relative group/search">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 transition-transform
+            group-focus-within/search:scale-110 duration-200">
+            <Search className="w-6 h-6 text-purple-500 dark:text-purple-400" strokeWidth={2.5} />
           </div>
           <Input
             type="text"
             placeholder="Buscar por nombre o descripción del rol..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="pl-12 pr-12 h-12 text-base bg-gray-50 dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-700 focus:border-purple-500 dark:focus:border-purple-500 transition-colors"
+            className="pl-14 pr-12 h-14 text-base font-medium
+              bg-white dark:bg-gray-900
+              border-2 border-gray-300 dark:border-gray-700
+              focus:border-purple-500 dark:focus:border-purple-500
+              focus:ring-4 focus:ring-purple-100 dark:focus:ring-purple-900/30
+              shadow-sm focus:shadow-lg
+              rounded-xl
+              transition-all duration-200"
           />
           {searchInput && (
             <button
               onClick={() => setSearchInput('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2
+                p-2 rounded-lg
+                bg-gray-100 hover:bg-red-100 dark:bg-gray-800 dark:hover:bg-red-900/30
+                text-gray-500 hover:text-red-600 dark:hover:text-red-400
+                transition-all duration-200 hover:scale-110"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" strokeWidth={2.5} />
             </button>
           )}
         </div>

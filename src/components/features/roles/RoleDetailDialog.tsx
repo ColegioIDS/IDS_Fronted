@@ -95,11 +95,16 @@ export function RoleDetailDialog({ roleId, open, onClose }: RoleDetailDialogProp
         ) : role ? (
           <>
             {/* Header */}
-            <div className="bg-purple-600 dark:bg-purple-700 border-b border-purple-700 dark:border-purple-600">
-              <DialogHeader className="p-6 space-y-4">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-lg bg-purple-500 dark:bg-purple-800 border border-purple-400 dark:border-purple-600">
-                    <Shield className="w-8 h-8 text-white" strokeWidth={2.5} />
+            <div className="relative overflow-hidden bg-purple-600 dark:bg-purple-700
+              border-b-2 border-purple-700 dark:border-purple-600">
+              <DialogHeader className="relative z-10 p-8 space-y-4">
+                <div className="flex items-start gap-5">
+                  <div className="relative p-4 rounded-2xl bg-purple-500 dark:bg-purple-800
+                    border-2 border-purple-400 dark:border-purple-600 shadow-2xl
+                    hover:scale-105 transition-transform duration-200">
+                    <Shield className="w-10 h-10 text-white" strokeWidth={2.5} />
+                    <div className="absolute inset-0 bg-white opacity-0 hover:opacity-20
+                      rounded-2xl transition-opacity duration-200" />
                   </div>
 
                   <div className="flex-1 space-y-2">
@@ -149,6 +154,14 @@ export function RoleDetailDialog({ roleId, open, onClose }: RoleDetailDialogProp
                   </div>
                 </div>
               </DialogHeader>
+
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500 dark:bg-purple-600
+                opacity-20 rounded-full -mr-20 -mt-20" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-700 dark:bg-purple-800
+                opacity-20 rounded-full -ml-16 -mb-16" />
+              <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-purple-400 dark:bg-purple-500
+                opacity-10 rounded-full" />
             </div>
 
             {/* Content */}

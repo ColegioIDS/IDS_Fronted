@@ -52,31 +52,45 @@ export function RoleStats({ total, active, inactive, system }: RoleStatsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
 
         return (
           <Card
             key={index}
-            className={`border ${stat.border} ${stat.bg} hover:shadow-md transition-all duration-200`}
+            className={`group relative overflow-hidden border-2 ${stat.border} ${stat.bg}
+              shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-out
+              cursor-pointer`}
           >
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+            <CardContent className="p-6 relative z-10">
+              <div className="flex flex-col gap-4">
+                {/* Icon */}
+                <div className={`${stat.iconBg} p-5 rounded-2xl border-2 ${stat.border}
+                  shadow-md group-hover:shadow-xl group-hover:scale-110
+                  transition-all duration-300 ease-out w-fit`}>
+                  <Icon className={`w-10 h-10 ${stat.iconColor}`} strokeWidth={2.5} />
+                </div>
+
+                {/* Content */}
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     {stat.label}
                   </p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  <p className="text-4xl font-bold text-gray-900 dark:text-white
+                    group-hover:scale-105 transition-transform duration-200">
                     {stat.value}
                   </p>
                 </div>
-
-                <div className={`${stat.iconBg} p-4 rounded-xl border ${stat.border}`}>
-                  <Icon className={`w-8 h-8 ${stat.iconColor}`} strokeWidth={2} />
-                </div>
               </div>
             </CardContent>
+
+            {/* Decorative border effect */}
+            <div className="absolute inset-0 border-2 border-transparent group-hover:border-current
+              opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-lg pointer-events-none"
+              style={{ color: stat.iconColor.includes('purple') ? '#9333ea' :
+                             stat.iconColor.includes('emerald') ? '#10b981' :
+                             stat.iconColor.includes('blue') ? '#3b82f6' : '#6b7280' }} />
           </Card>
         );
       })}

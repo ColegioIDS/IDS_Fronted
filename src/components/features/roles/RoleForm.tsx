@@ -390,17 +390,22 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
       )}
 
       {/* Header del formulario */}
-      <Card className="border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-lg bg-purple-600 dark:bg-purple-700 border border-purple-700 dark:border-purple-600">
-              <Shield className="w-8 h-8 text-white" strokeWidth={2.5} />
+      <Card className="relative overflow-hidden border-2 border-purple-300 dark:border-purple-700
+        bg-purple-50 dark:bg-purple-900/20 shadow-xl">
+        <CardContent className="p-8">
+          <div className="flex items-center gap-5">
+            <div className="relative p-5 rounded-2xl bg-purple-600 dark:bg-purple-700
+              border-2 border-purple-500 dark:border-purple-600 shadow-lg
+              hover:scale-105 transition-transform duration-200">
+              <Shield className="w-10 h-10 text-white" strokeWidth={2.5} />
+              <div className="absolute inset-0 bg-white opacity-0 hover:opacity-10
+                rounded-2xl transition-opacity duration-200" />
             </div>
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                 {isEdit ? 'Editar Rol' : 'Crear Nuevo Rol'}
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 {isEdit
                   ? 'Actualiza la información del rol y sus permisos asignados'
                   : 'Completa los campos y asigna los permisos correspondientes'
@@ -409,6 +414,12 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
             </div>
           </div>
         </CardContent>
+
+        {/* Decorative element */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-400 dark:bg-purple-600
+          opacity-10 rounded-full -mr-16 -mt-16" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-300 dark:bg-purple-700
+          opacity-10 rounded-full -ml-12 -mb-12" />
       </Card>
 
       {/* Sección 1: Información General */}
