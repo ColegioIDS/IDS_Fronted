@@ -247,7 +247,7 @@ export function SectionPageContent() {
             {canCreate && activeTab === 'list' && (
               <Button
                 onClick={handleCreateNew}
-                className="gap-2 bg-gradient-to-r from-fuchsia-500 to-fuchsia-600 hover:from-fuchsia-600 hover:to-fuchsia-700"
+                className="gap-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white dark:bg-fuchsia-500 dark:hover:bg-fuchsia-600 font-semibold shadow-md hover:shadow-lg border-2 border-fuchsia-700 dark:border-fuchsia-600"
               >
                 <Plus className="w-4 h-4" />
                 Nueva Sección
