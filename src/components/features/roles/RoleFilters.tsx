@@ -61,12 +61,12 @@ export function RoleFilters({
   ].filter(Boolean).length;
 
   return (
-    <Card className="border-gray-200 dark:border-gray-800 shadow-sm">
+    <Card className="border-gray-200 dark:border-gray-800">
       <CardContent className="p-6 space-y-6">
         {/* Header con contador de resultados */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800">
               <Filter className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div>

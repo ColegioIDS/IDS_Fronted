@@ -390,10 +390,10 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
       )}
 
       {/* Header del formulario */}
-      <Card className="border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30">
+      <Card className="border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20">
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-purple-600 shadow-lg">
+            <div className="p-3 rounded-lg bg-purple-600 dark:bg-purple-700 border border-purple-700 dark:border-purple-600">
               <Shield className="w-8 h-8 text-white" strokeWidth={2.5} />
             </div>
             <div className="flex-1">

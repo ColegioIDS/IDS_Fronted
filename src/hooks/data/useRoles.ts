@@ -45,6 +45,7 @@ export function useRoles(initialQuery: RolesQuery = {}) {
     query.search,
     query.isActive,
     query.isSystem,
+    query.roleType,
     query.sortBy,
     query.sortOrder,
     refreshKey,

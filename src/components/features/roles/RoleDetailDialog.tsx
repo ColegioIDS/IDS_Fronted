@@ -95,10 +95,10 @@ export function RoleDetailDialog({ roleId, open, onClose }: RoleDetailDialogProp
         ) : role ? (
           <>
             {/* Header */}
-            <div className="bg-gradient-to-br from-purple-500 to-purple-600 border-b border-gray-200 dark:border-gray-700">
+            <div className="bg-purple-600 dark:bg-purple-700 border-b border-purple-700 dark:border-purple-600">
               <DialogHeader className="p-6 space-y-4">
                 <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm shadow-lg">
+                  <div className="p-3 rounded-lg bg-purple-500 dark:bg-purple-800 border border-purple-400 dark:border-purple-600">
                     <Shield className="w-8 h-8 text-white" strokeWidth={2.5} />
                   </div>
 
@@ -113,8 +113,8 @@ export function RoleDetailDialog({ roleId, open, onClose }: RoleDetailDialogProp
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge className={
                         role.isActive
-                          ? 'bg-green-100 text-green-800 border-green-300'
-                          : 'bg-gray-100 text-gray-800 border-gray-300'
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900 dark:text-emerald-200 dark:border-emerald-700'
+                          : 'bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600'
                       }>
                         {role.isActive ? (
                           <>
@@ -130,19 +130,19 @@ export function RoleDetailDialog({ roleId, open, onClose }: RoleDetailDialogProp
                       </Badge>
 
                       {role.isSystem && (
-                        <Badge className="bg-white/20 text-white border-white/30">
+                        <Badge className="bg-white dark:bg-purple-900 text-purple-600 dark:text-purple-200 border-purple-200 dark:border-purple-700">
                           <Lock className="w-3 h-3 mr-1" />
                           Sistema
                         </Badge>
                       )}
 
-                      <span className="text-xs text-white/80">
+                      <span className="text-xs text-white dark:text-purple-100">
                         ID: {role.id}
                       </span>
                     </div>
 
                     {role.description && (
-                      <p className="text-white/90 text-sm mt-2">
+                      <p className="text-white dark:text-purple-100 text-sm mt-2">
                         {role.description}
                       </p>
                     )}

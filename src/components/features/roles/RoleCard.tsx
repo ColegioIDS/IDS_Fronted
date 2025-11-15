@@ -52,13 +52,13 @@ export function RoleCard({ role, onUpdate, onEdit }: RoleCardProps) {
 
   return (
     <>
-      <Card className="overflow-hidden border border-gray-200 dark:border-gray-800 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+      <Card className="overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-200">
         {/* Header */}
-        <CardHeader className={`${roleTheme.bg} border-b border-gray-200 dark:border-gray-700`}>
+        <CardHeader className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg">
-                <Shield className="w-6 h-6 text-white" strokeWidth={2.5} />
+              <div className="p-3 rounded-lg bg-purple-100 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800">
+                <Shield className="w-6 h-6 text-purple-600 dark:text-purple-400" strokeWidth={2.5} />
               </div>
               
               <div>
@@ -190,24 +190,24 @@ export function RoleCard({ role, onUpdate, onEdit }: RoleCardProps) {
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/40">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+              <div className="p-2 rounded-md bg-blue-100 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-700">
                 <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Usuarios</p>
+                <p className="text-xs font-medium text-blue-600 dark:text-blue-400">Usuarios</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                   {role._count?.users || 0}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
-              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/40">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+              <div className="p-2 rounded-md bg-purple-100 dark:bg-purple-900/50 border border-purple-200 dark:border-purple-700">
                 <Key className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Permisos</p>
+                <p className="text-xs font-medium text-purple-600 dark:text-purple-400">Permisos</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                   {role._count?.permissions || 0}
                 </p>
