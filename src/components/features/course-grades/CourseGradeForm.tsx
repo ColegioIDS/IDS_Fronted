@@ -10,8 +10,14 @@ import {
   AvailableGrade,
 } from '@/types/course-grades.types';
 import { courseGradesService } from '@/services/course-grades.service';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { X, Save, BookOpen, GraduationCap, CheckCircle } from 'lucide-react';
+import { X, Save, BookOpen, GraduationCap, CheckCircle, Loader2, XCircle, CheckCircle2 } from 'lucide-react';
 
 interface CourseGradeFormProps {
   courseGrade?: CourseGradeDetail | null;
@@ -51,7 +57,11 @@ export default function CourseGradeForm({
       setCourses(coursesData);
       setGrades(gradesData);
     } catch (error: any) {
-      toast.error(error.message || 'Error al cargar datos');
+      toast.error('Error al cargar datos', {
+        description: error.message || 'No se pudieron cargar cursos y grados',
+        icon: <XCircle className="w-5 h-5" />,
+        duration: 5000,
+      });
     } finally {
       setLoadingData(false);
     }
@@ -77,7 +87,10 @@ export default function CourseGradeForm({
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error('Por favor corrija los errores del formulario');
+      toast.error('Formulario incompleto', {
+        description: 'Por favor corrija los errores marcados en rojo',
+        icon: <XCircle className="w-5 h-5" />,
+      });
       return;
     }
 
@@ -88,16 +101,28 @@ export default function CourseGradeForm({
         await courseGradesService.updateCourseGrade(courseGrade.id, {
           isCore: formData.isCore,
         });
-        toast.success('Asignación actualizada exitosamente');
+        toast.success('Asignación actualizada', {
+          description: 'Los cambios se guardaron correctamente',
+          icon: <CheckCircle2 className="w-5 h-5" />,
+          duration: 4000,
+        });
       } else {
         await courseGradesService.createCourseGrade(formData as CreateCourseGradeDto);
-        toast.success('Asignación creada exitosamente');
+        toast.success('Asignación creada', {
+          description: 'La nueva asignación curso-grado se creó exitosamente',
+          icon: <CheckCircle2 className="w-5 h-5" />,
+          duration: 4000,
+        });
       }
       onSuccess();
       onClose();
     } catch (error: any) {
       const message = error.message || 'Error al guardar la asignación';
-      toast.error(message);
+      toast.error('Error al guardar', {
+        description: message,
+        icon: <XCircle className="w-5 h-5" />,
+        duration: 5000,
+      });
       
       // Handle specific errors
       if (message.includes('existe')) {
@@ -121,10 +146,10 @@ export default function CourseGradeForm({
   if (loadingData) {
     return (
       <div className="fixed inset-0 z-999999 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-        <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 shadow-xl">
-          <div className="flex items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-t-transparent"></div>
-            <span className="ml-3 text-gray-900 dark:text-gray-100">Cargando datos...</span>
+        <div className="rounded-xl border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 shadow-2xl">
+          <div className="flex items-center justify-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-indigo-600 dark:text-indigo-400" />
+            <span className="text-lg font-medium text-gray-900 dark:text-gray-100">Cargando datos...</span>
           </div>
         </div>
       </div>
@@ -132,23 +157,36 @@ export default function CourseGradeForm({
   }
 
   return (
-    <div className="fixed inset-0 z-999999 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-      <div className="w-full max-w-2xl rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 px-6 py-4 rounded-t-lg sticky top-0">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {isEditing ? 'Editar Asignación' : 'Nueva Asignación Curso-Grado'}
-            </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-              type="button"
-            >
-              <X className="h-5 w-5" />
-            </button>
+    <TooltipProvider>
+      <div className="fixed inset-0 z-999999 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="w-full max-w-2xl rounded-xl border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="border-b-2 border-gray-200 dark:border-gray-800 bg-indigo-50 dark:bg-indigo-950 px-6 py-4 rounded-t-xl sticky top-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900 shadow-sm">
+                  <BookOpen className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  {isEditing ? 'Editar Asignación' : 'Nueva Asignación Curso-Grado'}
+                </h3>
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onClose}
+                    className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    type="button"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                  <p className="font-semibold">Cerrar sin guardar</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
-        </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="p-6">
@@ -220,16 +258,16 @@ export default function CourseGradeForm({
 
           {/* Show current course and grade when editing */}
           {isEditing && courseGrade && (
-            <div className="space-y-3 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 border border-gray-200 dark:border-gray-700 p-4">
+            <div className="space-y-3 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 p-4 shadow-sm">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Curso</p>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Curso</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100 mt-1">
                   [{courseGrade.course.code}] {courseGrade.course.name}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Grado</p>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Grado</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100 mt-1">
                   {courseGrade.grade.name} ({courseGrade.grade.level})
                 </p>
               </div>
@@ -277,35 +315,50 @@ export default function CourseGradeForm({
         </div>
 
         {/* Actions */}
-        <div className="mt-6 flex justify-end gap-3 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 pt-4 -mx-6 px-6 -mb-6 pb-6 rounded-b-lg">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            disabled={loading}
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 px-6 py-2 text-white transition-all disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-solid border-white border-t-transparent"></div>
-                Guardando...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4" />
-                {isEditing ? 'Actualizar' : 'Crear'} Asignación
-              </>
-            )}
-          </button>
+        <div className="mt-6 flex justify-end gap-3 border-t-2 border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 pt-4 -mx-6 px-6 -mb-6 pb-6 rounded-b-xl">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-2.5 font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm hover:shadow"
+                disabled={loading}
+              >
+                Cancelar
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+              <p className="font-semibold">Descartar cambios y cerrar</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="submit"
+                className="flex items-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-6 py-2.5 font-medium text-white transition-all shadow-md hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    {isEditing ? 'Actualizar' : 'Crear'} Asignación
+                  </>
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+              <p className="font-semibold">{isEditing ? 'Guardar cambios' : 'Crear nueva asignación'}</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </form>
       </div>
     </div>
+  </TooltipProvider>
   );
 }
