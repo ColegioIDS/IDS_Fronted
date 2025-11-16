@@ -7,11 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BookOpen, AlertCircle, CheckCircle, UserCheck, Users } from 'lucide-react';
+import { BookOpen, AlertCircle, CheckCircle, UserCheck, Users, Loader2, XCircle, Save } from 'lucide-react';
 import { useCourseAssignmentSection } from '@/hooks/useCourseAssignment';
 import { AssignmentType } from '@/types/course-assignments.types';
 import BulkSaveActions from './bulk-save-actions';
 import AssignmentSummary from './assignment-summary';
+import { toast } from 'sonner';
 
 interface CourseTeacherTableProps {
   gradeId: number;
@@ -163,6 +164,12 @@ export default function CourseTeacherTable({
 
   // Guardar todos los cambios
   const handleSaveAll = async () => {
+    const modifiedCount = assignmentRows.filter(row => row.isModified).length;
+    const savingToast = toast.loading('Guardando asignaciones...', {
+      description: `Procesando ${modifiedCount} cambio${modifiedCount !== 1 ? 's' : ''}`,
+      icon: <Loader2 className="w-5 h-5 animate-spin" />,
+    });
+
     const assignments = assignmentRows
       .filter(row => row.currentTeacherId) // Solo filas con maestro asignado
       .map(row => ({
@@ -174,19 +181,35 @@ export default function CourseTeacherTable({
       sectionId,
       assignments
     });
-    
+
     if (success) {
       setHasChanges(false);
-      setAssignmentRows(prev => 
+      setAssignmentRows(prev =>
         prev.map(row => ({ ...row, isModified: false }))
       );
+
+      toast.success('Asignaciones guardadas exitosamente', {
+        id: savingToast,
+        description: `Se guardaron ${modifiedCount} asignación${modifiedCount !== 1 ? 'es' : ''} correctamente`,
+        icon: <Save className="w-5 h-5" />,
+        duration: 4000,
+      });
+    } else {
+      toast.error('Error al guardar asignaciones', {
+        id: savingToast,
+        description: 'No se pudieron guardar los cambios. Intente nuevamente.',
+        icon: <XCircle className="w-5 h-5" />,
+        duration: 5000,
+      });
     }
   };
 
   // Resetear cambios
   const handleResetChanges = () => {
     if (!sectionData || !sectionData.availableCourses) return;
-    
+
+    const modifiedCount = assignmentRows.filter(row => row.isModified).length;
+
     // Reconstruir filas desde sectionData
     const rows: CourseAssignmentRow[] = sectionData.availableCourses.map(course => {
       const existingAssignment = sectionData.assignments.find(
@@ -203,7 +226,7 @@ export default function CourseTeacherTable({
         courseArea: course.area,
         courseColor: courseColor,
         currentTeacherId: existingAssignment?.teacherId || sectionData.section.teacherId,
-        currentTeacherName: existingAssignment?.teacher.fullName || 
+        currentTeacherName: existingAssignment?.teacher.fullName ||
           sectionData.section.teacher?.fullName,
         assignmentType: existingAssignment?.assignmentType || 'titular',
         isModified: false
@@ -212,6 +235,11 @@ export default function CourseTeacherTable({
 
     setAssignmentRows(rows);
     setHasChanges(false);
+
+    toast.info('Cambios descartados', {
+      description: `Se descartaron ${modifiedCount} cambio${modifiedCount !== 1 ? 's' : ''} pendiente${modifiedCount !== 1 ? 's' : ''}`,
+      icon: <AlertCircle className="w-5 h-5" />,
+    });
   };
 
   // Loading state

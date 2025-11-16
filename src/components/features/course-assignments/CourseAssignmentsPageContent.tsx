@@ -8,22 +8,31 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Users, 
-  BookOpen, 
-  GraduationCap, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  Users,
+  BookOpen,
+  GraduationCap,
+  CheckCircle,
+  AlertCircle,
   RefreshCw,
   ArrowLeft,
   Calendar,
-  Settings
+  Settings,
+  Loader2,
+  XCircle
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import ProtectedContent from '@/components/common/ProtectedContent';
 import { useCourseAssignment } from '@/hooks/useCourseAssignment';
 import GradeSectionSelector from './GradeSectionSelector';
 import CourseAssignmentsTable from './CourseAssignmentsTable';
+import { toast } from 'sonner';
 
 export default function CourseAssignmentsPageContent() {
   // Verificar permisos
@@ -67,6 +76,12 @@ export default function CourseAssignmentsPageContent() {
     setSelectedGradeId(null);
     setSelectedSectionId(null);
     loadCycleGrades(cycleId);
+
+    const cycle = formData?.cycles.find(c => c.id === cycleId);
+    toast.info('Ciclo seleccionado', {
+      description: `${cycle?.name || 'Ciclo escolar'} - Cargando grados disponibles...`,
+      icon: <Calendar className="w-5 h-5" />,
+    });
   };
 
   // Manejar cuando se completa la selección de grado-sección
@@ -79,16 +94,38 @@ export default function CourseAssignmentsPageContent() {
   const handleBackToSelection = () => {
     setSelectedGradeId(null);
     setSelectedSectionId(null);
+    toast.info('Cambiando sección', {
+      description: 'Seleccione un nuevo grado y sección',
+      icon: <ArrowLeft className="w-5 h-5" />,
+    });
   };
 
   // Refrescar todo
-  const handleRefresh = () => {
-    loadFormData();
-    if (selectedCycleId) {
-      loadCycleGrades(selectedCycleId);
+  const handleRefresh = async () => {
+    const refreshToast = toast.loading('Actualizando datos...', {
+      icon: <Loader2 className="w-5 h-5 animate-spin" />,
+    });
+
+    try {
+      loadFormData();
+      if (selectedCycleId) {
+        loadCycleGrades(selectedCycleId);
+      }
+      setSelectedGradeId(null);
+      setSelectedSectionId(null);
+
+      toast.success('Datos actualizados', {
+        id: refreshToast,
+        description: 'La información se ha actualizado correctamente',
+        icon: <CheckCircle className="w-5 h-5" />,
+      });
+    } catch (err) {
+      toast.error('Error al actualizar', {
+        id: refreshToast,
+        description: 'No se pudieron actualizar los datos',
+        icon: <XCircle className="w-5 h-5" />,
+      });
     }
-    setSelectedGradeId(null);
-    setSelectedSectionId(null);
   };
 
   // Si no tiene permiso de lectura
@@ -188,26 +225,42 @@ export default function CourseAssignmentsPageContent() {
             </p>
           </div>
           
-          <div className="flex items-center gap-2">
-            {showAssignmentTable && (
-              <Button 
-                variant="outline" 
-                onClick={handleBackToSelection}
-                className="border-gray-300 dark:border-gray-600"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Cambiar Sección
-              </Button>
-            )}
-            <Button 
-              variant="outline" 
-              onClick={handleRefresh}
-              className="border-gray-300 dark:border-gray-600"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Actualizar
-            </Button>
-          </div>
+          <TooltipProvider>
+            <div className="flex items-center gap-2">
+              {showAssignmentTable && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      onClick={handleBackToSelection}
+                      className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Cambiar Sección
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                    <p className="font-semibold">Volver a seleccionar grado y sección</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={handleRefresh}
+                    className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Actualizar
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                  <p className="font-semibold">Recargar datos de ciclos, grados y secciones</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
         </div>
       </div>
 
@@ -287,7 +340,7 @@ export default function CourseAssignmentsPageContent() {
 
       {/* Indicador de Progreso */}
       {selectedCycleId && (
-        <Card className="border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50 dark:border-indigo-800 dark:from-indigo-950 dark:to-blue-950">
+        <Card className="border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">

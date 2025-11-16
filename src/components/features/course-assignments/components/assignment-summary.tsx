@@ -4,6 +4,12 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { BookOpen, UserCheck, Users, CheckCircle, AlertTriangle } from 'lucide-react';
 
 interface AssignmentSummaryProps {
@@ -25,8 +31,9 @@ export default function AssignmentSummary({
   const completionPercentage = totalCourses > 0 ? Math.round((assignedCourses / totalCourses) * 100) : 0;
 
   return (
-    <Card className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
-      <CardHeader className="pb-4">
+    <TooltipProvider>
+      <Card className="bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 shadow-md">
+        <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
@@ -79,71 +86,114 @@ export default function AssignmentSummary({
         {/* Estadísticas en grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Total Cursos */}
-          <div className="text-center space-y-1">
-            <div className="flex items-center justify-center">
-              <BookOpen className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Total Cursos</p>
-            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {totalCourses}
-            </p>
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="text-center space-y-2 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-help transition-colors">
+                <div className="flex items-center justify-center">
+                  <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                    <BookOpen className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                  </div>
+                </div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Total Cursos</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {totalCourses}
+                </p>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+              <p className="font-semibold">Total de cursos del grado</p>
+            </TooltipContent>
+          </Tooltip>
 
           {/* Cursos Asignados */}
-          <div className="text-center space-y-1">
-            <div className="flex items-center justify-center">
-              <CheckCircle className={`h-4 w-4 ${
-                assignedCourses === totalCourses 
-                  ? 'text-green-500' 
-                  : 'text-gray-400'
-              }`} />
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Asignados</p>
-            <p className={`text-lg font-semibold ${
-              assignedCourses === totalCourses 
-                ? 'text-green-600 dark:text-green-400' 
-                : 'text-gray-600 dark:text-gray-400'
-            }`}>
-              {assignedCourses}
-            </p>
-            {unassignedCourses > 0 && (
-              <p className="text-xs text-red-500 dark:text-red-400">
-                {unassignedCourses} sin asignar
-              </p>
-            )}
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="text-center space-y-2 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-help transition-colors">
+                <div className="flex items-center justify-center">
+                  <div className={`p-2 rounded-lg ${
+                    assignedCourses === totalCourses
+                      ? 'bg-green-100 dark:bg-green-900'
+                      : 'bg-gray-100 dark:bg-gray-800'
+                  }`}>
+                    <CheckCircle className={`h-5 w-5 ${
+                      assignedCourses === totalCourses
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`} />
+                  </div>
+                </div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Asignados</p>
+                <p className={`text-2xl font-bold ${
+                  assignedCourses === totalCourses
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-gray-600 dark:text-gray-400'
+                }`}>
+                  {assignedCourses}
+                </p>
+                {unassignedCourses > 0 && (
+                  <p className="text-xs font-medium text-red-500 dark:text-red-400">
+                    {unassignedCourses} sin asignar
+                  </p>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+              <p className="font-semibold">Cursos con maestro asignado</p>
+              {unassignedCourses > 0 && (
+                <p className="text-xs mt-1">{unassignedCourses} cursos pendientes</p>
+              )}
+            </TooltipContent>
+          </Tooltip>
 
           {/* Asignaciones Titulares */}
-          <div className="text-center space-y-1">
-            <div className="flex items-center justify-center">
-              <UserCheck className="h-4 w-4 text-blue-500" />
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Titulares</p>
-            <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-              {titularCourses}
-            </p>
-            {totalCourses > 0 && (
-              <p className="text-xs text-blue-500 dark:text-blue-400">
-                {Math.round((titularCourses / totalCourses) * 100)}%
-              </p>
-            )}
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="text-center space-y-2 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-help transition-colors">
+                <div className="flex items-center justify-center">
+                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
+                    <UserCheck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Titulares</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {titularCourses}
+                </p>
+                {totalCourses > 0 && (
+                  <p className="text-xs font-medium text-blue-500 dark:text-blue-400">
+                    {Math.round((titularCourses / totalCourses) * 100)}%
+                  </p>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+              <p className="font-semibold">Cursos asignados al maestro titular</p>
+            </TooltipContent>
+          </Tooltip>
 
           {/* Asignaciones Especialistas */}
-          <div className="text-center space-y-1">
-            <div className="flex items-center justify-center">
-              <Users className="h-4 w-4 text-purple-500" />
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Especialistas</p>
-            <p className="text-lg font-semibold text-purple-600 dark:text-purple-400">
-              {specialistCourses}
-            </p>
-            {totalCourses > 0 && (
-              <p className="text-xs text-purple-500 dark:text-purple-400">
-                {Math.round((specialistCourses / totalCourses) * 100)}%
-              </p>
-            )}
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="text-center space-y-2 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-help transition-colors">
+                <div className="flex items-center justify-center">
+                  <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900">
+                    <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Especialistas</p>
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  {specialistCourses}
+                </p>
+                {totalCourses > 0 && (
+                  <p className="text-xs font-medium text-purple-500 dark:text-purple-400">
+                    {Math.round((specialistCourses / totalCourses) * 100)}%
+                  </p>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+              <p className="font-semibold">Cursos asignados a maestros especialistas</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Mensaje de estado */}
@@ -170,5 +220,6 @@ export default function AssignmentSummary({
         </div>
       </CardContent>
     </Card>
+  </TooltipProvider>
   );
 }

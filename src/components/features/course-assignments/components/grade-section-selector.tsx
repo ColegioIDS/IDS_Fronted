@@ -5,8 +5,15 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { GraduationCap, Users, ChevronRight, AlertCircle } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { GraduationCap, Users, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { CycleGradesData } from '@/types/course-assignments.types';
+import { toast } from 'sonner';
 
 interface GradeSectionSelectorProps {
   formData: CycleGradesData;
@@ -34,12 +41,24 @@ export default function GradeSectionSelector({
   }, [selectedGradeId, selectedSectionId, onSelectionComplete]);
 
   const handleGradeSelect = (gradeId: number) => {
+    const grade = grades.find(g => g.id === gradeId);
     setSelectedGradeId(gradeId);
     setSelectedSectionId(null); // Reset section when grade changes
+
+    toast.info('Grado seleccionado', {
+      description: `${grade?.name || 'Grado'} - Ahora seleccione una sección`,
+      icon: <GraduationCap className="w-5 h-5" />,
+    });
   };
 
   const handleSectionSelect = (sectionId: number) => {
+    const section = selectedGrade?.sections.find(s => s.id === sectionId);
     setSelectedSectionId(sectionId);
+
+    toast.success('Sección seleccionada', {
+      description: `${selectedGrade?.name} - Sección ${section?.name || ''}`,
+      icon: <CheckCircle2 className="w-5 h-5" />,
+    });
   };
 
   // Filtrar grados activos
@@ -69,18 +88,20 @@ const activeGrades = grades;
           </h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {activeGrades.map(grade => (
-            <Card 
-              key={grade.id}
-              className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
-                selectedGradeId === grade.id
-                  ? 'border-blue-300 bg-blue-50 dark:border-blue-700 dark:bg-blue-950 shadow-md'
-                  : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
-              }`}
-              onClick={() => handleGradeSelect(grade.id)}
-            >
-              <CardContent className="p-6">
+        <TooltipProvider>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {activeGrades.map(grade => (
+              <Tooltip key={grade.id}>
+                <TooltipTrigger asChild>
+                  <Card
+                    className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
+                      selectedGradeId === grade.id
+                        ? 'border-2 border-blue-500 bg-blue-50 dark:border-blue-500 dark:bg-blue-950 shadow-xl'
+                        : 'border-2 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700'
+                    }`}
+                    onClick={() => handleGradeSelect(grade.id)}
+                  >
+                    <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <div className={`p-2 rounded-lg ${
@@ -116,8 +137,15 @@ const activeGrades = grades;
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+          </TooltipTrigger>
+          <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+            <p className="font-semibold">Seleccionar {grade.name}</p>
+            <p className="text-xs mt-1">Nivel: {grade.level} • Orden: {grade.order}</p>
+          </TooltipContent>
+        </Tooltip>
+      ))}
+    </div>
+  </TooltipProvider>
       </div>
 
       {/* Paso 2: Seleccionar Sección (solo si hay grado seleccionado) */}
@@ -148,18 +176,20 @@ const activeGrades = grades;
               </AlertDescription>
             </Alert>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {sections.map(section => (
-                <Card 
-                  key={section.id}
-                  className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
-                    selectedSectionId === section.id
-                      ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-950 shadow-md'
-                      : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                  onClick={() => handleSectionSelect(section.id)}
-                >
-                  <CardContent className="p-4">
+            <TooltipProvider>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {sections.map(section => (
+                  <Tooltip key={section.id}>
+                    <TooltipTrigger asChild>
+                      <Card
+                        className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
+                          selectedSectionId === section.id
+                            ? 'border-2 border-green-500 bg-green-50 dark:border-green-500 dark:bg-green-950 shadow-xl'
+                            : 'border-2 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 hover:border-green-300 dark:hover:border-green-700'
+                        }`}
+                        onClick={() => handleSectionSelect(section.id)}
+                      >
+                        <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div className={`p-2 rounded-lg ${
                         selectedSectionId === section.id
@@ -213,9 +243,19 @@ const activeGrades = grades;
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          )}
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Seleccionar Sección {section.name}</p>
+                <p className="text-xs mt-1">Capacidad: {section.capacity} estudiantes</p>
+                {section.teacher && (
+                  <p className="text-xs">Titular: {section.teacher.givenNames} {section.teacher.lastNames}</p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+      </TooltipProvider>
+    )}
         </div>
       )}
 
