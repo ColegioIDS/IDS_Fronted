@@ -17,6 +17,8 @@ import {
   Clock,
   CalendarDays,
   Layers,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { gradeCyclesService } from '@/services/grade-cycles.service';
 import type { AvailableCycle, AvailableGrade } from '@/types/grade-cycles.types';
@@ -28,6 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 interface GradeCycleListProps {
   onCreateNew: () => void;
@@ -46,7 +49,7 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const loadData = async () => {
+  const loadData = async (showToast = false) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -70,9 +73,27 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
       );
 
       setCycles(cyclesWithGrades);
+
+      if (showToast) {
+        const totalGrades = cyclesWithGrades.reduce((sum, c) => sum + c.grades.length, 0);
+        toast.success('Lista actualizada', {
+          description: `${cyclesWithGrades.length} ciclos y ${totalGrades} grados cargados`,
+          icon: <CheckCircle2 className="w-5 h-5" />,
+          duration: 2000,
+        });
+      }
     } catch (err: any) {
       console.error('Error loading data:', err);
-      setError(err.message || 'Error al cargar datos');
+      const errorMessage = err.message || 'Error al cargar datos';
+      setError(errorMessage);
+
+      if (showToast) {
+        toast.error('Error al cargar datos', {
+          description: errorMessage,
+          icon: <XCircle className="w-5 h-5" />,
+          duration: 4000,
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -88,6 +109,10 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
     }
 
     const deleteId = `${cycleId}-${gradeId}`;
+    const deletingToast = toast.loading('Eliminando grado...', {
+      description: `Eliminando "${gradeName}" del ciclo`,
+      icon: <Loader2 className="w-5 h-5 animate-spin" />,
+    });
 
     try {
       setDeletingId(deleteId);
@@ -100,9 +125,23 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
             : cycle
         )
       );
+
+      toast.success('Grado eliminado exitosamente', {
+        id: deletingToast,
+        description: `"${gradeName}" ha sido eliminado del ciclo`,
+        icon: <CheckCircle2 className="w-5 h-5" />,
+        duration: 3000,
+      });
     } catch (err: any) {
-      alert(err.message || 'Error al eliminar');
+      const errorMessage = err.message || 'Error al eliminar';
       console.error('Error deleting:', err);
+
+      toast.error('Error al eliminar grado', {
+        id: deletingToast,
+        description: errorMessage,
+        icon: <XCircle className="w-5 h-5" />,
+        duration: 4000,
+      });
     } finally {
       setDeletingId(null);
     }
@@ -144,7 +183,7 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
             </h3>
             <p className="text-red-700 dark:text-red-400 mb-8">{error}</p>
             <Button
-              onClick={loadData}
+              onClick={() => loadData(true)}
               variant="outline"
               className="gap-2 border-2 border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 h-12 px-6 font-semibold"
             >
@@ -184,7 +223,7 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    onClick={loadData}
+                    onClick={() => loadData(true)}
                     variant="outline"
                     className="gap-2 border-2 h-12 px-5 font-semibold"
                   >

@@ -10,6 +10,8 @@ import { Step2SelectGrades } from './Step2SelectGrades';
 import { Step3Confirm } from './Step3Confirm';
 import { gradeCyclesService } from '@/services/grade-cycles.service';
 import type { AvailableGrade, AvailableCycle } from '@/types/grade-cycles.types';
+import { toast } from 'sonner';
+import { CheckCircle2, XCircle, Loader2 as LoaderIcon } from 'lucide-react';
 
 interface GradeCycleWizardProps {
   onSuccess?: () => void;
@@ -42,11 +44,19 @@ export function GradeCycleWizard({ onSuccess, onCancel }: GradeCycleWizardProps)
   const handleStep1Next = async () => {
     if (!selectedCycle) {
       setError('Debe seleccionar un ciclo');
+      toast.error('Ciclo no seleccionado', {
+        description: 'Debes seleccionar un ciclo escolar para continuar',
+        icon: <XCircle className="w-5 h-5" />,
+      });
       return;
     }
     setError(null);
 
     // Cargar grados disponibles para este ciclo
+    const loadingToast = toast.loading('Cargando grados disponibles...', {
+      icon: <LoaderIcon className="w-5 h-5 animate-spin" />,
+    });
+
     try {
       setIsLoadingGrades(true);
       const grades = await gradeCyclesService.getAvailableGradesForCycle(
@@ -55,9 +65,22 @@ export function GradeCycleWizard({ onSuccess, onCancel }: GradeCycleWizardProps)
       setAvailableGrades(grades);
       setIsLoadingGrades(false);
       setCurrentStep(2);
+
+      toast.success('Grados cargados exitosamente', {
+        id: loadingToast,
+        description: `Se encontraron ${grades.length} grados disponibles`,
+        icon: <CheckCircle2 className="w-5 h-5" />,
+      });
     } catch (err: any) {
-      setError(err.message || 'Error al cargar grados');
+      const errorMessage = err.message || 'Error al cargar grados';
+      setError(errorMessage);
       setIsLoadingGrades(false);
+
+      toast.error('Error al cargar grados', {
+        id: loadingToast,
+        description: errorMessage,
+        icon: <XCircle className="w-5 h-5" />,
+      });
     }
   };
 
@@ -79,8 +102,17 @@ export function GradeCycleWizard({ onSuccess, onCancel }: GradeCycleWizardProps)
   const handleConfirm = async () => {
     if (!selectedCycle || selectedGradeIds.length === 0) {
       setError('Debe seleccionar un ciclo y al menos un grado');
+      toast.error('Configuración incompleta', {
+        description: 'Debes seleccionar un ciclo y al menos un grado',
+        icon: <XCircle className="w-5 h-5" />,
+      });
       return;
     }
+
+    const savingToast = toast.loading('Guardando configuración...', {
+      description: 'Por favor espera mientras se guarda la configuración',
+      icon: <LoaderIcon className="w-5 h-5 animate-spin" />,
+    });
 
     try {
       setIsSubmitting(true);
@@ -94,16 +126,29 @@ export function GradeCycleWizard({ onSuccess, onCancel }: GradeCycleWizardProps)
         gradeIds: numericGradeIds,
       });
 
+      toast.success('Configuración guardada exitosamente', {
+        id: savingToast,
+        description: `Se asignaron ${selectedGradeIds.length} grados al ciclo ${selectedCycle.name}`,
+        icon: <CheckCircle2 className="w-5 h-5" />,
+        duration: 4000,
+      });
+
       // Llamar callback de éxito
       setTimeout(() => {
         onSuccess?.();
       }, 1000);
     } catch (err) {
       console.error('Error saving grade-cycles:', err);
-      setError(
-        err instanceof Error ? err.message : 'Error al guardar la configuración'
-      );
+      const errorMessage = err instanceof Error ? err.message : 'Error al guardar la configuración';
+      setError(errorMessage);
       setIsSubmitting(false);
+
+      toast.error('Error al guardar', {
+        id: savingToast,
+        description: errorMessage,
+        icon: <XCircle className="w-5 h-5" />,
+        duration: 5000,
+      });
     }
   };
 
