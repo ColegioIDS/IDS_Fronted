@@ -23,8 +23,7 @@ const steps = [
 ];
 
 /**
- * Wizard principal para configuración de ciclos-grados
- * Usa SOLO los helpers de grade-cycles (sin otros hooks/services)
+ * 🧙 Wizard principal para configuración de ciclos-grados - Diseño moderno
  */
 export function GradeCycleWizard({ onSuccess, onCancel }: GradeCycleWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
@@ -46,7 +45,7 @@ export function GradeCycleWizard({ onSuccess, onCancel }: GradeCycleWizardProps)
       return;
     }
     setError(null);
-    
+
     // Cargar grados disponibles para este ciclo
     try {
       setIsLoadingGrades(true);
@@ -120,20 +119,20 @@ export function GradeCycleWizard({ onSuccess, onCancel }: GradeCycleWizardProps)
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-8">
       {/* Stepper */}
       <GradeCycleStepper steps={steps} currentStep={currentStep} />
 
       {/* Mensajes de error */}
       {error && (
-        <div className="bg-red-50 dark:bg-red-950/30 border-2 border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-800 dark:text-red-300 font-semibold">{error}</p>
+        <div className="rounded-2xl bg-red-50 dark:bg-red-950/30 border-2 border-red-200 dark:border-red-800 p-5">
+          <p className="text-red-800 dark:text-red-300 font-semibold text-center">{error}</p>
         </div>
       )}
 
       {/* Contenido del paso actual */}
-      <Card className="border-2 border-gray-200 dark:border-gray-800">
-        <CardContent className="p-8">
+      <Card className="border-2 border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden">
+        <CardContent className="p-10">
           {currentStep === 1 && (
             <Step1SelectCycle
               selectedCycle={selectedCycle}

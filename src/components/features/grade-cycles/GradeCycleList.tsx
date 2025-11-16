@@ -15,12 +15,19 @@ import {
   Plus,
   BookOpen,
   Clock,
+  CalendarDays,
+  Layers,
 } from 'lucide-react';
 import { gradeCyclesService } from '@/services/grade-cycles.service';
 import type { AvailableCycle, AvailableGrade } from '@/types/grade-cycles.types';
-import { getModuleTheme, getStatusTheme } from '@/config/theme.config';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface GradeCycleListProps {
   onCreateNew: () => void;
@@ -30,14 +37,14 @@ interface CycleWithGrades extends AvailableCycle {
   grades: AvailableGrade[];
 }
 
+/**
+ * 📋 Lista de configuraciones de ciclo-grados - Diseño moderno
+ */
 export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
   const [cycles, setCycles] = useState<CycleWithGrades[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const moduleTheme = getModuleTheme('gradeCycle');
-  const activeTheme = getStatusTheme('active');
 
   const loadData = async () => {
     try {
@@ -104,250 +111,329 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 space-y-4">
-        <div className={`p-4 rounded-2xl ${moduleTheme.bg}`}>
-          <Loader2 className={`w-12 h-12 animate-spin ${moduleTheme.icon}`} />
+      <TooltipProvider>
+        <div className="flex flex-col items-center justify-center py-32 space-y-6">
+          <div className="relative">
+            <Loader2 className="w-16 h-16 animate-spin text-indigo-600 dark:text-indigo-500" strokeWidth={2.5} />
+            <div className="absolute inset-0 w-16 h-16 rounded-full bg-indigo-500/20 animate-ping" />
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+              Cargando configuraciones
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Por favor espera un momento...
+            </p>
+          </div>
         </div>
-        <p className="text-gray-600 dark:text-gray-400 font-medium">Cargando configuraciones...</p>
-      </div>
+      </TooltipProvider>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <Card className="border-2 border-red-200 dark:border-red-900/50 shadow-lg overflow-hidden">
-        <div className="absolute inset-0 bg-red-50/50 dark:bg-red-950/10" />
-        <CardContent className="relative py-16 text-center">
-          <div className="inline-flex p-4 rounded-2xl bg-red-100 dark:bg-red-950/40 mb-4">
-            <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
-          </div>
-          <p className="text-red-700 dark:text-red-300 font-semibold mb-2 text-lg">{error}</p>
-          <p className="text-red-600 dark:text-red-400 text-sm mb-6">
-            Algo salió mal al cargar los ciclos
-          </p>
-          <Button 
-            onClick={loadData} 
-            variant="outline" 
-            className="gap-2 border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Reintentar
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header Principal */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className={`p-3 rounded-xl ${moduleTheme.bg}`}>
-                <Calendar className={`w-6 h-6 ${moduleTheme.icon}`} />
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Ciclos Configurados
-              </h2>
+      <TooltipProvider>
+        <Card className="border-2 border-red-200 dark:border-red-900/50 shadow-lg overflow-hidden">
+          <CardContent className="py-20 text-center">
+            <div className="inline-flex p-5 rounded-2xl bg-red-100 dark:bg-red-950/40 mb-5">
+              <AlertTriangle className="w-12 h-12 text-red-600 dark:text-red-400" strokeWidth={2.5} />
             </div>
-            <p className="text-gray-600 dark:text-gray-400 ml-12">
-              Administra los ciclos académicos y sus grados asignados
-            </p>
-          </div>
-          <div className="flex gap-2">
+            <h3 className="text-xl font-bold text-red-900 dark:text-red-300 mb-2">
+              Error al Cargar
+            </h3>
+            <p className="text-red-700 dark:text-red-400 mb-8">{error}</p>
             <Button
               onClick={loadData}
               variant="outline"
-              size="sm"
-              className="gap-2 border-lime-300 dark:border-lime-800 hover:bg-lime-50 dark:hover:bg-lime-950/30"
+              className="gap-2 border-2 border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 h-12 px-6 font-semibold"
             >
-              <RefreshCw className="w-4 h-4" />
-              Actualizar
-            </Button>
-            <Button
-              onClick={onCreateNew}
-              size="sm"
-              className={`gap-2 text-white font-semibold ${moduleTheme.bg} hover:opacity-90 transition-all`}
-            >
-              <Plus className="w-5 h-5" />
-              Nuevo Ciclo
-            </Button>
-          </div>
-        </div>
-
-        {/* Stats Summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className={`p-4 rounded-lg border ${moduleTheme.border} ${moduleTheme.bg}`}>
-            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium uppercase tracking-wide">Total Ciclos</p>
-            <p className={`text-2xl font-bold ${moduleTheme.text} mt-1`}>{cycles.length}</p>
-          </div>
-          <div className={`p-4 rounded-lg border ${activeTheme.border} ${activeTheme.bg}`}>
-            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium uppercase tracking-wide">Activos</p>
-            <p className={`text-2xl font-bold ${activeTheme.text} mt-1`}>
-              {cycles.filter(c => c.isActive).length}
-            </p>
-          </div>
-          <div className="p-4 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
-            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium uppercase tracking-wide">Inscripción</p>
-            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-1">
-              {cycles.filter(c => c.canEnroll).length}
-            </p>
-          </div>
-          <div className="p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
-            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium uppercase tracking-wide">Grados Total</p>
-            <p className="text-2xl font-bold text-amber-700 dark:text-amber-300 mt-1">
-              {cycles.reduce((sum, c) => sum + c.grades.length, 0)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Empty State */}
-      {cycles.length === 0 ? (
-        <Card className="border-2 border-dashed border-lime-300 dark:border-lime-800 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="py-20 text-center">
-            <div className={`inline-flex p-5 rounded-2xl ${moduleTheme.bg} mb-4`}>
-              <Calendar className={`w-10 h-10 ${moduleTheme.icon}`} />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-              Sin ciclos configurados
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">
-              Crea tu primer ciclo académico para comenzar a asignar grados y gestionar el año escolar
-            </p>
-            <Button 
-              onClick={onCreateNew} 
-              className={`gap-2 text-white font-semibold ${moduleTheme.bg} hover:opacity-90`}
-            >
-              <Plus className="w-5 h-5" />
-              Crear Primer Ciclo
+              <RefreshCw className="w-5 h-5" strokeWidth={2.5} />
+              Reintentar
             </Button>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid gap-5">
-          {cycles.map((cycle) => (
-            <Card
-              key={cycle.id}
-              className={`border-2 ${moduleTheme.border} hover:border-lime-400 dark:hover:border-lime-600 transition-all hover:shadow-lg overflow-hidden group`}
-            >
-              {/* Header with gradient background */}
-              <CardHeader className={`${moduleTheme.bg} border-b-2 ${moduleTheme.border} pb-4`}>
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className={`p-2.5 rounded-lg ${moduleTheme.bg} border-2 ${moduleTheme.border} group-hover:scale-110 transition-transform`}>
-                        <Calendar className={`w-5 h-5 ${moduleTheme.icon}`} />
-                      </div>
-                      <div>
-                        <CardTitle className={`text-xl font-bold ${moduleTheme.text}`}>
-                          {cycle.name}
-                        </CardTitle>
-                        <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          <Clock className="w-3.5 h-3.5" />
-                          {format(new Date(cycle.startDate), 'dd MMM', { locale: es })} →{' '}
-                          {format(new Date(cycle.endDate), 'dd MMM yyyy', { locale: es })}
+      </TooltipProvider>
+    );
+  }
+
+  const totalGrades = cycles.reduce((sum, c) => sum + c.grades.length, 0);
+  const activeCycles = cycles.filter(c => c.isActive).length;
+  const enrollCycles = cycles.filter(c => c.canEnroll).length;
+
+  return (
+    <TooltipProvider>
+      <div className="space-y-8">
+        {/* Header Principal */}
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 dark:bg-indigo-500 shadow-xl shadow-indigo-500/30">
+                <CalendarDays className="w-8 h-8 text-white" strokeWidth={2.5} />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Ciclos Configurados
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  Administra los ciclos académicos y sus grados asignados
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={loadData}
+                    variant="outline"
+                    className="gap-2 border-2 h-12 px-5 font-semibold"
+                  >
+                    <RefreshCw className="w-4 h-4" strokeWidth={2.5} />
+                    Actualizar
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                  <p className="font-semibold">Recargar lista de ciclos</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={onCreateNew}
+                    className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700 h-12 px-6 font-bold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 border-2 border-indigo-700 dark:border-indigo-500 transition-all"
+                  >
+                    <Plus className="w-5 h-5" strokeWidth={2.5} />
+                    Nuevo Ciclo
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                  <p className="font-semibold">Crear nueva configuración de ciclo-grados</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+
+          {/* Stats Summary */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="p-5 rounded-xl border-2 border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/20 hover:shadow-lg transition-shadow cursor-help">
+                  <div className="flex items-center gap-3 mb-2">
+                    <CalendarDays className="w-5 h-5 text-indigo-600 dark:text-indigo-500" strokeWidth={2.5} />
+                    <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Total Ciclos</p>
+                  </div>
+                  <p className="text-3xl font-bold text-indigo-700 dark:text-indigo-400">{cycles.length}</p>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Ciclos escolares configurados</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="p-5 rounded-xl border-2 border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 hover:shadow-lg transition-shadow cursor-help">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Calendar className="w-5 h-5 text-emerald-600 dark:text-emerald-500" strokeWidth={2.5} />
+                    <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Activos</p>
+                  </div>
+                  <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">{activeCycles}</p>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Ciclos actualmente activos</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="p-5 rounded-xl border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 hover:shadow-lg transition-shadow cursor-help">
+                  <div className="flex items-center gap-3 mb-2">
+                    <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-500" strokeWidth={2.5} />
+                    <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Inscripción</p>
+                  </div>
+                  <p className="text-3xl font-bold text-blue-700 dark:text-blue-400">{enrollCycles}</p>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Con inscripción abierta</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="p-5 rounded-xl border-2 border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/20 hover:shadow-lg transition-shadow cursor-help">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Layers className="w-5 h-5 text-violet-600 dark:text-violet-500" strokeWidth={2.5} />
+                    <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Grados Total</p>
+                  </div>
+                  <p className="text-3xl font-bold text-violet-700 dark:text-violet-400">{totalGrades}</p>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Total de grados asignados</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+
+        {/* Empty State */}
+        {cycles.length === 0 ? (
+          <Card className="border-2 border-dashed border-indigo-300 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/10 shadow-sm hover:shadow-xl transition-shadow">
+            <CardContent className="py-24 text-center">
+              <div className="inline-flex p-6 rounded-2xl bg-indigo-100 dark:bg-indigo-950/30 border-2 border-indigo-200 dark:border-indigo-800 mb-5">
+                <CalendarDays className="w-14 h-14 text-indigo-600 dark:text-indigo-500" strokeWidth={2} />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                Sin ciclos configurados
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+                Crea tu primer ciclo académico para comenzar a asignar grados y gestionar el año escolar
+              </p>
+              <Button
+                onClick={onCreateNew}
+                className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700 h-12 px-8 text-base font-bold shadow-lg shadow-indigo-500/30 hover:shadow-xl border-2 border-indigo-700"
+              >
+                <Plus className="w-5 h-5" strokeWidth={2.5} />
+                Crear Primer Ciclo
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-6">
+            {cycles.map((cycle) => (
+              <Card
+                key={cycle.id}
+                className="border-2 border-gray-200 dark:border-gray-800 hover:border-indigo-400 dark:hover:border-indigo-600 transition-all hover:shadow-2xl overflow-hidden group"
+              >
+                {/* Header */}
+                <CardHeader className="bg-indigo-50 dark:bg-indigo-950/20 border-b-2 border-gray-200 dark:border-gray-800 pb-5">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-600 dark:bg-indigo-500 border-2 border-indigo-500 shadow-lg shadow-indigo-500/30 group-hover:scale-110 transition-transform">
+                          <Calendar className="w-7 h-7 text-white" strokeWidth={2.5} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                            {cycle.name}
+                          </CardTitle>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                            <Clock className="w-4 h-4" strokeWidth={2.5} />
+                            <span className="font-medium">
+                              {format(new Date(cycle.startDate), 'dd MMM', { locale: es })} →{' '}
+                              {format(new Date(cycle.endDate), 'dd MMM yyyy', { locale: es })}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Badges */}
-                  <div className="flex gap-2 flex-wrap justify-end">
-                    {cycle.isActive && (
-                      <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 font-semibold">
-                        <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 mr-1.5" />
-                        Activo
-                      </Badge>
-                    )}
-                    {cycle.canEnroll && (
-                      <Badge className="bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-700 font-semibold">
-                        <BookOpen className="w-3 h-3 mr-1.5" />
-                        Inscripción
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-
-              {/* Content */}
-              <CardContent className="p-6 bg-white dark:bg-gray-950">
-                {cycle.grades.length === 0 ? (
-                  <div className="text-center py-12 px-4">
-                    <div className={`inline-flex p-4 rounded-2xl ${moduleTheme.bg} mb-3`}>
-                      <GraduationCap className={`w-8 h-8 ${moduleTheme.icon}`} />
-                    </div>
-                    <p className="text-gray-600 dark:text-gray-400 font-medium">
-                      Sin grados asignados a este ciclo
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <GraduationCap className={`w-4 h-4 ${moduleTheme.icon}`} />
-                        Grados Asignados
-                        <Badge className={`${moduleTheme.bg} ${moduleTheme.text} border ${moduleTheme.border} ml-2`}>
-                          {cycle.grades.length}
+                    {/* Badges */}
+                    <div className="flex gap-2 flex-wrap">
+                      {cycle.isActive && (
+                        <Badge className="bg-emerald-100 text-emerald-800 border-2 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 font-bold px-3 py-1.5">
+                          <div className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 mr-2 animate-pulse" />
+                          Activo
                         </Badge>
+                      )}
+                      {cycle.canEnroll && (
+                        <Badge className="bg-blue-100 text-blue-800 border-2 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 font-bold px-3 py-1.5">
+                          <BookOpen className="w-3.5 h-3.5 mr-1.5" strokeWidth={2.5} />
+                          Inscripción
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+
+                {/* Content */}
+                <CardContent className="p-8 bg-white dark:bg-gray-950">
+                  {cycle.grades.length === 0 ? (
+                    <div className="text-center py-12 px-4">
+                      <div className="inline-flex p-4 rounded-2xl bg-gray-100 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-800 mb-4">
+                        <GraduationCap className="w-10 h-10 text-gray-400 dark:text-gray-600" strokeWidth={2} />
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-400 font-medium">
+                        Sin grados asignados a este ciclo
                       </p>
                     </div>
+                  ) : (
+                    <div className="space-y-5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/30 border-2 border-violet-200 dark:border-violet-800">
+                            <GraduationCap className="w-6 h-6 text-violet-600 dark:text-violet-500" strokeWidth={2.5} />
+                          </div>
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">
+                            Grados Asignados
+                          </p>
+                        </div>
+                        <Badge className="bg-violet-600 dark:bg-violet-500 text-white border-2 border-violet-700 dark:border-violet-600 font-bold px-4 py-1.5 text-base">
+                          {cycle.grades.length}
+                        </Badge>
+                      </div>
 
-                    {/* Grades Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {cycle.grades
-                        .sort((a, b) => a.order - b.order)
-                        .map((grade) => {
-                          const deleteId = `${cycle.id}-${grade.id}`;
-                          const isDeleting = deletingId === deleteId;
+                      {/* Grades Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {cycle.grades
+                          .sort((a, b) => a.order - b.order)
+                          .map((grade) => {
+                            const deleteId = `${cycle.id}-${grade.id}`;
+                            const isDeleting = deletingId === deleteId;
 
-                          return (
-                            <div
-                              key={grade.id}
-                              className={`flex items-center justify-between ${moduleTheme.bg} border-2 ${moduleTheme.border} rounded-lg p-4 transition-all hover:${moduleTheme.bgHover} group/item`}
-                            >
-                              <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <div className={`p-2 rounded-lg ${moduleTheme.bg} border ${moduleTheme.border}`}>
-                                  <GraduationCap className={`w-4 h-4 ${moduleTheme.icon}`} />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                                    {grade.name}
-                                  </p>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    Nivel: {grade.level}
-                                  </p>
-                                </div>
-                              </div>
-
-                              {/* Delete Button */}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDelete(cycle.id, grade.id, grade.name)}
-                                disabled={isDeleting}
-                                className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 ml-2 flex-shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                            return (
+                              <div
+                                key={grade.id}
+                                className="group/item flex items-center justify-between rounded-xl border-2 border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/20 p-4 hover:shadow-md transition-all"
                               >
-                                {isDeleting ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="w-4 h-4" />
-                                )}
-                              </Button>
-                            </div>
-                          );
-                        })}
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-600 dark:bg-violet-500 flex-shrink-0">
+                                    <GraduationCap className="w-5 h-5 text-white" strokeWidth={2.5} />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                                      {grade.name}
+                                    </p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                      {grade.level}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Delete Button */}
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDelete(cycle.id, grade.id, grade.name)}
+                                      disabled={isDeleting}
+                                      className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 ml-2 flex-shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                                    >
+                                      {isDeleting ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2.5} />
+                                      ) : (
+                                        <Trash2 className="w-4 h-4" strokeWidth={2.5} />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                                    <p className="font-semibold">Eliminar {grade.name} de este ciclo</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            );
+                          })}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
   );
 }
