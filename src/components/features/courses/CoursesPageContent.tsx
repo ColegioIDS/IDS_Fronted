@@ -18,13 +18,12 @@ import { toast } from 'sonner';
 export function CoursesPageContent() {
   const [activeTab, setActiveTab] = useState<'list' | 'form'>('list');
   const [editingCourseId, setEditingCourseId] = useState<number | undefined>(undefined);
-  const [filters, setFilters] = useState<CourseFiltersType>({});
 
   const { hasPermission } = useAuth();
   const canCreate = hasPermission('course', 'create');
 
-  // Usar hook para obtener cursos
-  const { data, isLoading, error, refresh } = useCourses({
+  // Usar hook para obtener cursos con filtros dinámicos
+  const { data, isLoading, error, query, updateQuery, refresh } = useCourses({
     page: 1,
     limit: 12,
     sortBy: 'name',
@@ -33,6 +32,8 @@ export function CoursesPageContent() {
 
   const courses = data?.data || [];
   const totalCourses = data?.meta?.total || 0;
+  const totalPages = data?.meta?.totalPages || 1;
+  const currentPage = data?.meta?.page || 1;
 
   // Show error toast when courses fail to load
   useEffect(() => {
@@ -45,15 +46,32 @@ export function CoursesPageContent() {
     }
   }, [error]);
 
+  // Manejar cambios de filtros
+  const handleFiltersChange = (newFilters: CourseFiltersType) => {
+    updateQuery({
+      ...newFilters,
+      page: 1, // Resetear a la primera página al cambiar filtros
+    });
+  };
+
+  // Resetear filtros
   const handleReset = () => {
-    setFilters({});
+    updateQuery({
+      searchQuery: undefined,
+      area: undefined,
+      isActive: undefined,
+      gradeId: undefined,
+      page: 1,
+    });
     toast.success('Filtros eliminados', {
       description: 'Mostrando todos los cursos disponibles',
       icon: <CheckCircle2 className="w-5 h-5" />,
     });
   };
 
+  // Manejar cambio de página
   const handlePageChange = (page: number) => {
+    updateQuery({ page });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -118,7 +136,15 @@ export function CoursesPageContent() {
     });
   };
 
-  const hasActiveFilters = !!(filters.searchQuery || filters.area || filters.isActive !== undefined);
+  // Construir objeto de filtros actuales para el componente CourseFilters
+  const currentFilters: CourseFiltersType = {
+    searchQuery: query.searchQuery,
+    area: query.area,
+    isActive: query.isActive,
+    gradeId: query.gradeId,
+  };
+
+  const hasActiveFilters = !!(query.searchQuery || query.area || query.isActive !== undefined);
 
   const activeCourses = courses.filter((c) => c.isActive).length;
   const inactiveCourses = courses.filter((c) => !c.isActive).length;
@@ -181,8 +207,8 @@ export function CoursesPageContent() {
           <TabsContent value="list" className="space-y-6 mt-6">
             {/* Filtros */}
             <CourseFilters
-              filters={filters}
-              onFiltersChange={setFilters}
+              filters={currentFilters}
+              onFiltersChange={handleFiltersChange}
               onReset={handleReset}
               totalResults={totalCourses}
             />
@@ -192,8 +218,8 @@ export function CoursesPageContent() {
               courses={courses}
               isLoading={isLoading}
               error={error}
-              currentPage={1}
-              totalPages={1}
+              currentPage={currentPage}
+              totalPages={totalPages}
               totalResults={totalCourses}
               onPageChange={handlePageChange}
               hasActiveFilters={hasActiveFilters}
