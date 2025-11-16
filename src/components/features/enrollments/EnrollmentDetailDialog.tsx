@@ -74,13 +74,15 @@ export const EnrollmentDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border-2 border-slate-200 dark:border-slate-800 shadow-2xl">
+        <DialogHeader className="border-b-2 border-slate-200 dark:border-slate-800 pb-4">
+          <DialogTitle className="flex items-center gap-3 text-2xl">
+            <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800">
+              <Info className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
             Detalle de Matrícula
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-base font-medium">
             ID Matrícula: #{enrollment.id}
           </DialogDescription>
         </DialogHeader>
@@ -88,14 +90,16 @@ export const EnrollmentDetailDialog = ({
         <ScrollArea className="flex-1 pr-4">
           <div className="space-y-6 py-4">
             {/* Información del Estudiante */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <User className="h-5 w-5" />
+            <Card className="border-2 border-slate-200 dark:border-slate-800 shadow-md">
+              <CardHeader className="bg-slate-50 dark:bg-slate-900/50 border-b-2 border-slate-200 dark:border-slate-800">
+                <CardTitle className="text-base flex items-center gap-2 font-bold">
+                  <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950/30">
+                    <User className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
                   Información del Estudiante
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4 pt-4">
                 <div>
                   <p className="text-sm text-slate-600 dark:text-slate-400">Nombre</p>
                   <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
@@ -117,14 +121,16 @@ export const EnrollmentDetailDialog = ({
             </Card>
 
             {/* Datos de Matrícula */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5" />
+            <Card className="border-2 border-slate-200 dark:border-slate-800 shadow-md">
+              <CardHeader className="bg-slate-50 dark:bg-slate-900/50 border-b-2 border-slate-200 dark:border-slate-800">
+                <CardTitle className="text-base flex items-center gap-2 font-bold">
+                  <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-950/30">
+                    <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
                   Datos de Matrícula
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4 pt-4">
                 <InfoRow
                   icon={BookOpen}
                   label="Grado"
@@ -160,17 +166,20 @@ export const EnrollmentDetailDialog = ({
 
             {/* Historial */}
             {enrollment.history && enrollment.history.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
+              <Card className="border-2 border-slate-200 dark:border-slate-800 shadow-md">
+                <CardHeader className="bg-slate-50 dark:bg-slate-900/50 border-b-2 border-slate-200 dark:border-slate-800">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <History className="h-5 w-5" />
+                    <CardTitle className="text-base flex items-center gap-2 font-bold">
+                      <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-950/30">
+                        <History className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                      </div>
                       Historial de Cambios
                     </CardTitle>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setExpandHistory(!expandHistory)}
+                      className="hover:bg-white dark:hover:bg-slate-800"
                     >
                       {expandHistory ? (
                         <ChevronUp className="h-4 w-4" />

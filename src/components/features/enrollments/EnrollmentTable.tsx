@@ -93,10 +93,15 @@ export const EnrollmentTable = ({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin" />
-          <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Cargando matrículas...</p>
+      <div className="flex items-center justify-center h-80 p-6">
+        <div className="flex flex-col items-center gap-4">
+          <div className="p-4 rounded-2xl bg-blue-100 dark:bg-blue-950/30 shadow-lg">
+            <Loader2 className="h-12 w-12 text-blue-600 dark:text-blue-400 animate-spin" />
+          </div>
+          <div className="text-center">
+            <p className="text-base text-slate-900 dark:text-slate-100 font-bold mb-1">Cargando matrículas...</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Por favor espere</p>
+          </div>
         </div>
       </div>
     );
@@ -104,17 +109,22 @@ export const EnrollmentTable = ({
 
   if (enrollments.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-900/50">
-        <div className="text-center">
-          <Users className="h-12 w-12 mx-auto mb-3 text-slate-300 dark:text-slate-700" />
-          <p className="text-slate-600 dark:text-slate-400 font-medium">No hay matrículas disponibles</p>
+      <div className="flex items-center justify-center h-80 p-6">
+        <div className="text-center space-y-4">
+          <div className="p-6 rounded-2xl bg-slate-100 dark:bg-slate-800/50 mx-auto w-fit border-2 border-slate-200 dark:border-slate-700">
+            <Users className="h-16 w-16 text-slate-400 dark:text-slate-600" />
+          </div>
+          <div>
+            <p className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">No hay matrículas disponibles</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Intente ajustando los filtros</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
+    <div className="overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow className="border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">

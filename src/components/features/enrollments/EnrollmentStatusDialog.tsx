@@ -92,13 +92,15 @@ export const EnrollmentStatusDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <RefreshCcw className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+      <DialogContent className="max-w-md border-2 border-slate-200 dark:border-slate-800 shadow-2xl">
+        <DialogHeader className="border-b-2 border-slate-200 dark:border-slate-800 pb-4">
+          <DialogTitle className="flex items-center gap-3 text-xl">
+            <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800">
+              <RefreshCcw className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
             Cambiar Estado de Matrícula
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-base font-medium">
             Estudiante: {enrollment.student.givenNames} {enrollment.student.lastNames}
           </DialogDescription>
         </DialogHeader>
@@ -176,23 +178,28 @@ export const EnrollmentStatusDialog = ({
           )}
 
           {/* Botones */}
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" onClick={handleClose} disabled={loading} className="flex-1">
+          <div className="flex gap-3 pt-4 border-t-2 border-slate-200 dark:border-slate-800">
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              disabled={loading}
+              className="flex-1 h-11 border-2 font-semibold shadow-sm hover:shadow-md"
+            >
               Cancelar
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={loading || !newStatus || !reason}
-              className="flex-1 gap-2"
+              className="flex-1 h-11 gap-2 font-semibold shadow-md hover:shadow-lg"
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                   Guardando...
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="h-4 w-4" />
+                  <CheckCircle2 className="h-5 w-5" />
                   Cambiar Estado
                 </>
               )}

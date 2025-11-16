@@ -10,7 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, X, Filter, AlertCircle, Calendar } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Search, X, Filter, AlertCircle, Calendar, GraduationCap, Users, CheckCircle } from 'lucide-react';
 import { EnrollmentsQuery } from '@/types/enrollments.types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
@@ -90,64 +96,83 @@ export const EnrollmentFilters = ({
   };
 
   return (
-    <div className="space-y-3">
-      {/* Alerta: Ciclo obligatorio */}
-      {!hasCycleSelected && (
-        <Alert className="border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950">
-          <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-          <AlertDescription className="text-amber-800 dark:text-amber-200">
-            Selecciona un ciclo escolar para ver las matrículas
-          </AlertDescription>
-        </Alert>
-      )}
+    <TooltipProvider>
+      <div className="space-y-4">
+        {/* Alerta: Ciclo obligatorio */}
+        {!hasCycleSelected && (
+          <Alert className="border-2 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 shadow-sm">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <AlertDescription className="text-amber-900 dark:text-amber-100 font-medium">
+              Selecciona un ciclo escolar para ver las matrículas
+            </AlertDescription>
+          </Alert>
+        )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-          <h3 className="font-semibold text-slate-900 dark:text-slate-100">Filtros</h3>
-          {activeFilters > 0 && (
-            <span className="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full">
-              {activeFilters} activos
-            </span>
-          )}
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsExpanded(!isExpanded)}
-          aria-expanded={isExpanded}
-          className="text-xs"
-        >
-          {isExpanded ? 'Ocultar' : 'Mostrar'}
-        </Button>
-      </div>
-
-      {/* Filtros expandibles */}
-      {isExpanded && (
-        <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-          {/* Ciclo - OBLIGATORIO */}
-          <div>
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-              Ciclo Escolar <span className="text-red-500">*</span>
-            </label>
-            <Select value={cycleId} onValueChange={setCycleId} disabled={loading}>
-              <SelectTrigger className={cn(
-                'text-sm focus-visible:ring-1',
-                !cycleId && 'border-red-300 dark:border-red-700 focus-visible:ring-red-500'
-              )}>
-                <SelectValue placeholder="Seleccionar ciclo..." />
-              </SelectTrigger>
-              <SelectContent>
-                {cycles.map((cycle) => (
-                  <SelectItem key={cycle.id} value={cycle.id.toString()}>
-                    {cycle.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950/30">
+              <Filter className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Filtros</h3>
+            {activeFilters > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="px-3 py-1.5 text-sm font-bold bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full border-2 border-blue-200 dark:border-blue-800 cursor-help">
+                    {activeFilters} activo{activeFilters !== 1 && 's'}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="font-semibold">{activeFilters} filtro{activeFilters !== 1 && 's'} aplicado{activeFilters !== 1 && 's'}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                aria-expanded={isExpanded}
+                className="text-sm font-medium"
+              >
+                {isExpanded ? 'Ocultar' : 'Mostrar'}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="font-semibold">{isExpanded ? 'Ocultar' : 'Mostrar'} filtros</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Filtros expandibles */}
+        {isExpanded && (
+          <div className="space-y-4 p-6 bg-slate-50 dark:bg-slate-900/50 rounded-xl border-2 border-slate-200 dark:border-slate-800 shadow-md">
+            {/* Ciclo - OBLIGATORIO */}
+            <div>
+              <label className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                <div className="p-1 rounded bg-blue-100 dark:bg-blue-950/30">
+                  <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                Ciclo Escolar <span className="text-red-500 ml-1">*</span>
+              </label>
+              <Select value={cycleId} onValueChange={setCycleId} disabled={loading}>
+                <SelectTrigger className={cn(
+                  'text-sm focus-visible:ring-2 border-2 h-11',
+                  !cycleId && 'border-red-300 dark:border-red-700 focus-visible:ring-red-500'
+                )}>
+                  <SelectValue placeholder="Seleccionar ciclo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {cycles.map((cycle) => (
+                    <SelectItem key={cycle.id} value={cycle.id.toString()}>
+                      {cycle.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
           {/* Filtros opcionales (solo si hay ciclo) */}
           {hasCycleSelected && (
@@ -239,34 +264,47 @@ export const EnrollmentFilters = ({
             </div>
           )}
 
-          {/* Botones */}
-          {hasCycleSelected && (
-            <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-              <Button
-                onClick={handleApplyFilters}
-                disabled={loading}
-                className="flex-1 text-sm gap-2"
-                size="sm"
-              >
-                <Filter className="h-3.5 w-3.5" />
-                Aplicar Filtros
-              </Button>
-              {activeFilters > 0 && (
-                <Button
-                  onClick={handleClearFilters}
-                  variant="outline"
-                  disabled={loading}
-                  className="flex-1 text-sm"
-                  size="sm"
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  Limpiar
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+            {/* Botones */}
+            {hasCycleSelected && (
+              <div className="flex gap-3 pt-4 border-t-2 border-slate-200 dark:border-slate-700">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleApplyFilters}
+                      disabled={loading}
+                      className="flex-1 text-sm gap-2 h-11 shadow-md hover:shadow-lg font-semibold"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Aplicar Filtros
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                    <p className="font-semibold">Aplicar los filtros seleccionados</p>
+                  </TooltipContent>
+                </Tooltip>
+                {activeFilters > 0 && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleClearFilters}
+                        variant="outline"
+                        disabled={loading}
+                        className="flex-1 text-sm gap-2 h-11 border-2 shadow-sm hover:shadow-md font-semibold"
+                      >
+                        <X className="h-4 w-4" />
+                        Limpiar
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                      <p className="font-semibold">Limpiar todos los filtros</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
   );
 };
