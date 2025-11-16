@@ -17,7 +17,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { X, Save, BookOpen, GraduationCap, CheckCircle, Loader2, XCircle, CheckCircle2 } from 'lucide-react';
+import { X, Save, BookOpen, GraduationCap, CheckCircle, Loader2, XCircle, CheckCircle2, Circle } from 'lucide-react';
 
 interface CourseGradeFormProps {
   courseGrade?: CourseGradeDetail | null;
