@@ -8,6 +8,12 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-r
 import { Card } from '@/components/ui/card';
 import { EmptyState, EmptySearchResults } from '@/components/shared/feedback/EmptyState';
 import { BookOpen } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface CoursesGridProps {
   courses: (Course & { _count?: { schedules: number; students: number } })[];
@@ -117,47 +123,79 @@ export function CoursesGrid({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-6">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronsLeft className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
+        <TooltipProvider>
+          <div className="flex items-center justify-center gap-2 pt-6">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPageChange(1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Ir a la primera página</p>
+              </TooltipContent>
+            </Tooltip>
 
-          <div className="flex items-center gap-2 px-4">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Página {currentPage} de {totalPages}
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Página anterior</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex items-center gap-2 px-4">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Página {currentPage} de {totalPages}
+              </span>
+            </div>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Página siguiente</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPageChange(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Ir a la última página</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(totalPages)}
-            disabled={currentPage === totalPages}
-          >
-            <ChevronsRight className="w-4 h-4" />
-          </Button>
-        </div>
+        </TooltipProvider>
       )}
 
       {/* Info footer */}

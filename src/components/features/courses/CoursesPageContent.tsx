@@ -1,10 +1,10 @@
 // src/components/features/courses/CoursesPageContent.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, List, Plus } from 'lucide-react';
+import { RefreshCw, List, Plus, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { CourseStats } from './CourseStats';
 import { CourseFilters } from './CourseFilters';
 import { CoursesGrid } from './CoursesGrid';
@@ -13,6 +13,7 @@ import { ProtectedPage } from '@/components/shared/permissions/ProtectedPage';
 import { CourseFilters as CourseFiltersType } from '@/types/courses';
 import { useAuth } from '@/context/AuthContext';
 import { useCourses } from '@/hooks/data/useCourses';
+import { toast } from 'sonner';
 
 export function CoursesPageContent() {
   const [activeTab, setActiveTab] = useState<'list' | 'form'>('list');
@@ -33,33 +34,88 @@ export function CoursesPageContent() {
   const courses = data?.data || [];
   const totalCourses = data?.meta?.total || 0;
 
+  // Show error toast when courses fail to load
+  useEffect(() => {
+    if (error) {
+      toast.error('Error al cargar cursos', {
+        description: error,
+        icon: <XCircle className="w-5 h-5" />,
+        duration: 5000,
+      });
+    }
+  }, [error]);
+
   const handleReset = () => {
     setFilters({});
+    toast.success('Filtros eliminados', {
+      description: 'Mostrando todos los cursos disponibles',
+      icon: <CheckCircle2 className="w-5 h-5" />,
+    });
   };
 
   const handlePageChange = (page: number) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleRefresh = async () => {
+    const refreshToast = toast.loading('Actualizando cursos...', {
+      icon: <Loader2 className="w-5 h-5 animate-spin" />,
+    });
+
+    try {
+      await refresh();
+      toast.success('Cursos actualizados', {
+        id: refreshToast,
+        description: `Se encontraron ${totalCourses} cursos en total`,
+        icon: <CheckCircle2 className="w-5 h-5" />,
+      });
+    } catch (err) {
+      toast.error('Error al actualizar', {
+        id: refreshToast,
+        description: 'No se pudieron actualizar los cursos',
+        icon: <XCircle className="w-5 h-5" />,
+      });
+    }
+  };
+
   const handleCreateNew = () => {
     setEditingCourseId(undefined);
     setActiveTab('form');
+    toast.info('Nuevo curso', {
+      description: 'Completa el formulario para crear un nuevo curso',
+      icon: <Plus className="w-5 h-5" />,
+    });
   };
 
   const handleEdit = (courseId: number) => {
     setEditingCourseId(courseId);
     setActiveTab('form');
+    toast.info('Editar curso', {
+      description: 'Modifica los datos del curso',
+      icon: <RefreshCw className="w-5 h-5" />,
+    });
   };
 
   const handleFormSuccess = () => {
     refresh();
     setActiveTab('list');
     setEditingCourseId(undefined);
+    toast.success('Curso guardado exitosamente', {
+      description: editingCourseId
+        ? 'Los cambios se han guardado correctamente'
+        : 'El nuevo curso se ha creado correctamente',
+      icon: <CheckCircle2 className="w-5 h-5" />,
+      duration: 4000,
+    });
   };
 
   const handleFormCancel = () => {
     setActiveTab('list');
     setEditingCourseId(undefined);
+    toast.info('Operación cancelada', {
+      description: 'No se guardaron los cambios',
+      icon: <XCircle className="w-5 h-5" />,
+    });
   };
 
   const hasActiveFilters = !!(filters.searchQuery || filters.area || filters.isActive !== undefined);
@@ -83,7 +139,7 @@ export function CoursesPageContent() {
 
           <div className="flex items-center gap-3">
             <Button
-              onClick={refresh}
+              onClick={handleRefresh}
               variant="outline"
               size="sm"
               className="gap-2"
