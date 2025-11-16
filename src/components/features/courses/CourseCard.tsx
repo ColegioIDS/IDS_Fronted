@@ -32,6 +32,12 @@ import { DeleteCourseDialog } from './DeleteCourseDialog';
 import { ProtectedButton } from '@/components/shared/permissions/ProtectedButton';
 import { coursesService } from '@/services/courses.service';
 import { toast } from 'sonner';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface CourseCardProps {
   course: Course & { _count?: { schedules: number; students: number } };
@@ -81,7 +87,7 @@ export function CourseCard({ course, onUpdate, onEdit }: CourseCardProps) {
   };
 
   return (
-    <>
+    <TooltipProvider>
       <Card className={`overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-2 ${
         course.isActive
           ? 'border-gray-200 dark:border-gray-800'
@@ -98,14 +104,21 @@ export function CourseCard({ course, onUpdate, onEdit }: CourseCardProps) {
         }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div
-                className="p-3 rounded-xl shadow-lg"
-                style={{
-                  backgroundColor: course.color || '#6366F1',
-                }}
-              >
-                <BookOpen className="w-6 h-6 text-white" strokeWidth={2.5} />
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    className="p-3 rounded-xl shadow-lg cursor-help"
+                    style={{
+                      backgroundColor: course.color || '#6366F1',
+                    }}
+                  >
+                    <BookOpen className="w-6 h-6 text-white" strokeWidth={2.5} />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                  <p className="font-semibold">Color identificador: {course.color || '#6366F1'}</p>
+                </TooltipContent>
+              </Tooltip>
 
               <div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -251,29 +264,43 @@ export function CourseCard({ course, onUpdate, onEdit }: CourseCardProps) {
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/40">
-                <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Horarios</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {course._count?.schedules || 0}
-                </p>
-              </div>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 cursor-help hover:shadow-md transition-shadow">
+                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/40">
+                    <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Horarios</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {course._count?.schedules || 0}
+                    </p>
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Horarios asignados a este curso</p>
+              </TooltipContent>
+            </Tooltip>
 
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
-              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/40">
-                <Grid3x3 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Estudiantes</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {course._count?.students || 0}
-                </p>
-              </div>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 cursor-help hover:shadow-md transition-shadow">
+                  <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/40">
+                    <Grid3x3 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Estudiantes</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {course._count?.students || 0}
+                    </p>
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Estudiantes inscritos en este curso</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           {/* Footer */}
@@ -311,6 +338,6 @@ export function CourseCard({ course, onUpdate, onEdit }: CourseCardProps) {
         onClose={() => setShowDelete(false)}
         onSuccess={handleSuccess}
       />
-    </>
+    </TooltipProvider>
   );
 }

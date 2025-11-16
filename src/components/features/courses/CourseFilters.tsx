@@ -17,6 +17,12 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { CourseFilters as CourseFiltersType } from '@/types/courses';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface CourseFiltersProps {
   filters: CourseFiltersType;
@@ -86,8 +92,9 @@ export function CourseFilters({
   ].filter(Boolean).length;
 
   return (
-    <Card className="border-gray-200 dark:border-gray-800 shadow-sm">
-      <CardContent className="p-6 space-y-6">
+    <TooltipProvider>
+      <Card className="border-gray-200 dark:border-gray-800 shadow-sm">
+        <CardContent className="p-6 space-y-6">
         {/* Header con contador de resultados */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -110,15 +117,22 @@ export function CourseFilters({
           </div>
 
           {hasActiveFilters && (
-            <Button
-              onClick={onReset}
-              variant="outline"
-              size="sm"
-              className="gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Limpiar todo
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={onReset}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Limpiar todo
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Eliminar todos los filtros y mostrar todos los cursos</p>
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
 
@@ -262,7 +276,8 @@ export function CourseFilters({
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 }
