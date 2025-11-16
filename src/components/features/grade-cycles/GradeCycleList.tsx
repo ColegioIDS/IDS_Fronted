@@ -31,6 +31,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { DeleteGradeDialog } from './DeleteGradeDialog';
 
 interface GradeCycleListProps {
   onCreateNew: () => void;
@@ -48,6 +49,19 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Estado para el dialog de confirmación
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    grade: AvailableGrade | null;
+    cycleId: number | null;
+    cycleName: string;
+  }>({
+    open: false,
+    grade: null,
+    cycleId: null,
+    cycleName: '',
+  });
 
   const loadData = async (showToast = false) => {
     try {
@@ -103,35 +117,48 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
     loadData();
   }, []);
 
-  const handleDelete = async (cycleId: number, gradeId: number, gradeName: string) => {
-    if (!confirm(`¿Eliminar el grado "${gradeName}" de este ciclo?`)) {
-      return;
-    }
+  // Abrir dialog de confirmación de eliminación
+  const handleDeleteClick = (cycle: CycleWithGrades, grade: AvailableGrade) => {
+    setDeleteDialog({
+      open: true,
+      grade,
+      cycleId: cycle.id,
+      cycleName: cycle.name,
+    });
+  };
 
-    const deleteId = `${cycleId}-${gradeId}`;
+  // Confirmar eliminación desde el dialog
+  const handleConfirmDelete = async () => {
+    if (!deleteDialog.grade || !deleteDialog.cycleId) return;
+
+    const { grade, cycleId } = deleteDialog;
+    const deleteId = `${cycleId}-${grade.id}`;
     const deletingToast = toast.loading('Eliminando grado...', {
-      description: `Eliminando "${gradeName}" del ciclo`,
+      description: `Eliminando "${grade.name}" del ciclo`,
       icon: <Loader2 className="w-5 h-5 animate-spin" />,
     });
 
     try {
       setDeletingId(deleteId);
-      await gradeCyclesService.delete(cycleId, gradeId);
+      await gradeCyclesService.delete(cycleId, grade.id);
 
       setCycles((prevCycles) =>
         prevCycles.map((cycle) =>
           cycle.id === cycleId
-            ? { ...cycle, grades: cycle.grades.filter((g) => g.id !== gradeId) }
+            ? { ...cycle, grades: cycle.grades.filter((g) => g.id !== grade.id) }
             : cycle
         )
       );
 
       toast.success('Grado eliminado exitosamente', {
         id: deletingToast,
-        description: `"${gradeName}" ha sido eliminado del ciclo`,
+        description: `"${grade.name}" ha sido eliminado del ciclo`,
         icon: <CheckCircle2 className="w-5 h-5" />,
         duration: 3000,
       });
+
+      // Cerrar el dialog
+      setDeleteDialog({ open: false, grade: null, cycleId: null, cycleName: '' });
     } catch (err: any) {
       const errorMessage = err.message || 'Error al eliminar';
       console.error('Error deleting:', err);
@@ -446,7 +473,7 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => handleDelete(cycle.id, grade.id, grade.name)}
+                                      onClick={() => handleDeleteClick(cycle, grade)}
                                       disabled={isDeleting}
                                       className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 ml-2 flex-shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity"
                                     >
@@ -473,6 +500,18 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
           </div>
         )}
       </div>
+
+      {/* Dialog de confirmación de eliminación */}
+      <DeleteGradeDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) =>
+          setDeleteDialog((prev) => ({ ...prev, open }))
+        }
+        grade={deleteDialog.grade}
+        cycleName={deleteDialog.cycleName}
+        onConfirm={handleConfirmDelete}
+        isDeleting={deletingId === `${deleteDialog.cycleId}-${deleteDialog.grade?.id}`}
+      />
     </TooltipProvider>
   );
 }
