@@ -10,8 +10,14 @@ import {
 } from '@/types/course-grades.types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { Plus, RefreshCw, Loader2 } from 'lucide-react';
+import { Plus, RefreshCw, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import CourseGradeFilters from './CourseGradeFilters';
 import CourseGradesGrid from './CourseGradesGrid';
 import CourseGradeForm from './CourseGradeForm';
@@ -51,7 +57,11 @@ export default function CourseGradesPageContent() {
       setData(result);
       calculateStats(result.data);
     } catch (error: any) {
-      toast.error(error.message || 'Error al cargar asignaciones');
+      toast.error('Error al cargar asignaciones', {
+        description: error.message || 'No se pudieron cargar las asignaciones',
+        icon: <XCircle className="w-5 h-5" />,
+        duration: 5000,
+      });
       setData({ data: [], meta: { page: 1, limit: 12, total: 0, totalPages: 0 } });
     } finally {
       setLoading(false);
@@ -88,6 +98,10 @@ export default function CourseGradesPageContent() {
       sortBy: 'courseId',
       sortOrder: 'asc',
     });
+    toast.success('Filtros eliminados', {
+      description: 'Mostrando todas las asignaciones',
+      icon: <CheckCircle2 className="w-5 h-5" />,
+    });
   };
 
   const handlePageChange = (newPage: number) => {
@@ -97,6 +111,10 @@ export default function CourseGradesPageContent() {
   const handleCreate = () => {
     setSelectedCourseGrade(null);
     setShowForm(true);
+    toast.info('Nueva asignación', {
+      description: 'Completa el formulario para asignar un curso a un grado',
+      icon: <Plus className="w-5 h-5" />,
+    });
   };
 
   const handleEdit = (courseGrade: CourseGradeDetail) => {
@@ -145,28 +163,44 @@ export default function CourseGradesPageContent() {
             Gestiona las asignaciones de cursos a grados escolares
           </p>
         </div>
-        <div className="flex gap-3">
-          <Button
-            onClick={loadData}
-            variant="outline"
-            disabled={loading}
-            className="border-gray-300 dark:border-gray-600"
-          >
-            {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="mr-2 h-4 w-4" />
-            )}
-            Actualizar
-          </Button>
-          <Button
-            onClick={handleCreate}
-            className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Asignación
-          </Button>
-        </div>
+        <TooltipProvider>
+          <div className="flex gap-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={loadData}
+                  variant="outline"
+                  disabled={loading}
+                  className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  {loading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  Actualizar
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Recargar todas las asignaciones</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handleCreate}
+                  className="bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nueva Asignación
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Crear una nueva asignación curso-grado</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       </div>
 
       {/* Stats */}

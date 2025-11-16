@@ -7,7 +7,13 @@ import { courseGradesService } from '@/services/course-grades.service';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Filter, X, ChevronDown, ChevronUp, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CourseGradeFiltersProps {
@@ -40,7 +46,11 @@ export default function CourseGradeFilters({
       setCourses(coursesData);
       setGrades(gradesData);
     } catch (error: any) {
-      toast.error(error.message || 'Error al cargar datos');
+      toast.error('Error al cargar datos', {
+        description: error.message || 'No se pudieron cargar cursos y grados',
+        icon: <XCircle className="w-5 h-5" />,
+        duration: 5000,
+      });
     } finally {
       setLoading(false);
     }
@@ -56,56 +66,71 @@ export default function CourseGradeFilters({
     filters.isCore !== undefined;
 
   return (
-    <Card className="border-gray-200 dark:border-gray-800">
-      {/* Header */}
-      <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/50 dark:to-gray-800/50 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/40">
-              <Filter className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-              Filtros de Búsqueda
-            </h3>
-            {hasActiveFilters && (
-              <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300">
-                {Object.keys(filters).filter(k => filters[k as keyof CourseGradesQuery]).length} activos
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {hasActiveFilters && (
-              <Button
-                onClick={onReset}
-                variant="ghost"
-                size="sm"
-                className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30"
-              >
-                <X className="h-4 w-4 mr-1" />
-                Limpiar
-              </Button>
-            )}
-            <Button
-              onClick={() => setShowFilters(!showFilters)}
-              variant="outline"
-              size="sm"
-              className="border-gray-300 dark:border-gray-600"
-            >
-              {showFilters ? (
-                <>
-                  <ChevronUp className="h-4 w-4 mr-1" />
-                  Ocultar
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4 mr-1" />
-                  Mostrar
-                </>
+    <TooltipProvider>
+      <Card className="border-2 border-gray-200 dark:border-gray-800 shadow-sm">
+        {/* Header */}
+        <CardHeader className="bg-gray-50 dark:bg-gray-900 border-b-2 border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 shadow-sm">
+                <Filter className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                Filtros de Búsqueda
+              </h3>
+              {hasActiveFilters && (
+                <Badge variant="secondary" className="bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                  {Object.keys(filters).filter(k => filters[k as keyof CourseGradesQuery]).length} activos
+                </Badge>
               )}
-            </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={onReset}
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Limpiar
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                    <p className="font-semibold">Eliminar todos los filtros</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => setShowFilters(!showFilters)}
+                    variant="outline"
+                    size="sm"
+                    className="border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    {showFilters ? (
+                      <>
+                        <ChevronUp className="h-4 w-4 mr-1" />
+                        Ocultar
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4 mr-1" />
+                        Mostrar
+                      </>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                  <p className="font-semibold">{showFilters ? 'Ocultar' : 'Mostrar'} opciones de filtrado</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
 
       {/* Filters Content */}
       {showFilters && (
@@ -219,5 +244,6 @@ export default function CourseGradeFilters({
         </CardContent>
       )}
     </Card>
+  </TooltipProvider>
   );
 }
