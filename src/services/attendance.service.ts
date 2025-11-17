@@ -8,7 +8,7 @@
  * Built with Axios + React Query
  */
 
-import { apiClient } from '@/config/api';
+import { api as apiClient } from '@/config/api';
 import {
   CreateAttendancePayload,
   BulkCreateAttendancePayload,
@@ -46,7 +46,6 @@ import {
 // ============================================================================
 
 const BASE_URL = '/api/attendance';
-const CONFIG_URL = '/api/attendance-config';
 
 // ============================================================================
 // ATTENDANCE RECORD OPERATIONS
@@ -341,114 +340,168 @@ export async function getJustifications(
 }
 
 // ============================================================================
-// CONFIGURATION
+// CONFIGURATION & HELPERS
 // ============================================================================
 
 /**
- * Get attendance statuses
- * GET /api/attendance-config/statuses
- * 
- * @returns List of available attendance statuses
+ * Get active cycle
+ * GET /api/attendance/cycle/active
+ *
+ * @returns Active school cycle
  */
-export async function getAttendanceStatuses(): Promise<AttendanceConfigurationResponse> {
-  const response = await apiClient.get<AttendanceConfigurationResponse>(
-    `${CONFIG_URL}/statuses`
-  );
-
+export async function getActiveCycle() {
+  const response = await apiClient.get<any>(`${BASE_URL}/cycle/active`);
   return response.data;
 }
 
 /**
- * Get grades and sections
- * GET /api/attendance-config/grades-sections
+ * Get grades from active cycle
+ * GET /api/attendance/cycle/active/grades
  *
- * @param schoolCycleId - Optional school cycle ID
+ * @returns List of grades for active cycle
+ */
+export async function getGradesFromActiveCycle(): Promise<any> {
+  const response = await apiClient.get<any>(`${BASE_URL}/cycle/active/grades`);
+  return response.data;
+}
+
+/**
+ * Get sections by grade
+ * GET /api/attendance/grades/:gradeId/sections
+ *
+ * @param gradeId - Grade ID
+ * @returns List of sections for the grade
+ */
+export async function getSectionsByGrade(gradeId: number): Promise<any> {
+  const response = await apiClient.get<any>(`${BASE_URL}/grades/${gradeId}/sections`);
+  return response.data;
+}
+
+/**
+ * Get grades and sections combined (for compatibility)
+ * Uses /api/attendance/cycle/active/grades
+ *
+ * Note: This function loads grades first, then loads ALL sections for all grades
  * @returns Grades and sections for selection
  */
-export async function getGradesAndSections(
-  schoolCycleId?: number
-): Promise<GradesAndSectionsResponse> {
+export async function getGradesAndSections(): Promise<GradesAndSectionsResponse> {
   try {
-    // Try the combined endpoint first
-    const response = await apiClient.get<GradesAndSectionsResponse>(
-      `${CONFIG_URL}/grades-sections`,
-      { params: { schoolCycleId } }
+    // Get grades from active cycle
+    const gradesData = await getGradesFromActiveCycle();
+
+    // Extract grade IDs to load sections
+    const grades = gradesData || [];
+    const gradeIds = grades.map((gc: any) => gc.grade?.id || gc.gradeId).filter(Boolean);
+
+    // Load sections for each grade in parallel
+    const sectionsPromises = gradeIds.map((gradeId: number) =>
+      getSectionsByGrade(gradeId).catch(() => [])
     );
 
-    // Check if response is successful
-    if (response.data?.success) {
-      return response.data;
-    }
+    const sectionsArrays = await Promise.all(sectionsPromises);
+    const sections = sectionsArrays.flat();
 
-    // If not successful or has validation errors, fall back to simple grades endpoint
-    console.warn('[getGradesAndSections] Combined endpoint failed, using fallback /api/grades');
-
-    const gradesResponse = await apiClient.get<{ success: boolean; data: any[] }>('/api/grades');
+    // Extract just the grade objects
+    const gradeObjects = grades.map((gc: any) => gc.grade || gc);
 
     return {
       success: true,
       data: {
-        grades: gradesResponse.data?.data || [],
-        sections: [], // Sections will be loaded separately when grade is selected
+        grades: gradeObjects,
+        sections: sections,
       },
-      message: 'Grades loaded successfully (fallback)',
+      message: 'Grades and sections loaded successfully',
     };
   } catch (error) {
     console.error('[getGradesAndSections] Error:', error);
-
-    // Last resort: try simple /api/grades endpoint
-    try {
-      const gradesResponse = await apiClient.get<{ success: boolean; data: any[] }>('/api/grades');
-
-      return {
-        success: true,
-        data: {
-          grades: gradesResponse.data?.data || [],
-          sections: [],
-        },
-        message: 'Grades loaded successfully (fallback)',
-      };
-    } catch (fallbackError) {
-      console.error('[getGradesAndSections] Fallback also failed:', fallbackError);
-      throw error; // Throw original error
-    }
+    throw error;
   }
 }
 
 /**
- * Get holidays
- * GET /api/attendance-config/holidays
- * 
- * @param bimesterId - Optional bimester ID
- * @returns List of holidays
+ * Get allowed attendance statuses for a role
+ * GET /api/attendance/status/allowed/role/:roleId
+ *
+ * @param roleId - Role ID
+ * @returns List of allowed attendance statuses
  */
-export async function getHolidays(
-  bimesterId?: number
-): Promise<HolidaysResponse> {
-  const response = await apiClient.get<HolidaysResponse>(
-    `${CONFIG_URL}/holidays`,
-    { params: { bimesterId } }
+export async function getAllowedAttendanceStatusesByRole(roleId: number) {
+  const response = await apiClient.get<any>(
+    `${BASE_URL}/status/allowed/role/${roleId}`
   );
-
   return response.data;
 }
 
 /**
- * Get complete attendance configuration
- * GET /api/attendance-config
- * 
- * @param schoolCycleId - Optional school cycle ID
- * @returns Complete configuration
+ * Get attendance statuses (uses role-based endpoint)
+ * Compatibility function - requires roleId from auth context
+ *
+ * @param roleId - Role ID from authenticated user
+ * @returns List of available attendance statuses
  */
-export async function getAttendanceConfig(
-  schoolCycleId?: number
-): Promise<AttendanceConfigurationResponse> {
-  const response = await apiClient.get<AttendanceConfigurationResponse>(
-    CONFIG_URL,
-    { params: { schoolCycleId } }
-  );
+export async function getAttendanceStatuses(roleId?: number): Promise<AttendanceConfigurationResponse> {
+  if (!roleId) {
+    throw new Error('roleId is required to fetch attendance statuses');
+  }
 
+  const response = await getAllowedAttendanceStatusesByRole(roleId);
+
+  return {
+    success: response.success || true,
+    data: {
+      attendanceStatuses: response.data || [],
+    },
+    message: response.message || 'Attendance statuses retrieved successfully',
+  };
+}
+
+/**
+ * Validate if date is a holiday
+ * GET /api/attendance/holiday/by-date
+ *
+ * @param bimesterId - Bimester ID
+ * @param date - Date to check (YYYY-MM-DD)
+ * @returns Holiday data or null
+ */
+export async function validateHolidayByDate(bimesterId: number, date: string) {
+  const response = await apiClient.get<any>(
+    `${BASE_URL}/holiday/by-date`,
+    { params: { bimesterId, date } }
+  );
   return response.data;
+}
+
+/**
+ * Get holidays (compatibility function)
+ * Note: Backend only has validation endpoint, not list endpoint
+ *
+ * @param bimesterId - Optional bimester ID
+ * @returns Empty array (endpoint not available in backend)
+ */
+export async function getHolidays(bimesterId?: number): Promise<HolidaysResponse> {
+  console.warn('[getHolidays] Backend does not have a list holidays endpoint. Use validateHolidayByDate instead.');
+
+  return {
+    success: true,
+    data: [],
+    message: 'Holidays list endpoint not available. Use validateHolidayByDate for specific dates.',
+  };
+}
+
+/**
+ * Get attendance configuration
+ * GET /api/attendance/config/active
+ *
+ * @returns Active attendance configuration
+ */
+export async function getAttendanceConfig(): Promise<AttendanceConfigurationResponse> {
+  const response = await apiClient.get<any>(`${BASE_URL}/config/active`);
+
+  return {
+    success: response.success || true,
+    data: response.data || {},
+    message: response.message || 'Config retrieved successfully',
+  };
 }
 
 // ============================================================================
@@ -516,8 +569,13 @@ export const attendanceQueries = {
   getAttendanceHistory,
   getAttendanceReport,
   getSectionAttendanceStats,
-  getAttendanceStatuses,
+  getActiveCycle,
+  getGradesFromActiveCycle,
+  getSectionsByGrade,
   getGradesAndSections,
+  getAllowedAttendanceStatusesByRole,
+  getAttendanceStatuses,
+  validateHolidayByDate,
   getHolidays,
   getAttendanceConfig,
 };

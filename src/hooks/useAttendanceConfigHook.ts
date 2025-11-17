@@ -39,23 +39,27 @@ export const configKeys = {
 
 /**
  * Hook to get attendance statuses
+ * Note: Now requires roleId - uses mock value for now
+ * TODO: Get roleId from auth context
  */
-export function useAttendanceStatuses() {
+export function useAttendanceStatuses(roleId?: number) {
   return useQuery({
-    queryKey: configKeys.statuses(),
-    queryFn: getAttendanceStatuses,
+    queryKey: [...configKeys.statuses(), roleId] as const,
+    queryFn: () => getAttendanceStatuses(roleId || 1), // Default roleId = 1 (temporary)
     staleTime: 1000 * 60 * 60, // 1 hour
     gcTime: 1000 * 60 * 60 * 24, // 24 hours
+    enabled: !!roleId || true, // Enable by default with fallback roleId
   });
 }
 
 /**
  * Hook to get grades and sections
+ * Note: schoolCycleId parameter is ignored - uses active cycle automatically
  */
-export function useGradesAndSections(schoolCycleId?: number) {
+export function useGradesAndSections(_schoolCycleId?: number) {
   return useQuery({
-    queryKey: [...configKeys.gradesAndSections(), schoolCycleId] as const,
-    queryFn: () => getGradesAndSections(schoolCycleId),
+    queryKey: configKeys.gradesAndSections(),
+    queryFn: () => getGradesAndSections(),
     staleTime: 1000 * 60 * 60,
     gcTime: 1000 * 60 * 60 * 24,
   });
@@ -63,6 +67,7 @@ export function useGradesAndSections(schoolCycleId?: number) {
 
 /**
  * Hook to get holidays
+ * Note: Backend only has validation endpoint, returns empty array
  */
 export function useHolidays(bimesterId?: number) {
   return useQuery({
@@ -75,11 +80,12 @@ export function useHolidays(bimesterId?: number) {
 
 /**
  * Hook to get complete configuration
+ * Note: schoolCycleId parameter is ignored - uses active config automatically
  */
-export function useAttendanceConfiguration(schoolCycleId?: number) {
+export function useAttendanceConfiguration(_schoolCycleId?: number) {
   return useQuery({
-    queryKey: [...configKeys.complete(), schoolCycleId] as const,
-    queryFn: () => getAttendanceConfig(schoolCycleId),
+    queryKey: configKeys.complete(),
+    queryFn: () => getAttendanceConfig(),
     staleTime: 1000 * 60 * 60,
     gcTime: 1000 * 60 * 60 * 24,
   });
@@ -182,9 +188,10 @@ export function useStatusesOnly() {
 /**
  * Hook to get only grades and sections
  * Useful for selectors
+ * Note: schoolCycleId parameter is ignored - uses active cycle automatically
  */
-export function useGradesAndSectionsOnly(schoolCycleId?: number) {
-  return useGradesAndSections(schoolCycleId);
+export function useGradesAndSectionsOnly(_schoolCycleId?: number) {
+  return useGradesAndSections();
 }
 
 /**
