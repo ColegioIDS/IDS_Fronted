@@ -40,11 +40,19 @@ export function AttendanceStatusProvider({ children }: { children: React.ReactNo
     try {
       console.log('[AttendanceStatusContext] 🔄 Cargando estados de asistencia...');
 
+      // Try the attendance-permissions endpoint first as a fallback
+      // This endpoint seems to have less strict validation
       const response = await api.get<{
         success: boolean;
         data: AttendanceStatus[];
         message?: string;
-      }>('/api/attendance-config/statuses');
+      }>('/api/attendance-permissions/statuses/list/all', {
+        params: {
+          page: 1,
+          limit: 100,
+          isActive: true
+        }
+      });
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Error al cargar estados de asistencia');
@@ -59,6 +67,9 @@ export function AttendanceStatusProvider({ children }: { children: React.ReactNo
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       console.error('[AttendanceStatusContext] ❌ Error:', errorMessage);
       setError(errorMessage);
+
+      // If that fails, provide helpful error message
+      setError('No se pudieron cargar los estados de asistencia. Verifique que el backend esté configurado correctamente.');
     } finally {
       setLoading(false);
     }
