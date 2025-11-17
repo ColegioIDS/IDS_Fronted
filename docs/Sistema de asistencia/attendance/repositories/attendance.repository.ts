@@ -483,4 +483,81 @@ export class AttendanceRepository {
       },
     }));
   }
+
+  /**
+   * Find all holidays for a specific bimester
+   */
+  async findHolidaysByBimester(bimesterId: number) {
+    return this.prisma.holiday.findMany({
+      where: {
+        bimesterId,
+      },
+      include: {
+        bimester: {
+          select: {
+            id: true,
+            name: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+  }
+
+  /**
+   * Find all holidays for a specific cycle
+   */
+  async findHolidaysByCycle(cycleId: number) {
+    return this.prisma.holiday.findMany({
+      where: {
+        bimester: {
+          cycleId,
+        },
+      },
+      include: {
+        bimester: {
+          select: {
+            id: true,
+            name: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+  }
+
+  /**
+   * Find active bimester by date
+   */
+  async findActiveBimesterByDate(date: Date) {
+    return this.prisma.bimester.findFirst({
+      where: {
+        startDate: {
+          lte: date,
+        },
+        endDate: {
+          gte: date,
+        },
+        isActive: true,
+      },
+      include: {
+        cycle: {
+          select: {
+            id: true,
+            name: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+      },
+    });
+  }
 }

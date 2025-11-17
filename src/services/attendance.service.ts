@@ -381,36 +381,41 @@ export async function getSectionsByGrade(gradeId: number): Promise<any> {
  * Get grades and sections combined (for compatibility)
  * Uses /api/attendance/cycle/active/grades
  *
- * Note: This function loads grades first, then loads ALL sections for all grades
- * @returns Grades and sections for selection
+ * ⚠️ IMPORTANTE: Esta función ahora SOLO carga grados.
+ * Las secciones deben cargarse bajo demanda cuando el usuario selecciona un grado
+ * usando getSectionsByGrade(gradeId)
+ *
+ * @returns Grades and empty sections for selection
  */
 export async function getGradesAndSections(): Promise<GradesAndSectionsResponse> {
   try {
-    // Get grades from active cycle
+    // Get grades from active cycle ONLY - don't load sections yet
     const gradesData = await getGradesFromActiveCycle();
 
-    // Extract grade IDs to load sections
-    const grades = gradesData || [];
-    const gradeIds = grades.map((gc: any) => gc.grade?.id || gc.gradeId).filter(Boolean);
-
-    // Load sections for each grade in parallel
-    const sectionsPromises = gradeIds.map((gradeId: number) =>
-      getSectionsByGrade(gradeId).catch(() => [])
-    );
-
-    const sectionsArrays = await Promise.all(sectionsPromises);
-    const sections = sectionsArrays.flat();
+    // Extract grade IDs but DON'T load sections
+    // Handle different response formats: could be array, object with data property, or null
+    let grades: any[] = [];
+    
+    if (Array.isArray(gradesData)) {
+      grades = gradesData;
+    } else if (gradesData?.data && Array.isArray(gradesData.data)) {
+      grades = gradesData.data;
+    } else if (gradesData && typeof gradesData === 'object') {
+      // If it's an object but not an array, try to extract grade array
+      grades = Array.isArray(gradesData) ? gradesData : [];
+    }
 
     // Extract just the grade objects
     const gradeObjects = grades.map((gc: any) => gc.grade || gc);
 
+    // Return grades with EMPTY sections - sections will be loaded on demand
     return {
       success: true,
       data: {
         grades: gradeObjects,
-        sections: sections,
+        sections: [], // Empty - load on demand
       },
-      message: 'Grades and sections loaded successfully',
+      message: 'Grades loaded successfully',
     };
   } catch (error) {
     console.error('[getGradesAndSections] Error:', error);
@@ -447,12 +452,15 @@ export async function getAttendanceStatuses(roleId?: number): Promise<Attendance
   const response = await getAllowedAttendanceStatusesByRole(roleId);
 
   return {
-    success: response.success || true,
+    success: true,
     data: {
+      grades: [],
+      sections: [],
+      holidays: [],
       attendanceStatuses: response.data || [],
     },
-    message: response.message || 'Attendance statuses retrieved successfully',
-  };
+    message: 'Attendance statuses retrieved successfully',
+  } as AttendanceConfigurationResponse;
 }
 
 /**
@@ -496,11 +504,17 @@ export async function getHolidays(bimesterId?: number): Promise<HolidaysResponse
  */
 export async function getAttendanceConfig(): Promise<AttendanceConfigurationResponse> {
   const response = await apiClient.get<any>(`${BASE_URL}/config/active`);
+  const data = response.data;
 
   return {
-    success: response.success || true,
-    data: response.data || {},
-    message: response.message || 'Config retrieved successfully',
+    success: data?.success || true,
+    data: data?.data || {
+      grades: [],
+      sections: [],
+      holidays: [],
+      attendanceStatuses: [],
+    },
+    message: data?.message || 'Config retrieved successfully',
   };
 }
 

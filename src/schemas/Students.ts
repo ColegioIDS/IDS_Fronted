@@ -19,16 +19,16 @@ export const GenderSchema = z.enum(['Masculino', 'Femenino', 'Otro'], {
 export const RelationshipTypeSchema = z.enum(['Madre', 'Padre', 'Tutor', 'Abuelo', 'Tío', 'Otro']);
 
 export const EnrollmentStatusSchema = z.enum(
-  ['active', 'inactive', 'graduated', 'transferred'],
+  ['ACTIVE', 'INACTIVE', 'GRADUATED', 'TRANSFERRED'],
   { errorMap: () => ({ message: "Estado de matrícula inválido" }) }
-).default('active');
+).default('ACTIVE');
 
 // ✅ NUEVO: Schema para enrollment
 export const EnrollmentDataSchema = z.object({
   cycleId: z.number().int().positive("Debe seleccionar un ciclo escolar válido"),
   gradeId: z.number().int().positive("Debe seleccionar un grado válido"),
   sectionId: z.number().int().positive("Debe seleccionar una sección válida"),
-  status: z.enum(['active', 'inactive', 'graduated', 'transferred']),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'GRADUATED', 'TRANSFERRED']),
 });
 
 // === Sub-esquemas ===
@@ -222,7 +222,7 @@ export const ExtendedStudentSchema = createBaseStudentSchema().extend({
     cycleId: z.number().int().positive("Debe seleccionar un ciclo escolar válido").nullable().optional(),
     gradeId: z.number().int().positive("Debe seleccionar un grado válido").nullable().optional(),
     sectionId: z.number().int().positive("Debe seleccionar una sección válida").nullable().optional(),
-    status: z.enum(['active', 'inactive', 'graduated', 'transferred']),
+    status: z.enum(['ACTIVE', 'INACTIVE', 'GRADUATED', 'TRANSFERRED']),
   }).refine(
     (data) => data.cycleId && data.gradeId && data.sectionId,
     { message: "Ciclo, Grado y Sección son obligatorios", path: ["cycleId"] }
@@ -278,7 +278,7 @@ export const defaultValues: StudentFormValues = {
     cycleId: null,
     gradeId: null,
     sectionId: null,
-    status: 'active' as 'active' | 'inactive' | 'graduated' | 'transferred',
+    status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE' | 'GRADUATED' | 'TRANSFERRED',
   },
   
   address: {

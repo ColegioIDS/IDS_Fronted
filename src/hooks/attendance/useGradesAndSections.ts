@@ -55,12 +55,16 @@ export function useGradesAndSections(): UseGradesAndSectionsReturn {
     setLoading(true);
     setError(null);
     try {
+      console.log('[fetchSectionsByGrade] Loading sections for gradeId:', gradeId);
       const data = await attendanceConfigurationService.getSectionsByGrade(gradeId);
+      console.log('[fetchSectionsByGrade] Received data:', data);
       setSections(data);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al cargar secciones';
       setError(message);
-      console.error('fetchSectionsByGrade error:', err);
+      console.error('[fetchSectionsByGrade] error:', err);
+      // Set empty sections on error, don't keep disabled state
+      setSections([]);
     } finally {
       setLoading(false);
     }

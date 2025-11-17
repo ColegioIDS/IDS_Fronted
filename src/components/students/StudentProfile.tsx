@@ -136,8 +136,8 @@ export default function StudentProfile({ studentId }: StudentProfileProps) {
   const age = calculateAge();
 
   // Obtener enrollment activo
-  const activeEnrollment = currentStudent.enrollments?.find(e => e.status === 'active');
-  const isActive = activeEnrollment?.status === 'active';
+  const activeEnrollment = currentStudent.enrollments?.find(e => e.status === 'ACTIVE');
+  const isActive = activeEnrollment?.status === 'ACTIVE';
 
   // Función para iconos de género
   const GenderIcon = ({ gender }: { gender?: string }) => {
@@ -405,9 +405,9 @@ export default function StudentProfile({ studentId }: StudentProfileProps) {
                 <div>
                   <p className="text-sm text-muted-foreground">Estado Académico</p>
                   <p className="font-semibold text-sm">
-                    {activeEnrollment?.status === 'active' ? 'Activo' :
-                     activeEnrollment?.status === 'graduated' ? 'Graduado' :
-                     activeEnrollment?.status === 'transferred' ? 'Transferido' : 'Inactivo'}
+                    {activeEnrollment?.status === 'ACTIVE' ? 'Activo' :
+                     activeEnrollment?.status === 'GRADUATED' ? 'Graduado' :
+                     activeEnrollment?.status === 'TRANSFERRED' ? 'Transferido' : 'Inactivo'}
                   </p>
                   {activeEnrollment?.cycle && (
                     <p className="text-xs text-muted-foreground">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, BarChart3, Info } from 'lucide-react';
@@ -11,6 +11,7 @@ import {
   useAttendancePermissions,
   useAttendanceUtils,
 } from '@/hooks/attendance-hooks';
+import { useGradesAndSections } from '@/hooks/attendance/useGradesAndSections';
 import AttendanceHeader from './header/AttendanceHeader';
 import AttendanceTable from './table/AttendanceTable';
 import EmptyState from './states/EmptyState';
@@ -37,6 +38,27 @@ export default function AttendanceManager({
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [selectedGradeId, setSelectedGradeId] = useState<number | null>(null);
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
+
+  // Use grades and sections hook to load sections on demand
+  const { sections: loadedSections, fetchSectionsByGrade } = useGradesAndSections();
+
+  // Handle grade change - reset section and load sections for the grade
+  const handleGradeChange = useCallback(
+    async (gradeId: number | null) => {
+      setSelectedGradeId(gradeId);
+      setSelectedSectionId(null); // Reset section when grade changes
+
+      // Load sections for the selected grade if gradeId is provided
+      if (gradeId) {
+        try {
+          await fetchSectionsByGrade(gradeId);
+        } catch (err) {
+          console.error('Error loading sections for grade:', err);
+        }
+      }
+    },
+    [fetchSectionsByGrade]
+  );
 
   // Load attendance data using composite hook
   const {
@@ -91,18 +113,28 @@ export default function AttendanceManager({
     return <LoadingState />;
   }
 
-  if (!history || history.length === 0) {
+  // Extract data array from PaginatedAttendanceResponse
+  let historyData: any[] = [];
+  if (history && typeof history === 'object' && 'data' in history) {
+    historyData = Array.isArray(history.data) ? history.data : [];
+  } else if (Array.isArray(history)) {
+    historyData = history;
+  }
+
+  if (!historyData || historyData.length === 0) {
     return <EmptyState message="No hay registros de asistencia para esta fecha" />;
   }
 
   // Filter data based on selection
   const filteredData = useMemo(() => {
-    return history.filter((record: any) => {
+    return historyData.filter((record: any) => {
       if (selectedGradeId && record.grade?.id !== selectedGradeId) return false;
       if (selectedSectionId && record.section?.id !== selectedSectionId) return false;
       return true;
     });
-  }, [history, selectedGradeId, selectedSectionId]);
+  }, [historyData, selectedGradeId, selectedSectionId]);
+
+  console.log('[AttendanceManager] loadedSections:', loadedSections);
 
   return (
     <div className="space-y-4 pb-4">
@@ -117,9 +149,10 @@ export default function AttendanceManager({
         selectedGradeId={selectedGradeId}
         selectedSectionId={selectedSectionId}
         onDateChange={setSelectedDate}
-        onGradeChange={setSelectedGradeId}
+        onGradeChange={handleGradeChange}
         onSectionChange={setSelectedSectionId}
         readOnly={readOnly}
+        sections={loadedSections}
       />
 
       {/* Main attendance table */}

@@ -76,9 +76,9 @@ export function StudentCard({
   const canChangeStatus = hasPermission('student', 'change-status')
 
   // Obtener el enrollment activo del estudiante
-  const activeEnrollment = student.enrollments?.find(e => e.status === 'active') || student.enrollments?.[0]
-  const enrollmentStatus = activeEnrollment?.status || 'inactive'
-  const isActive = enrollmentStatus === 'active'
+  const activeEnrollment = student.enrollments?.find(e => e.status === 'ACTIVE') || student.enrollments?.[0]
+  const enrollmentStatus = activeEnrollment?.status || 'INACTIVE'
+  const isActive = enrollmentStatus === 'ACTIVE'
 
   // Obtener información del grado y sección actual (usando IDs por ahora)
   const currentGradeId = activeEnrollment?.gradeId

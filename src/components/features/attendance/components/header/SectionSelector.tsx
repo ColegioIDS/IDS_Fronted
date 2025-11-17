@@ -8,13 +8,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAttendanceConfig } from '@/hooks/attendance-hooks';
+import { Section } from '@/types/attendance.types';
 
 interface SectionSelectorProps {
   gradeId: number;
   selectedSectionId: number | null;
   onSectionChange: (sectionId: number | null) => void;
   disabled?: boolean;
+  sections?: Section[];
 }
 
 export default function SectionSelector({
@@ -22,14 +23,14 @@ export default function SectionSelector({
   selectedSectionId,
   onSectionChange,
   disabled = false,
+  sections = [],
 }: SectionSelectorProps) {
-  const {
-    sections = [],
-    isLoading,
-  } = useAttendanceConfig();
-
   const gradeSections = useMemo(() => {
-    return sections.filter((section: any) => section.gradeId === gradeId);
+    console.log('[SectionSelector] Total sections received:', sections);
+    console.log('[SectionSelector] Current gradeId:', gradeId);
+    const filtered = sections.filter((section: any) => section.gradeId === gradeId);
+    console.log('[SectionSelector] Filtered sections for gradeId:', filtered);
+    return filtered;
   }, [sections, gradeId]);
 
   return (
@@ -40,7 +41,7 @@ export default function SectionSelector({
       <Select
         value={selectedSectionId ? String(selectedSectionId) : '0'}
         onValueChange={(value) => onSectionChange(value === '0' ? null : parseInt(value))}
-        disabled={disabled || isLoading || gradeSections.length === 0}
+        disabled={disabled || gradeSections.length === 0}
       >
         <SelectTrigger>
           <SelectValue placeholder="Selecciona una sección" />

@@ -809,5 +809,129 @@ export class AttendanceController {
       message: 'Allowed attendance statuses',
     };
   }
+
+  /**
+   * GET /api/attendance/holidays
+   *
+   * Obtiene la lista de días festivos (holidays) para un bimestre específico
+   * o todos los holidays del ciclo activo si no se proporciona bimesterId.
+   *
+   * @param bimesterId - ID del bimestre (opcional)
+   * @returns Array de holidays ordenados por fecha
+   * @throws NotFoundException - Si no hay holidays
+   * @throws BadRequestException - Si bimesterId es inválido
+   *
+   * @example
+   * // Obtener todos los holidays del ciclo activo
+   * GET /api/attendance/holidays
+   *
+   * // Obtener holidays de un bimestre específico
+   * GET /api/attendance/holidays?bimesterId=3
+   */
+  @Get('holidays')
+  @HttpCode(HttpStatus.OK)
+  @Permissions('attendance', 'read')
+  async getHolidays(
+    @Query('bimesterId') bimesterId?: string,
+  ) {
+    const parsedBimesterId = bimesterId ? parseInt(bimesterId, 10) : undefined;
+
+    if (bimesterId && isNaN(parsedBimesterId!)) {
+      throw new BadRequestException('Invalid bimesterId');
+    }
+
+    const holidays = await this.attendanceService.getHolidays(parsedBimesterId);
+
+    return {
+      success: true,
+      data: holidays,
+      count: holidays.length,
+      message: 'Holidays retrieved successfully',
+    };
+  }
+
+  /**
+   * GET /api/attendance/bimester/active
+   *
+   * Obtiene el bimestre activo actual basándose en la fecha de hoy.
+   * Útil para inicializar formularios y UI.
+   *
+   * @returns Bimester activo con información del ciclo
+   * @throws NotFoundException - Si no hay bimestre activo
+   *
+   * @example
+   * GET /api/attendance/bimester/active
+   *
+   * Response:
+   * {
+   *   "success": true,
+   *   "data": {
+   *     "id": 3,
+   *     "name": "Tercer Bimestre",
+   *     "startDate": "2025-09-01T00:00:00.000Z",
+   *     "endDate": "2025-10-31T23:59:59.000Z",
+   *     "cycle": { ... }
+   *   },
+   *   "message": "Active bimester found"
+   * }
+   */
+  @Get('bimester/active')
+  @HttpCode(HttpStatus.OK)
+  @Permissions('attendance', 'read')
+  async getActiveBimester() {
+    const bimester = await this.attendanceService.getActiveBimester();
+
+    return {
+      success: true,
+      data: bimester,
+      message: 'Active bimester found',
+    };
+  }
+
+  /**
+   * GET /api/attendance/enrollment/section/:sectionId/students
+   *
+   * Obtiene todos los estudiantes matriculados (enrollments) en una sección
+   * específica para el ciclo escolar activo.
+   * Versión simplificada sin filtro de fecha.
+   *
+   * @param sectionId - ID de la sección
+   * @param includeInactive - Incluir estudiantes inactivos (default: false)
+   * @returns Array de enrollments con detalles de estudiante y sección
+   * @throws NotFoundException - Si la sección no existe o sin estudiantes
+   * @throws BadRequestException - Si sectionId es inválido
+   *
+   * @example
+   * // Solo estudiantes activos
+   * GET /api/attendance/enrollment/section/1/students
+   *
+   * // Incluir estudiantes inactivos
+   * GET /api/attendance/enrollment/section/1/students?includeInactive=true
+   */
+  @Get('enrollment/section/:sectionId/students')
+  @HttpCode(HttpStatus.OK)
+  @Permissions('attendance', 'read')
+  async getEnrollmentsBySection(
+    @Param('sectionId') sectionId: string,
+    @Query('includeInactive') includeInactive?: string,
+  ) {
+    const parsedSectionId = parseInt(sectionId, 10);
+
+    if (isNaN(parsedSectionId)) {
+      throw new BadRequestException('Invalid sectionId');
+    }
+
+    const enrollments = await this.attendanceService.getEnrollmentsBySection(
+      parsedSectionId,
+      includeInactive === 'true',
+    );
+
+    return {
+      success: true,
+      data: enrollments,
+      count: enrollments.length,
+      message: 'Enrollments retrieved successfully',
+    };
+  }
 }
 

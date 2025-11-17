@@ -26,17 +26,22 @@ export const attendanceConfigurationService = {
    */
   async getGrades(query?: ConfigurationQuery): Promise<Grade[]> {
     try {
-      const params = new URLSearchParams();
-      if (query?.includeInactive) params.append('includeInactive', 'true');
-
-      const url = `${BASE_URL}/grades${params.toString() ? '?' + params.toString() : ''}`;
-      const response = await api.get<{ success: boolean; data: Grade[]; message?: string }>(url);
+      // Use the attendance API endpoint that returns grades from active cycle
+      const url = `/api/attendance/cycle/active/grades`;
+      console.log('[attendanceConfigurationService] getGrades URL:', url);
+      const response = await api.get<{ success: boolean; data: any[]; message?: string }>(url);
+      console.log('[attendanceConfigurationService] getGrades response:', response.data);
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Error al cargar grados');
       }
 
-      return response.data.data || [];
+      // Extract grade objects from the response
+      // The API returns array of objects with {grade, ...} structure
+      const gradesData = response.data.data || [];
+      const grades = gradesData.map((item: any) => item.grade || item);
+
+      return grades;
     } catch (error) {
       console.error('Error loading grades:', error);
       throw error;
@@ -50,8 +55,10 @@ export const attendanceConfigurationService = {
    */
   async getSectionsByGrade(gradeId: number): Promise<Section[]> {
     try {
-      const url = `${BASE_URL}/sections/${gradeId}`;
+      const url = `/api/attendance/grades/${gradeId}/sections`;
+      console.log('[attendanceConfigurationService] getSectionsByGrade URL:', url);
       const response = await api.get<{ success: boolean; data: Section[]; message?: string }>(url);
+      console.log('[attendanceConfigurationService] getSectionsByGrade response:', response.data);
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Error al cargar secciones');
@@ -66,13 +73,12 @@ export const attendanceConfigurationService = {
 
   /**
    * Obtener estudiantes matriculados en una sección
-   * @param gradeId ID del grado
    * @param sectionId ID de la sección
-   * @returns Array de estudiantes con datos de matrícula
+   * @returns Array de estudiantes con datos de matrícula (vacío si no hay)
    */
-  async getStudentsBySection(gradeId: number, sectionId: number): Promise<any[]> {
+  async getStudentsBySection(sectionId: number): Promise<any[]> {
     try {
-      const url = `${BASE_URL}/students/${gradeId}/${sectionId}`;
+      const url = `/api/attendance/enrollment/section/${sectionId}/students`;
       console.log('[AttendanceConfig] 🔍 Llamando endpoint:', url);
 
       const response = await api.get<{ success: boolean; data: any[]; message?: string }>(url);
@@ -80,15 +86,31 @@ export const attendanceConfigurationService = {
       console.log('[AttendanceConfig] ✅ Response recibido:', response.status, response.data);
 
       if (!response.data?.success) {
+        // 404 es OK - significa que no hay estudiantes, no es un error
+        if (response.status === 404) {
+          console.log(`[AttendanceConfig] ⓘ Sin estudiantes para sección ${sectionId}`);
+          return [];
+        }
         throw new Error(response.data?.message || 'Error al cargar estudiantes');
       }
 
-      console.log(`[AttendanceConfig] 📊 Estudiantes cargados para grado ${gradeId}, sección ${sectionId}:`, response.data.data?.length || 0, 'estudiantes');
+      console.log(
+        `[AttendanceConfig] 📊 Estudiantes cargados para sección ${sectionId}:`,
+        response.data.data?.length || 0,
+        'estudiantes'
+      );
 
       return response.data.data || [];
-    } catch (error) {
-      console.error(`[AttendanceConfig] ❌ Error loading students for grade ${gradeId}, section ${sectionId}:`, error);
-      throw error;
+    } catch (error: any) {
+      // If it's a 404, it's not really an error - just no students
+      if (error.response?.status === 404) {
+        console.log(`[AttendanceConfig] ⓘ Sin estudiantes para sección ${sectionId}`);
+        return [];
+      }
+
+      console.error(`[AttendanceConfig] ❌ Error loading students for section ${sectionId}:`, error);
+      // Return empty array instead of throwing, so UI doesn't break
+      return [];
     }
   },
 
@@ -98,18 +120,24 @@ export const attendanceConfigurationService = {
    */
   async getGradesAndSections(query?: ConfigurationQuery): Promise<GradesAndSectionsResponse> {
     try {
-      const params = new URLSearchParams();
-      if (query?.includeInactive) params.append('includeInactive', 'true');
-      if (query?.schoolCycleId) params.append('schoolCycleId', query.schoolCycleId.toString());
+      // Get grades from active cycle
+      const gradesUrl = '/api/attendance/cycle/active/grades';
+      const gradesResponse = await api.get<{ success: boolean; data: any[]; message?: string }>(gradesUrl);
 
-      const url = `${BASE_URL}/grades-sections${params.toString() ? '?' + params.toString() : ''}`;
-      const response = await api.get<GradesAndSectionsResponse>(url);
-
-      if (!response.data?.success) {
-        throw new Error(response.data?.message || 'Error al cargar configuración');
+      if (!gradesResponse.data?.success) {
+        throw new Error(gradesResponse.data?.message || 'Error al cargar grados');
       }
 
-      return response.data;
+      const gradesData = gradesResponse.data.data || [];
+      const grades = gradesData.map((item: any) => item.grade || item);
+
+      return {
+        success: true,
+        data: {
+          grades,
+          sections: [],
+        },
+      };
     } catch (error) {
       console.error('Error loading grades and sections:', error);
       throw error;
@@ -122,12 +150,11 @@ export const attendanceConfigurationService = {
    */
   async getHolidays(query?: ConfigurationQuery): Promise<Holiday[]> {
     try {
-      const params = new URLSearchParams();
-      if (query?.schoolCycleId) params.append('schoolCycleId', query.schoolCycleId.toString());
-      if (query?.includeInactive) params.append('includeInactive', 'true');
-
-      const url = `${BASE_URL}/holidays${params.toString() ? '?' + params.toString() : ''}`;
+      const url = '/api/attendance/holidays';
+      console.log('[AttendanceConfig] getHolidays URL:', url);
       const response = await api.get<{ success: boolean; data: Holiday[]; message?: string }>(url);
+
+      console.log('[AttendanceConfig] getHolidays response:', response.data);
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Error al cargar días festivos');
@@ -147,10 +174,13 @@ export const attendanceConfigurationService = {
    */
   async getHolidayByDate(date: string): Promise<Holiday | null> {
     try {
-      const url = `${BASE_URL}/holidays/by-date`;
+      const url = `/api/attendance/holiday/by-date`;
+      console.log('[AttendanceConfig] getHolidayByDate URL:', url, 'date:', date);
       const response = await api.get<{ success: boolean; data: Holiday | null }>(url, {
         params: { date },
       });
+
+      console.log('[AttendanceConfig] getHolidayByDate response:', response.data);
 
       if (!response.data?.success) {
         return null;
@@ -160,55 +190,6 @@ export const attendanceConfigurationService = {
     } catch (error) {
       console.error(`Error checking holiday for date ${date}:`, error);
       return null;
-    }
-  },
-
-  /**
-   * Obtener próximos días festivos
-   * @param fromDate Fecha inicial (ISO string)
-   * @param daysAhead Cantidad de días a verificar
-   * @returns Array de próximos días festivos
-   */
-  async getUpcomingHolidays(fromDate: string, daysAhead: number = 30): Promise<Holiday[]> {
-    try {
-      const url = `${BASE_URL}/holidays/upcoming`;
-      const response = await api.get<{ success: boolean; data: Holiday[]; message?: string }>(url, {
-        params: { fromDate, daysAhead },
-      });
-
-      if (!response.data?.success) {
-        throw new Error(response.data?.message || 'Error al cargar próximos días festivos');
-      }
-
-      return response.data.data || [];
-    } catch (error) {
-      console.error('Error loading upcoming holidays:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Obtener configuración completa del sistema
-   * @returns Grados, secciones, días festivos y ciclos
-   */
-  async getCompleteConfiguration(query?: ConfigurationQuery): Promise<AttendanceConfigurationResponse> {
-    try {
-      const params = new URLSearchParams();
-      if (query?.schoolCycleId) params.append('schoolCycleId', query.schoolCycleId.toString());
-      if (query?.bimesterId) params.append('bimesterId', query.bimesterId.toString());
-      if (query?.includeInactive) params.append('includeInactive', 'true');
-
-      const url = `${BASE_URL}${params.toString() ? '?' + params.toString() : ''}`;
-      const response = await api.get<AttendanceConfigurationResponse>(url);
-
-      if (!response.data?.success) {
-        throw new Error(response.data?.message || 'Error al cargar configuración completa');
-      }
-
-      return response.data;
-    } catch (error) {
-      console.error('Error loading complete configuration:', error);
-      throw error;
     }
   },
 

@@ -51,7 +51,7 @@ export const StudentCreateForm: React.FC = () => {
         // Establecer ciclo activo
         if (data.activeCycle) {
           form.setValue('enrollment.cycleId', data.activeCycle.id);
-          form.setValue('enrollment.status', 'active');
+          form.setValue('enrollment.status', 'ACTIVE');
         }
       } catch (err: any) {
         setError(err.message || 'Error al cargar datos de enrollment');

@@ -45,7 +45,7 @@ export interface SearchFilters {
   gradeId?: number;
   sectionId?: number;
   gender?: string;
-  status?: 'active' | 'inactive' | 'graduated' | 'transferred';
+  status?: 'ACTIVE' | 'INACTIVE' | 'GRADUATED' | 'TRANSFERRED';
   dateFrom?: string;
   dateTo?: string;
 }

@@ -76,7 +76,7 @@ export function StudentForm({ isEditMode = false, studentId }: StudentFormProps)
   useEffect(() => {
     if (enrollmentData?.activeCycle && !isEditMode) {
       form.setValue('enrollment.cycleId', enrollmentData.activeCycle.id);
-      form.setValue('enrollment.status', 'active');
+      form.setValue('enrollment.status', 'ACTIVE');
     }
   }, [enrollmentData, isEditMode, form]);
 
@@ -165,21 +165,21 @@ export function StudentForm({ isEditMode = false, studentId }: StudentFormProps)
         }) || [],
 
         emergencyContacts: currentStudent.emergencyContacts?.map(contact => ({
-          name: contact.name,
-          relationship: contact.relationship,
+          name: contact.name || '',
+          relationship: contact.relationship || '',
           phone: contact.phone || '',
           priority: contact.priority || 1,
         })) || [],
 
         authorizedPersons: currentStudent.authorizedPersons?.map(person => ({
-          name: person.name,
-          relationship: person.relationship,
+          name: person.name || '',
+          relationship: person.relationship || '',
           phone: person.phone || '',
         })) || [],
 
         siblings: currentStudent.siblings?.map(sibling => ({
-          name: sibling.name,
-          age: sibling.age,
+          name: sibling.name || '',
+          age: sibling.age || 0,
           gender: (sibling.gender === 'Masculino' || sibling.gender === 'Femenino' || sibling.gender === 'Otro') 
             ? sibling.gender 
             : undefined,
@@ -210,7 +210,7 @@ export function StudentForm({ isEditMode = false, studentId }: StudentFormProps)
           cycleId: currentStudent.enrollments[0].cycleId,
           gradeId: currentStudent.enrollments[0].section?.gradeId || 0,
           sectionId: currentStudent.enrollments[0].sectionId,
-          status: currentStudent.enrollments[0].status as "active" | "graduated" | "transferred" | "inactive" | undefined,
+          status: currentStudent.enrollments[0].status as "ACTIVE" | "GRADUATED" | "TRANSFERRED" | "INACTIVE" | undefined,
         } : {
           cycleId: 0,
           gradeId: 0,
@@ -271,10 +271,10 @@ export function StudentForm({ isEditMode = false, studentId }: StudentFormProps)
           favoriteCake: data.favoriteCake,
           address: data.address,
           medicalInfo: data.medicalInfo,
-          parents: data.parents,
-          emergencyContacts: data.emergencyContacts,
-          authorizedPersons: data.authorizedPersons,
-          siblings: data.siblings,
+          parents: data.parents as any,
+          emergencyContacts: data.emergencyContacts as any,
+          authorizedPersons: data.authorizedPersons as any,
+          siblings: data.siblings as any,
           academicRecords: data.academicRecords,
           busService: data.busService,
           pictures: convertPictures(data.pictures),
@@ -314,19 +314,19 @@ export function StudentForm({ isEditMode = false, studentId }: StudentFormProps)
           favoriteCake: data.favoriteCake,
           address: data.address,
           medicalInfo: data.medicalInfo,
-          parents: data.parents,
-          emergencyContacts: data.emergencyContacts,
-          authorizedPersons: data.authorizedPersons,
-          siblings: data.siblings,
+          parents: data.parents as any,
+          emergencyContacts: data.emergencyContacts as any,
+          authorizedPersons: data.authorizedPersons as any,
+          siblings: data.siblings as any,
           academicRecords: data.academicRecords,
           busService: data.busService,
-          profileImage: data.profileImage,
+          profileImage: data.profileImage as any,
           pictures: convertPictures(data.pictures),
           enrollment: {
-            cycleId: data.enrollment.cycleId,
-            gradeId: data.enrollment.gradeId,
-            sectionId: data.enrollment.sectionId,
-            status: data.enrollment.status,
+            cycleId: data.enrollment.cycleId || 0,
+            gradeId: data.enrollment.gradeId || 0,
+            sectionId: data.enrollment.sectionId || 0,
+            status: data.enrollment.status || 'ACTIVE',
           }
         };
 

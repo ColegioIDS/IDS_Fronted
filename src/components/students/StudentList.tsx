@@ -59,7 +59,7 @@ import ProtectedContent from '@/components/common/ProtectedContent'
 
 type ViewMode = 'cards' | 'table'
 type SortOrder = 'asc' | 'desc'
-type FilterStatus = 'all' | 'active' | 'inactive' | 'graduated' | 'transferred'
+type FilterStatus = 'all' | 'ACTIVE' | 'INACTIVE' | 'GRADUATED' | 'TRANSFERRED'
 type FilterGender = 'all' | 'Masculino' | 'Femenino' | 'other'
 type SortBy = 'date' | 'name' | 'age'
 type AgeRange = 'all' | '3-5' | '6-8' | '9-11' | '12-14' | '15+'
@@ -200,7 +200,7 @@ export const StudentList = () => {
             )
 
             // Grade filter (local)
-            const activeEnrollment = student.enrollments?.find(e => e.status === 'active')
+            const activeEnrollment = student.enrollments?.find(e => e.status === 'ACTIVE')
             const studentGrade = activeEnrollment?.gradeId?.toString() || 'none'
             const matchesGrade = localFilters.grade === 'all' || studentGrade === localFilters.grade
 
@@ -284,7 +284,7 @@ export const StudentList = () => {
     // Get unique grades for filter
     const availableGrades = Array.from(new Set(
         students
-            .map(s => s.enrollments?.find(e => e.status === 'active')?.gradeId)
+            .map(s => s.enrollments?.find(e => e.status === 'ACTIVE')?.gradeId)
             .filter(Boolean)
     )).sort((a, b) => (a || 0) - (b || 0))
 

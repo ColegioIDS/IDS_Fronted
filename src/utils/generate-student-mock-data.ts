@@ -121,7 +121,7 @@ export function generateStudentMockData(): StudentFormValues {
       cycleId: 1, // ⚠️ CAMBIAR: Usar el ciclo activo
       gradeId: 1, // ⚠️ CAMBIAR: Seleccionar un grado válido
       sectionId: 1, // ⚠️ CAMBIAR: Seleccionar una sección válida
-      status: 'active',
+      status: 'ACTIVE',
     },
 
     // Dirección

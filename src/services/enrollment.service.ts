@@ -353,7 +353,7 @@ export const buildEnrollmentFilters = (filters: EnrollmentFilterDto): Enrollment
  * Verifica si una matrícula puede ser editada
  */
 export const canEditEnrollment = (enrollment: EnrollmentResponse): boolean => {
-  return enrollment.status === 'active';
+  return enrollment.status === 'ACTIVE';
 };
 
 /**
@@ -370,9 +370,10 @@ export const canDeleteEnrollment = (enrollment: EnrollmentDetailResponse): boole
  */
 export const getStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
-    active: 'Activo',
-    graduated: 'Graduado',
-    transferred: 'Transferido'
+    ACTIVE: 'Activo',
+    GRADUATED: 'Graduado',
+    TRANSFERRED: 'Transferido',
+    INACTIVE: 'Inactivo'
   };
   return labels[status] || status;
 };

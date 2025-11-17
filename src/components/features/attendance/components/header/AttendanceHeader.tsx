@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Calendar, Filter } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Section } from '@/types/attendance.types';
 import {
   useAttendanceConfig,
   useAttendanceUtils,
@@ -21,6 +22,7 @@ interface AttendanceHeaderProps {
   onGradeChange: (gradeId: number | null) => void;
   onSectionChange: (sectionId: number | null) => void;
   readOnly?: boolean;
+  sections?: Section[];
 }
 
 /**
@@ -35,12 +37,20 @@ export default function AttendanceHeader({
   onGradeChange,
   onSectionChange,
   readOnly = false,
+  sections: passedSections,
 }: AttendanceHeaderProps) {
   const {
     grades = [],
-    sections = [],
+    sections: configSections = [],
     isLoading: configLoading,
   } = useAttendanceConfig();
+
+  // Use passed sections if available, otherwise fallback to config sections
+  const sections = passedSections || configSections;
+
+  console.log('[AttendanceHeader] passedSections:', passedSections);
+  console.log('[AttendanceHeader] configSections:', configSections);
+  console.log('[AttendanceHeader] Final sections:', sections);
 
   const {
     formatDateISO,
@@ -196,6 +206,7 @@ export default function AttendanceHeader({
                   selectedSectionId={selectedSectionId}
                   onSectionChange={onSectionChange}
                   disabled={readOnly || configLoading}
+                  sections={sections}
                 />
               )}
             </div>

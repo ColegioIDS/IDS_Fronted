@@ -5,7 +5,6 @@ import { useGradesAndSections } from '@/hooks/attendance/useGradesAndSections';
 import { useStudentsBySection } from '@/hooks/data';
 import { AttendanceStatusProvider } from '@/context/AttendanceStatusContext';
 import AttendanceHeader from './components/header/AttendanceHeader';
-import SimpleAttendanceTable from './components/table/SimpleAttendanceTable';
 import EmptyState from './components/states/EmptyState';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -108,7 +107,42 @@ function AttendanceGridContent() {
               )}
 
               {!loadingStudents && students.length > 0 && (
-                <SimpleAttendanceTable data={students} selectedDate={selectedDate} />
+                <Card>
+                  <CardContent className="py-6">
+                    <div className="space-y-3">
+                      <h3 className="font-bold text-slate-900 dark:text-slate-100">
+                        Estudiantes ({students.length})
+                      </h3>
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {students.map((student: any, index: number) => (
+                          <div
+                            key={student.enrollmentId || index}
+                            className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                                  {(student.studentName || 'E')[0]}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-semibold text-slate-900 dark:text-slate-100">
+                                  {student.studentName || 'Sin nombre'}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  ID: {student.enrollmentId}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                              Presente
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
               {!loadingStudents && students.length === 0 && !studentsError && (

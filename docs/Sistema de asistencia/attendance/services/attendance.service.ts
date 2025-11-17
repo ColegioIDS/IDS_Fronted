@@ -961,4 +961,156 @@ export class AttendanceService {
 
     return statuses;
   }
+
+  /**
+   * Get holidays for a specific bimester or all holidays from active cycle
+   * 
+   * @param bimesterId - Optional bimester ID to filter holidays
+   * @returns Array of holidays ordered by date
+   * @throws NotFoundException - If no holidays found
+   */
+  async getHolidays(bimesterId?: number) {
+    // If bimesterId provided, filter by that bimester
+    if (bimesterId) {
+      const holidays = await this.attendanceRepository.findHolidaysByBimester(
+        bimesterId,
+      );
+
+      if (holidays.length === 0) {
+        throw new NotFoundException({
+          success: false,
+          message: `No holidays found for bimester ${bimesterId}`,
+          statusCode: 404,
+        });
+      }
+
+      return holidays;
+    }
+
+    // If no bimesterId, get all holidays from active cycle
+    const activeCycle = await this.getActiveCycle();
+    const holidays = await this.attendanceRepository.findHolidaysByCycle(
+      activeCycle.id,
+    );
+
+    if (holidays.length === 0) {
+      throw new NotFoundException({
+        success: false,
+        message: 'No holidays found for active cycle',
+        statusCode: 404,
+      });
+    }
+
+    return holidays;
+  }
+
+  /**
+   * Get the active bimester based on current date
+   * 
+   * @returns Active bimester with cycle details
+   * @throws NotFoundException - If no active bimester found
+   */
+  async getActiveBimester() {
+    const today = new Date();
+
+    const bimester = await this.attendanceRepository.findActiveBimesterByDate(
+      today,
+    );
+
+    if (!bimester) {
+      throw new NotFoundException({
+        success: false,
+        message: 'No active bimester found for current date',
+        statusCode: 404,
+      });
+    }
+
+    return bimester;
+  }
+
+  /**
+   * Get enrollments for a specific section in active cycle
+   * Simplified version without date filtering
+   * 
+   * @param sectionId - Section ID
+   * @param includeInactive - Include inactive students (default: false)
+   * @returns Array of enrollments with student and section details
+   * @throws NotFoundException - If section not found or no enrollments
+   */
+  async getEnrollmentsBySection(
+    sectionId: number,
+    includeInactive: boolean = false,
+  ) {
+    // Verify section exists
+    const section = await this.prisma.section.findUnique({
+      where: { id: sectionId },
+    });
+
+    if (!section) {
+      throw new NotFoundException({
+        success: false,
+        message: 'Section not found',
+        statusCode: 404,
+      });
+    }
+
+    // Get active cycle
+    const activeCycle = await this.getActiveCycle();
+
+    // Build filter
+    const where: any = {
+      sectionId: sectionId,
+      cycleId: activeCycle.id,
+    };
+
+    if (!includeInactive) {
+      where.status = 'ACTIVE';
+    }
+
+    // Get enrollments
+    const enrollments = await this.prisma.enrollment.findMany({
+      where,
+      include: {
+        student: {
+          select: {
+            id: true,
+            codeSIRE: true,
+            givenNames: true,
+            lastNames: true,
+            birthDate: true,
+          },
+        },
+        section: {
+          select: {
+            id: true,
+            name: true,
+            gradeId: true,
+            capacity: true,
+            grade: {
+              select: {
+                id: true,
+                name: true,
+                level: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        student: {
+          givenNames: 'asc',
+        },
+      },
+    });
+
+    if (enrollments.length === 0) {
+      throw new NotFoundException({
+        success: false,
+        message: `No enrollments found for section ${sectionId}`,
+        statusCode: 404,
+      });
+    }
+
+    return enrollments;
+  }
 }

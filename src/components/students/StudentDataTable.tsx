@@ -68,8 +68,8 @@ const baseColumns: ColumnDef<Student>[] = [
     ),
     cell: ({ row }) => {
       const student = row.original
-      const activeEnrollment = student.enrollments?.find(e => e.status === 'active')
-      const isActive = activeEnrollment?.status === 'active'
+      const activeEnrollment = student.enrollments?.find(e => e.status === 'ACTIVE')
+      const isActive = activeEnrollment?.status === 'ACTIVE'
       
       const getGradientFromName = (name: string) => {
         const gradients = [
@@ -212,7 +212,7 @@ const baseColumns: ColumnDef<Student>[] = [
     ),
     cell: ({ row }) => {
       const student = row.original
-      const activeEnrollment = student.enrollments?.find(e => e.status === 'active')
+      const activeEnrollment = student.enrollments?.find(e => e.status === 'ACTIVE')
       
       if (!activeEnrollment) {
         return <span className="text-gray-400 text-sm">Sin asignar</span>
@@ -325,8 +325,8 @@ export function StudentDataTable({ data }: StudentDataTableProps) {
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => {
       const student = row.original
-      const activeEnrollment = student.enrollments?.find(e => e.status === 'active')
-      const isActive = activeEnrollment?.status === 'active'
+      const activeEnrollment = student.enrollments?.find(e => e.status === 'ACTIVE')
+      const isActive = activeEnrollment?.status === 'ACTIVE'
       
       return (
         <DropdownMenu>
@@ -530,8 +530,8 @@ export function StudentDataTable({ data }: StudentDataTableProps) {
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row, index) => {
-                const activeEnrollment = row.original.enrollments?.find(e => e.status === 'active')
-                const isActive = activeEnrollment?.status === 'active'
+                const activeEnrollment = row.original.enrollments?.find(e => e.status === 'ACTIVE')
+                const isActive = activeEnrollment?.status === 'ACTIVE'
                 
                 return (
                   <TableRow

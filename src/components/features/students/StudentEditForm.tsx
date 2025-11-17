@@ -257,7 +257,7 @@ export const StudentEditForm: React.FC<StudentEditFormProps> = ({
                 sectionId: student.enrollments[0].sectionId,
                 status: student.enrollments[0].status,
               }
-            : { cycleId: 0, gradeId: 0, sectionId: 0, status: 'active' },
+            : { cycleId: 0, gradeId: 0, sectionId: 0, status: 'ACTIVE' },
         };
 
         form.reset(formData as any);

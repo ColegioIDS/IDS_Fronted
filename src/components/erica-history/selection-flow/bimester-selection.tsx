@@ -53,7 +53,7 @@ export default function BimesterSelection({
 
     if (bimester.isActive) {
       return { 
-        status: 'active', 
+        status: 'ACTIVE', 
         text: 'Actual', 
         color: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
         icon: Clock 

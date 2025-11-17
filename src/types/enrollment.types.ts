@@ -19,9 +19,10 @@ export interface ApiErrorResponse {
 
 // ==================== ENUMS ====================
 export enum EnrollmentStatus {
-  ACTIVE = 'active',
-  GRADUATED = 'graduated',
-  TRANSFERRED = 'transferred'
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  GRADUATED = 'GRADUATED',
+  TRANSFERRED = 'TRANSFERRED'
 }
 
 // ==================== BASE TYPES ====================
@@ -287,6 +288,7 @@ export const ENROLLMENT_STATUS_OPTIONS: EnrollmentStatusOption[] = [
 
 export const ENROLLMENT_STATUS_LABELS: Record<EnrollmentStatus, string> = {
   [EnrollmentStatus.ACTIVE]: 'Activo',
+  [EnrollmentStatus.INACTIVE]: 'Inactivo',
   [EnrollmentStatus.GRADUATED]: 'Graduado',
   [EnrollmentStatus.TRANSFERRED]: 'Transferido'
 };
