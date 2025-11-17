@@ -226,7 +226,14 @@ export const coursesService = {
       const { data } = await apiClient.get<FullCycleResponse>(
         `api/global/full-cycle-structure?cycleId=${cycleId}`
       );
-      return data.data;
+
+      // ✅ Asegurar que grades siempre sea un array
+      const result = data.data;
+      if (result && !Array.isArray(result.grades)) {
+        result.grades = [];
+      }
+
+      return result;
     } catch (error) {
       throw new Error(
         `Error fetching full cycle structure: ${

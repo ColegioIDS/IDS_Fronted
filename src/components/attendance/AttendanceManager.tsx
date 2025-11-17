@@ -70,13 +70,23 @@ export default function AttendanceManager() {
     if (isAdmin && fullCycleQuery.data) {
       const sections: Section[] = [];
 
+      // ✅ Validar que grades sea un array
+      const grades = Array.isArray(fullCycleQuery.data.grades)
+        ? fullCycleQuery.data.grades
+        : [];
+
       // ✅ CRÍTICO: Recorre grades[].grade.sections
-      fullCycleQuery.data.grades.forEach((gc: any) => {
+      grades.forEach((gc: any) => {
         // gc es { id, cycleId, gradeId, grade: {...} }
-        
+
+        // ✅ Validar que gc.grade existe y sections sea un array
+        if (!gc.grade || !Array.isArray(gc.grade.sections)) {
+          return;
+        }
+
         gc.grade.sections.forEach((section: any) => {
           // section es { id, name, capacity, gradeId, teacherId, courseAssignments[], enrollments[] }
-          
+
           const enrollments = section.enrollments || [];
 
           // ✅ CORRECTO: courseAssignments ya contiene course
