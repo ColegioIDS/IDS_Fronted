@@ -8,7 +8,7 @@
  * Built with Axios + React Query
  */
 
-import { apiClient } from '@/config/api';
+import { api as apiClient } from '@/config/api';
 import {
   CreateAttendancePayload,
   BulkCreateAttendancePayload,
