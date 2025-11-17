@@ -82,7 +82,7 @@ export function useHolidaysData(): UseHolidaysDataReturn {
 
   // Auto-fetch en mount
   useEffect(() => {
-    // TODO: Descomentar cuando el endpoint /api/attendance/configuration/holidays esté disponible
+    // TODO: Descomentar cuando el endpoint /api/attendance-config/holidays esté disponible
     // fetchHolidays();
   }, [fetchHolidays]);
 

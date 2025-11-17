@@ -39,7 +39,7 @@ export function useAttendanceCourses(sectionId?: number): UseAttendanceCoursesRe
       // ✅ ARREGLADO: Usar la instancia 'api' que tiene baseURL configurada
       // Esto respeta: process.env.NEXT_PUBLIC_API_URL o http://localhost:5000
       const response = await api.get<{ success: boolean; data: AttendanceCourse[]; message?: string }>(
-        `/api/attendance/configuration/courses-for-section/${sectionId}`
+        `/api/attendance-config/courses-for-section/${sectionId}`
       );
 
       if (!response.data?.success) {

@@ -100,7 +100,7 @@ export function useActiveCycle() {
       console.log('[useActiveCycle] Fetching active cycle from API...');
 
       const response = await api.get<ActiveCycleResponse>(
-        '/api/attendance/configuration/active-cycle'
+        '/api/attendance-config/active-cycle'
       );
 
       if (!response.data.success) {
