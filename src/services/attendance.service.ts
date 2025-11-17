@@ -361,19 +361,58 @@ export async function getAttendanceStatuses(): Promise<AttendanceConfigurationRe
 /**
  * Get grades and sections
  * GET /api/attendance-config/grades-sections
- * 
+ *
  * @param schoolCycleId - Optional school cycle ID
  * @returns Grades and sections for selection
  */
 export async function getGradesAndSections(
   schoolCycleId?: number
 ): Promise<GradesAndSectionsResponse> {
-  const response = await apiClient.get<GradesAndSectionsResponse>(
-    `${CONFIG_URL}/grades-sections`,
-    { params: { schoolCycleId } }
-  );
+  try {
+    // Try the combined endpoint first
+    const response = await apiClient.get<GradesAndSectionsResponse>(
+      `${CONFIG_URL}/grades-sections`,
+      { params: { schoolCycleId } }
+    );
 
-  return response.data;
+    // Check if response is successful
+    if (response.data?.success) {
+      return response.data;
+    }
+
+    // If not successful or has validation errors, fall back to simple grades endpoint
+    console.warn('[getGradesAndSections] Combined endpoint failed, using fallback /api/grades');
+
+    const gradesResponse = await apiClient.get<{ success: boolean; data: any[] }>('/api/grades');
+
+    return {
+      success: true,
+      data: {
+        grades: gradesResponse.data?.data || [],
+        sections: [], // Sections will be loaded separately when grade is selected
+      },
+      message: 'Grades loaded successfully (fallback)',
+    };
+  } catch (error) {
+    console.error('[getGradesAndSections] Error:', error);
+
+    // Last resort: try simple /api/grades endpoint
+    try {
+      const gradesResponse = await apiClient.get<{ success: boolean; data: any[] }>('/api/grades');
+
+      return {
+        success: true,
+        data: {
+          grades: gradesResponse.data?.data || [],
+          sections: [],
+        },
+        message: 'Grades loaded successfully (fallback)',
+      };
+    } catch (fallbackError) {
+      console.error('[getGradesAndSections] Fallback also failed:', fallbackError);
+      throw error; // Throw original error
+    }
+  }
 }
 
 /**
