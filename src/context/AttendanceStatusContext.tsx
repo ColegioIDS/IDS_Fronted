@@ -44,7 +44,7 @@ export function AttendanceStatusProvider({ children }: { children: React.ReactNo
         success: boolean;
         data: AttendanceStatus[];
         message?: string;
-      }>('/api/attendance/configuration/statuses');
+      }>('/api/attendance-config/statuses');
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Error al cargar estados de asistencia');
