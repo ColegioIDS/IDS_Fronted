@@ -3,7 +3,8 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { Loader2, BarChart3, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   useAttendance,
   useAttendanceConfig,
@@ -138,43 +139,75 @@ export default function AttendanceManager({
 
       {/* Permissions Notice */}
       {!canUpdate && (
-        <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-700">
-          <AlertDescription className="text-blue-800 dark:text-blue-200">
-            Solo puedes ver los registros. No tienes permisos para modificar asistencia.
+        <Alert className="bg-blue-50 border-2 border-blue-200 dark:bg-blue-900/20 dark:border-blue-700 shadow-md">
+          <Info className="h-5 w-5 text-blue-700 dark:text-blue-300" />
+          <AlertDescription className="ml-2">
+            <p className="font-semibold text-blue-800 dark:text-blue-200">
+              Solo puedes ver los registros. No tienes permisos para modificar asistencia.
+            </p>
           </AlertDescription>
         </Alert>
       )}
 
       {/* Statistics Summary */}
       {filteredData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Resumen de Asistencia</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {filteredData.length}
+        <TooltipProvider>
+          <Card className="border-2 border-slate-200 dark:border-slate-800 shadow-md">
+            <CardHeader className="border-b-2 border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-800">
+                  <BarChart3 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">Total Estudiantes</div>
+                <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  Resumen de Asistencia
+                </CardTitle>
               </div>
-              {statuses.slice(0, 3).map((status: any) => {
-                const count = filteredData.filter(
-                  (r: any) => r.attendanceStatusId === status.id
-                ).length;
-                return (
-                  <div key={status.id} className="text-center">
-                    <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                      {count}
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="text-center p-4 rounded-xl bg-slate-100 dark:bg-slate-800/50 border-2 border-slate-200 dark:border-slate-700 cursor-help">
+                      <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+                        {filteredData.length}
+                      </div>
+                      <div className="text-xs text-slate-600 dark:text-slate-400 font-medium mt-1">
+                        Total Estudiantes
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">{status.code}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="font-semibold">Total de estudiantes registrados</p>
+                  </TooltipContent>
+                </Tooltip>
+                {statuses.slice(0, 3).map((status: any) => {
+                  const count = filteredData.filter(
+                    (r: any) => r.attendanceStatusId === status.id
+                  ).length;
+                  return (
+                    <Tooltip key={status.id}>
+                      <TooltipTrigger asChild>
+                        <div className="text-center p-4 rounded-xl bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-800 cursor-help">
+                          <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                            {count}
+                          </div>
+                          <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">
+                            {status.code}
+                          </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-semibold">
+                          {count} {count === 1 ? 'estudiante' : 'estudiantes'} con estado {status.code}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TooltipProvider>
       )}
     </div>
   );

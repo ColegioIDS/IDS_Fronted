@@ -2,9 +2,10 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Monitor, Grid3X3 } from 'lucide-react';
+import { Monitor, Grid3X3, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   useAttendanceData,
   useAttendanceFilters,
@@ -174,38 +175,61 @@ function AttendanceGridContent() {
           {selectedGradeId && selectedSectionId && (
             <div className="space-y-4">
               {/* Toggle de vista */}
-              <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center space-x-2">
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Modo de vista:
-                  </h3>
-                  <Badge variant="outline" className="text-xs">
-                    {viewMode === 'table' ? 'Tabla' : 'Cards'}
-                  </Badge>
-                </div>
+              <TooltipProvider>
+                <div className="flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl p-5 border-2 border-slate-200 dark:border-slate-700 shadow-md">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-950/30 border-2 border-indigo-200 dark:border-indigo-800">
+                      <CalendarDays className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                        Modo de vista
+                      </h3>
+                      <Badge variant="outline" className="text-xs mt-1 bg-slate-100 dark:bg-slate-800">
+                        {viewMode === 'table' ? 'Tabla' : 'Cards'}
+                      </Badge>
+                    </div>
+                  </div>
 
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant={viewMode === 'table' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('table')}
-                    className="flex items-center space-x-2"
-                  >
-                    <Monitor className="h-4 w-4" />
-                    <span className="hidden sm:inline">Tabla</span>
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={viewMode === 'table' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setViewMode('table')}
+                          className={`flex items-center gap-2 border-2 ${viewMode === 'table' ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600' : ''}`}
+                          aria-label="Vista de tabla"
+                        >
+                          <Monitor className="h-4 w-4" />
+                          <span className="hidden sm:inline">Tabla</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-semibold">Vista de tabla</p>
+                      </TooltipContent>
+                    </Tooltip>
 
-                  <Button
-                    variant={viewMode === 'cards' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('cards')}
-                    className="flex items-center space-x-2"
-                  >
-                    <Grid3X3 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Cards</span>
-                  </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={viewMode === 'cards' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setViewMode('cards')}
+                          className={`flex items-center gap-2 border-2 ${viewMode === 'cards' ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600' : ''}`}
+                          aria-label="Vista de tarjetas"
+                        >
+                          <Grid3X3 className="h-4 w-4" />
+                          <span className="hidden sm:inline">Cards</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-semibold">Vista de tarjetas (próximamente)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
-              </div>
+              </TooltipProvider>
 
               {/* Estados de carga */}
               {loading && <LoadingState />}
