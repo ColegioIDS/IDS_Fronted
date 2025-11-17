@@ -380,33 +380,40 @@ export async function getGradesAndSections(
       return response.data;
     }
 
-    // If not successful or has validation errors, fall back to simple grades endpoint
-    console.warn('[getGradesAndSections] Combined endpoint failed, using fallback /api/grades');
+    // If not successful or has validation errors, fall back to separate endpoints
+    console.warn('[getGradesAndSections] Combined endpoint failed, using fallback endpoints');
 
-    const gradesResponse = await apiClient.get<{ success: boolean; data: any[] }>('/api/grades');
+    // Load grades and sections separately
+    const [gradesResponse, sectionsResponse] = await Promise.all([
+      apiClient.get<{ success: boolean; data: any[] }>('/api/grades'),
+      apiClient.get<{ success: boolean; data: any[] }>('/api/sections'),
+    ]);
 
     return {
       success: true,
       data: {
         grades: gradesResponse.data?.data || [],
-        sections: [], // Sections will be loaded separately when grade is selected
+        sections: sectionsResponse.data?.data || [],
       },
-      message: 'Grades loaded successfully (fallback)',
+      message: 'Grades and sections loaded successfully (fallback)',
     };
   } catch (error) {
     console.error('[getGradesAndSections] Error:', error);
 
-    // Last resort: try simple /api/grades endpoint
+    // Last resort: try separate endpoints
     try {
-      const gradesResponse = await apiClient.get<{ success: boolean; data: any[] }>('/api/grades');
+      const [gradesResponse, sectionsResponse] = await Promise.all([
+        apiClient.get<{ success: boolean; data: any[] }>('/api/grades'),
+        apiClient.get<{ success: boolean; data: any[] }>('/api/sections'),
+      ]);
 
       return {
         success: true,
         data: {
           grades: gradesResponse.data?.data || [],
-          sections: [],
+          sections: sectionsResponse.data?.data || [],
         },
-        message: 'Grades loaded successfully (fallback)',
+        message: 'Grades and sections loaded successfully (fallback)',
       };
     } catch (fallbackError) {
       console.error('[getGradesAndSections] Fallback also failed:', fallbackError);
