@@ -26,44 +26,24 @@ export function useStudentsBySection(gradeId: number | null, sectionId: number |
    * Cargar estudiantes de la sección
    */
   const fetchStudents = useCallback(
-    async (gId: number, secId: number) => {
+    async (secId: number) => {
       setState((prev) => ({ ...prev, loading: true, error: null }));
 
       try {
-        console.log('[useStudentsBySection] Cargando estudiantes para grado:', gId, 'sección:', secId);
+        console.log('[useStudentsBySection] Cargando estudiantes para sección:', secId);
 
-        const rawStudents = await attendanceConfigurationService.getStudentsBySection(gId, secId);
+        const rawStudents = await attendanceConfigurationService.getStudentsBySection(secId);
 
         console.log('[useStudentsBySection] Estudiantes obtenidos:', rawStudents.length);
-        console.log('[useStudentsBySection] Estructura de datos:', rawStudents[0]);
-
-        // Transformar la estructura para que coincida con lo que espera el componente
-        const transformedStudents = rawStudents.map((student) => ({
-          id: student.enrollmentId,
-          enrollmentId: student.enrollmentId,
-          enrollment: {
-            id: student.enrollmentId,
-            student: {
-              fullName: student.studentName,
-            },
-          },
-          studentName: student.studentName,
-          grade: student.grade,
-          section: student.section,
-          // Estos campos pueden no existir, pero los componentes pueden manejar valores undefined
-          status: undefined,
-          justification: undefined,
-        }));
-
-        console.log('[useStudentsBySection] Estructura transformada:', transformedStudents[0]);
+        console.log('[useStudentsBySection] Primer estudiante:', rawStudents[0]);
 
         setState((prev) => ({
           ...prev,
-          students: transformedStudents,
+          students: rawStudents,
           loading: false,
         }));
 
-        return transformedStudents;
+        return rawStudents;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
         console.error('[useStudentsBySection] Error:', errorMessage);
@@ -72,7 +52,12 @@ export function useStudentsBySection(gradeId: number | null, sectionId: number |
           error: errorMessage,
           loading: false,
         }));
-        throw err;
+        // Return empty array instead of throwing to avoid breaking the UI
+        setState((prev) => ({
+          ...prev,
+          students: [],
+          loading: false,
+        }));
       }
     },
     []
@@ -83,15 +68,15 @@ export function useStudentsBySection(gradeId: number | null, sectionId: number |
    */
   useEffect(() => {
     console.log('[useStudentsBySection] Efecto disparado:', { gradeId, sectionId });
-    // Necesitamos AMBOS: gradeId y sectionId para llamar al endpoint
-    if (gradeId && gradeId > 0 && sectionId && sectionId > 0) {
+    // Solo necesitamos sectionId para llamar al endpoint
+    if (sectionId && sectionId > 0) {
       console.log('[useStudentsBySection] ✅ Condición cumplida, llamando fetchStudents');
-      fetchStudents(gradeId, sectionId);
+      fetchStudents(sectionId);
     } else {
       console.log('[useStudentsBySection] ❌ Condición NO cumplida, reseteando estado');
       setState(initialState);
     }
-  }, [gradeId, sectionId, fetchStudents]);
+  }, [sectionId, fetchStudents]);
 
   return {
     ...state,

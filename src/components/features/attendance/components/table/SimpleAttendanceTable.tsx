@@ -1,24 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Users, Check, X, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAttendanceStatuses } from '@/hooks/attendance/useAttendanceStatuses';
 
-interface AttendanceStatus {
-  id: number;
-  name: string;
-  color: string;
-  icon: React.ReactNode;
-}
-
-const ATTENDANCE_STATUSES: AttendanceStatus[] = [
-  { id: 1, name: 'Presente', color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400', icon: <Check className="w-4 h-4" /> },
-  { id: 2, name: 'Ausente', color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400', icon: <X className="w-4 h-4" /> },
-  { id: 3, name: 'Tarde', color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400', icon: <Clock className="w-4 h-4" /> },
-];
+// Mapeo de iconos por código
+const ICON_MAP: Record<string, React.ReactNode> = {
+  'P': <Check className="w-4 h-4" />,
+  'I': <X className="w-4 h-4" />,
+  'TI': <Clock className="w-4 h-4" />,
+  'TJ': <Clock className="w-4 h-4" />,
+  'IJ': <X className="w-4 h-4" />,
+};
 
 interface Student {
   enrollmentId: number;
@@ -31,15 +28,41 @@ interface SimpleAttendanceTableProps {
   data: Student[];
   selectedDate: Date;
   onStatusChange?: (enrollmentId: number, statusId: number, studentName: string) => Promise<void>;
+  preFilledStatuses?: Record<number, number>;
 }
 
 export default function SimpleAttendanceTable({
   data,
   selectedDate,
   onStatusChange,
+  preFilledStatuses = {},
 }: SimpleAttendanceTableProps) {
-  const [attendance, setAttendance] = useState<Record<number, number>>({});
+  const [attendance, setAttendance] = useState<Record<number, number>>(preFilledStatuses);
   const [loading, setLoading] = useState<Set<number>>(new Set());
+  
+  // Cargar estados dinámicos del hook
+  const { statuses } = useAttendanceStatuses();
+
+  // Debug: Log estatuses being rendered
+  React.useEffect(() => {
+    console.log('[SimpleAttendanceTable] 📊 Estatuses disponibles:', statuses.map(s => ({ id: s.id, code: s.code, name: s.name })));
+  }, [statuses]);
+
+  // Obtener el icono para un estado según su código
+  const getIconForStatus = (code: string) => {
+    return ICON_MAP[code] || <Check className="w-4 h-4" />;
+  };
+
+  // Convertir hex a rgba con opacidad para el estilo inline
+  const hexToRgba = (hex: string, alpha: number = 0.1): string => {
+    if (!hex) return 'rgba(229, 231, 235, 0.1)'; // gray-200 default
+    
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
 
   const handleStatusChange = async (enrollmentId: number, statusId: number, studentName: string) => {
     setLoading((prev) => new Set(prev).add(enrollmentId));
@@ -56,7 +79,7 @@ export default function SimpleAttendanceTable({
         [enrollmentId]: statusId,
       }));
 
-      const status = ATTENDANCE_STATUSES.find((s) => s.id === statusId);
+      const status = statuses.find((s) => s.id === statusId);
       toast.success(`${studentName}: ${status?.name}`, {
         description: 'Asistencia registrada correctamente',
       });
@@ -112,7 +135,7 @@ export default function SimpleAttendanceTable({
             {data.map((student, index) => {
               const currentStatus = attendance[student.enrollmentId];
               const statusInfo = currentStatus
-                ? ATTENDANCE_STATUSES.find((s) => s.id === currentStatus)
+                ? statuses.find((s) => s.id === currentStatus)
                 : null;
 
               return (
@@ -136,14 +159,22 @@ export default function SimpleAttendanceTable({
 
                   {/* Current Status */}
                   {statusInfo && (
-                    <Badge className={`${statusInfo.color} mr-3 font-semibold`}>
+                    <div
+                      className="mr-3 px-3 py-1 rounded-full font-semibold text-sm flex items-center gap-1"
+                      style={{
+                        backgroundColor: hexToRgba(statusInfo.colorCode, 0.2),
+                        color: statusInfo.colorCode,
+                        borderLeft: `3px solid ${statusInfo.colorCode}`,
+                      }}
+                    >
+                      {getIconForStatus(statusInfo.code)}
                       {statusInfo.name}
-                    </Badge>
+                    </div>
                   )}
 
                   {/* Status Buttons */}
                   <div className="flex gap-2">
-                    {ATTENDANCE_STATUSES.map((status) => (
+                    {statuses.map((status) => (
                       <Button
                         key={status.id}
                         size="sm"
@@ -154,8 +185,20 @@ export default function SimpleAttendanceTable({
                         disabled={loading.has(student.enrollmentId)}
                         className="gap-1"
                         title={status.name}
+                        style={
+                          currentStatus === status.id
+                            ? {
+                                backgroundColor: status.colorCode,
+                                borderColor: status.colorCode,
+                                color: '#fff',
+                              }
+                            : {
+                                borderColor: status.colorCode,
+                                color: status.colorCode,
+                              }
+                        }
                       >
-                        {status.icon}
+                        {getIconForStatus(status.code)}
                         <span className="hidden sm:inline">{status.name}</span>
                       </Button>
                     ))}
@@ -167,12 +210,20 @@ export default function SimpleAttendanceTable({
 
           {/* Summary */}
           <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
-            {ATTENDANCE_STATUSES.map((status) => {
+            {statuses.map((status) => {
               const count = Object.values(attendance).filter((s) => s === status.id).length;
               return (
-                <div key={status.id} className={`p-3 rounded-lg text-center ${status.color}`}>
+                <div
+                  key={status.id}
+                  className="p-3 rounded-lg text-center font-semibold"
+                  style={{
+                    backgroundColor: hexToRgba(status.colorCode, 0.15),
+                    color: status.colorCode,
+                    border: `2px solid ${hexToRgba(status.colorCode, 0.5)}`,
+                  }}
+                >
                   <div className="text-2xl font-bold">{count}</div>
-                  <div className="text-xs font-semibold">{status.name}</div>
+                  <div className="text-xs">{status.name}</div>
                 </div>
               );
             })}

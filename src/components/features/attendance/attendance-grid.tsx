@@ -1,15 +1,22 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useGradesAndSections } from '@/hooks/attendance/useGradesAndSections';
 import { useStudentsBySection } from '@/hooks/data';
+import { useAttendanceByDate } from '@/hooks/attendance/useAttendanceByDate';
+import { useActiveCycleId } from '@/hooks/attendance/useActiveCycleId';
 import { AttendanceStatusProvider } from '@/context/AttendanceStatusContext';
 import AttendanceHeader from './components/header/AttendanceHeader';
 import SimpleAttendanceTable from './components/table/SimpleAttendanceTable';
 import EmptyState from './components/states/EmptyState';
 import { Card, CardContent } from '@/components/ui/card';
+import { attendanceRecordService } from '@/services/attendance-record.service';
+import { toast } from 'sonner';
 
 function AttendanceGridContent() {
+  // ========== OBTENER ID DEL CICLO ACTIVO ==========
+  const { cycleId: activeCycleId } = useActiveCycleId();
+
   // ========== HOOK PARA CARGAR SECCIONES ==========
   const { sections: loadedSections, fetchSectionsByGrade } = useGradesAndSections();
 
@@ -23,6 +30,30 @@ function AttendanceGridContent() {
     selectedGradeId,
     selectedSectionId
   );
+
+  // ========== CARGAR ASISTENCIA PARA LA FECHA SELECCIONADA ==========
+  const { attendance: existingAttendance, loading: loadingAttendance, loadAttendance } = useAttendanceByDate({
+    sectionId: selectedSectionId || undefined,
+    cycleId: activeCycleId || undefined,
+    date: selectedDate,
+  });
+
+  // Cargar asistencia cuando cambia sección o fecha
+  useEffect(() => {
+    if (selectedSectionId && activeCycleId) {
+      loadAttendance();
+    }
+  }, [selectedSectionId, selectedDate, activeCycleId, loadAttendance]);
+
+  // ========== MAPEAR ESTUDIANTES AL FORMATO ESPERADO ==========
+  const mappedStudents = students.map((enrollment: any) => ({
+    enrollmentId: enrollment.id,
+    studentName: `${enrollment.student?.givenNames || ''} ${enrollment.student?.lastNames || ''}`.trim() || 'Sin nombre',
+    studentId: enrollment.student?.id,
+    codeSIRE: enrollment.student?.codeSIRE,
+    sectionId: enrollment.sectionId,
+    gradeId: enrollment.gradeId,
+  }));
 
   console.log('🎯 Estado de attendance-grid:', {
     selectedGradeId,
@@ -58,6 +89,48 @@ function AttendanceGridContent() {
     console.log('📍 handleDateChange:', date);
     setSelectedDate(date);
   }, []);
+
+  // ========== HANDLER PARA CAMBIAR ESTADO DE ASISTENCIA ==========
+  const handleAttendanceStatusChange = useCallback(
+    async (enrollmentId: number, statusId: number, studentName: string) => {
+      try {
+        // Buscar el registro de asistencia existente
+        const existingRecord = existingAttendance[enrollmentId];
+
+        if (!existingRecord) {
+          // Si no existe, crear uno nuevo
+          console.log('[handleAttendanceStatusChange] Creating new attendance record');
+          toast.error('No se encontró registro de asistencia. Por favor recarga la página.');
+          return;
+        }
+
+        const changeReason = 'Asistencia registrada por docente en clase';
+        console.log('[handleAttendanceStatusChange] Updating attendance:', {
+          attendanceId: existingRecord.id,
+          statusId,
+          changeReason,
+        });
+
+        // Actualizar en backend
+        await attendanceRecordService.updateAttendanceStatus(
+          existingRecord.id,
+          statusId,
+          changeReason
+        );
+
+        console.log('✅ Asistencia actualizada:', studentName);
+        toast.success(`${studentName}: Asistencia registrada`);
+
+        // Recargar asistencia para reflejar el cambio
+        loadAttendance();
+      } catch (error) {
+        console.error('[handleAttendanceStatusChange] Error:', error);
+        const message = error instanceof Error ? error.message : 'Error al registrar asistencia';
+        toast.error(message);
+      }
+    },
+    [existingAttendance, loadAttendance]
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -108,7 +181,17 @@ function AttendanceGridContent() {
               )}
 
               {!loadingStudents && students.length > 0 && (
-                <SimpleAttendanceTable data={students} selectedDate={selectedDate} />
+                <SimpleAttendanceTable 
+                  data={mappedStudents} 
+                  selectedDate={selectedDate}
+                  onStatusChange={handleAttendanceStatusChange}
+                  preFilledStatuses={Object.fromEntries(
+                    Object.entries(existingAttendance).map(([enrollmentId, record]) => [
+                      enrollmentId,
+                      record.attendanceStatusId
+                    ])
+                  )}
+                />
               )}
 
               {!loadingStudents && students.length === 0 && !studentsError && (

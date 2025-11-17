@@ -13,6 +13,8 @@ export { useAttendanceActions } from './useAttendanceActions';
 // Hooks de configuración (PHASE 3)
 export { useGradesAndSections } from './useGradesAndSections';
 export { useHolidaysData } from './useHolidaysData';
+export { useAttendanceByDate } from './useAttendanceByDate';
+export { useActiveCycleId } from './useActiveCycleId';
 
 // Hooks de estados (PHASE 3 - Dynamic Status Management)
 export { useAttendanceStatuses } from './useAttendanceStatuses';

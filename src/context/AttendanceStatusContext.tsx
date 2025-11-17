@@ -8,7 +8,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { AttendanceStatus } from '@/types/attendance.types';
+import { AttendanceStatus } from '@/types/attendance-status.types';
 import { api } from '@/config/api';
 
 interface AttendanceStatusContextType {
@@ -40,26 +40,22 @@ export function AttendanceStatusProvider({ children }: { children: React.ReactNo
     try {
       console.log('[AttendanceStatusContext] 🔄 Cargando estados de asistencia...');
 
-      // Try the attendance-permissions endpoint first as a fallback
-      // This endpoint seems to have less strict validation
+      // Get user role from localStorage or use default
+      const userRole = localStorage.getItem('userRole') || '1';
+
+      // Use the role-based endpoint that returns ONLY the statuses allowed for this role
       const response = await api.get<{
         success: boolean;
         data: AttendanceStatus[];
         message?: string;
-      }>('/api/attendance-permissions/statuses/list/all', {
-        params: {
-          page: 1,
-          limit: 100,
-          isActive: true
-        }
-      });
+      }>(`/api/attendance/status/allowed/role/${userRole}`);
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Error al cargar estados de asistencia');
       }
 
       const loadedStatuses = response.data.data || [];
-      console.log('[AttendanceStatusContext] ✅ Estados cargados:', loadedStatuses.length);
+      console.log('[AttendanceStatusContext] ✅ Estados cargados:', loadedStatuses.length, loadedStatuses.map(s => ({ id: s.id, code: s.code, name: s.name })));
 
       setStatuses(loadedStatuses);
       setError(null);
