@@ -65,28 +65,57 @@ export default function SimpleAttendanceTable({
   };
 
   const handleStatusChange = async (enrollmentId: number, statusId: number, studentName: string) => {
+    console.log('[SimpleAttendanceTable] 🖱️ CLICK EN BOTÓN:', {
+      enrollmentId,
+      statusId,
+      studentName,
+      onStatusChangeExists: !!onStatusChange,
+    });
+
     setLoading((prev) => new Set(prev).add(enrollmentId));
 
     try {
-      // Call the callback if provided
+      // Call the callback if provided - WAIT for it to complete
       if (onStatusChange) {
+        console.log('[SimpleAttendanceTable] 📤 Llamando onStatusChange...');
         await onStatusChange(enrollmentId, statusId, studentName);
+        console.log('[SimpleAttendanceTable] ✅ onStatusChange completado EXITOSAMENTE');
+      } else {
+        console.warn('[SimpleAttendanceTable] ⚠️ onStatusChange no definido!');
+        throw new Error('No hay callback para cambiar estado');
       }
 
-      // Update local state
+      // Update local state SOLO DESPUÉS de que onStatusChange fue exitoso
       setAttendance((prev) => ({
         ...prev,
         [enrollmentId]: statusId,
       }));
 
       const status = statuses.find((s) => s.id === statusId);
+      console.log('[SimpleAttendanceTable] 🎉 Mostrando toast de éxito');
       toast.success(`${studentName}: ${status?.name}`, {
         description: 'Asistencia registrada correctamente',
       });
-    } catch (error) {
-      toast.error('Error al registrar asistencia', {
-        description: error instanceof Error ? error.message : 'Intenta de nuevo',
-      });
+    } catch (error: any) {
+      console.error('[SimpleAttendanceTable] ❌ Error capturado:', error);
+      
+      // NO actualizar estado local si hay error
+      // Extraer mensaje de error más informativo
+      let errorMessage = 'Error al registrar asistencia';
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.details) {
+        const details = Array.isArray(error.response.data.details) 
+          ? error.response.data.details.join(', ')
+          : error.response.data.details;
+        errorMessage = details;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      console.log('[SimpleAttendanceTable] 🚨 Mostrando toast de error:', errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading((prev) => {
         const next = new Set(prev);

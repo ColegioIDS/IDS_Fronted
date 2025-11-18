@@ -58,5 +58,26 @@ export {
   isFuture,
 } from './useAttendanceUtils';
 
+// Validation phases hooks (13 fases)
+export {
+  useAttendanceValidationPhases,
+  type ValidationPhase,
+  type AttendanceValidationResult,
+  type AttendanceValidationInput,
+} from './useAttendanceValidationPhases';
+
+// Validation services hooks (SchoolCycle, Bimester, AcademicWeek, TeacherAbsence)
+export {
+  useSchoolCycles,
+  useBimesters,
+  useAcademicWeeks,
+  useTeacherAbsences,
+  useAttendanceValidationData,
+  type SchoolCycle,
+  type Bimester,
+  type AcademicWeek,
+  type TeacherAbsence,
+} from './useAttendanceValidationServices';
+
 // Re-export types for convenience
 export type { AttendanceScope, UserAttendancePermissions } from '@/types/attendance.types';

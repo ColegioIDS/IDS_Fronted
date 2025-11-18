@@ -16,8 +16,14 @@ import { UserContext } from './attendance.types';
 import {
   BulkTeacherAttendanceDto,
   bulkTeacherAttendanceSchema,
+  SingleAttendanceDto,
+  singleAttendanceSchema,
   UpdateAttendanceDto,
   updateAttendanceSchema,
+  UpdateSingleClassAttendanceDto,
+  updateSingleClassAttendanceSchema,
+  BulkUpdateAttendanceDto,
+  bulkUpdateAttendanceSchema,
 } from './dto';
 import { ValidatedBody, ValidatedParam, ValidatedQuery } from '../../common/decorators/validated';
 import { Permissions } from '../../common/decorators/permissions.decorator';
@@ -152,6 +158,109 @@ export class AttendanceController {
     };
 
     return this.attendanceService.createTeacherAttendance(dto, userContext);
+  }
+
+  /**
+   * POST /api/attendance/single
+   * 
+   * Registra asistencia de UN ESTUDIANTE ESPECÍFICO
+   * Para registros unitarios (ej: estudiante tardío que llega después del registro masivo)
+   * 
+   * @example
+   * POST /api/attendance/single
+   * {
+   *   "enrollmentId": 5,
+   *   "date": "2025-11-17",
+   *   "attendanceStatusId": 2,
+   *   "arrivalTime": "08:30"
+   * }
+   */
+  @Post('single')
+  @HttpCode(HttpStatus.CREATED)
+  @Permissions('attendance', 'create')
+  async createSingleAttendance(
+    @ValidatedBody(singleAttendanceSchema)
+    dto: SingleAttendanceDto,
+    @Request() req: any,
+  ) {
+    const userContext: UserContext = {
+      userId: req.user.id,
+      roleId: req.user.roleId,
+      email: req.user.email,
+    };
+
+    return this.attendanceService.createSingleAttendance(dto, userContext);
+  }
+
+  /**
+   * PATCH /api/attendance/class/:classAttendanceId
+   * 
+   * Actualiza UN REGISTRO de StudentClassAttendance
+   * Para modificar la asistencia de una clase específica
+   * 
+   * @example
+   * PATCH /api/attendance/class/201
+   * {
+   *   "classAttendanceId": 201,
+   *   "attendanceStatusId": 3,
+   *   "changeReason": "Estudiante estaba enfermo"
+   * }
+   */
+  @Patch('class/:classAttendanceId')
+  @HttpCode(HttpStatus.OK)
+  @Permissions('attendance', 'modify')
+  async updateSingleClassAttendance(
+    @ValidatedParam(z.object({ classAttendanceId: z.preprocess((v) => Number(v), z.number().positive()) }))
+    params: { classAttendanceId: number },
+    @ValidatedBody(updateSingleClassAttendanceSchema)
+    dto: UpdateSingleClassAttendanceDto,
+    @Request() req: any,
+  ) {
+    const userContext: UserContext = {
+      userId: req.user.id,
+      roleId: req.user.roleId,
+      email: req.user.email,
+    };
+
+    return this.attendanceService.updateSingleClassAttendance(
+      params.classAttendanceId,
+      dto,
+      userContext,
+    );
+  }
+
+  /**
+   * PATCH /api/attendance/bulk-update
+   * 
+   * Actualiza MÚLTIPLES registros en lote
+   * Para cambios masivos a registros específicos
+   * 
+   * @example
+   * PATCH /api/attendance/bulk-update
+   * {
+   *   "updates": [
+   *     { "classAttendanceId": 201, "attendanceStatusId": 3 },
+   *     { "classAttendanceId": 202, "attendanceStatusId": 3 },
+   *     { "classAttendanceId": 203, "attendanceStatusId": 3 }
+   *   ],
+   *   "changeReason": "Todos sin justificación"
+   * }
+   */
+  @Patch('bulk-update')
+  @HttpCode(HttpStatus.OK)
+  @Permissions('attendance', 'modify')
+  async bulkUpdateAttendance(
+    @ValidatedBody(bulkUpdateAttendanceSchema)
+    dto: BulkUpdateAttendanceDto,
+    @Request() req: any,
+  ) {
+    const userContext: UserContext = {
+      userId: req.user.id,
+      roleId: req.user.roleId,
+      email: req.user.email,
+    };
+
+    return this.attendanceService.bulkUpdateAttendance(dto, userContext);
   }
 
   /**

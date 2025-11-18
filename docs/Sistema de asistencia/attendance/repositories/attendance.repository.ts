@@ -55,11 +55,13 @@ export class AttendanceRepository {
 
   /**
    * Create class attendance records
+   * ✅ CHANGED: Now requires attendanceStatusId (FK to AttendanceStatus model)
    */
   async createClassAttendance(data: {
     studentAttendanceId: number;
     scheduleId: number;
     courseAssignmentId: number;
+    attendanceStatusId: number;
     status: string;
     arrivalTime?: string;
     notes?: string;
@@ -92,7 +94,6 @@ export class AttendanceRepository {
     return this.prisma.studentAttendance.findUnique({
       where: { id },
       include: {
-        status: true,
         enrollment: {
           include: {
             student: true,
@@ -117,9 +118,6 @@ export class AttendanceRepository {
           gte: startDate,
           lte: endDate,
         },
-      },
-      include: {
-        status: true,
       },
       orderBy: {
         date: 'desc',
@@ -428,12 +426,16 @@ export class AttendanceRepository {
     cycleId: number,
     date: Date,
   ) {
+    // ✅ FIXED: Normalize date to end of day to include same-day enrollments
+    const normalizedDate = new Date(date);
+    normalizedDate.setHours(23, 59, 59, 999);
+
     return this.prisma.enrollment.findMany({
       where: {
         sectionId,
         cycleId,
         status: 'ACTIVE',
-        dateEnrolled: { lte: date },
+        dateEnrolled: { lte: normalizedDate },
       },
       include: {
         student: {

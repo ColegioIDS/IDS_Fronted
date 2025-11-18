@@ -7,7 +7,7 @@ import { useAttendanceByDate } from '@/hooks/attendance/useAttendanceByDate';
 import { useActiveCycleId } from '@/hooks/attendance/useActiveCycleId';
 import { AttendanceStatusProvider } from '@/context/AttendanceStatusContext';
 import AttendanceHeader from './components/header/AttendanceHeader';
-import SimpleAttendanceTable from './components/table/SimpleAttendanceTable';
+import AttendanceTableWithToggle from './components/table/AttendanceTableWithToggle';
 import EmptyState from './components/states/EmptyState';
 import { Card, CardContent } from '@/components/ui/card';
 import { attendanceRecordService } from '@/services/attendance-record.service';
@@ -32,18 +32,19 @@ function AttendanceGridContent() {
   );
 
   // ========== CARGAR ASISTENCIA PARA LA FECHA SELECCIONADA ==========
-  const { attendance: existingAttendance, loading: loadingAttendance, loadAttendance } = useAttendanceByDate({
+  const { attendance: existingAttendance, allRecords, loading: loadingAttendance, loadAttendance } = useAttendanceByDate({
     sectionId: selectedSectionId || undefined,
     cycleId: activeCycleId || undefined,
+    gradeId: selectedGradeId || undefined,
     date: selectedDate,
   });
 
-  // Cargar asistencia cuando cambia sección o fecha
+  // Cargar asistencia cuando cambia sección, grado o fecha
   useEffect(() => {
-    if (selectedSectionId && activeCycleId) {
+    if (selectedSectionId && activeCycleId && selectedGradeId) {
       loadAttendance();
     }
-  }, [selectedSectionId, selectedDate, activeCycleId, loadAttendance]);
+  }, [selectedSectionId, selectedGradeId, selectedDate, activeCycleId, loadAttendance]);
 
   // ========== MAPEAR ESTUDIANTES AL FORMATO ESPERADO ==========
   const mappedStudents = students.map((enrollment: any) => ({
@@ -62,6 +63,11 @@ function AttendanceGridContent() {
     loadedSectionsCount: loadedSections.length,
     loadingStudents,
     studentsError,
+    loadingAttendance,
+    existingAttendanceKeys: Object.keys(existingAttendance),
+    existingAttendanceSize: Object.keys(existingAttendance).length,
+    allRecordsCount: allRecords.length,
+    allRecordsFirst: allRecords[0],
   });
 
   // ========== HANDLERS ==========
@@ -92,44 +98,121 @@ function AttendanceGridContent() {
 
   // ========== HANDLER PARA CAMBIAR ESTADO DE ASISTENCIA ==========
   const handleAttendanceStatusChange = useCallback(
-    async (enrollmentId: number, statusId: number, studentName: string) => {
+    async (enrollmentId: string, statusId: string, studentName: string) => {
       try {
-        // Buscar el registro de asistencia existente
-        const existingRecord = existingAttendance[enrollmentId];
+        console.log('[handleAttendanceStatusChange] 📌 CLICK DETECTADO:', {
+          enrollmentId,
+          statusId,
+          studentName,
+          existingAttendanceKeys: Object.keys(existingAttendance),
+          existingAttendanceLength: Object.keys(existingAttendance).length,
+        });
 
+        // Buscar el registro de asistencia existente
+        let existingRecord = existingAttendance[enrollmentId];
+
+        console.log('[handleAttendanceStatusChange] 🔍 Búsqueda de registro:', {
+          enrollmentId,
+          existingRecord,
+          foundRecord: !!existingRecord,
+        });
+
+        // Si no existe el registro, crearlo ahora
         if (!existingRecord) {
-          // Si no existe, crear uno nuevo
-          console.log('[handleAttendanceStatusChange] Creating new attendance record');
-          toast.error('No se encontró registro de asistencia. Por favor recarga la página.');
-          return;
+          console.log('[handleAttendanceStatusChange] 📝 NO EXISTE REGISTRO - Creando para este estudiante...');
+          
+          if (!selectedSectionId) {
+            console.error('[handleAttendanceStatusChange] ❌ Falta sectionId');
+            toast.error('Error: Falta datos de sección');
+            return;
+          }
+
+          const dateString = selectedDate.toISOString().split('T')[0];
+          
+          try {
+            // Crear registro INDIVIDUAL para este estudiante específico
+            const newRecord = await attendanceRecordService.createSingleAttendance(
+              parseInt(enrollmentId as string),
+              dateString,
+              parseInt(statusId as string)
+            );
+
+            console.log('[handleAttendanceStatusChange] ✅ Registro individual creado:', newRecord);
+
+            if (!newRecord || !newRecord.id) {
+              console.error('[handleAttendanceStatusChange] ❌ Respuesta inválida del servidor');
+              toast.error('Error: Respuesta inválida del servidor');
+              return;
+            }
+
+            existingRecord = newRecord;
+            console.log('[handleAttendanceStatusChange] ✅ Registro obtenido:', existingRecord);
+          } catch (createErr: any) {
+            console.error('[handleAttendanceStatusChange] ❌ Error creando registro:', createErr);
+            
+            // Extraer mensaje de error más informativo
+            let errorMessage = 'Error al crear registro de asistencia';
+            
+            if (createErr?.response?.data?.message) {
+              errorMessage = createErr.response.data.message;
+            } else if (createErr?.message) {
+              errorMessage = createErr.message;
+            }
+            
+            toast.error(errorMessage);
+            return;
+          }
         }
 
+        // Ahora actualizar el registro
         const changeReason = 'Asistencia registrada por docente en clase';
-        console.log('[handleAttendanceStatusChange] Updating attendance:', {
+        console.log('[handleAttendanceStatusChange] ✏️ Actualizando attendance:', {
           attendanceId: existingRecord.id,
           statusId,
           changeReason,
         });
 
         // Actualizar en backend
-        await attendanceRecordService.updateAttendanceStatus(
-          existingRecord.id,
-          statusId,
+        const updateResponse = await attendanceRecordService.updateAttendanceStatus(
+          parseInt(existingRecord.id as string),
+          parseInt(statusId as string),
           changeReason
         );
 
+        console.log('✅ Respuesta del backend:', updateResponse);
         console.log('✅ Asistencia actualizada:', studentName);
-        toast.success(`${studentName}: Asistencia registrada`);
 
         // Recargar asistencia para reflejar el cambio
-        loadAttendance();
-      } catch (error) {
-        console.error('[handleAttendanceStatusChange] Error:', error);
-        const message = error instanceof Error ? error.message : 'Error al registrar asistencia';
-        toast.error(message);
+        console.log('[handleAttendanceStatusChange] 🔄 Recargando datos...');
+        await loadAttendance();
+        console.log('[handleAttendanceStatusChange] ✅ Datos recargados');
+        
+        // NO mostrar toast aquí - AttendanceTableWithToggle se encargará
+      } catch (error: any) {
+        console.error('[handleAttendanceStatusChange] ❌ Error:', error);
+        
+        // Extraer mensaje de error más informativo
+        let message = 'Error al registrar asistencia';
+        
+        if (error?.response?.data?.message) {
+          message = error.response.data.message;
+        } else if (error?.response?.data?.details) {
+          // Si hay detalles específicos
+          const details = Array.isArray(error.response.data.details) 
+            ? error.response.data.details.join(', ')
+            : error.response.data.details;
+          message = details;
+        } else if (error?.message) {
+          message = error.message;
+        }
+        
+        // Relanzar el error para que AttendanceTableWithToggle lo maneje
+        const customError: any = new Error(message);
+        customError.response = error?.response;
+        throw customError;
       }
     },
-    [existingAttendance, loadAttendance]
+    [existingAttendance, loadAttendance, selectedSectionId, selectedGradeId, activeCycleId, selectedDate]
   );
 
   return (
@@ -181,16 +264,10 @@ function AttendanceGridContent() {
               )}
 
               {!loadingStudents && students.length > 0 && (
-                <SimpleAttendanceTable 
-                  data={mappedStudents} 
+                <AttendanceTableWithToggle 
+                  data={allRecords} 
                   selectedDate={selectedDate}
                   onStatusChange={handleAttendanceStatusChange}
-                  preFilledStatuses={Object.fromEntries(
-                    Object.entries(existingAttendance).map(([enrollmentId, record]) => [
-                      enrollmentId,
-                      record.attendanceStatusId
-                    ])
-                  )}
                 />
               )}
 

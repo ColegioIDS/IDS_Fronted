@@ -57,7 +57,7 @@ export const StudentsPageContent: React.FC = () => {
             </div>
           </div>
 
-          <Link href="/(admin)/students/create">
+          <Link href="/students/create">
             <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
               <Plus className="w-4 h-4" />
               Nuevo Estudiante
@@ -134,3 +134,5 @@ export const StudentsPageContent: React.FC = () => {
     </div>
   );
 };
+
+

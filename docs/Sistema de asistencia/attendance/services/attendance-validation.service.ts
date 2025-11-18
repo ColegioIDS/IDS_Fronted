@@ -43,9 +43,10 @@ export class AttendanceValidationService {
       throw new ForbiddenException('Usuario inactivo');
     }
 
-    if (!user.teacherDetails) {
-      throw new ForbiddenException('Solo maestros pueden registrar asistencia');
-    }
+    // ✅ CAMBIO: Remover validación de teacherDetails
+    // La validación de permisos ya se hace en @Permissions('attendance', 'create')
+    // Esto permite que ADMIN y otros roles con permiso puedan registrar asistencia
+    // sin necesidad de tener teacherDetails
 
     if (!user.role || !user.role.isActive) {
       throw new ForbiddenException('Rol del usuario inválido o inactivo');
@@ -265,10 +266,14 @@ export class AttendanceValidationService {
 
   /**
    * 7️⃣ VALIDAR SCHEDULES
-   * Verificar que el maestro tiene clases programadas ese día
+   * Verificar que existen clases programadas para la sección ese día
+   * 
+   * ✅ CAMBIO: Para ADMIN/COORDINATOR sin teacherId asignado,
+   * simplemente verificamos que hay schedules en la sección
    */
   async validateSchedules(userId: number, sectionId: number, dayOfWeek: number) {
-    const schedules = await this.prisma.schedule.findMany({
+    // Primero intentar obtener schedules del usuario
+    const schedulesForUser = await this.prisma.schedule.findMany({
       where: {
         sectionId,
         teacherId: userId,
@@ -284,21 +289,46 @@ export class AttendanceValidationService {
       },
     });
 
-    if (schedules.length === 0) {
+    // Si el usuario (maestro) tiene schedules, retornarlos
+    if (schedulesForUser.length > 0) {
+      return schedulesForUser;
+    }
+
+    // Si el usuario NO tiene schedules, probablemente es ADMIN/COORDINATOR
+    // En ese caso, obtener ALL schedules de la sección para ese día
+    const schedulesForSection = await this.prisma.schedule.findMany({
+      where: {
+        sectionId,
+        dayOfWeek,
+        courseAssignment: {
+          isActive: true,
+        },
+      },
+      include: {
+        course: true,
+        courseAssignment: true,
+        section: true,
+      },
+    });
+
+    if (schedulesForSection.length === 0) {
       throw new BadRequestException(
-        'No tienes clases programadas para este día en esta sección',
+        'No hay clases programadas para esta sección en este día',
       );
     }
 
-    return schedules;
+    return schedulesForSection;
   }
 
   /**
    * 8️⃣ VALIDAR ENROLLMENTS
    * Verificar que existen estudiantes matriculados activos
+   * ✅ FIXED: Normalize attendanceDate to end of day to include same-day enrollments
    */
   async validateEnrollments(sectionId: number, cycleId: number, date: string) {
     const attendanceDate = new Date(date);
+    // Set to end of day to include enrollments made the same day
+    attendanceDate.setHours(23, 59, 59, 999);
 
     const enrollments = await this.prisma.enrollment.findMany({
       where: {
@@ -356,7 +386,7 @@ export class AttendanceValidationService {
       throw new ForbiddenException('No tienes permiso para CREAR este estado de asistencia');
     }
 
-    if (permission.canModify) {
+    if (!permission.canModify) {
       throw new ForbiddenException('Los maestros no pueden MODIFICAR asistencia, solo crear');
     }
 

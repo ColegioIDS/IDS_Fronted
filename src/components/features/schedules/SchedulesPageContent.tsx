@@ -746,7 +746,7 @@ export default function SchedulesPageContent({
               </p>
             </div>
           </div>
-          <Link href="/admin/schedules/view">
+          <Link href="/schedules/view">
             <Button 
               variant="outline" 
               size="sm" 
