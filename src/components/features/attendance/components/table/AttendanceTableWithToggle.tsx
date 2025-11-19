@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Check, X, Clock, ChevronDown, ChevronUp, Grid3x3, List } from 'lucide-react';
+import { Users, Check, X, Clock, ChevronDown, ChevronUp, Grid3x3, List, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAttendanceStatuses } from '@/hooks/attendance/useAttendanceStatuses';
 
@@ -377,8 +377,8 @@ export default function AttendanceTableWithToggle({
                                         </p>
                                       )}
                                       {classAttendance.notes && (
-                                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-                                          📝 {classAttendance.notes}
+                                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 flex items-center gap-1">
+                                          <FileText className="w-3 h-3" /> {classAttendance.notes}
                                         </p>
                                       )}
                                     </div>

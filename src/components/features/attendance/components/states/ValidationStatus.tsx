@@ -124,15 +124,15 @@ export default function ValidationStatus({
           {validation.valid ? (
             <Alert className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-700">
               <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <AlertDescription className="text-green-800 dark:text-green-200 text-sm font-semibold">
-                ✓ Todas las validaciones pasaron. ¡Listo para registrar!
+              <AlertDescription className="text-green-800 dark:text-green-200 text-sm font-semibold flex items-center gap-1">
+                <Check className="w-4 h-4" /> Todas las validaciones pasaron. ¡Listo para registrar!
               </AlertDescription>
             </Alert>
           ) : (
             <Alert className="bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-700">
               <X className="h-4 w-4 text-red-600 dark:text-red-400" />
-              <AlertDescription className="text-red-800 dark:text-red-200 text-sm font-semibold">
-                ✗ No se puede registrar. Revisa los errores arriba.
+              <AlertDescription className="text-red-800 dark:text-red-200 text-sm font-semibold flex items-center gap-1">
+                <X className="w-4 h-4" /> No se puede registrar. Revisa los errores arriba.
               </AlertDescription>
             </Alert>
           )}

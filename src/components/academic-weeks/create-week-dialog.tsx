@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Calendar, Plus, Loader2, AlertCircle, RefreshCw, CalendarIcon } from 'lucide-react';
+import { Calendar, Plus, Loader2, AlertCircle, RefreshCw, CalendarIcon, BookOpen, PencilIcon, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -318,10 +318,10 @@ export function CreateWeekDialog({ open, onOpenChange }: CreateWeekDialogProps) 
                 </SelectContent>
               </Select>
               <FormMessage className="text-xs text-destructive" />
-              <p className="text-xs text-muted-foreground">
-                {field.value === 'REGULAR' && '📚 Semana de clases normales'}
-                {field.value === 'EVALUATION' && '📝 Semana de exámenes'}
-                {field.value === 'REVIEW' && '🔄 Semana de repaso'}
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                {field.value === 'REGULAR' && <><BookOpen className="w-3 h-3" /> Semana de clases normales</>}
+                {field.value === 'EVALUATION' && <><PencilIcon className="w-3 h-3" /> Semana de exámenes</>}
+                {field.value === 'REVIEW' && <><RotateCcw className="w-3 h-3" /> Semana de repaso</>}
               </p>
             </FormItem>
           )}

@@ -5,7 +5,7 @@
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ErrorAlert } from '@/components/shared/feedback/ErrorAlert';
+import { ErrorAlert, ConfirmDialog } from '@/components/shared/feedback';
 import { useSchoolCycles } from '@/hooks/data/useSchoolCycles';
 import { usePermissions } from '@/hooks/usePermissions';
 import { schoolCycleService } from '@/services/school-cycle.service';
@@ -21,7 +21,7 @@ import {
   SchoolCycleDetailDialog,
   ArchiveReasonDialog, // ← NUEVO
 } from './index';
-import { Plus, Loader } from 'lucide-react';
+import { Plus, Loader, PencilIcon, PlusIcon, X } from 'lucide-react';
 
 interface ApiError {
   title?: string;
@@ -38,6 +38,12 @@ export function SchoolCyclePageContent() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [editingCycle, setEditingCycle] = useState<SchoolCycle | null>(null);
+  
+  // Estados para dialogs de confirmación
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [activateConfirmOpen, setActivateConfirmOpen] = useState(false);
+  const [cycleToDelete, setCycleToDelete] = useState<SchoolCycle | null>(null);
+  const [cycleToActivate, setCycleToActivate] = useState<SchoolCycle | null>(null);
   
   // ✅ NUEVO: Estados para Archive Dialog
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
@@ -83,14 +89,21 @@ export function SchoolCyclePageContent() {
     setFormDialogOpen(true);
   }, []);
 
-  const handleDelete = useCallback(
-    async (cycle: SchoolCycle) => {
-      if (!confirm(`¿Estás seguro de que deseas eliminar "${cycle.name}"?`)) return;
+  const handleDelete = useCallback((cycle: SchoolCycle) => {
+    setCycleToDelete(cycle);
+    setDeleteConfirmOpen(true);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(
+    async () => {
+      if (!cycleToDelete) return;
 
       try {
         setActionLoading(true);
         setGlobalError(null);
-        await schoolCycleService.delete(cycle.id);
+        await schoolCycleService.delete(cycleToDelete.id);
+        setDeleteConfirmOpen(false);
+        setCycleToDelete(null);
         refresh();
       } catch (err: any) {
         const handled = handleApiError(err, 'Error al eliminar ciclo escolar');
@@ -103,22 +116,24 @@ export function SchoolCyclePageContent() {
         setActionLoading(false);
       }
     },
-    [refresh]
+    [cycleToDelete, refresh]
   );
 
-  const handleActivate = useCallback(
-    async (cycle: SchoolCycle) => {
-      if (
-        !confirm(
-          `¿Activar el ciclo "${cycle.name}"? Esto desactivará todos los demás ciclos.`
-        )
-      )
-        return;
+  const handleActivate = useCallback((cycle: SchoolCycle) => {
+    setCycleToActivate(cycle);
+    setActivateConfirmOpen(true);
+  }, []);
+
+  const handleActivateConfirm = useCallback(
+    async () => {
+      if (!cycleToActivate) return;
 
       try {
         setActionLoading(true);
         setGlobalError(null);
-        await schoolCycleService.activate(cycle.id);
+        await schoolCycleService.activate(cycleToActivate.id);
+        setActivateConfirmOpen(false);
+        setCycleToActivate(null);
         refresh();
       } catch (err: any) {
         const handled = handleApiError(err, 'Error al activar ciclo escolar');
@@ -131,7 +146,7 @@ export function SchoolCyclePageContent() {
         setActionLoading(false);
       }
     },
-    [refresh]
+    [cycleToActivate, refresh]
   );
 
   // ✅ NUEVO: Handler para abrir Archive Dialog
@@ -310,21 +325,49 @@ export function SchoolCyclePageContent() {
 
       {/* Form Dialog */}
       <Dialog open={formDialogOpen} onOpenChange={setFormDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {editingCycle ? 'Editar Ciclo Escolar' : 'Crear Nuevo Ciclo Escolar'}
-            </DialogTitle>
-          </DialogHeader>
-          <SchoolCycleForm
-            cycle={editingCycle || undefined}
-            onSuccess={handleFormSuccess}
-            onCancel={() => {
-              setFormDialogOpen(false);
-              setEditingCycle(null);
-            }}
-            isLoading={actionLoading}
-          />
+        <DialogContent showCloseButton={false} className="max-w-4xl max-h-[90vh] flex flex-col gap-0 p-0 bg-white dark:bg-gray-950 border-2 border-blue-200 dark:border-blue-900 shadow-2xl rounded-2xl overflow-hidden">
+          {/* Gradient Header con botón de cierre personalizado */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 px-8 py-6 border-b-4 border-blue-700 dark:border-blue-600 flex items-start justify-between">
+            <DialogHeader className="space-y-1 flex-1">
+              <DialogTitle className="text-2xl font-bold text-white flex items-center gap-3">
+                {editingCycle ? (
+                  <>
+                    <PencilIcon className="w-6 h-6" strokeWidth={2.5} />
+                    Editar Ciclo Escolar
+                  </>
+                ) : (
+                  <>
+                    <PlusIcon className="w-6 h-6" strokeWidth={2.5} />
+                    Crear Nuevo Ciclo Escolar
+                  </>
+                )}
+              </DialogTitle>
+              <p className="text-sm text-blue-100">
+                {editingCycle 
+                  ? `Modificando: ${editingCycle.name}` 
+                  : 'Completa los datos para crear un nuevo ciclo académico'}
+              </p>
+            </DialogHeader>
+            <button
+              onClick={() => setFormDialogOpen(false)}
+              className="ml-4 p-1.5 text-white hover:bg-white/20 rounded-lg transition-colors duration-200 flex-shrink-0"
+            >
+              <X className="w-6 h-6" strokeWidth={2.5} />
+            </button>
+          </div>
+          
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-8 py-6 scrollbar-thin-blue">
+            <SchoolCycleForm
+              cycle={editingCycle || undefined}
+              onSuccess={handleFormSuccess}
+              onCancel={() => {
+                setFormDialogOpen(false);
+                setEditingCycle(null);
+              }}
+              isLoading={actionLoading}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -345,6 +388,32 @@ export function SchoolCyclePageContent() {
           setCycleToArchive(null);
         }}
         isLoading={actionLoading}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        type="danger"
+        title="Eliminar Ciclo Escolar"
+        description={`¿Estás seguro de que deseas eliminar "${cycleToDelete?.name}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        isLoading={actionLoading}
+        onConfirm={handleDeleteConfirm}
+      />
+
+      {/* Activate Confirmation Dialog */}
+      <ConfirmDialog
+        open={activateConfirmOpen}
+        onOpenChange={setActivateConfirmOpen}
+        type="warning"
+        title="Activar Ciclo Escolar"
+        description={`¿Activar el ciclo "${cycleToActivate?.name}"? Esto desactivará todos los demás ciclos.`}
+        confirmText="Activar"
+        cancelText="Cancelar"
+        isLoading={actionLoading}
+        onConfirm={handleActivateConfirm}
       />
 
       {/* Loading overlay */}

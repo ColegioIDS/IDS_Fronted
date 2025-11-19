@@ -1,7 +1,7 @@
 // components/schedules/calendar/ScheduleSidebar.tsx
 "use client";
 
-import { BookOpen, User, AlertCircle } from "lucide-react";
+import { BookOpen, User, AlertCircle, PencilIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -229,10 +229,10 @@ export function ScheduleSidebar({
                     ? 'bg-blue-900/30 border border-blue-800/50' 
                     : 'bg-blue-50'
                 }`}>
-                  <span className={`text-sm font-medium ${
+                  <span className={`text-sm font-medium flex items-center gap-1 ${
                     isDark ? 'text-blue-300' : 'text-blue-700'
                   }`}>
-                    ✏️ Modificaciones
+                    <PencilIcon className="w-4 h-4" /> Modificaciones
                   </span>
                   <Badge className={
                     isDark 

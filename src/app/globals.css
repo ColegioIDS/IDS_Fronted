@@ -1000,3 +1000,43 @@ span.flatpickr-weekday,
   transform: scale(1.05);
   box-shadow: 0 4px 6px rgba(59, 130, 246, 0.4);
 }
+
+/* ============================================
+   🎨 SCROLLBAR DELGADO Y ELEGANTE
+   ============================================ */
+.scrollbar-thin-blue {
+  scrollbar-width: thin;
+  scrollbar-color: #93c5fd transparent;
+}
+
+.dark .scrollbar-thin-blue {
+  scrollbar-color: #1e3a8a transparent;
+}
+
+.scrollbar-thin-blue::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin-blue::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin-blue::-webkit-scrollbar-thumb {
+  background-color: #93c5fd;
+  border-radius: 3px;
+  border: 1px solid #bfdbfe;
+}
+
+.scrollbar-thin-blue::-webkit-scrollbar-thumb:hover {
+  background-color: #60a5fa;
+}
+
+.dark .scrollbar-thin-blue::-webkit-scrollbar-thumb {
+  background-color: #1e3a8a;
+  border-color: #1e40af;
+}
+
+.dark .scrollbar-thin-blue::-webkit-scrollbar-thumb:hover {
+  background-color: #1e40af;
+}
+

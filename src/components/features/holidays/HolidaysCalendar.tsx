@@ -5,7 +5,7 @@
 import React, { useState, useMemo } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO, isWithinInterval, addMonths, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, Coffee, Umbrella, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Coffee, Umbrella, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Holiday, BreakWeek } from '@/types/holidays.types';
 import { cn } from '@/lib/utils';
@@ -231,8 +231,12 @@ export function HolidaysCalendar({
                       {holiday && (
                         <>
                           <p className="font-bold mb-1">{holiday.description}</p>
-                          <p className="text-gray-300 dark:text-gray-600">
-                            {holiday.isRecovered ? '✓ Recuperable' : '✗ No recuperable'}
+                          <p className="text-gray-300 dark:text-gray-600 flex items-center gap-1">
+                            {holiday.isRecovered ? (
+                              <><Check className="w-3 h-3" /> Recuperable</>
+                            ) : (
+                              <><X className="w-3 h-3" /> No recuperable</>
+                            )}
                           </p>
                         </>
                       )}

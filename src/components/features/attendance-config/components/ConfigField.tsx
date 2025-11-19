@@ -2,6 +2,7 @@
 'use client';
 
 import React from 'react';
+import { Check, X } from 'lucide-react';
 import { ATTENDANCE_CONFIG_THEME } from '../attendance-config-theme';
 
 interface ConfigFieldProps {
@@ -51,8 +52,8 @@ export const ConfigField: React.FC<ConfigFieldProps> = ({
           `}
         >
           {typeof value === 'boolean' ? (
-            <span className={value ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-              {value ? '✓ Sí' : '✗ No'}
+            <span className={value ? 'text-green-600 dark:text-green-400 flex items-center gap-1' : 'text-red-600 dark:text-red-400 flex items-center gap-1'}>
+              {value ? (<><Check className="w-3 h-3" /> Sí</>) : (<><X className="w-3 h-3" /> No</>)}
             </span>
           ) : type === 'percentage' ? (
             <span>{value}%</span>

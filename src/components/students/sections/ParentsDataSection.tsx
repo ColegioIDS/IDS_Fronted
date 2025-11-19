@@ -283,8 +283,8 @@ useEffect(() => {
                       <FormMessage className="text-xs" />
                       {/* ✅ NUEVO: Mostrar estado de búsqueda */}
                       {parentDpiInfo && searchingDpiIndex === index && (
-                        <p className="text-xs text-green-600 mt-1">
-                        ✓ Padre encontrado: {parentDpiInfo.data?.user?.firstName} {parentDpiInfo.data?.user?.lastName}
+                        <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Padre encontrado: {parentDpiInfo.data?.user?.firstName} {parentDpiInfo.data?.user?.lastName}
 
                         </p>
                       )}

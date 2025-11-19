@@ -47,6 +47,8 @@ import {
   IdCard,
   CheckCircle2,
   Camera,
+  Check,
+  Circle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -614,8 +616,8 @@ export function UserForm({
                       <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                       <div>
                         <FormLabel className="dark:text-slate-300 font-semibold">Estado</FormLabel>
-                        <FormDescription className="dark:text-slate-400 text-xs">
-                          {field.value ? '✓ Activo' : '○ Inactivo'}
+                        <FormDescription className="dark:text-slate-400 text-xs flex items-center gap-1">
+                          {field.value ? (<><Check className="w-3 h-3" /> Activo</>) : (<><Circle className="w-3 h-3" /> Inactivo</>)}
                         </FormDescription>
                       </div>
                     </div>

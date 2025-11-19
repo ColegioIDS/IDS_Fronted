@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { Loader, AlertCircle, Zap, FileText } from 'lucide-react';
+import { Loader, AlertCircle, Zap, FileText, PencilIcon, PlusIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -45,8 +45,12 @@ export const ConfigStatusMappingForm: React.FC<ConfigStatusMappingFormProps> = (
     <Dialog open={open} onOpenChange={onCancel}>
       <DialogContent className="max-w-2xl border-0 shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
-            {editingId ? '✏️ Editar Mapeo' : '➕ Crear Nuevo Mapeo'}
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent flex items-center gap-2">
+            {editingId ? (
+              <><PencilIcon className="w-6 h-6" /> Editar Mapeo</>
+            ) : (
+              <><PlusIcon className="w-6 h-6" /> Crear Nuevo Mapeo</>
+            )}
           </DialogTitle>
           <DialogDescription className="text-base">
             {editingId

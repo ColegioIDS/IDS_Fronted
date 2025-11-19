@@ -258,8 +258,8 @@ console.log(weeks);
 
                       {/* Footer con año y mes */}
                       <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
-                        <span>📅 {week.year}</span>
-                        <span>📆 {format(start, 'MMMM', { locale: es })}</span>
+                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {week.year}</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {format(start, 'MMMM', { locale: es })}</span>
                       </div>
                     </div>
                   </Card>

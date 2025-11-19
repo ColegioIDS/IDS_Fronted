@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, RotateCcw, Calendar, GraduationCap, Users, User2, BookOpen, BarChart3 } from 'lucide-react';
+import { RefreshCw, RotateCcw, Calendar, GraduationCap, Users, User2, BookOpen, BarChart3, Check } from 'lucide-react';
 
 // Context hooks
 import { useSchoolCycleContext } from '@/context/SchoolCycleContext';
@@ -461,7 +461,7 @@ const availableBimesters = useMemo(() => {
                   >
                     <Icon className="h-4 w-4" />
                     <span>{step.number}. {step.title}</span>
-                    {step.completed && <Badge variant="secondary" className="ml-1 text-xs">✓</Badge>}
+                    {step.completed && <Badge variant="secondary" className="ml-1 text-xs"><Check className="w-3 h-3" /></Badge>}
                   </button>
                   {index < stepsInfo.length - 1 && (
                     <span className="text-gray-300 dark:text-gray-600">→</span>

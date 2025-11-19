@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { CheckCircle2, Lock, Eye, MoreHorizontal, Edit, Trash2, Key } from 'lucide-react';
+import { CheckCircle2, Lock, Eye, MoreHorizontal, Edit, Trash2, Key, Check, Circle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -231,7 +231,11 @@ export function UserTable({
                       : 'bg-slate-100/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200/50 dark:border-slate-700/50'
                     }
                   `}>
-                    {user.isActive ? '✓ Activo' : '○ Inactivo'}
+                    {user.isActive ? (
+                      <span className="flex items-center gap-1"><Check className="w-3 h-3" /> Activo</span>
+                    ) : (
+                      <span className="flex items-center gap-1"><Circle className="w-3 h-3" /> Inactivo</span>
+                    )}
                   </Badge>
                 </TableCell>
 

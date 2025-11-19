@@ -3,6 +3,7 @@
 
 import { useTheme } from "next-themes"; // ✅ AGREGAR
 import { Card, CardContent } from "@/components/ui/card";
+import { Calendar, Clock, BookOpen, Coffee } from "lucide-react";
 import type { Schedule, DayOfWeek } from "@/types/schedules";
 import type { TimeSlot, DragItem, TempSchedule, ScheduleChange } from "@/types/schedules.types";
 import { DroppableTimeSlot } from "./DroppableTimeSlot";
@@ -190,11 +191,11 @@ export function ScheduleGrid({
               : 'bg-gray-50 border-gray-200 text-gray-600'
           }`}>
             <div className="flex flex-wrap gap-4 items-center justify-between">
-              <div className="flex gap-4">
-                <span>📅 <strong>{currentWorkingDays.length}</strong> días laborales</span>
-                <span>⏰ <strong>{currentTimeSlots.length}</strong> slots de tiempo</span>
-                <span>📚 <strong>{currentTimeSlots.filter(s => !s.isBreak).length}</strong> períodos de clase</span>
-                <span>☕ <strong>{currentTimeSlots.filter(s => s.isBreak).length}</strong> recreos</span>
+              <div className="flex gap-4 flex-wrap">
+                <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> <strong>{currentWorkingDays.length}</strong> días laborales</span>
+                <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> <strong>{currentTimeSlots.length}</strong> slots de tiempo</span>
+                <span className="flex items-center gap-1"><BookOpen className="w-4 h-4" /> <strong>{currentTimeSlots.filter(s => !s.isBreak).length}</strong> períodos de clase</span>
+                <span className="flex items-center gap-1"><Coffee className="w-4 h-4" /> <strong>{currentTimeSlots.filter(s => s.isBreak).length}</strong> recreos</span>
               </div>
               <div className={`font-medium ${
                 isDark ? 'text-green-400' : 'text-green-600'

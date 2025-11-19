@@ -13,6 +13,8 @@ import {
   BarChart3,
   Bell,
   Info,
+  Check,
+  X,
 } from 'lucide-react';
 import { ATTENDANCE_CONFIG_THEME } from '../attendance-config-theme';
 
@@ -218,8 +220,12 @@ export const ConfigDisplayView: React.FC<ConfigDisplayViewProps> = ({
             `}
           >
             <div className="flex items-center gap-2">
-              <span className="text-xl">
-                {config.autoApproveJustification ? '✓' : '✗'}
+              <span className="text-xl flex items-center gap-1">
+                {config.autoApproveJustification ? (
+                  <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
+                ) : (
+                  <X className="w-5 h-5 text-red-600 dark:text-red-400" />
+                )}
               </span>
               <span className="font-semibold">
                 {config.autoApproveJustification

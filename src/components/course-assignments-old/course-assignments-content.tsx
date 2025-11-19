@@ -17,7 +17,8 @@ import {
   RefreshCw,
   ArrowLeft,
   Settings,
-  Calendar
+  Calendar,
+  Check
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext'; // ✅ NUEVO
 import ProtectedContent from '@/components/common/ProtectedContent'; // ✅ NUEVO
@@ -307,7 +308,7 @@ export default function CourseAssignmentsContent() {
                       ? 'bg-indigo-600 text-white'
                       : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
                   }`}>
-                    {selectedGradeId && selectedSectionId ? '✓' : '1'}
+                    {selectedGradeId && selectedSectionId ? <Check className="w-4 h-4" /> : '1'}
                   </div>
                   <span className={`text-sm font-medium ${
                     selectedGradeId && selectedSectionId

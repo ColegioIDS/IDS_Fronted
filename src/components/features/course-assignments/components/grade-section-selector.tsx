@@ -11,7 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { GraduationCap, Users, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { GraduationCap, Users, ChevronRight, AlertCircle, CheckCircle2, Check } from 'lucide-react';
 import { CycleGradesData } from '@/types/course-assignments.types';
 import { toast } from 'sonner';
 
@@ -264,7 +264,7 @@ const activeGrades = grades;
         <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
           <div className="flex items-center gap-2">
             <div className="flex items-center justify-center w-5 h-5 rounded-full bg-green-600 text-white text-xs font-medium">
-              ✓
+              <Check className="w-3 h-3" />
             </div>
             <div className="flex-1">
               <p className="font-medium text-green-800 dark:text-green-200">

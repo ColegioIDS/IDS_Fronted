@@ -27,6 +27,10 @@ import {
   Loader2,
   Clock,
   Zap,
+  Check,
+  Circle,
+  Check as CheckIcon,
+  X,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -376,7 +380,11 @@ export function UserDetailDialog({
                       }
                       font-bold
                     `}>
-                      {user.isActive ? '✓ Activo' : '○ Inactivo'}
+                      {user.isActive ? (
+                        <span className="flex items-center gap-1"><Check className="w-3 h-3" /> Activo</span>
+                      ) : (
+                        <span className="flex items-center gap-1"><Circle className="w-3 h-3" /> Inactivo</span>
+                      )}
                     </Badge>
                   </div>
                   <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50/30 to-cyan-50/20 dark:from-blue-950/20 dark:to-cyan-950/10 border border-blue-200/30 dark:border-blue-800/30">

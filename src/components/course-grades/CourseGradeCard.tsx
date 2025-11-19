@@ -20,6 +20,8 @@ import {
   MoreHorizontal,
   CheckCircle2,
   Loader2,
+  Check,
+  Diamond,
 } from 'lucide-react';
 import { CourseGradeWithRelations } from '@/types/courseGrades';
 import { courseGradesService } from '@/services/courseGrades.service';
@@ -163,7 +165,15 @@ export function CourseGradeCard({
                 : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
             }
           >
-            {courseGrade.isCore ? '✓ Obligatorio' : '◇ Electivo'}
+            {courseGrade.isCore ? (
+              <span className="flex items-center gap-1">
+                <Check className="w-3 h-3" /> Obligatorio
+              </span>
+            ) : (
+              <span className="flex items-center gap-1">
+                <Diamond className="w-3 h-3" /> Electivo
+              </span>
+            )}
           </Badge>
 
           {courseGrade.course?.area && (

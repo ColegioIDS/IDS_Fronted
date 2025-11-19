@@ -25,7 +25,8 @@ import {
   Calendar,
   Settings,
   Loader2,
-  XCircle
+  XCircle,
+  Check
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import ProtectedContent from '@/components/common/ProtectedContent';
@@ -353,7 +354,7 @@ export default function CourseAssignmentsPageContent() {
                       ? 'bg-indigo-600 text-white'
                       : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
                   }`}>
-                    {selectedGradeId && selectedSectionId ? '✓' : '1'}
+                    {selectedGradeId && selectedSectionId ? <Check className="w-4 h-4" /> : '1'}
                   </div>
                   <span className={`text-sm font-medium ${
                     selectedGradeId && selectedSectionId

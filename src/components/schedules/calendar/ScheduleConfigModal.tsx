@@ -235,9 +235,9 @@ export function ScheduleConfigModal({
                   <div className={`text-sm space-y-1 ${
                     isDark ? 'text-gray-400' : 'text-gray-600'
                   }`}>
-                    <div>📅 {preset.workingDays.length} días</div>
-                    <div>⏰ {preset.startTime} - {preset.endTime}</div>
-                    <div>📚 {preset.classDuration} min/clase</div>
+                    <div className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {preset.workingDays.length} días</div>
+                    <div className="flex items-center gap-1"><Clock className="w-4 h-4" /> {preset.startTime} - {preset.endTime}</div>
+                    <div className="flex items-center gap-1"><BookOpen className="w-4 h-4" /> {preset.classDuration} min/clase</div>
                   </div>
                 </button>
               ))}

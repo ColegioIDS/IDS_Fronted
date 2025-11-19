@@ -15,6 +15,8 @@ import {
   Eye,
   CheckCircle2,
   ArrowRight,
+  Check,
+  Circle,
 } from 'lucide-react';
 
 interface UserCardProps {
@@ -134,8 +136,13 @@ export function UserCard({
             ${statusStyles.badge}
             text-xs font-semibold whitespace-nowrap
             border border-slate-200/30 dark:border-slate-600/30
+            flex items-center gap-1
           `}>
-            {user.isActive ? '✓ Activo' : '○ Inactivo'}
+            {user.isActive ? (
+              <><Check className="w-3 h-3" /> Activo</>
+            ) : (
+              <><Circle className="w-3 h-3" /> Inactivo</>
+            )}
           </Badge>
         </div>
       </CardHeader>

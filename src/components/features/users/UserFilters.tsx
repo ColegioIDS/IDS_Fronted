@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Search, X, Sliders, Filter, Zap } from 'lucide-react';
+import { Search, X, Sliders, Filter, Zap, Clock, RefreshCw } from 'lucide-react';
 
 interface UserFiltersProps {
   query: UsersQuery;
@@ -229,12 +229,12 @@ export function UserFilters({ query, onQueryChange, isLoading }: UserFiltersProp
               </SelectItem>
               <SelectItem value="createdAt">
                 <span className="flex items-center gap-2">
-                  ⏰ Más reciente
+                  <Clock className="w-4 h-4" /> Más reciente
                 </span>
               </SelectItem>
               <SelectItem value="updatedAt">
                 <span className="flex items-center gap-2">
-                  ↻ Actualizado
+                  <RefreshCw className="w-4 h-4" /> Actualizado
                 </span>
               </SelectItem>
             </SelectContent>

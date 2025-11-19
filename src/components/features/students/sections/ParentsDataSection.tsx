@@ -1,5 +1,5 @@
 //src/components/features/students/sections/ParentsDataSection.tsx
-import { User, Mail, Phone, Briefcase, Building, IdCard, Plus, Trash2, AlertCircle, CheckCircle, Users } from "lucide-react";
+import { User, Mail, Phone, Briefcase, Building, IdCard, Plus, Trash2, AlertCircle, CheckCircle, Users, Check } from "lucide-react";
 import { useFieldArray, useWatch, useFormContext } from "react-hook-form";
 import { Separator } from '@/components/ui/separator';
 import { Button } from "@/components/ui/button";
@@ -296,8 +296,8 @@ export const ParentsDataSection = ({ isEditMode = false }: { isEditMode?: boolea
                           </p>
                         )}
                         {dpiValidation[index]?.isValid && (
-                          <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                            ✓ Datos cargados correctamente
+                          <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
+                            <Check className="w-3 h-3" /> Datos cargados correctamente
                           </p>
                         )}
                         <FormMessage className="text-xs" />

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import * as React from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CheckCircle, AlertCircle, Loader2, Clock } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -607,8 +607,8 @@ export function SchoolCycleForm({
 
           {formData.startDate && formData.endDate && (
             <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                📅 Duración: <span className="font-semibold">
+              <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                <Clock className="w-4 h-4" /> Duración: <span className="font-semibold">
                   {Math.ceil((formData.endDate.getTime() - formData.startDate.getTime()) / (1000 * 60 * 60 * 24))} días
                 </span>
               </p>

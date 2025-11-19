@@ -16,6 +16,8 @@ import {
   Calendar,
   ArrowUpDown,
   RotateCcw,
+  Check,
+  LockOpen,
 } from 'lucide-react';
 
 interface SchoolCycleFiltersProps {
@@ -218,8 +220,8 @@ export function SchoolCycleFilters({
                   transition-all duration-200"
               >
                 <option value="">Todos</option>
-                <option value="true">✓ Activos</option>
-                <option value="false">✗ Inactivos</option>
+                <option value="true">Activos</option>
+                <option value="false">Inactivos</option>
               </select>
             </div>
 
@@ -245,8 +247,8 @@ export function SchoolCycleFilters({
                   transition-all duration-200"
               >
                 <option value="">Todos</option>
-                <option value="true">🔒 Cerrados</option>
-                <option value="false">🔓 Abiertos</option>
+                <option value="true">Cerrados</option>
+                <option value="false">Abiertos</option>
               </select>
             </div>
 
@@ -272,8 +274,8 @@ export function SchoolCycleFilters({
                   transition-all duration-200"
               >
                 <option value="">Todas</option>
-                <option value="true">✓ Abiertas</option>
-                <option value="false">✗ Cerradas</option>
+                <option value="true">Abiertas</option>
+                <option value="false">Cerradas</option>
               </select>
             </div>
 
@@ -295,10 +297,10 @@ export function SchoolCycleFilters({
                   focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30
                   transition-all duration-200"
               >
-                <option value="createdAt">📅 Fecha de creación</option>
-                <option value="name">🔤 Nombre</option>
-                <option value="startDate">▶️ Fecha de inicio</option>
-                <option value="endDate">⏹️ Fecha de fin</option>
+                <option value="createdAt">Fecha de creación</option>
+                <option value="name">Nombre</option>
+                <option value="startDate">Fecha de inicio</option>
+                <option value="endDate">Fecha de fin</option>
               </select>
             </div>
 
