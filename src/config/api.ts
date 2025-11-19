@@ -12,7 +12,7 @@ import { toast } from 'sonner';
  * - Validación de status (NO lanzar error automáticamente)
  */
 const api: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000',
   timeout: 30000,
   withCredentials: true,
   headers: {
@@ -28,7 +28,7 @@ const api: AxiosInstance = axios.create({
  */
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

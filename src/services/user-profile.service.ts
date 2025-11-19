@@ -1,7 +1,6 @@
 import { UpdateUserProfileDto } from '@/schemas/user-profile.schema';
 import { UserProfile } from '@/components/features/user-profile';
-
-const API_BASE = '/api';
+import { api } from '@/config/api';
 
 /**
  * Servicio para gestionar el perfil del usuario
@@ -11,38 +10,27 @@ export const userProfileService = {
    * Obtiene el perfil del usuario autenticado
    */
   async getProfile(): Promise<UserProfile> {
-    const response = await fetch(`${API_BASE}/user-profile`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await api.get('/api/user-profile');
+    
+    console.log('🔍 user-profile response:', response.data);
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al obtener el perfil');
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || 'Error al obtener el perfil');
     }
 
-    return response.json();
+    return response.data.data;
   },
 
   /**
    * Actualiza el perfil del usuario autenticado
    */
   async updateProfile(updateData: UpdateUserProfileDto): Promise<UserProfile> {
-    const response = await fetch(`${API_BASE}/user-profile`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updateData),
-    });
+    const response = await api.patch('/api/user-profile', updateData);
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al actualizar el perfil');
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || 'Error al actualizar el perfil');
     }
 
-    return response.json();
+    return response.data.data;
   },
 };

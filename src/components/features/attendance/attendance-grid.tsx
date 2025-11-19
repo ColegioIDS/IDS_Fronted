@@ -5,9 +5,11 @@ import { useGradesAndSections } from '@/hooks/attendance/useGradesAndSections';
 import { useStudentsBySection } from '@/hooks/data';
 import { useAttendanceByDate } from '@/hooks/attendance/useAttendanceByDate';
 import { useActiveCycleId } from '@/hooks/attendance/useActiveCycleId';
+import { useAttendanceStatuses } from '@/hooks/attendance';
 import { AttendanceStatusProvider } from '@/context/AttendanceStatusContext';
 import AttendanceHeader from './components/header/AttendanceHeader';
 import AttendanceTableWithToggle from './components/table/AttendanceTableWithToggle';
+import { StudentAttendanceList } from '@/components/features/attendance/components/StudentAttendanceList';
 import EmptyState from './components/states/EmptyState';
 import { Card, CardContent } from '@/components/ui/card';
 import { attendanceRecordService } from '@/services/attendance-record.service';
@@ -17,6 +19,9 @@ function AttendanceGridContent() {
   // ========== OBTENER ID DEL CICLO ACTIVO ==========
   const { cycleId: activeCycleId } = useActiveCycleId();
 
+  // ========== OBTENER ESTADOS DE ASISTENCIA ==========
+  const { statuses } = useAttendanceStatuses();
+
   // ========== HOOK PARA CARGAR SECCIONES ==========
   const { sections: loadedSections, fetchSectionsByGrade } = useGradesAndSections();
 
@@ -24,6 +29,8 @@ function AttendanceGridContent() {
   const [selectedGradeId, setSelectedGradeId] = useState<number | null>(null);
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [hasExistingRecords, setHasExistingRecords] = useState(false);
+  const [selectedStatuses, setSelectedStatuses] = useState<Map<number, number>>(new Map());
 
   // ========== CARGAR ESTUDIANTES DE LA SECCIÓN ==========
   const { students, loading: loadingStudents, error: studentsError } = useStudentsBySection(
@@ -32,12 +39,17 @@ function AttendanceGridContent() {
   );
 
   // ========== CARGAR ASISTENCIA PARA LA FECHA SELECCIONADA ==========
-  const { attendance: existingAttendance, allRecords, loading: loadingAttendance, loadAttendance } = useAttendanceByDate({
+  const { attendance: existingAttendance, allRecords, loading: loadingAttendance, loadAttendance, error: attendanceError } = useAttendanceByDate({
     sectionId: selectedSectionId || undefined,
     cycleId: activeCycleId || undefined,
     gradeId: selectedGradeId || undefined,
     date: selectedDate,
   });
+
+  // Detectar si hay registros existentes
+  useEffect(() => {
+    setHasExistingRecords(allRecords && allRecords.length > 0);
+  }, [allRecords]);
 
   // Cargar asistencia cuando cambia sección, grado o fecha
   useEffect(() => {
@@ -264,11 +276,49 @@ function AttendanceGridContent() {
               )}
 
               {!loadingStudents && students.length > 0 && (
-                <AttendanceTableWithToggle 
-                  data={allRecords} 
-                  selectedDate={selectedDate}
-                  onStatusChange={handleAttendanceStatusChange}
-                />
+                <>
+                  {/* NUEVO: Si NO hay registros existentes, mostrar formulario para crear */}
+                  {!hasExistingRecords && !loadingAttendance && attendanceError && (
+                    <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20">
+                      <CardContent className="py-6 space-y-4">
+                        <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                          📝 No hay registros de asistencia para esta fecha. Registra la asistencia ahora:
+                        </p>
+                        <StudentAttendanceList
+                          sectionId={selectedSectionId}
+                          statuses={statuses}
+                          selectedStatuses={selectedStatuses}
+                          onStudentSelect={(enrollmentId, statusId) => {
+                            const newMap = new Map(selectedStatuses);
+                            newMap.set(enrollmentId, statusId);
+                            setSelectedStatuses(newMap);
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Si SÍ hay registros existentes, mostrar tabla */}
+                  {hasExistingRecords && (
+                    <AttendanceTableWithToggle 
+                      data={allRecords} 
+                      selectedDate={selectedDate}
+                      onStatusChange={handleAttendanceStatusChange}
+                    />
+                  )}
+
+                  {/* Si está cargando, mostrar estado */}
+                  {loadingAttendance && (
+                    <Card>
+                      <CardContent className="py-8 text-center">
+                        <div className="inline-flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                          <span className="ml-3 text-gray-600 dark:text-gray-400">Cargando asistencia...</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
               )}
 
               {!loadingStudents && students.length === 0 && !studentsError && (

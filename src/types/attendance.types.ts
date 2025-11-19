@@ -731,3 +731,74 @@ export interface AuditedAttendanceRecord extends StudentAttendance {
     lastModifiedAt: string;
   };
 }
+
+// ============================================================================
+// NEW ENDPOINTS: TEACHER COURSES (Endpoints 1 & 2)
+// ============================================================================
+
+/**
+ * TeacherCourseDto - Información de un curso disponible del maestro
+ * Respuesta del Endpoint 1: GET /api/attendance/teacher/courses/:date
+ */
+export interface TeacherCourse {
+  scheduleId: number;
+  courseAssignmentId: number;
+  courseId: number;
+  courseName: string;
+  courseCode: string;
+  sectionId: number;
+  sectionName: string;
+  dayOfWeek: number; // 0-6
+  startTime: string; // HH:MM
+  endTime: string; // HH:MM
+  classroom?: string | null;
+  studentCount: number;
+}
+
+/**
+ * GetTeacherCoursesResponse - Respuesta del Endpoint 1
+ */
+export interface GetTeacherCoursesResponse {
+  success: boolean;
+  message: string;
+  date: string; // YYYY-MM-DD
+  courses: TeacherCourse[];
+}
+
+/**
+ * BulkTeacherAttendanceByCourseDto - Request del Endpoint 2
+ * POST /api/attendance/teacher/by-courses
+ */
+export interface BulkTeacherAttendanceByCourseRequest {
+  date: string; // YYYY-MM-DD
+  courseAssignmentIds: number[]; // 1-10 elementos
+  attendanceStatusId: number;
+  arrivalTime?: string | null; // HH:MM (opcional)
+  notes?: string | null; // max 500 caracteres (opcional)
+}
+
+/**
+ * AttendanceRecordByCourseSummary - Detalle por curso en respuesta
+ */
+export interface AttendanceRecordByCourseSummary {
+  scheduleId: number;
+  courseAssignmentId: number;
+  sectionId: number;
+  enrollmentCount: number;
+  attendanceRecordsCreated: number;
+}
+
+/**
+ * BulkTeacherAttendanceByCourseResponse - Respuesta del Endpoint 2
+ */
+export interface BulkTeacherAttendanceByCourseResponse {
+  success: boolean;
+  message: string;
+  date: string; // YYYY-MM-DD
+  courseCount: number;
+  createdAttendances: number;
+  createdReports: number;
+  enrollmentsCovered: number;
+  records: AttendanceRecordByCourseSummary[];
+}
+

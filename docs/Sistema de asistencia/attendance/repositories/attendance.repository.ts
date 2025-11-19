@@ -1,17 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
-  StudentAttendance,
   StudentClassAttendance,
-  StudentAttendanceChange,
   StudentAttendanceReport,
   Enrollment,
 } from '@prisma/client';
 
 /**
- * AttendanceRepository
+ * AttendanceRepository - REFACTORIZADO
  * Handles all database operations for attendance records
- * Abstracts Prisma queries and provides clean data access layer
+ * ✨ CAMBIO: StudentClassAttendance es ahora autónoma (sin StudentAttendance padre)
+ * ✨ CAMBIO: Auditoría integrada en StudentClassAttendance (sin StudentAttendanceChange)
  */
 @Injectable()
 export class AttendanceRepository {
@@ -37,35 +36,20 @@ export class AttendanceRepository {
   }
 
   /**
-   * Create a student attendance record
-   */
-  async createStudentAttendance(data: {
-    enrollmentId: number;
-    date: Date;
-    attendanceStatusId: number;
-    notes?: string;
-    arrivalTime?: string;
-    minutesLate?: number;
-    recordedBy: number;
-  }): Promise<StudentAttendance> {
-    return this.prisma.studentAttendance.create({
-      data,
-    });
-  }
-
-  /**
-   * Create class attendance records
-   * ✅ CHANGED: Now requires attendanceStatusId (FK to AttendanceStatus model)
+   * Create class attendance record - NOW AUTONOMOUS
+   * ✨ NUEVO: Ya no requiere studentAttendanceId
+   * ✨ NUEVO: Ahora incluye enrollmentId y date directamente
    */
   async createClassAttendance(data: {
-    studentAttendanceId: number;
+    enrollmentId: number;
+    date: Date;
     scheduleId: number;
     courseAssignmentId: number;
     attendanceStatusId: number;
     status: string;
-    arrivalTime?: string;
-    notes?: string;
-    recordedBy: number;
+    arrivalTime?: string | null;
+    notes?: string | null;
+    recordedBy?: number | null;
   }): Promise<StudentClassAttendance> {
     return this.prisma.studentClassAttendance.create({
       data,
@@ -73,25 +57,37 @@ export class AttendanceRepository {
   }
 
   /**
-   * Update student attendance
+   * Update class attendance record with audit fields
+   * ✨ NUEVO: Actualiza campos de auditoría integrados
    */
-  async updateStudentAttendance(
+  async updateClassAttendance(
     id: number,
-    data: Partial<StudentAttendance>,
-  ): Promise<StudentAttendance> {
-    return this.prisma.studentAttendance.update({
+    data: {
+      attendanceStatusId?: number;
+      status?: string;
+      arrivalTime?: string | null;
+      notes?: string | null;
+      lastModifiedBy?: number | null;
+      lastModifiedAt?: Date;
+      modificationReason?: string | null;
+    },
+  ): Promise<StudentClassAttendance> {
+    return this.prisma.studentClassAttendance.update({
       where: { id },
-      data,
+      data: {
+        ...data,
+        updatedAt: new Date(),
+      },
     });
   }
 
   /**
-   * Find student attendance by ID
+   * Find class attendance by ID with full details
    */
-  async findStudentAttendanceById(
+  async findClassAttendanceById(
     id: number,
-  ): Promise<StudentAttendance | null> {
-    return this.prisma.studentAttendance.findUnique({
+  ): Promise<StudentClassAttendance | null> {
+    return this.prisma.studentClassAttendance.findUnique({
       where: { id },
       include: {
         enrollment: {
@@ -99,25 +95,70 @@ export class AttendanceRepository {
             student: true,
           },
         },
+        schedule: true,
+        courseAssignment: true,
+        attendanceStatus: true,
+        recordedByUser: true,
+        modifiedByUser: true,
       },
     });
   }
 
   /**
-   * Find attendance records for a student in a date range
+   * Find class attendances by enrollment and date
+   * ✨ NUEVO: Busca directamente en StudentClassAttendance (no en padre)
    */
-  async findAttendanceByEnrollmentAndDateRange(
+  async findClassAttendancesByEnrollmentAndDate(
+    enrollmentId: number,
+    date: Date,
+  ): Promise<StudentClassAttendance[]> {
+    return this.prisma.studentClassAttendance.findMany({
+      where: {
+        enrollmentId,
+        date,
+      },
+      include: {
+        schedule: {
+          include: {
+            course: true,
+          },
+        },
+        courseAssignment: true,
+        attendanceStatus: true,
+        recordedByUser: true,
+        modifiedByUser: true,
+      },
+      orderBy: {
+        schedule: {
+          startTime: 'asc',
+        },
+      },
+    });
+  }
+
+  /**
+   * Find class attendances by enrollment in date range
+   */
+  async findClassAttendancesByEnrollmentAndDateRange(
     enrollmentId: number,
     startDate: Date,
     endDate: Date,
-  ): Promise<StudentAttendance[]> {
-    return this.prisma.studentAttendance.findMany({
+  ): Promise<StudentClassAttendance[]> {
+    return this.prisma.studentClassAttendance.findMany({
       where: {
         enrollmentId,
         date: {
           gte: startDate,
           lte: endDate,
         },
+      },
+      include: {
+        schedule: {
+          include: {
+            course: true,
+          },
+        },
+        attendanceStatus: true,
       },
       orderBy: {
         date: 'desc',
@@ -148,25 +189,6 @@ export class AttendanceRepository {
       include: {
         status: true,
       },
-    });
-  }
-
-  /**
-   * Create attendance change record (audit trail)
-   */
-  async createAttendanceChange(data: {
-    studentAttendanceId: number;
-    attendanceStatusIdBefore: number;
-    attendanceStatusIdAfter: number;
-    notesBefore?: string;
-    notesAfter?: string;
-    arrivalTimeBefore?: string;
-    arrivalTimeAfter?: string;
-    changeReason?: string;
-    changedBy: number;
-  }): Promise<StudentAttendanceChange> {
-    return this.prisma.studentAttendanceChange.create({
-      data,
     });
   }
 
@@ -562,4 +584,190 @@ export class AttendanceRepository {
       },
     });
   }
+
+  /**
+   * Obtiene asistencias de una sección en una fecha específica
+   * ✨ NUEVO: Retorna directamente desde StudentClassAttendance (es autónoma)
+   */
+  async getSectionAttendanceByDate(
+    sectionId: number,
+    cycleId: number,
+    date: Date,
+  ): Promise<
+    {
+      enrollmentId: number;
+      studentId: number;
+      studentName: string;
+      date: string;
+      dayStatus: string;
+      classAttendances: {
+        id: number;
+        scheduleId: number;
+        className: string;
+        startTime: string;
+        endTime: string;
+        attendanceStatusId: number;
+        status: string;
+        arrivalTime: string | null;
+        notes: string | null;
+        recordedBy: string | null;
+        modifiedBy: string | null;
+        modificationReason: string | null;
+      }[];
+    }[]
+  > {
+    // Obtener enrollments activos de la sección en el ciclo
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: {
+        sectionId,
+        cycleId,
+        status: 'ACTIVE',
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            givenNames: true,
+            lastNames: true,
+          },
+        },
+      },
+    });
+
+    if (enrollments.length === 0) {
+      return [];
+    }
+
+    // Obtener StudentClassAttendance para cada enrollment en esa fecha (directamente)
+    const classAttendances = await this.prisma.studentClassAttendance.findMany({
+      where: {
+        enrollmentId: {
+          in: enrollments.map((e) => e.id),
+        },
+        date: {
+          gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
+          lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1),
+        },
+      },
+      include: {
+        schedule: {
+          include: {
+            course: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        attendanceStatus: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
+        recordedByUser: {
+          select: {
+            id: true,
+            givenNames: true,
+            lastNames: true,
+          },
+        },
+        modifiedByUser: {
+          select: {
+            id: true,
+            givenNames: true,
+            lastNames: true,
+          },
+        },
+      },
+      orderBy: [
+        { enrollmentId: 'asc' },
+        { schedule: { startTime: 'asc' } },
+      ],
+    });
+
+    // Agrupar por enrollmentId
+    const attendancesByEnrollment = new Map<number, typeof classAttendances>();
+    classAttendances.forEach((ca) => {
+      if (!attendancesByEnrollment.has(ca.enrollmentId)) {
+        attendancesByEnrollment.set(ca.enrollmentId, []);
+      }
+      attendancesByEnrollment.get(ca.enrollmentId)!.push(ca);
+    });
+
+    // Construir respuesta estructurada
+    const result: {
+      enrollmentId: number;
+      studentId: number;
+      studentName: string;
+      date: string;
+      dayStatus: string;
+      classAttendances: {
+        id: number;
+        scheduleId: number;
+        className: string;
+        startTime: string;
+        endTime: string;
+        attendanceStatusId: number;
+        status: string;
+        arrivalTime: string | null;
+        notes: string | null;
+        recordedBy: string | null;
+        modifiedBy: string | null;
+        modificationReason: string | null;
+      }[];
+    }[] = [];
+    for (const enrollment of enrollments) {
+      const attendances = attendancesByEnrollment.get(enrollment.id) || [];
+
+      if (attendances.length === 0) {
+        continue; // Skip if no attendance records
+      }
+
+      // Calcular status general del día (si todos presentes, si alguno ausente, etc)
+      const classStatuses = attendances.map((ca) => ca.status);
+      let dayStatus = 'PRESENT'; // Por defecto
+
+      if (classStatuses.includes('ABSENT')) {
+        dayStatus = 'ABSENT';
+      } else if (classStatuses.some((s) => s === 'TARDY' || s === 'LATE')) {
+        dayStatus = 'TARDY';
+      } else if (
+        classStatuses.includes('EXCUSED') ||
+        classStatuses.includes('JUSTIFIED')
+      ) {
+        dayStatus = 'EXCUSED';
+      }
+
+      result.push({
+        enrollmentId: enrollment.id,
+        studentId: enrollment.studentId,
+        studentName: `${enrollment.student.givenNames} ${enrollment.student.lastNames}`,
+        date: date.toISOString().split('T')[0],
+        dayStatus,
+        classAttendances: attendances.map((ca) => ({
+          id: ca.id,
+          scheduleId: ca.scheduleId,
+          className: ca.schedule.course.name,
+          startTime: ca.schedule.startTime,
+          endTime: ca.schedule.endTime,
+          attendanceStatusId: ca.attendanceStatusId,
+          status: ca.status,
+          arrivalTime: ca.arrivalTime,
+          notes: ca.notes,
+          recordedBy: ca.recordedByUser
+            ? `${ca.recordedByUser.givenNames} ${ca.recordedByUser.lastNames}`
+            : null,
+          modifiedBy: ca.modifiedByUser
+            ? `${ca.modifiedByUser.givenNames} ${ca.modifiedByUser.lastNames}`
+            : null,
+          modificationReason: ca.modificationReason,
+        })),
+      });
+    }
+
+    return result;
+  }
 }
+

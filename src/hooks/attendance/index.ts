@@ -19,3 +19,12 @@ export { useActiveCycleId } from './useActiveCycleId';
 // Hooks de estados (PHASE 3 - Dynamic Status Management)
 export { useAttendanceStatuses } from './useAttendanceStatuses';
 
+// Hooks de cursos del maestro (NUEVOS - Endpoint 1 & 2)
+export { useTeacherCourses } from './useTeacherCourses';
+export { useTeacherAttendanceRegistration } from './useTeacherAttendanceRegistration';
+
+// Hooks para estudiantes de sección (NUEVO - Get Section Students)
+export { useSectionStudents } from './useSectionStudents';
+export type { StudentForAttendance, EnrollmentsBySectionResponse, UseSectionStudentsReturn } from './useSectionStudents';
+
+

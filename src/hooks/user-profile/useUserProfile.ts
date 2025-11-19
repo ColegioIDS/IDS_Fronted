@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { userProfileService } from '@/services/user-profile.service';
 import { UpdateUserProfileDto } from '@/schemas/user-profile.schema';
 import { UserProfile } from '@/components/features/user-profile';
+import { useAuth } from '@/context/AuthContext';
 
 interface UseUserProfileReturn {
   profile: UserProfile | null;
@@ -17,6 +18,7 @@ export function useUserProfile(): UseUserProfileReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth(); // ✅ Esperar autenticación
 
   // Cargar perfil
   const fetchProfile = useCallback(async () => {
@@ -52,10 +54,15 @@ export function useUserProfile(): UseUserProfileReturn {
     []
   );
 
-  // Cargar perfil al montar
+  // ✅ SOLO cargar perfil si el usuario está autenticado
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+    if (isAuthenticated) {
+      fetchProfile();
+    } else {
+      setProfile(null);
+      setIsLoading(false);
+    }
+  }, [isAuthenticated, fetchProfile]);
 
   return {
     profile,

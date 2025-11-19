@@ -480,23 +480,36 @@ export class AttendanceValidationService {
   }
 
   /**
-   * 1️⃣3️⃣ VALIDAR EXISTENCIA DE ASISTENCIA
-   * Verificar que no existe ya un registro para ese día
+   * 1️⃣3️⃣ VALIDAR EXISTENCIA DE ASISTENCIA POR CLASE
+   * ✨ CAMBIO: Ahora verifica en StudentClassAttendance (es autónoma)
+   * Verificar que no existe ya un registro para ese día y clase
    */
-  async validateAttendanceNotExists(enrollmentId: number, date: string) {
+  async validateAttendanceNotExists(
+    enrollmentId: number,
+    date: string,
+    scheduleId?: number,
+  ) {
     const attendanceDate = new Date(date);
     attendanceDate.setHours(0, 0, 0, 0);
 
-    const existing = await this.prisma.studentAttendance.findFirst({
-      where: {
-        enrollmentId,
-        date: attendanceDate,
-      },
+    const where: any = {
+      enrollmentId,
+      date: attendanceDate,
+    };
+
+    if (scheduleId) {
+      where.scheduleId = scheduleId;
+    }
+
+    const existing = await this.prisma.studentClassAttendance.findFirst({
+      where,
     });
 
     if (existing) {
       throw new BadRequestException(
-        'Ya existe un registro de asistencia para este estudiante en esta fecha. Debes editar el existente.',
+        'Ya existe un registro de asistencia para este estudiante en esta fecha' +
+        (scheduleId ? ' y clase' : '') +
+        '. Debes editar el existente.',
       );
     }
 

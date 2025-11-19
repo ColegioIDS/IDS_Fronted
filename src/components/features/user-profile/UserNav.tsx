@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/button';
 import { User, Settings, LogOut, FileText } from 'lucide-react';
 import { useUserProfile } from '@/hooks/user-profile';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+
 interface UserNavProps {
   className?: string;
 }
@@ -27,7 +29,7 @@ export function UserNav({ className }: UserNavProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' });
       router.push('/login');
     } catch (error) {
       console.error('Error logging out:', error);

@@ -19,11 +19,9 @@ import {
 } from '../dto';
 import {
   AttendanceStatus,
-  StudentAttendance,
   StudentAttendanceReport,
   Enrollment,
   StudentClassAttendance,
-  StudentAttendanceChange,
 } from '@prisma/client';
 
 /**
@@ -70,7 +68,7 @@ export class AttendanceService {
     createdAttendances: number;
     createdClassAttendances: number;
     createdReports: number;
-    records: StudentAttendance[];
+    records: StudentClassAttendance[];
   }> {
     // 1️⃣ Validate DTO
     const validatedDto = bulkTeacherAttendanceSchema.parse(dto);
@@ -148,11 +146,11 @@ export class AttendanceService {
     // ✅ ALL VALIDATIONS PASSED - START TRANSACTION
     const result = await this.prisma.$transaction(
       async (tx) => {
-        const createdAttendances: StudentAttendance[] = [];
+        const createdClassAttendances: StudentClassAttendance[] = [];
         const createdReports = new Set<number>();
 
-        // ✅ CAMBIO: Crear UN registro StudentAttendance por estudiante/día
-        // Luego crear un StudentClassAttendance por cada clase
+        // ✨ CAMBIO: Crear StudentClassAttendance DIRECTAMENTE (sin StudentAttendance padre)
+        // Ahora cada clase es un registro autónomo
         
         for (const enrollment of enrollments) {
           // 1️⃣5️⃣ VALIDATION LAYER 15: Ensure no duplicate for this day
@@ -161,28 +159,8 @@ export class AttendanceService {
             validatedDto.date,
           );
 
-          // Create StudentAttendance (contenedor del día - SIN status)
-          const studentAttendance = await tx.studentAttendance.create({
-            data: {
-              enrollmentId: enrollment.id,
-              date: attendanceDate,
-              arrivalTime: validatedDto.arrivalTime || null,
-              departureTime: validatedDto.departureTime || null,
-              notes: validatedDto.notes || null,
-              recordedBy: user.userId,
-            },
-            include: {
-              enrollment: {
-                include: {
-                  student: true,
-                },
-              },
-            },
-          });
-
-          createdAttendances.push(studentAttendance);
-
-          // Create StudentClassAttendance para CADA clase (aquí está el status real)
+          // ✨ CAMBIO: Crear StudentClassAttendance por cada clase
+          // SIN tabla padre StudentAttendance
           for (const schedule of schedules) {
             // Filter by courseAssignmentIds if provided
             if (
@@ -196,22 +174,22 @@ export class AttendanceService {
 
             // Calcular minutesLate si aplica
             let arrivalTimeForClass = validatedDto.arrivalTime;
-            let minutesLate = 0;
 
             if (
               validatedDto.arrivalTime &&
               attendanceStatus.code === 'T' // T = Tardío
             ) {
-              minutesLate = this.validationService.calculateMinutesLate(
+              this.validationService.calculateMinutesLate(
                 validatedDto.arrivalTime,
                 config.lateThresholdTime,
                 config.markAsTardyAfterMinutes,
               );
             }
 
-            await tx.studentClassAttendance.create({
+            const classAttendance = await tx.studentClassAttendance.create({
               data: {
-                studentAttendanceId: studentAttendance.id,
+                enrollmentId: enrollment.id,
+                date: attendanceDate,
                 scheduleId: schedule.id,
                 courseAssignmentId: schedule.courseAssignmentId,
                 attendanceStatusId: attendanceStatus.id,
@@ -219,8 +197,18 @@ export class AttendanceService {
                 arrivalTime: arrivalTimeForClass || null,
                 notes: validatedDto.notes || null,
                 recordedBy: user.userId,
+                recordedAt: new Date(),
+              },
+              include: {
+                enrollment: {
+                  include: {
+                    student: true,
+                  },
+                },
               },
             });
+
+            createdClassAttendances.push(classAttendance);
           }
 
           // Mark enrollment for report recalculation
@@ -237,10 +225,10 @@ export class AttendanceService {
 
         return {
           success: true,
-          createdAttendances: createdAttendances.length,
-          createdClassAttendances: createdAttendances.length * schedules.length,
+          createdAttendances: createdClassAttendances.length,
+          createdClassAttendances: createdClassAttendances.length,
           createdReports: reportCount,
-          records: createdAttendances,
+          records: createdClassAttendances,
         };
       },
       {
@@ -254,18 +242,17 @@ export class AttendanceService {
   /**
    * EDITAR ASISTENCIA (Secretaria o Coordinador modifica registro)
    *
-   * ✅ CAMBIO: Ahora edita StudentClassAttendance (clases individuales)
-   * no StudentAttendance (que es solo contenedor del día)
+   * ✨ CAMBIO: Auditoría ahora está INTEGRADA en StudentClassAttendance
+   * Ya no se crea tabla separada (StudentAttendanceChange eliminada)
    *
    * Flow:
    * 1. Validate DTO structure
-   * 2. Find existing StudentClassAttendance (por clase específica)
+   * 2. Find existing StudentClassAttendance
    * 3. Check permissions (user must have canModify)
-   * 4. Validate changeReason is provided
+   * 4. Validate modificationReason is provided
    * 5. Start transaction
-   *    a. Create StudentAttendanceChange (audit trail)
-   *    b. Update StudentClassAttendance
-   *    c. Recalculate StudentAttendanceReport
+   *    a. Update StudentClassAttendance con campos de auditoría
+   *    b. Recalculate StudentAttendanceReport
    * 6. Return updated record
    *
    * @param classAttendanceId StudentClassAttendance ID
@@ -281,45 +268,24 @@ export class AttendanceService {
   ): Promise<{
     success: boolean;
     updated: StudentClassAttendance;
-    changeHistory: StudentAttendanceChange;
   }> {
     // 1️⃣ Validate DTO
     const validatedDto = updateAttendanceSchema.parse(dto);
 
-    // 2️⃣ Validate changeReason is mandatory
-    if (!validatedDto.changeReason) {
+    // 2️⃣ Validate modificationReason is mandatory
+    if (!validatedDto.modificationReason) {
       throw new BadRequestException(
-        'changeReason is mandatory for audit trail',
+        'modificationReason es REQUERIDO para auditoría',
       );
     }
 
     // 3️⃣ Find existing class attendance
-    const existingClassAttendance = await this.prisma.studentClassAttendance.findUnique({
-      where: { id: classAttendanceId },
-      include: {
-        studentAttendance: {
-          include: {
-            enrollment: {
-              include: {
-                student: true,
-                section: {
-                  include: {
-                    grade: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        schedule: true,
-      },
-    });
+    const existingClassAttendance =
+      await this.attendanceRepository.findClassAttendanceById(classAttendanceId);
 
     if (!existingClassAttendance) {
-      throw new NotFoundException('Class attendance record not found');
+      throw new NotFoundException('Registro de asistencia no encontrado');
     }
-
-    const enrollmentCycleId = (existingClassAttendance as any).studentAttendance.enrollment.cycleId;
 
     // 4️⃣ Verify user has canModify permission for this status
     if (validatedDto.attendanceStatusId) {
@@ -334,7 +300,7 @@ export class AttendanceService {
 
       if (!permission || !permission.canModify) {
         throw new ForbiddenException(
-          'You do not have permission to modify attendance with this status',
+          'No tienes permiso para modificar asistencia con este estado',
         );
       }
     }
@@ -353,39 +319,32 @@ export class AttendanceService {
         newStatusCode = newStatus?.code || existingClassAttendance.status;
       }
 
-      // Create audit trail entry
-      const changeHistory = await tx.studentAttendanceChange.create({
-        data: {
-          studentAttendanceId: existingClassAttendance.studentAttendanceId,
-          statusBefore: existingClassAttendance.status,
-          statusAfter: newStatusCode,
-          notesBefore: existingClassAttendance.notes,
-          notesAfter: validatedDto.notes || existingClassAttendance.notes,
-          arrivalTimeBefore: existingClassAttendance.arrivalTime,
-          arrivalTimeAfter:
-            validatedDto.arrivalTime || existingClassAttendance.arrivalTime,
-          changeReason: validatedDto.changeReason,
-          changedBy: user.userId,
-          changedAt: new Date(),
-        },
-      });
-
-      // Update StudentClassAttendance
+      // ✨ CAMBIO: Actualizar DIRECTAMENTE con campos de auditoría integrados
+      // Ya no se crea tabla separada
       const updatedClassAttendance = await tx.studentClassAttendance.update({
         where: { id: classAttendanceId },
         data: {
           status: newStatusCode,
+          attendanceStatusId: validatedDto.attendanceStatusId || existingClassAttendance.attendanceStatusId,
           notes: validatedDto.notes ?? existingClassAttendance.notes,
           arrivalTime:
             validatedDto.arrivalTime ?? existingClassAttendance.arrivalTime,
+          // ✨ CAMPOS DE AUDITORÍA INTEGRADOS
+          lastModifiedBy: user.userId,
+          lastModifiedAt: new Date(),
+          modificationReason: validatedDto.modificationReason,
           updatedAt: new Date(),
+        },
+        include: {
+          recordedByUser: true,
+          modifiedByUser: true,
         },
       });
 
       // Recalculate report for this enrollment
       await this.recalculateReports(
-        [existingClassAttendance.studentAttendanceId],
-        enrollmentCycleId,
+        [existingClassAttendance.enrollmentId],
+        undefined,
         undefined,
         tx,
       );
@@ -393,7 +352,6 @@ export class AttendanceService {
       return {
         success: true,
         updated: updatedClassAttendance,
-        changeHistory,
       };
     });
 
@@ -401,12 +359,14 @@ export class AttendanceService {
   }
 
   /**
-   * OBTENER HISTORIAL DE ASISTENCIA (Con auditoría)
+   * OBTENER HISTORIAL DE ASISTENCIA
+   * ✨ CAMBIO: Ahora busca directamente en StudentClassAttendance (es autónoma)
+   * Retorna con auditoría integrada
    *
    * @param enrollmentId Enrollment ID
    * @param limit Page size (default 50)
    * @param offset Page offset (default 0)
-   * @returns Paginated attendance records with change history
+   * @returns Paginated attendance records with integrated audit fields
    */
   async getStudentAttendance(
     enrollmentId: number,
@@ -414,10 +374,7 @@ export class AttendanceService {
     offset: number = 0,
   ): Promise<{
     total: number;
-    data: (StudentAttendance & {
-      changeHistory: StudentAttendanceChange[];
-      classAttendances: StudentClassAttendance[];
-    })[];
+    data: StudentClassAttendance[];
   }> {
     // Verify enrollment exists
     const enrollment = await this.prisma.enrollment.findUnique({
@@ -425,28 +382,25 @@ export class AttendanceService {
     });
 
     if (!enrollment) {
-      throw new NotFoundException('Enrollment not found');
+      throw new NotFoundException('Matrícula no encontrada');
     }
 
     // Count total records
-    const total = await this.prisma.studentAttendance.count({
+    const total = await this.prisma.studentClassAttendance.count({
       where: { enrollmentId },
     });
 
     // Fetch with relations and pagination
-    const data = await this.prisma.studentAttendance.findMany({
+    const data = await this.prisma.studentClassAttendance.findMany({
       where: { enrollmentId },
       include: {
-        changeHistory: {
-          orderBy: { changedAt: 'desc' },
-        },
-        classAttendances: {
-          include: {
-            schedule: true,
-          },
-        },
+        schedule: true,
+        courseAssignment: true,
+        attendanceStatus: true,
+        recordedByUser: true,
+        modifiedByUser: true,
       },
-      orderBy: { date: 'desc' },
+      orderBy: [{ date: 'desc' }, { schedule: { startTime: 'asc' } }],
       take: limit,
       skip: offset,
     });
@@ -527,16 +481,17 @@ export class AttendanceService {
           })
         )?.id;
 
-      // ✅ CHANGED: Count attendance by status from StudentClassAttendance (per-class records)
-      // StudentAttendance is now a container - actual status is in StudentClassAttendance
+      // ✨ CAMBIO: StudentClassAttendance es ahora AUTÓNOMA
+      // Busca directamente (no a través de studentAttendance padre)
       const classAttendances = await prismaClient.studentClassAttendance.findMany({
         where: {
-          studentAttendance: {
-            enrollmentId,
+          enrollmentId,
+          // Filtrar por fecha del bimestre si está disponible
+          ...(actualBimesterId && {
             date: {
-              gte: new Date('2025-01-01'), // Customize based on bimester dates
+              gte: new Date('2025-01-01'), // TODO: Usar fechas del bimestre
             },
-          },
+          }),
         },
         include: {
           attendanceStatus: true,
@@ -1085,112 +1040,383 @@ export class AttendanceService {
   }
 
   /**
-   * CREAR ASISTENCIA DE UN ESTUDIANTE ESPECÍFICO
-   * Para registros unitarios (ej: estudiante tardío que llega después del registro masivo)
+   * ⚠️ DEPRECATED: CreateSingleAttendance
+   * This method is no longer used in the refactored architecture.
+   * Use createTeacherAttendance instead, which creates StudentClassAttendance records directly.
    */
   async createSingleAttendance(
-    dto: any, // SingleAttendanceDto
+    dto: any,
     user: UserContext,
   ) {
-    // Validar DTO
-    const { singleAttendanceSchema } = await import('../dto');
-    const validatedDto = singleAttendanceSchema.parse(dto);
+    throw new Error(
+      'createSingleAttendance is DEPRECATED. Use createTeacherAttendance instead.',
+    );
+  }
 
-    // Obtener enrollment
-    const enrollment = await this.prisma.enrollment.findUnique({
-      where: { id: validatedDto.enrollmentId },
-      include: { student: true, section: true },
+  /**
+   * ⚠️ DEPRECATED: UpdateSingleClassAttendance
+   * This method is no longer used in the refactored architecture.
+   * Use updateAttendance instead, which handles audit fields natively.
+   */
+  async updateSingleClassAttendance(
+    classAttendanceId: number,
+    dto: any,
+    user: UserContext,
+  ) {
+    throw new Error(
+      'updateSingleClassAttendance is DEPRECATED. Use updateAttendance instead.',
+    );
+  }
+
+  /**
+   * ⚠️ DEPRECATED: BulkUpdateAttendance
+   * This method is no longer used in the refactored architecture.
+   * Use updateAttendance multiple times for individual updates, or implement a new bulk method if needed.
+   */
+  async bulkUpdateAttendance(
+    dto: any,
+    user: UserContext,
+  ) {
+    throw new Error(
+      'bulkUpdateAttendance is DEPRECATED. Use updateAttendance for individual updates.',
+    );
+  }
+
+  /**
+   * OBTENER ASISTENCIAS DE UNA SECCIÓN EN UNA FECHA
+   * Retorna la estructura completa para visualizar asistencias del día
+   */
+  async getSectionAttendanceByDate(
+    sectionId: number,
+    cycleId: number,
+    date: string,
+  ) {
+    // Validar ciclo existe
+    const cycle = await this.prisma.schoolCycle.findUnique({
+      where: { id: cycleId },
     });
 
-    if (!enrollment) {
-      throw new NotFoundException('Enrollment no encontrado');
+    if (!cycle) {
+      throw new NotFoundException('Ciclo escolar no encontrado');
     }
 
-    // Validaciones
+    // Validar sección existe
+    const section = await this.prisma.section.findUnique({
+      where: { id: sectionId },
+    });
+
+    if (!section) {
+      throw new NotFoundException('Sección no encontrada');
+    }
+
+    // Convertir fecha
+    const attendanceDate = new Date(date);
+
+    // Obtener datos desde repositorio
+    const attendanceData =
+      await this.attendanceRepository.getSectionAttendanceByDate(
+        sectionId,
+        cycleId,
+        attendanceDate,
+      );
+
+    if (attendanceData.length === 0) {
+      return {
+        success: false,
+        message: 'No attendance records found for the specified date',
+      };
+    }
+
+    return {
+      success: true,
+      data: attendanceData,
+    };
+  }
+
+  /**
+   * OBTENER CURSOS DEL MAESTRO PARA UN DÍA ESPECÍFICO
+   * 
+   * Retorna todos los cursos (CourseAssignment) del maestro autenticado
+   * para un día específico según Schedule y estado activo
+   * 
+   * @param date Fecha en formato YYYY-MM-DD o ISO datetime
+   * @param user UserContext con info del maestro
+   * @returns Array de cursos con información de horario
+   */
+  async getTeacherCoursesByDate(date: string, user: UserContext) {
+    // Convertir fecha
+    const attendanceDate = new Date(date);
+    const dayOfWeek = attendanceDate.getDay();
+
+    // Validar usuario existe
+    await this.validationService.validateUser(user.userId);
+
+    // Obtener todos los schedules del maestro para ese día
+    const schedules = await this.prisma.schedule.findMany({
+      where: {
+        teacherId: user.userId,
+        dayOfWeek,
+        courseAssignment: { isActive: true },
+      },
+      include: {
+        course: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
+        courseAssignment: {
+          select: {
+            id: true,
+            isActive: true,
+          },
+        },
+        section: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: [{ startTime: 'asc' }],
+    });
+
+    if (schedules.length === 0) {
+      return {
+        success: true,
+        message: 'No courses found for this teacher on the specified date',
+        date: attendanceDate.toISOString().split('T')[0],
+        courses: [],
+      };
+    }
+
+    // Obtener cantidad de estudiantes por sección
+    const sections = await this.prisma.section.findMany({
+      where: {
+        id: { in: [...new Set(schedules.map((s) => s.sectionId))] },
+      },
+      include: {
+        _count: {
+          select: { enrollments: { where: { status: 'ACTIVE' } } },
+        },
+      },
+    });
+
+    const sectionStudentCount = new Map(
+      sections.map((s) => [s.id, s._count.enrollments]),
+    );
+
+    // Mapear resultado
+    const courses = schedules.map((schedule) => ({
+      scheduleId: schedule.id,
+      courseAssignmentId: schedule.courseAssignment.id,
+      courseId: schedule.course.id,
+      courseName: schedule.course.name,
+      courseCode: schedule.course.code,
+      sectionId: schedule.section.id,
+      sectionName: schedule.section.name,
+      dayOfWeek: schedule.dayOfWeek,
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      classroom: schedule.classroom,
+      studentCount: sectionStudentCount.get(schedule.sectionId) || 0,
+    }));
+
+    return {
+      success: true,
+      message: `Found ${courses.length} courses for this date`,
+      date: attendanceDate.toISOString().split('T')[0],
+      courses,
+    };
+  }
+
+  /**
+   * CREAR ASISTENCIA POR CURSOS ESPECÍFICOS
+   * 
+   * Permite al maestro registrar asistencia para 1-10 cursos específicos
+   * en lugar de toda la sección. Útil cuando no tiene todas sus clases ese día
+   * o quiere registrar solo algunos cursos
+   * 
+   * @param dto BulkTeacherAttendanceByCourseDto
+   * @param user UserContext del maestro autenticado
+   * @returns Resumen de registros creados
+   */
+  async createTeacherAttendanceByCourses(
+    dto: any, // BulkTeacherAttendanceByCourseDto
+    user: UserContext,
+  ) {
+    // Importar y validar DTO
+    const { bulkTeacherAttendanceByCourseSchema } = await import('../dto');
+    const validatedDto = bulkTeacherAttendanceByCourseSchema.parse(dto);
+
+    // Convertir fecha
     const attendanceDate = new Date(validatedDto.date);
     const dayOfWeek = attendanceDate.getDay();
 
+    // 1️⃣ Validaciones básicas
     await this.validationService.validateUser(user.userId);
+
     const schoolCycle = await this.validationService.validateDateAndCycle(
       validatedDto.date,
     );
+
     const bimester = await this.validationService.validateBimester(
       schoolCycle.id,
       validatedDto.date,
     );
-    await this.validationService.validateHoliday(bimester.id, validatedDto.date);
-    await this.validationService.validateAttendanceNotExists(
-      validatedDto.enrollmentId,
-      validatedDto.date,
-    );
 
-    const { status: attendanceStatus } =
+    await this.validationService.validateHoliday(bimester.id, validatedDto.date);
+
+    const attendanceStatus =
       await this.validationService.validateAttendanceStatus(
         validatedDto.attendanceStatusId,
         user.roleId,
       );
 
-    const config = await this.validationService.validateAttendanceConfig();
-
-    // Obtener schedules del estudiante para ese día
-    const schedules = await this.prisma.schedule.findMany({
+    // 2️⃣ Obtener los CourseAssignments solicitados
+    const courseAssignments = await this.prisma.courseAssignment.findMany({
       where: {
-        sectionId: enrollment.sectionId,
-        dayOfWeek,
-        courseAssignment: { isActive: true },
+        id: { in: validatedDto.courseAssignmentIds },
+        isActive: true,
+      },
+      include: {
+        section: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        course: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        schedules: {
+          where: {
+            dayOfWeek,
+            teacherId: user.userId,
+          },
+        },
       },
     });
 
-    if (schedules.length === 0) {
-      throw new BadRequestException(
-        'No hay clases programadas para este día en la sección del estudiante',
+    if (courseAssignments.length === 0) {
+      throw new NotFoundException(
+        'No active course assignments found for the specified IDs',
       );
     }
 
-    // Crear registros en transacción
-    const result = await this.prisma.$transaction(async (tx) => {
-      // Crear StudentAttendance
-      const studentAttendance = await tx.studentAttendance.create({
-        data: {
-          enrollmentId: validatedDto.enrollmentId,
-          date: attendanceDate,
-          arrivalTime: validatedDto.arrivalTime || null,
-          departureTime: validatedDto.departureTime || null,
-          notes: validatedDto.notes || null,
-          recordedBy: user.userId,
-        },
-      });
+    // 3️⃣ Validar que todos los cursos pertenecen al maestro autenticado
+    const scheduleIds = courseAssignments
+      .flatMap((ca) => ca.schedules)
+      .map((s) => s.id);
 
-      // Crear StudentClassAttendance para cada clase
-      const classAttendances: any[] = [];
-      for (const schedule of schedules) {
-        if (
-          validatedDto.courseAssignmentIds &&
-          !validatedDto.courseAssignmentIds.includes(
-            schedule.courseAssignmentId,
-          )
-        ) {
-          continue;
+    if (scheduleIds.length !== validatedDto.courseAssignmentIds.length) {
+      throw new ForbiddenException(
+        'You do not have access to all the specified courses',
+      );
+    }
+
+    // 4️⃣ Obtener estudiantes para cada sección
+    const uniqueSectionIds = [
+      ...new Set(courseAssignments.map((ca) => ca.sectionId)),
+    ];
+
+    const enrollmentsBySection = await this.prisma.enrollment.findMany({
+      where: {
+        sectionId: { in: uniqueSectionIds },
+        cycleId: schoolCycle.id,
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+        sectionId: true,
+      },
+    });
+
+    if (enrollmentsBySection.length === 0) {
+      return {
+        success: false,
+        message: 'No active enrollments found in the specified sections',
+      };
+    }
+
+    // 5️⃣ Crear registros en transacción
+    const result = await this.prisma.$transaction(async (tx) => {
+      let totalCreated = 0;
+      let totalReports = 0;
+      const createdReports = new Set<number>();
+      const recordsBySection: {
+        scheduleId: number;
+        courseAssignmentId: number;
+        sectionId: number;
+        enrollmentCount: number;
+        attendanceRecordsCreated: number;
+      }[] = [];
+
+      for (const courseAssignment of courseAssignments) {
+        const sectionEnrollments = enrollmentsBySection.filter(
+          (e) => e.sectionId === courseAssignment.sectionId,
+        );
+
+        for (const enrollment of sectionEnrollments) {
+          // Validar que no existe ya un registro
+          const existingAttendance =
+            await tx.studentClassAttendance.findFirst({
+              where: {
+                enrollmentId: enrollment.id,
+                courseAssignmentId: courseAssignment.id,
+                date: {
+                  gte: new Date(
+                    attendanceDate.getFullYear(),
+                    attendanceDate.getMonth(),
+                    attendanceDate.getDate(),
+                  ),
+                  lt: new Date(
+                    attendanceDate.getFullYear(),
+                    attendanceDate.getMonth(),
+                    attendanceDate.getDate() + 1,
+                  ),
+                },
+              },
+            });
+
+          if (!existingAttendance) {
+            await tx.studentClassAttendance.create({
+              data: {
+                enrollmentId: enrollment.id,
+                date: attendanceDate,
+                scheduleId: courseAssignment.schedules[0].id,
+                courseAssignmentId: courseAssignment.id,
+                attendanceStatusId: validatedDto.attendanceStatusId,
+                status: attendanceStatus.status.code,
+                arrivalTime: validatedDto.arrivalTime || null,
+                notes: validatedDto.notes || null,
+                recordedBy: user.userId,
+                recordedAt: new Date(),
+              },
+            });
+            totalCreated++;
+          }
         }
 
-        const classAttendance = await tx.studentClassAttendance.create({
-          data: {
-            studentAttendanceId: studentAttendance.id,
-            scheduleId: schedule.id,
-            courseAssignmentId: schedule.courseAssignmentId,
-            attendanceStatusId: attendanceStatus.id,
-            status: attendanceStatus.code,
-            arrivalTime: validatedDto.arrivalTime || null,
-            notes: validatedDto.notes || null,
-            recordedBy: user.userId,
-          },
+        createdReports.add(courseAssignment.sectionId);
+
+        recordsBySection.push({
+          scheduleId: courseAssignment.schedules[0]?.id || 0,
+          courseAssignmentId: courseAssignment.id,
+          sectionId: courseAssignment.sectionId,
+          enrollmentCount: sectionEnrollments.length,
+          attendanceRecordsCreated: sectionEnrollments.length,
         });
-        classAttendances.push(classAttendance);
       }
 
-      // Recalcular reporte
-      await this.recalculateReports(
-        [validatedDto.enrollmentId],
+      // Recalcular reportes
+      const enrollmentIdsForReports = enrollmentsBySection.map((e) => e.id);
+      totalReports = await this.recalculateReports(
+        enrollmentIdsForReports,
         schoolCycle.id,
         bimester.id,
         tx,
@@ -1198,197 +1424,18 @@ export class AttendanceService {
 
       return {
         success: true,
-        studentAttendance,
-        classAttendances,
-        message: `Asistencia registrada para ${enrollment.student.givenNames} ${enrollment.student.lastNames}`,
-      };
-    });
-
-    return result;
-  }
-
-  /**
-   * ACTUALIZAR UN REGISTRO DE CLASE ESPECÍFICO
-   * Para modificar la asistencia de una sola clase
-   */
-  async updateSingleClassAttendance(
-    classAttendanceId: number,
-    dto: any, // UpdateSingleClassAttendanceDto
-    user: UserContext,
-  ) {
-    const { updateSingleClassAttendanceSchema } = await import('../dto');
-    const validatedDto = updateSingleClassAttendanceSchema.parse(dto);
-
-    // Obtener el registro
-    const classAttendance =
-      await this.prisma.studentClassAttendance.findUnique({
-        where: { id: classAttendanceId },
-        include: {
-          studentAttendance: {
-            include: { enrollment: { include: { student: true } } },
-          },
-          attendanceStatus: true,
-        },
-      });
-
-    if (!classAttendance) {
-      throw new NotFoundException('Registro de clase no encontrado');
-    }
-
-    // Validar permisos
-    const { status: newStatus } =
-      await this.validationService.validateAttendanceStatus(
-        validatedDto.attendanceStatusId,
-        user.roleId,
-      );
-
-    // Actualizar en transacción
-    const result = await this.prisma.$transaction(async (tx) => {
-      // Crear audit trail
-      const change = await tx.studentAttendanceChange.create({
-        data: {
-          studentAttendanceId: classAttendance.studentAttendanceId,
-          statusBefore: classAttendance.status,
-          statusAfter: newStatus.code,
-          notesBefore: classAttendance.notes,
-          notesAfter: validatedDto.notes || classAttendance.notes,
-          arrivalTimeBefore: classAttendance.arrivalTime,
-          arrivalTimeAfter: validatedDto.arrivalTime || classAttendance.arrivalTime,
-          changeReason: validatedDto.changeReason,
-          changedBy: user.userId,
-          changedAt: new Date(),
-        },
-      });
-
-      // Actualizar clase
-      const updated = await tx.studentClassAttendance.update({
-        where: { id: classAttendanceId },
-        data: {
-          status: newStatus.code,
-          attendanceStatusId: validatedDto.attendanceStatusId,
-          arrivalTime: validatedDto.arrivalTime ?? classAttendance.arrivalTime,
-          notes: validatedDto.notes ?? classAttendance.notes,
-          updatedAt: new Date(),
-        },
-      });
-
-      // Recalcular reporte
-      await this.recalculateReports(
-        [classAttendance.studentAttendance.enrollmentId],
-        undefined,
-        undefined,
-        tx,
-      );
-
-      return {
-        success: true,
-        updated,
-        changeHistory: change,
-        message: `Asistencia actualizada para ${classAttendance.studentAttendance.enrollment.student.givenNames}`,
-      };
-    });
-
-    return result;
-  }
-
-  /**
-   * ACTUALIZAR MÚLTIPLES REGISTROS EN LOTE
-   * Para cambios masivos a registros específicos
-   */
-  async bulkUpdateAttendance(
-    dto: any, // BulkUpdateAttendanceDto
-    user: UserContext,
-  ) {
-    const { bulkUpdateAttendanceSchema } = await import('../dto');
-    const validatedDto = bulkUpdateAttendanceSchema.parse(dto);
-
-    // Validar que todos los registros existen
-    const classAttendances =
-      await this.prisma.studentClassAttendance.findMany({
-        where: {
-          id: { in: validatedDto.updates.map((u) => u.classAttendanceId) },
-        },
-        include: {
-          studentAttendance: { include: { enrollment: true } },
-          attendanceStatus: true,
-        },
-      });
-
-    if (classAttendances.length !== validatedDto.updates.length) {
-      throw new NotFoundException(
-        'Algunos registros no fueron encontrados',
-      );
-    }
-
-    // Validar status
-    const newStatus = await this.prisma.attendanceStatus.findUnique({
-      where: { id: validatedDto.updates[0].attendanceStatusId },
-    });
-
-    if (!newStatus) {
-      throw new NotFoundException('Estado de asistencia no encontrado');
-    }
-
-    const { status: attendanceStatus } =
-      await this.validationService.validateAttendanceStatus(
-        validatedDto.updates[0].attendanceStatusId,
-        user.roleId,
-      );
-
-    // Actualizar en transacción
-    const result = await this.prisma.$transaction(async (tx) => {
-      const updates: any[] = [];
-      const enrollmentIds = new Set<number>();
-
-      for (const update of validatedDto.updates) {
-        const classAttendance = classAttendances.find(
-          (ca) => ca.id === update.classAttendanceId,
-        );
-
-        if (!classAttendance) continue;
-
-        // Crear audit
-        await tx.studentAttendanceChange.create({
-          data: {
-            studentAttendanceId: classAttendance.studentAttendanceId,
-            statusBefore: classAttendance.status,
-            statusAfter: attendanceStatus.code,
-            notesBefore: classAttendance.notes,
-            notesAfter: update.notes || classAttendance.notes,
-            arrivalTimeBefore: classAttendance.arrivalTime,
-            arrivalTimeAfter: update.arrivalTime || classAttendance.arrivalTime,
-            changeReason: validatedDto.changeReason,
-            changedBy: user.userId,
-            changedAt: new Date(),
-          },
-        });
-
-        // Actualizar
-        const updated = await tx.studentClassAttendance.update({
-          where: { id: update.classAttendanceId },
-          data: {
-            status: attendanceStatus.code,
-            attendanceStatusId: update.attendanceStatusId,
-            arrivalTime: update.arrivalTime ?? classAttendance.arrivalTime,
-            notes: update.notes ?? classAttendance.notes,
-            updatedAt: new Date(),
-          },
-        });
-
-        updates.push(updated);
-        enrollmentIds.add(classAttendance.studentAttendance.enrollmentId);
-      }
-
-      // Recalcular reportes
-      await this.recalculateReports(Array.from(enrollmentIds), undefined, undefined, tx);
-
-      return {
-        success: true,
-        updated: updates.length,
-        message: `${updates.length} registros actualizados`,
+        message: `Attendance registered for ${totalCreated} students across ${courseAssignments.length} courses`,
+        date: attendanceDate.toISOString().split('T')[0],
+        courseCount: courseAssignments.length,
+        createdAttendances: totalCreated,
+        createdReports: totalReports,
+        enrollmentsCovered: enrollmentsBySection.length,
+        records: recordsBySection,
       };
     });
 
     return result;
   }
 }
+
+

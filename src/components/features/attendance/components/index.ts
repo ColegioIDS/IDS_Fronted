@@ -30,3 +30,11 @@ export { default as StatusSelector } from './actions/StatusSelector';
 export { default as ChangeReasonInput } from './actions/ChangeReasonInput';
 export { default as ConfirmationModal } from './actions/ConfirmationModal';
 export { default as PermissionGuard } from './actions/PermissionGuard';
+
+// New components for teacher attendance by courses (Endpoints 1 & 2)
+export { CourseSelectionGrid } from './CourseSelectionGrid';
+export { AttendanceStatusSelector } from './AttendanceStatusSelector';
+
+// New component for section students list
+export { StudentAttendanceList } from './StudentAttendanceList';
+export { EndpointDiagnostics } from './EndpointDiagnostics';

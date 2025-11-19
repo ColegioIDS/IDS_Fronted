@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 /**
  * DTO para EDITAR asistencia (Secretaria, Admin)
+ * ✨ CAMBIO: Auditoría ahora está integrada en StudentClassAttendance
  * CRÍTICO: changeReason es OBLIGATORIO para auditoría
  */
 export const updateAttendanceSchema = z.object({
@@ -11,35 +12,32 @@ export const updateAttendanceSchema = z.object({
     })
     .int('attendanceStatusId debe ser un entero')
     .positive('attendanceStatusId debe ser positivo')
-    .optional(),
+    .optional()
+    .describe('Nuevo estado de asistencia'),
 
   notes: z
     .string()
     .max(500, 'notes no puede exceder 500 caracteres')
     .optional()
-    .nullable(),
+    .nullable()
+    .describe('Notas sobre la clase'),
 
   arrivalTime: z
     .string()
     .regex(/^\d{2}:\d{2}$/, 'arrivalTime debe estar en formato HH:MM')
     .optional()
-    .nullable(),
+    .nullable()
+    .describe('Hora de llegada actualizada'),
 
-  departureTime: z
-    .string()
-    .regex(/^\d{2}:\d{2}$/, 'departureTime debe estar en formato HH:MM')
-    .optional()
-    .nullable(),
-
-  changeReason: z
+  modificationReason: z
     .string({
-      required_error: 'changeReason es REQUERIDO (auditoría)',
-      invalid_type_error: 'changeReason debe ser un string',
+      required_error: 'modificationReason es REQUERIDO (auditoría)',
+      invalid_type_error: 'modificationReason debe ser un string',
     })
-    .min(5, 'changeReason debe tener al menos 5 caracteres')
-    .max(500, 'changeReason no puede exceder 500 caracteres')
+    .min(5, 'modificationReason debe tener al menos 5 caracteres')
+    .max(500, 'modificationReason no puede exceder 500 caracteres')
     .describe(
-      'Motivo del cambio (OBLIGATORIO). Ej: "Salida temprana autorizada", "Corrección de error de registro", etc.',
+      '📋 Razón de la modificación (OBLIGATORIO). Ej: "Salida temprana autorizada", "Corrección de error", "Se fue enfermo", etc.',
     ),
 });
 

@@ -350,6 +350,68 @@ export class AttendanceController {
   }
 
   /**
+   * GET /api/attendance/section/:sectionId/cycle/:cycleId/date/:date
+   *
+   * Obtiene las asistencias de todos los estudiantes de una sección en una fecha específica
+   * Retorna vista detallada con asistencia general del día + por cada clase
+   *
+   * ⚠️ DEBE IR ANTES de @Get('enrollment/:enrollmentId') para evitar conflicto de rutas
+   *
+   * @param sectionId ID de la sección
+   * @param cycleId ID del ciclo escolar
+   * @param date Fecha en formato YYYY-MM-DD
+   * @returns Lista de estudiantes con su asistencia del día completo
+   *
+   * @example
+   * GET /api/attendance/section/5/cycle/1/date/2025-11-18
+   * Authorization: Bearer <token>
+   *
+   * Response (200):
+   * {
+   *   "success": true,
+   *   "data": [
+   *     {
+   *       "id": 550,
+   *       "enrollmentId": 123,
+   *       "studentId": 456,
+   *       "studentName": "Juan Pérez García",
+   *       "date": "2025-11-18",
+   *       "status": "PRESENT",
+   *       "classAttendances": [...]
+   *     }
+   *   ]
+   * }
+   */
+  @Get('section/:sectionId/cycle/:cycleId/date/:date')
+  @HttpCode(HttpStatus.OK)
+  @Permissions('attendance', 'read')
+  async getSectionAttendanceByDate(
+    @ValidatedParam(
+      z.object({
+        sectionId: z.preprocess(
+          (v) => Number(v),
+          z.number().int().positive(),
+        ),
+        cycleId: z.preprocess(
+          (v) => Number(v),
+          z.number().int().positive(),
+        ),
+        date: z.string().refine(
+          (date) => !isNaN(Date.parse(date)),
+          'Invalid date format',
+        ),
+      }),
+    )
+    params: { sectionId: number; cycleId: number; date: string },
+  ) {
+    return this.attendanceService.getSectionAttendanceByDate(
+      params.sectionId,
+      params.cycleId,
+      params.date,
+    );
+  }
+
+  /**
    * GET /api/attendance/enrollment/:enrollmentId
    * 
    * Obtiene el historial completo de asistencia de un estudiante
@@ -407,7 +469,7 @@ export class AttendanceController {
    */
   @Get('enrollment/:enrollmentId')
   @HttpCode(HttpStatus.OK)
-  @Permissions('attendance', 'view')
+  @Permissions('attendance', 'read')
   async getStudentAttendance(
     @ValidatedParam(enrollmentIdParamSchema) params: { enrollmentId: number },
     @ValidatedQuery(paginationQuerySchema) query: { limit?: number; offset?: number },
@@ -471,7 +533,7 @@ export class AttendanceController {
    */
   @Get('report/:enrollmentId')
   @HttpCode(HttpStatus.OK)
-  @Permissions('attendance', 'view')
+  @Permissions('attendance', 'read')
   async getAttendanceReport(
     @ValidatedParam(enrollmentIdParamSchema) params: { enrollmentId: number },
   ) {
@@ -1041,6 +1103,113 @@ export class AttendanceController {
       count: enrollments.length,
       message: 'Enrollments retrieved successfully',
     };
+  }
+
+  /**
+   * GET /api/attendance/teacher/courses/:date
+   * 
+   * Obtiene todos los cursos (CourseAssignment) del maestro autenticado
+   * para un día específico según los horarios (schedules) activos
+   * 
+   * Útil para que el maestro vea qué cursos tiene ese día antes de
+   * registrar asistencia
+   * 
+   * @param date - Fecha en formato YYYY-MM-DD o ISO datetime
+   * @param request - Request con usuario autenticado
+   * @returns Array de cursos con información de horario
+   * 
+   * @example
+   * GET /api/attendance/teacher/courses/2025-11-20
+   * 
+   * Respuesta:
+   * {
+   *   success: true,
+   *   date: "2025-11-20",
+   *   courses: [
+   *     {
+   *       scheduleId: 1,
+   *       courseAssignmentId: 5,
+   *       courseId: 10,
+   *       courseName: "Matemáticas",
+   *       sectionName: "6to A",
+   *       startTime: "08:00",
+   *       endTime: "09:00",
+   *       studentCount: 35
+   *     },
+   *     ...
+   *   ]
+   * }
+   */
+  @Get('teacher/courses/:date')
+  @HttpCode(HttpStatus.OK)
+  @Permissions('attendance', 'read')
+  async getTeacherCoursesByDate(
+    @Param('date') date: string,
+    @Request() req: any,
+  ) {
+    const user: UserContext = req.user;
+
+    const result = await this.attendanceService.getTeacherCoursesByDate(
+      date,
+      user,
+    );
+
+    return result;
+  }
+
+  /**
+   * POST /api/attendance/teacher/by-courses
+   * 
+   * Registra asistencia para cursos específicos seleccionados por el maestro
+   * (en lugar de toda la sección de una sola vez)
+   * 
+   * Permite registrar asistencia para 1-10 cursos simultáneamente.
+   * El maestro puede seleccionar qué cursos de su jornada desea registrar
+   * 
+   * @param dto - BulkTeacherAttendanceByCourseDto con:
+   *   - date: fecha del registro (YYYY-MM-DD o ISO)
+   *   - courseAssignmentIds: array de 1-10 IDs de CourseAssignment
+   *   - attendanceStatusId: estado de asistencia único para todos
+   *   - arrivalTime: hora de llegada (opcional)
+   *   - notes: notas generales (opcional)
+   * @param request - Request con usuario autenticado (maestro)
+   * @returns Resumen de registros creados
+   * 
+   * @example
+   * POST /api/attendance/teacher/by-courses
+   * {
+   *   "date": "2025-11-20",
+   *   "courseAssignmentIds": [5, 8, 12],  // 3 cursos
+   *   "attendanceStatusId": 1,            // Presente
+   *   "notes": "Primera sesión del día"
+   * }
+   * 
+   * Respuesta:
+   * {
+   *   success: true,
+   *   message: "Attendance registered for 105 students across 3 courses",
+   *   courseCount: 3,
+   *   createdAttendances: 105,
+   *   createdReports: 105,
+   *   enrollmentsCovered: 105,
+   *   records: [...]
+   * }
+   */
+  @Post('teacher/by-courses')
+  @HttpCode(HttpStatus.CREATED)
+  @Permissions('attendance', 'create')
+  async createTeacherAttendanceByCourses(
+    @Body() dto: any,
+    @Request() req: any,
+  ) {
+    const user: UserContext = req.user;
+
+    const result = await this.attendanceService.createTeacherAttendanceByCourses(
+      dto,
+      user,
+    );
+
+    return result;
   }
 }
 

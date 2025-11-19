@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { UserProfileForm, UserProfile } from './UserProfileForm';
+import React from 'react';
+import { UserProfileForm } from './UserProfileForm';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { z } from 'zod';
 import { updateUserProfileSchema } from '@/schemas/user-profile.schema';
+import { useUserProfile } from '@/hooks/user-profile';
 
 interface UserProfilePageContentProps {
   userId?: number;
@@ -15,75 +16,13 @@ interface UserProfilePageContentProps {
 export function UserProfilePageContent({
   userId,
 }: UserProfilePageContentProps) {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Cargar perfil del usuario
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await fetch('/api/user-profile', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(
-            errorData.message || `Error ${response.status}: No se pudo cargar el perfil`
-          );
-        }
-
-        const data = await response.json();
-        setProfile(data);
-      } catch (err: any) {
-        setError(err.message || 'Error al cargar el perfil');
-        console.error('Error fetching profile:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [userId]);
+  const { profile, isLoading, error, updateProfile, isUpdating } = useUserProfile();
 
   // Manejar actualización del perfil
   const handleProfileUpdate = async (
     updateData: z.infer<typeof updateUserProfileSchema>
   ) => {
-    try {
-      setIsSubmitting(true);
-      setError(null);
-
-      const response = await fetch('/api/user-profile', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || `Error ${response.status}: No se pudo actualizar el perfil`
-        );
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-    } catch (err: any) {
-      throw err;
-    } finally {
-      setIsSubmitting(false);
-    }
+    await updateProfile(updateData);
   };
 
   // Estado de carga
@@ -145,7 +84,7 @@ export function UserProfilePageContent({
     <UserProfileForm
       profile={profile}
       onSubmit={handleProfileUpdate}
-      isLoading={isSubmitting}
+      isLoading={isUpdating}
     />
   );
 }
