@@ -96,17 +96,47 @@ export function StudentAttendanceList({
           <CardDescription>Select attendance status for each student</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {studentsWithStatus.map((student) => (
-              <StudentAttendanceRow
-                key={student.id}
-                student={student}
-                statuses={statuses}
-                onStatusChange={(statusId) => {
-                  onStudentSelect?.(student.id, statusId);
-                }}
-              />
-            ))}
+          <div className="space-y-4">
+            {/* Botones de selección rápida masiva */}
+            <div className="flex flex-wrap gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-400 self-center">
+                Mark all as:
+              </span>
+              {statuses.map((status) => (
+                <button
+                  key={status.id}
+                  onClick={() => {
+                    const newMap = new Map<number, number>();
+                    students.forEach((student) => {
+                      newMap.set(student.id, status.id);
+                    });
+                    // Actualizar todos los estados
+                    students.forEach((student) => {
+                      onStudentSelect?.(student.id, status.id);
+                    });
+                  }}
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900 border border-gray-300 dark:border-gray-600 transition-colors"
+                  title={`Mark all as ${status.name}`}
+                >
+                  {getStatusIcon(status.code)}
+                  <span>{status.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Lista de estudiantes */}
+            <div className="space-y-2">
+              {studentsWithStatus.map((student) => (
+                <StudentAttendanceRow
+                  key={student.id}
+                  student={student}
+                  statuses={statuses}
+                  onStatusChange={(statusId) => {
+                    onStudentSelect?.(student.id, statusId);
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -140,30 +170,27 @@ function StudentAttendanceRow({ student, statuses, onStatusChange }: StudentAtte
         </div>
       </div>
 
-      {/* Status Selection */}
-      <div className="flex items-center gap-2">
-        {selectedStatus ? (
-          <div className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium">
-            {getStatusIcon(selectedStatus.code)}
-            <span className="hidden sm:inline">{selectedStatus.name}</span>
-          </div>
-        ) : (
-          <span className="text-xs text-gray-500 dark:text-gray-400">—</span>
-        )}
-
-        {/* Status Dropdown */}
-        <select
-          value={student.selectedStatusId || ''}
-          onChange={(e) => onStatusChange(Number(e.target.value))}
-          className="rounded border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-        >
-          <option value="">Select status</option>
-          {statuses.map((status) => (
-            <option key={status.id} value={status.id}>
-              {status.name}
-            </option>
-          ))}
-        </select>
+      {/* Status Selection - Botones en lugar de select */}
+      <div className="flex items-center gap-1 flex-wrap">
+        {statuses.map((status) => (
+          <button
+            key={status.id}
+            onClick={() => onStatusChange(status.id)}
+            className={`
+              flex items-center gap-1 px-2 py-1 rounded text-xs font-medium
+              transition-all duration-200
+              ${
+                student.selectedStatusId === status.id
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+              }
+            `}
+            title={status.name}
+          >
+            {getStatusIcon(status.code)}
+            <span className="hidden sm:inline">{status.name.substring(0, 1)}</span>
+          </button>
+        ))}
       </div>
     </div>
   );
