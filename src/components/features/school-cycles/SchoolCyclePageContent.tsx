@@ -3,6 +3,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ErrorAlert, ConfirmDialog } from '@/components/shared/feedback';
@@ -101,7 +102,9 @@ export function SchoolCyclePageContent() {
       try {
         setActionLoading(true);
         setGlobalError(null);
+        const deletedCycleName = cycleToDelete.name;
         await schoolCycleService.delete(cycleToDelete.id);
+        toast.success(`Ciclo escolar "${deletedCycleName}" eliminado correctamente`);
         setDeleteConfirmOpen(false);
         setCycleToDelete(null);
         refresh();
@@ -112,6 +115,7 @@ export function SchoolCyclePageContent() {
           message: handled.message,
           details: handled.details,
         });
+        toast.error(handled.message);
       } finally {
         setActionLoading(false);
       }
@@ -131,7 +135,9 @@ export function SchoolCyclePageContent() {
       try {
         setActionLoading(true);
         setGlobalError(null);
+        const activatedCycleName = cycleToActivate.name;
         await schoolCycleService.activate(cycleToActivate.id);
+        toast.success(`Ciclo escolar "${activatedCycleName}" activado correctamente`);
         setActivateConfirmOpen(false);
         setCycleToActivate(null);
         refresh();
@@ -142,6 +148,7 @@ export function SchoolCyclePageContent() {
           message: handled.message,
           details: handled.details,
         });
+        toast.error(handled.message);
       } finally {
         setActionLoading(false);
       }
@@ -163,8 +170,10 @@ export function SchoolCyclePageContent() {
       try {
         setActionLoading(true);
         setGlobalError(null);
+        const archivedCycleName = cycleToArchive.name;
         // ← AQUÍ: Se envía la razón al servicio
         await schoolCycleService.archive(cycleToArchive.id, reason);
+        toast.success(`Ciclo escolar "${archivedCycleName}" archivado correctamente`);
         refresh();
         setArchiveDialogOpen(false);
         setCycleToArchive(null);
@@ -175,6 +184,7 @@ export function SchoolCyclePageContent() {
           message: handled.message,
           details: handled.details,
         });
+        toast.error(handled.message);
       } finally {
         setActionLoading(false);
       }
