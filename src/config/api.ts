@@ -3,18 +3,21 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { toast } from 'sonner';
 
+// ✅ Exportar API_BASE_URL para que lo usen otros servicios
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+
 /**
  * Crear instancia de axios configurada para el proyecto
  * Configura:
  * - Base URL
  * - Timeout
- * - Credenciales
+ * - Credenciales (CRÍTICO para cookies)
  * - Validación de status (NO lanzar error automáticamente)
  */
 const api: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000',
+  baseURL: API_BASE_URL,
   timeout: 30000,
-  withCredentials: true,
+  withCredentials: true,  // ✅ CRÍTICO: Permite enviar y recibir cookies
   headers: {
     'Content-Type': 'application/json',
   },
