@@ -72,8 +72,8 @@ export function CoursesGrid({
     return (
       <EmptyState
         variant="error"
-        icon={({ className }) => (
-          <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        icon={
+          <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -81,7 +81,7 @@ export function CoursesGrid({
               d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-        )}
+        }
         title="Error al cargar cursos"
         description={error}
       />
@@ -93,7 +93,7 @@ export function CoursesGrid({
     return (
       <EmptyState
         variant="default"
-        icon={BookOpen}
+        icon={<BookOpen className="w-8 h-8 text-gray-400 dark:text-gray-500" strokeWidth={2} />}
         title="No hay cursos"
         description="Comienza creando un nuevo curso para gestionar tus asignaturas"
       />

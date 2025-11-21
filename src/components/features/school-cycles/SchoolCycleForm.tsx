@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CheckCircle, Alert
 import { DayPicker } from 'react-day-picker';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -435,6 +436,13 @@ export function SchoolCycleForm({
         result = await schoolCycleService.create(createData);
       }
 
+      // Toast de éxito
+      if (cycle) {
+        toast.success(`Ciclo escolar "${result.name}" actualizado correctamente`);
+      } else {
+        toast.success(`Ciclo escolar "${result.name}" creado correctamente`);
+      }
+
       onSuccess?.(result);
     } catch (err: any) {
       const handled = handleApiError(err, `Error al ${cycle ? 'actualizar' : 'crear'} ciclo escolar`);
@@ -442,6 +450,9 @@ export function SchoolCycleForm({
         message: handled.message,
         details: handled.details,
       });
+      
+      // Toast de error
+      toast.error(handled.message);
       console.error('Form submission error:', err);
     } finally {
       setIsLoading(false);

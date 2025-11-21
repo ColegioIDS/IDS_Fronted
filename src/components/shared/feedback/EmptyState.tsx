@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ReactNode, ElementType } from 'react';
+import { ReactNode } from 'react';
 
-// ✅ Ahora permitimos cualquier componente o nodo React, no solo LucideIcon
+// ✅ El icon debe ser un nodo React (JSX) renderizado
 interface EmptyStateProps {
-  icon?: ElementType | ReactNode;
+  icon?: ReactNode;
   title: string;
   description?: string;
   action?: {
@@ -76,17 +76,7 @@ export function EmptyState({
           <div
             className={`w-16 h-16 ${styles.iconBg} rounded-full flex items-center justify-center mx-auto ${iconClassName}`}
           >
-            {Icon ? (
-              typeof Icon === 'function' ? (
-                // Si es un componente (LucideIcon o ElementType)
-                <Icon className={`w-8 h-8 ${styles.iconColor}`} strokeWidth={2} />
-              ) : (
-                // Si es un nodo React o SVG inline
-                <div className={styles.iconColor}>{Icon}</div>
-              )
-            ) : (
-              <div className={styles.iconColor}>{DEFAULT_ICON_SVG}</div>
-            )}
+            {Icon || <div className={styles.iconColor}>{DEFAULT_ICON_SVG}</div>}
           </div>
 
           {/* Title */}

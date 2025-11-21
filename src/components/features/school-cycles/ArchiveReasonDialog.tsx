@@ -3,6 +3,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -73,6 +74,7 @@ export function ArchiveReasonDialog({
       // ✅ Validación: razón máx 500 caracteres
       if (reason.length > 500) {
         setError('La razón no puede exceder 500 caracteres');
+        toast.error('La razón no puede exceder 500 caracteres');
         return;
       }
 
@@ -86,6 +88,7 @@ export function ArchiveReasonDialog({
       // El error ya debería ser manejado en el componente padre
       // Pero si llega aquí, mostrar localmente
       console.error('Archive error:', err);
+      toast.error('Error al archivar el ciclo escolar');
     }
   };
 

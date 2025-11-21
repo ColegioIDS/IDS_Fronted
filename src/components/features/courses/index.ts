@@ -8,3 +8,4 @@ export { CourseForm } from './CourseForm';
 export { CoursesGrid } from './CoursesGrid';
 export { CourseStats } from './CourseStats';
 export { CoursesPageContent } from './CoursesPageContent';
+export { ImportCoursesDialog } from './ImportCoursesDialog';

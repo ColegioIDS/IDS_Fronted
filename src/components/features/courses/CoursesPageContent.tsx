@@ -4,11 +4,12 @@
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, List, Plus, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { RefreshCw, List, Plus, CheckCircle2, XCircle, Loader2, Upload } from 'lucide-react';
 import { CourseStats } from './CourseStats';
 import { CourseFilters } from './CourseFilters';
 import { CoursesGrid } from './CoursesGrid';
 import { CourseForm } from './CourseForm';
+import { ImportCoursesDialog } from './ImportCoursesDialog';
 import { ProtectedPage } from '@/components/shared/permissions/ProtectedPage';
 import { CourseFilters as CourseFiltersType } from '@/types/courses';
 import { useAuth } from '@/context/AuthContext';
@@ -18,6 +19,7 @@ import { toast } from 'sonner';
 export function CoursesPageContent() {
   const [activeTab, setActiveTab] = useState<'list' | 'form'>('list');
   const [editingCourseId, setEditingCourseId] = useState<number | undefined>(undefined);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const { hasPermission } = useAuth();
   const canCreate = hasPermission('course', 'create');
@@ -105,6 +107,20 @@ export function CoursesPageContent() {
     });
   };
 
+  const handleDownloadTemplate = () => {
+    // Crear link de descarga para la plantilla
+    const link = document.createElement('a');
+    link.href = '/templates/Cursos_Plantilla.xlsx';
+    link.download = 'Cursos_Plantilla.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Plantilla descargada', {
+      description: 'El archivo se ha descargado exitosamente',
+      duration: 3000,
+    });
+  };
+
   const handleEdit = (courseId: number) => {
     setEditingCourseId(courseId);
     setActiveTab('form');
@@ -174,14 +190,37 @@ export function CoursesPageContent() {
               Actualizar
             </Button>
             {canCreate && (
-              <Button
-                onClick={handleCreateNew}
-                size="sm"
-                className="gap-2 bg-indigo-600 hover:bg-indigo-700"
-              >
-                <Plus className="w-4 h-4" />
-                Nuevo Curso
-              </Button>
+              <>
+                <Button
+                  onClick={handleDownloadTemplate}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/20"
+                  title="Descargar plantilla Excel para importación"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Descargar Plantilla
+                </Button>
+                <Button
+                  onClick={() => setImportDialogOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  Importar Excel
+                </Button>
+                <Button
+                  onClick={handleCreateNew}
+                  size="sm"
+                  className="gap-2 bg-indigo-600 hover:bg-indigo-700"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nuevo Curso
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -241,6 +280,16 @@ export function CoursesPageContent() {
             </TabsContent>
           )}
         </Tabs>
+
+        {/* Import Dialog */}
+        <ImportCoursesDialog
+          open={importDialogOpen}
+          onOpenChange={setImportDialogOpen}
+          onSuccess={(count) => {
+            refresh();
+            toast.success(`${count} cursos importados exitosamente`);
+          }}
+        />
       </div>
     </ProtectedPage>
   );
