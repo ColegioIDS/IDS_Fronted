@@ -1,0 +1,683 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Sistema de Asistencia - API",
+    "description": "API REST para gestión de asistencia de estudiantes",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Development Team"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Development Server"
+    },
+    {
+      "url": "https://api.example.com",
+      "description": "Production Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "SingleAttendanceDto": {
+        "type": "object",
+        "required": ["enrollmentId", "scheduleId", "attendanceStatusId", "date"],
+        "properties": {
+          "enrollmentId": {
+            "type": "integer",
+            "description": "ID de la matrícula del estudiante"
+          },
+          "scheduleId": {
+            "type": "integer",
+            "description": "ID del horario/clase"
+          },
+          "attendanceStatusId": {
+            "type": "integer",
+            "description": "ID del estado de asistencia (1=Presente, 2=Ausente, etc.)"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Fecha en formato YYYY-MM-DD"
+          },
+          "arrivalTime": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$",
+            "description": "Hora de llegada en formato HH:MM (opcional)"
+          },
+          "modificationReason": {
+            "type": "string",
+            "description": "Motivo del registro (opcional)"
+          }
+        }
+      },
+      "UpdateSingleClassAttendanceDto": {
+        "type": "object",
+        "required": ["attendanceStatusId"],
+        "properties": {
+          "attendanceStatusId": {
+            "type": "integer",
+            "description": "Nuevo ID del estado de asistencia"
+          },
+          "modificationReason": {
+            "type": "string",
+            "description": "Razón del cambio (opcional)"
+          }
+        }
+      },
+      "BulkUpdateAttendanceDto": {
+        "type": "object",
+        "required": ["updates", "changeReason"],
+        "properties": {
+          "updates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["classAttendanceId", "attendanceStatusId"],
+              "properties": {
+                "classAttendanceId": {
+                  "type": "integer"
+                },
+                "attendanceStatusId": {
+                  "type": "integer"
+                },
+                "arrivalTime": {
+                  "type": "string",
+                  "pattern": "^\\d{2}:\\d{2}$"
+                }
+              }
+            },
+            "description": "Array de registros a actualizar"
+          },
+          "changeReason": {
+            "type": "string",
+            "description": "Razón del cambio masivo"
+          }
+        }
+      },
+      "RegisterDailyAttendanceDto": {
+        "type": "object",
+        "required": ["date", "sectionId", "enrollmentStatuses"],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Fecha en YYYY-MM-DD"
+          },
+          "sectionId": {
+            "type": "integer",
+            "description": "ID de la sección"
+          },
+          "enrollmentStatuses": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Map de enrollmentId -> statusId. Ej: {\"1\": 1, \"2\": 1, \"3\": 2}"
+          }
+        }
+      },
+      "AttendanceResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "statusCode": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/attendance/single": {
+      "post": {
+        "summary": "Crear registro de asistencia individual",
+        "description": "Registra asistencia para UN estudiante (tardíos, llegadas atrasadas)",
+        "tags": ["Asistencia - Creación"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SingleAttendanceDto"
+              },
+              "example": {
+                "enrollmentId": 1,
+                "scheduleId": 12,
+                "attendanceStatusId": 1,
+                "date": "2025-11-20",
+                "arrivalTime": "08:45",
+                "modificationReason": "Llegada tarde"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validación fallida"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Recurso no encontrado"
+          }
+        }
+      }
+    },
+    "/api/attendance/class/{classAttendanceId}": {
+      "patch": {
+        "summary": "Actualizar registro de asistencia",
+        "description": "Modifica UN registro de asistencia con auditoría completa",
+        "tags": ["Asistencia - Modificación"],
+        "parameters": [
+          {
+            "name": "classAttendanceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del registro de asistencia"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSingleClassAttendanceDto"
+              },
+              "example": {
+                "attendanceStatusId": 2,
+                "modificationReason": "Se fue temprano - Cita médica"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado"
+          },
+          "400": {
+            "description": "Validación fallida"
+          },
+          "403": {
+            "description": "Sin permisos para modificar"
+          },
+          "404": {
+            "description": "Registro no encontrado"
+          }
+        }
+      }
+    },
+    "/api/attendance/bulk-update": {
+      "patch": {
+        "summary": "Actualizar múltiples registros",
+        "description": "Actualiza varios registros en lote con manejo de errores parciales",
+        "tags": ["Asistencia - Modificación"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUpdateAttendanceDto"
+              },
+              "example": {
+                "updates": [
+                  {
+                    "classAttendanceId": 123,
+                    "attendanceStatusId": 2
+                  },
+                  {
+                    "classAttendanceId": 124,
+                    "attendanceStatusId": 2
+                  }
+                ],
+                "changeReason": "Corrección de error administrativo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Actualización completada"
+          },
+          "400": {
+            "description": "Validación fallida"
+          },
+          "403": {
+            "description": "Sin permisos"
+          }
+        }
+      }
+    },
+    "/api/attendance/daily-registration": {
+      "post": {
+        "summary": "Registro diario masivo (TAB 1)",
+        "description": "Registra asistencia para TODOS los estudiantes de una sección en un día",
+        "tags": ["Asistencia - Registro Diario"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDailyAttendanceDto"
+              },
+              "example": {
+                "date": "2025-11-20",
+                "sectionId": 5,
+                "enrollmentStatuses": {
+                  "1": 1,
+                  "2": 1,
+                  "3": 2,
+                  "4": 1
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro diario completado"
+          },
+          "400": {
+            "description": "Validación fallida"
+          }
+        }
+      }
+    },
+    "/api/attendance/daily-registration/{sectionId}/{date}": {
+      "get": {
+        "summary": "Obtener estado de registro diario (TAB 1)",
+        "description": "Retorna quién fue registrado y quién no en una sección para una fecha",
+        "tags": ["Asistencia - Registro Diario"],
+        "parameters": [
+          {
+            "name": "sectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado de registro"
+          }
+        }
+      }
+    },
+    "/api/attendance/section/{sectionId}/cycle/{cycleId}/date/{date}": {
+      "get": {
+        "summary": "Obtener asistencia de sección por fecha (TAB 2)",
+        "description": "Retorna asistencia de todos los estudiantes de una sección en una fecha",
+        "tags": ["Asistencia - Consulta"],
+        "parameters": [
+          {
+            "name": "sectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cycleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de asistencias"
+          }
+        }
+      }
+    },
+    "/api/attendance/course/{courseAssignmentId}/date/{date}": {
+      "get": {
+        "summary": "Obtener asistencia por curso (TAB 2)",
+        "description": "Retorna asistencia de estudiantes de un curso específico en una fecha",
+        "tags": ["Asistencia - Consulta"],
+        "parameters": [
+          {
+            "name": "courseAssignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Asistencia del curso"
+          }
+        }
+      }
+    },
+    "/api/attendance/enrollment/{enrollmentId}": {
+      "get": {
+        "summary": "Obtener historial de asistencia de estudiante",
+        "description": "Retorna todos los registros de asistencia de un estudiante",
+        "tags": ["Asistencia - Consulta"],
+        "parameters": [
+          {
+            "name": "enrollmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historial de asistencia"
+          }
+        }
+      }
+    },
+    "/api/attendance/report/{enrollmentId}": {
+      "get": {
+        "summary": "Obtener reporte de asistencia (TAB 3)",
+        "description": "Retorna reporte consolidado de asistencia del estudiante",
+        "tags": ["Reportes"],
+        "parameters": [
+          {
+            "name": "enrollmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reporte de asistencia"
+          }
+        }
+      }
+    },
+    "/api/attendance/cycle/active": {
+      "get": {
+        "summary": "Obtener ciclo escolar activo",
+        "description": "Retorna el ciclo escolar actualmente en uso",
+        "tags": ["Datos Generales"],
+        "responses": {
+          "200": {
+            "description": "Ciclo activo"
+          }
+        }
+      }
+    },
+    "/api/attendance/bimester/by-date": {
+      "get": {
+        "summary": "Validar bimestre para fecha (Hook 1)",
+        "description": "Verifica que la fecha está dentro de un bimestre activo",
+        "tags": ["Validaciones"],
+        "parameters": [
+          {
+            "name": "cycleId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bimestre encontrado"
+          },
+          "400": {
+            "description": "No hay bimestre para esa fecha"
+          }
+        }
+      }
+    },
+    "/api/attendance/holiday/by-date": {
+      "get": {
+        "summary": "Validar feriado (Hook 2)",
+        "description": "Verifica si es feriado y si está recuperado",
+        "tags": ["Validaciones"],
+        "parameters": [
+          {
+            "name": "bimesterId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "No es feriado o está recuperado"
+          },
+          "400": {
+            "description": "Es feriado y NO está recuperado"
+          }
+        }
+      }
+    },
+    "/api/attendance/week/by-date": {
+      "get": {
+        "summary": "Validar semana académica (Hook 3)",
+        "description": "Verifica si está en semana BREAK",
+        "tags": ["Validaciones"],
+        "parameters": [
+          {
+            "name": "bimesterId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Semana regular"
+          },
+          "400": {
+            "description": "Es semana BREAK"
+          }
+        }
+      }
+    },
+    "/api/attendance/teacher-absence/{teacherId}": {
+      "get": {
+        "summary": "Validar ausencia de maestro (Hook 5)",
+        "description": "Verifica si maestro está en ausencia aprobada",
+        "tags": ["Validaciones"],
+        "parameters": [
+          {
+            "name": "teacherId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Maestro no está en ausencia"
+          },
+          "400": {
+            "description": "Maestro está en ausencia aprobada"
+          }
+        }
+      }
+    },
+    "/api/attendance/config/active": {
+      "get": {
+        "summary": "Obtener configuración de asistencia (Hook 6)",
+        "description": "Retorna configuración activa o DEFAULT",
+        "tags": ["Validaciones"],
+        "responses": {
+          "200": {
+            "description": "Configuración"
+          }
+        }
+      }
+    },
+    "/api/attendance/status/allowed/role/{roleId}": {
+      "get": {
+        "summary": "Obtener estados permitidos (Hook 8)",
+        "description": "Retorna estados que el rol puede registrar",
+        "tags": ["Validaciones"],
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estados permitidos"
+          },
+          "403": {
+            "description": "Rol sin permisos"
+          }
+        }
+      }
+    }
+  }
+}

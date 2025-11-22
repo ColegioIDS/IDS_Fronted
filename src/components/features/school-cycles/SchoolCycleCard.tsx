@@ -129,14 +129,15 @@ export function SchoolCycleCard({
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="relative cursor-help">
-                  <div className="w-12 h-12 rounded-full border-4 border-gray-200 dark:border-gray-700">
-                    <svg className="w-full h-full transform -rotate-90">
+                  <div className="w-16 h-16 rounded-full border-4 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800">
+                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 40 40">
                       <circle
                         cx="24"
                         cy="24"
                         r="20"
                         fill="none"
                         stroke="currentColor"
+                        className="text-blue-500 dark:text-blue-400"
                         strokeWidth="4"
                         className="text-blue-600 dark:text-blue-400"
                         strokeDasharray={`${(progressPercentage / 100) * 125.6} 125.6`}
@@ -145,7 +146,7 @@ export function SchoolCycleCard({
                     </svg>
                   </div>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                       {Math.round(progressPercentage)}%
                     </span>
                   </div>

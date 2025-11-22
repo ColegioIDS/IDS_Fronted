@@ -208,4 +208,39 @@ export const rolesService = {
 
     return response.data.data;
   },
+
+  /**
+   * Obtener todos los permisos disponibles
+   */
+  async getAllPermissions(query?: {
+    limit?: number;
+    module?: string;
+    search?: string;
+    page?: number;
+    isActive?: boolean;
+  }): Promise<{ data: any[]; meta: any }> {
+    const params = new URLSearchParams();
+    
+    if (query?.page) params.append('page', query.page.toString());
+    if (query?.limit) params.append('limit', query.limit.toString());
+    if (query?.search) params.append('search', query.search);
+    if (query?.module) params.append('module', query.module);
+    if (query?.isActive !== undefined) params.append('isActive', query.isActive.toString());
+
+    const response = await api.get(`/api/roles/permissions?${params.toString()}`);
+    
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || 'Error al obtener permisos');
+    }
+
+    const data = Array.isArray(response.data.data) ? response.data.data : [];
+    const meta = response.data.meta || {
+      page: query?.page || 1,
+      limit: query?.limit || 10,
+      total: 0,
+      totalPages: 0,
+    };
+
+    return { data, meta };
+  },
 };

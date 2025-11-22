@@ -94,23 +94,22 @@ export function SchoolCycleStats({ cycles, isLoading = false }: SchoolCycleStats
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         return (
           <Card
             key={index}
-            className={`group relative overflow-hidden border-2 ${stat.border} ${stat.bg}
-              shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-out
-              cursor-pointer`}
+            className="group relative overflow-hidden border border-gray-200 dark:border-gray-700 
+              bg-white dark:bg-gray-800 hover:shadow-xl hover:border-gray-300 dark:hover:border-gray-600
+              transition-all duration-300 cursor-pointer"
           >
             <CardContent className="p-5 relative z-10">
               <div className="flex flex-col gap-3">
                 {/* Icon */}
-                <div className={`${stat.iconBg} p-4 rounded-2xl border-2 ${stat.border}
-                  shadow-md group-hover:shadow-xl group-hover:scale-110
-                  transition-all duration-300 ease-out w-fit`}>
-                  <Icon className={`w-8 h-8 ${stat.iconColor}`} strokeWidth={2.5} />
+                <div className={`${stat.iconBg} p-2 rounded-lg flex-shrink-0 
+                  group-hover:scale-110 transition-transform duration-300`}>
+                  <Icon className={`w-5 h-5 ${stat.iconColor}`} strokeWidth={2} />
                 </div>
 
                 {/* Content */}
@@ -119,7 +118,7 @@ export function SchoolCycleStats({ cycles, isLoading = false }: SchoolCycleStats
                     {stat.label}
                   </p>
                   <div className="flex items-baseline gap-2">
-                    <p className={`text-4xl font-bold ${stat.textColor}
+                    <p className={`text-2xl font-bold ${stat.textColor}
                       group-hover:scale-105 transition-transform duration-200 tabular-nums`}>
                       {isLoading ? '...' : stat.value}
                     </p>

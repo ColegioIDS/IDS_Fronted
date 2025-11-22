@@ -1,604 +1,537 @@
 /**
- * =========================
- * ATTENDANCE SERVICE - HTTP Handlers
- * =========================
- * 
- * Complete HTTP service for all attendance operations
- * All 4 backend endpoints implemented
- * Built with Axios + React Query
+ * ====================================================================
+ * ATTENDANCE SERVICE - Llamadas HTTP a la API
+ * ====================================================================
+ *
+ * Maneja todas las comunicaciones con el backend
+ * Usa Axios + validación Zod
+ * Errores manejados de forma centralizada
  */
 
-import { api as apiClient } from '@/config/api';
+import { api } from '@/config/api';
 import {
-  CreateAttendancePayload,
-  BulkCreateAttendancePayload,
-  BulkTeacherAttendancePayload,
-  BulkBySchedulesPayload,
+  AttendanceRecord,
+  DailyAttendanceSummary,
+  AttendanceReport,
+  CreateSingleAttendancePayload,
+  DailyRegistrationPayload,
   UpdateAttendancePayload,
   BulkUpdateAttendancePayload,
-  BulkApplyStatusPayload,
-  BulkDeleteAttendancePayload,
   CreateJustificationPayload,
   UpdateJustificationPayload,
   AttendanceQueryParams,
-  AttendanceQueryWithScope,
-  StudentAttendanceWithRelations,
-  BulkAttendanceResponse,
-  PaginatedAttendanceResponse,
-  AttendanceReport,
-  AttendanceReportResponse,
-  StudentJustification,
-  AttendanceConfigurationResponse,
-  GradesAndSectionsResponse,
-  HolidaysResponse,
-} from '../types/attendance.types';
+  AttendanceStatus,
+  Justification,
+  ApiResponse,
+  PaginatedResponse,
+} from '@/types/attendance.types';
 import {
-  validateCreateAttendance,
+  validateCreateSingleAttendance,
+  validateDailyRegistration,
   validateUpdateAttendance,
-  validateBulkCreate,
-  validateBulkTeacherAttendance,
-  validateBulkBySchedules,
-  formatValidationErrors,
-} from '../types/attendance.schemas';
-
-// ============================================================================
-// API ENDPOINTS
-// ============================================================================
+  validateBulkUpdateAttendance,
+  validateCreateJustification,
+  validateUpdateJustification,
+} from '@/schemas/attendance.schema';
 
 const BASE_URL = '/api/attendance';
 
-// ============================================================================
-// ATTENDANCE RECORD OPERATIONS
-// ============================================================================
+// ====================================================================
+// CREAR/REGISTRAR ASISTENCIA
+// ====================================================================
 
 /**
- * Register attendance - Individual or bulk creation
- * POST /api/attendance/register
- * 
- * @param payload - Attendance record(s) to create
- * @returns Created record(s)
+ * Registrar asistencia individual
+ * POST /api/attendance/single
  */
-export async function registerAttendance(
-  payload: CreateAttendancePayload | BulkCreateAttendancePayload
-): Promise<BulkAttendanceResponse> {
-  // Validate payload client-side first
-  const isBulk = 'attendances' in payload;
-  const schema = isBulk ? validateBulkCreate(payload) : validateCreateAttendance(payload);
-
-  if (!schema.success) {
-    const errors = formatValidationErrors(schema.error);
-    throw new Error(`Validation failed: ${errors.join(', ')}`);
-  }
-
-  const response = await apiClient.post<BulkAttendanceResponse>(
-    `${BASE_URL}/register`,
-    isBulk ? payload : { attendances: [payload] }
-  );
-
-  return response.data;
-}
-
-/**
- * Register attendance by teacher (bulk for all their courses)
- * POST /api/attendance/register/by-teacher
- * 
- * @param payload - Teacher attendance payload
- * @returns Created records
- */
-export async function registerTeacherAttendance(
-  payload: BulkTeacherAttendancePayload
-): Promise<BulkAttendanceResponse> {
-  // Validate payload client-side
-  const validation = validateBulkTeacherAttendance(payload);
-
+export const createSingleAttendance = async (
+  payload: CreateSingleAttendancePayload
+): Promise<AttendanceRecord> => {
+  // Validar antes de enviar
+  const validation = validateCreateSingleAttendance(payload);
   if (!validation.success) {
-    const errors = formatValidationErrors(validation.error);
-    throw new Error(`Validation failed: ${errors.join(', ')}`);
+    throw new Error(`Validación fallida: ${validation.error.message}`);
   }
 
-  const response = await apiClient.post<BulkAttendanceResponse>(
-    `${BASE_URL}/register/by-teacher`,
-    payload
+  const response = await api.post<ApiResponse<AttendanceRecord>>(
+    `${BASE_URL}/single`,
+    validation.data
   );
 
-  return response.data;
-}
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al registrar asistencia');
+  }
+
+  return response.data.data!;
+};
 
 /**
- * Register attendance by schedules
- * POST /api/attendance/register/by-schedules
- * 
- * @param payload - Schedule-based attendance payload
- * @returns Created records
+ * Registro diario masivo (TAB 1)
+ * POST /api/attendance/daily-registration
  */
-export async function registerBySchedules(
-  payload: BulkBySchedulesPayload
-): Promise<BulkAttendanceResponse> {
-  // Validate payload client-side
-  const validation = validateBulkBySchedules(payload);
-
+export const registerDailyAttendance = async (
+  payload: DailyRegistrationPayload
+): Promise<DailyAttendanceSummary> => {
+  // Validar antes de enviar
+  const validation = validateDailyRegistration(payload);
   if (!validation.success) {
-    const errors = formatValidationErrors(validation.error);
-    throw new Error(`Validation failed: ${errors.join(', ')}`);
+    throw new Error(`Validación fallida: ${validation.error.message}`);
   }
 
-  const response = await apiClient.post<BulkAttendanceResponse>(
-    `${BASE_URL}/register/by-schedules`,
-    payload
+  const response = await api.post<ApiResponse<DailyAttendanceSummary>>(
+    `${BASE_URL}/daily-registration`,
+    validation.data
   );
 
-  return response.data;
-}
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error en registro diario');
+  }
+
+  return response.data.data!;
+};
+
+// ====================================================================
+// ACTUALIZAR ASISTENCIA
+// ====================================================================
 
 /**
- * Update attendance record
- * PATCH /api/attendance/:id
- * ⚠️ changeReason is MANDATORY
- * 
- * @param id - Attendance record ID
- * @param payload - Updated data with mandatory changeReason
- * @returns Updated record
+ * Actualizar asistencia individual (TAB 2)
+ * PATCH /api/attendance/class/:id
  */
-export async function updateAttendance(
-  id: number,
+export const updateAttendance = async (
+  classAttendanceId: number,
   payload: UpdateAttendancePayload
-): Promise<StudentAttendanceWithRelations> {
-  // Validate payload client-side
+): Promise<AttendanceRecord> => {
+  // Validar antes de enviar
   const validation = validateUpdateAttendance(payload);
-
   if (!validation.success) {
-    const errors = formatValidationErrors(validation.error);
-    throw new Error(`Validation failed: ${errors.join(', ')}`);
+    throw new Error(`Validación fallida: ${validation.error.message}`);
   }
 
-  const response = await apiClient.patch<StudentAttendanceWithRelations>(
-    `${BASE_URL}/${id}`,
-    payload
+  const response = await api.patch<ApiResponse<AttendanceRecord>>(
+    `${BASE_URL}/class/${classAttendanceId}`,
+    validation.data
   );
 
-  return response.data;
-}
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al actualizar asistencia');
+  }
+
+  return response.data.data!;
+};
 
 /**
- * Bulk update attendance records
+ * Actualización masiva de asistencia
  * PATCH /api/attendance/bulk/update
- * 
- * @param payload - IDs and update data
- * @returns Update results
  */
-export async function bulkUpdateAttendance(
+export const bulkUpdateAttendance = async (
   payload: BulkUpdateAttendancePayload
-): Promise<BulkAttendanceResponse> {
-  const response = await apiClient.patch<BulkAttendanceResponse>(
+): Promise<{ successful: number; failed: number; total: number }> => {
+  // Validar antes de enviar
+  const validation = validateBulkUpdateAttendance(payload);
+  if (!validation.success) {
+    throw new Error(`Validación fallida: ${validation.error.message}`);
+  }
+
+  const response = await api.patch<ApiResponse<any>>(
     `${BASE_URL}/bulk/update`,
-    payload
+    validation.data
   );
 
-  return response.data;
-}
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error en actualización masiva');
+  }
+
+  return response.data.data || { successful: 0, failed: 0, total: 0 };
+};
+
+// ====================================================================
+// OBTENER ASISTENCIA
+// ====================================================================
 
 /**
- * Bulk apply status to multiple students
- * PATCH /api/attendance/bulk/apply-status
- * 
- * @param payload - Enrollments and status
- * @returns Results
- */
-export async function bulkApplyStatus(
-  payload: BulkApplyStatusPayload
-): Promise<BulkAttendanceResponse> {
-  const response = await apiClient.patch<BulkAttendanceResponse>(
-    `${BASE_URL}/bulk/apply-status`,
-    payload
-  );
-
-  return response.data;
-}
-
-/**
- * Bulk delete attendance records
- * DELETE /api/attendance/bulk
- * 
- * @param payload - IDs to delete
- * @returns Deletion results
- */
-export async function bulkDeleteAttendance(
-  payload: BulkDeleteAttendancePayload
-): Promise<BulkAttendanceResponse> {
-  const response = await apiClient.delete<BulkAttendanceResponse>(
-    `${BASE_URL}/bulk`,
-    { data: payload }
-  );
-
-  return response.data;
-}
-
-// ============================================================================
-// ATTENDANCE RETRIEVAL
-// ============================================================================
-
-/**
- * Get attendance history with pagination
+ * Obtener historial de asistencia de un estudiante
  * GET /api/attendance/enrollment/:enrollmentId
- * 
- * @param enrollmentId - Student enrollment ID
- * @param params - Query parameters (page, limit, filters, scope)
- * @returns Paginated attendance records
  */
-export async function getAttendanceHistory(
+export const getAttendanceHistory = async (
   enrollmentId: number,
-  params?: AttendanceQueryWithScope
-): Promise<PaginatedAttendanceResponse> {
-  const response = await apiClient.get<PaginatedAttendanceResponse>(
+  params?: AttendanceQueryParams
+): Promise<PaginatedResponse<AttendanceRecord>> => {
+  const response = await api.get<PaginatedResponse<AttendanceRecord>>(
     `${BASE_URL}/enrollment/${enrollmentId}`,
     { params }
   );
 
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener historial');
+  }
+
   return response.data;
-}
+};
 
 /**
- * Get attendance report
+ * Obtener reporte de asistencia de un estudiante (TAB 3)
  * GET /api/attendance/report/:enrollmentId
- * 
- * @param enrollmentId - Student enrollment ID
- * @param params - Query parameters (dateFrom, dateTo, bimesterId)
- * @returns Consolidated attendance report
  */
-export async function getAttendanceReport(
+export const getAttendanceReport = async (
   enrollmentId: number,
-  params?: Pick<AttendanceQueryParams, 'dateFrom' | 'dateTo' | 'bimesterId'>
-): Promise<AttendanceReportResponse> {
-  const response = await apiClient.get<AttendanceReportResponse>(
+  params?: Partial<AttendanceQueryParams>
+): Promise<AttendanceReport> => {
+  const response = await api.get<ApiResponse<AttendanceReport>>(
     `${BASE_URL}/report/${enrollmentId}`,
     { params }
   );
 
-  return response.data;
-}
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener reporte');
+  }
+
+  return response.data.data!;
+};
 
 /**
- * Get attendance statistics by section
- * GET /api/attendance/section/:sectionId/stats
- * 
- * @param sectionId - Section ID
- * @param params - Query parameters
- * @returns Statistics for all students in section
+ * Obtener asistencia de una sección por fecha
+ * GET /api/attendance/section/:sectionId/date/:date
  */
-export async function getSectionAttendanceStats(
+export const getSectionAttendanceByDate = async (
   sectionId: number,
-  params?: AttendanceQueryParams
-): Promise<PaginatedAttendanceResponse> {
-  const response = await apiClient.get<PaginatedAttendanceResponse>(
+  date: string
+): Promise<AttendanceRecord[]> => {
+  const response = await api.get<ApiResponse<AttendanceRecord[]>>(
+    `${BASE_URL}/section/${sectionId}/date/${date}`
+  );
+
+  if (!response.data.success) {
+    throw new Error(
+      response.data.message || 'Error al obtener asistencia de sección'
+    );
+  }
+
+  return response.data.data || [];
+};
+
+/**
+ * Obtener estadísticas de asistencia de una sección
+ * GET /api/attendance/section/:sectionId/stats
+ */
+export const getSectionAttendanceStats = async (
+  sectionId: number,
+  params?: Partial<AttendanceQueryParams>
+): Promise<any> => {
+  const response = await api.get<ApiResponse<any>>(
     `${BASE_URL}/section/${sectionId}/stats`,
     { params }
   );
 
-  return response.data;
-}
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener estadísticas');
+  }
 
-// ============================================================================
-// JUSTIFICATIONS
-// ============================================================================
+  return response.data.data;
+};
+
+// ====================================================================
+// JUSTIFICACIONES
+// ====================================================================
 
 /**
- * Create absence justification
+ * Crear justificación de ausencia
  * POST /api/attendance/justifications
- * 
- * @param payload - Justification data
- * @returns Created justification
  */
-export async function createJustification(
+export const createJustification = async (
   payload: CreateJustificationPayload
-): Promise<StudentJustification> {
-  const response = await apiClient.post<StudentJustification>(
+): Promise<Justification> => {
+  // Validar antes de enviar
+  const validation = validateCreateJustification(payload);
+  if (!validation.success) {
+    throw new Error(`Validación fallida: ${validation.error.message}`);
+  }
+
+  const response = await api.post<ApiResponse<Justification>>(
     `${BASE_URL}/justifications`,
-    payload
+    validation.data
   );
 
-  return response.data;
-}
+  if (!response.data.success) {
+    throw new Error(
+      response.data.message || 'Error al crear justificación'
+    );
+  }
+
+  return response.data.data!;
+};
 
 /**
- * Update justification status
+ * Actualizar justificación
  * PATCH /api/attendance/justifications/:id
- * 
- * @param id - Justification ID
- * @param payload - Updated data
- * @returns Updated justification
  */
-export async function updateJustification(
-  id: number,
+export const updateJustification = async (
+  justificationId: number,
   payload: UpdateJustificationPayload
-): Promise<StudentJustification> {
-  const response = await apiClient.patch<StudentJustification>(
-    `${BASE_URL}/justifications/${id}`,
-    payload
+): Promise<Justification> => {
+  // Validar antes de enviar
+  const validation = validateUpdateJustification(payload);
+  if (!validation.success) {
+    throw new Error(`Validación fallida: ${validation.error.message}`);
+  }
+
+  const response = await api.patch<ApiResponse<Justification>>(
+    `${BASE_URL}/justifications/${justificationId}`,
+    validation.data
   );
 
-  return response.data;
-}
+  if (!response.data.success) {
+    throw new Error(
+      response.data.message || 'Error al actualizar justificación'
+    );
+  }
+
+  return response.data.data!;
+};
 
 /**
- * Get justifications by enrollment
+ * Obtener justificaciones de un estudiante
  * GET /api/attendance/justifications/enrollment/:enrollmentId
- * 
- * @param enrollmentId - Enrollment ID
- * @param params - Query parameters
- * @returns List of justifications
  */
-export async function getJustifications(
+export const getJustifications = async (
   enrollmentId: number,
-  params?: AttendanceQueryParams
-): Promise<PaginatedAttendanceResponse> {
-  const response = await apiClient.get<PaginatedAttendanceResponse>(
+  params?: Partial<AttendanceQueryParams>
+): Promise<PaginatedResponse<Justification>> => {
+  const response = await api.get<PaginatedResponse<Justification>>(
     `${BASE_URL}/justifications/enrollment/${enrollmentId}`,
     { params }
   );
 
-  return response.data;
-}
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener justificaciones');
+  }
 
-// ============================================================================
-// CONFIGURATION & HELPERS
-// ============================================================================
+  return response.data;
+};
+
+// ====================================================================
+// CONFIGURACIÓN Y VALIDACIONES
+// ====================================================================
 
 /**
- * Get active cycle
+ * Obtener ciclo escolar activo
  * GET /api/attendance/cycle/active
- *
- * @returns Active school cycle
  */
-export async function getActiveCycle() {
-  const response = await apiClient.get<any>(`${BASE_URL}/cycle/active`);
-  return response.data;
-}
-
-/**
- * Get grades from active cycle
- * GET /api/attendance/cycle/active/grades
- *
- * @returns List of grades for active cycle
- */
-export async function getGradesFromActiveCycle(): Promise<any> {
-  const response = await apiClient.get<any>(`${BASE_URL}/cycle/active/grades`);
-  return response.data;
-}
-
-/**
- * Get sections by grade
- * GET /api/attendance/grades/:gradeId/sections
- *
- * @param gradeId - Grade ID
- * @returns List of sections for the grade
- */
-export async function getSectionsByGrade(gradeId: number): Promise<any> {
-  const response = await apiClient.get<any>(`${BASE_URL}/grades/${gradeId}/sections`);
-  return response.data;
-}
-
-/**
- * Get grades and sections combined (for compatibility)
- * Uses /api/attendance/cycle/active/grades
- *
- * ⚠️ IMPORTANTE: Esta función ahora SOLO carga grados.
- * Las secciones deben cargarse bajo demanda cuando el usuario selecciona un grado
- * usando getSectionsByGrade(gradeId)
- *
- * @returns Grades and empty sections for selection
- */
-export async function getGradesAndSections(): Promise<GradesAndSectionsResponse> {
-  try {
-    // Get grades from active cycle ONLY - don't load sections yet
-    const gradesData = await getGradesFromActiveCycle();
-
-    // Extract grade IDs but DON'T load sections
-    // Handle different response formats: could be array, object with data property, or null
-    let grades: any[] = [];
-    
-    if (Array.isArray(gradesData)) {
-      grades = gradesData;
-    } else if (gradesData?.data && Array.isArray(gradesData.data)) {
-      grades = gradesData.data;
-    } else if (gradesData && typeof gradesData === 'object') {
-      // If it's an object but not an array, try to extract grade array
-      grades = Array.isArray(gradesData) ? gradesData : [];
-    }
-
-    // Extract just the grade objects
-    const gradeObjects = grades.map((gc: any) => gc.grade || gc);
-
-    // Return grades with EMPTY sections - sections will be loaded on demand
-    return {
-      success: true,
-      data: {
-        grades: gradeObjects,
-        sections: [], // Empty - load on demand
-      },
-      message: 'Grades loaded successfully',
-    };
-  } catch (error) {
-    console.error('[getGradesAndSections] Error:', error);
-    throw error;
-  }
-}
-
-/**
- * Get allowed attendance statuses for a role
- * GET /api/attendance/status/allowed/role/:roleId
- *
- * @param roleId - Role ID
- * @returns List of allowed attendance statuses
- */
-export async function getAllowedAttendanceStatusesByRole(roleId: number) {
-  const response = await apiClient.get<any>(
-    `${BASE_URL}/status/allowed/role/${roleId}`
+export const getActiveCycle = async (): Promise<any> => {
+  const response = await api.get<ApiResponse<any>>(
+    `${BASE_URL}/cycle/active`
   );
-  return response.data;
-}
 
-/**
- * Get attendance statuses (uses role-based endpoint)
- * Compatibility function - requires roleId from auth context
- *
- * @param roleId - Role ID from authenticated user
- * @returns List of available attendance statuses
- */
-export async function getAttendanceStatuses(roleId?: number): Promise<AttendanceConfigurationResponse> {
-  if (!roleId) {
-    throw new Error('roleId is required to fetch attendance statuses');
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener ciclo activo');
   }
 
-  const response = await getAllowedAttendanceStatusesByRole(roleId);
-
-  return {
-    success: true,
-    data: {
-      grades: [],
-      sections: [],
-      holidays: [],
-      attendanceStatuses: response.data || [],
-    },
-    message: 'Attendance statuses retrieved successfully',
-  } as AttendanceConfigurationResponse;
-}
-
-/**
- * Validate if date is a holiday
- * GET /api/attendance/holiday/by-date
- *
- * @param bimesterId - Bimester ID
- * @param date - Date to check (YYYY-MM-DD)
- * @returns Holiday data or null
- */
-export async function validateHolidayByDate(bimesterId: number, date: string) {
-  const response = await apiClient.get<any>(
-    `${BASE_URL}/holiday/by-date`,
-    { params: { bimesterId, date } }
-  );
-  return response.data;
-}
-
-/**
- * Get holidays (compatibility function)
- * Note: Backend only has validation endpoint, not list endpoint
- *
- * @param bimesterId - Optional bimester ID
- * @returns Empty array (endpoint not available in backend)
- */
-export async function getHolidays(bimesterId?: number): Promise<HolidaysResponse> {
-  console.warn('[getHolidays] Backend does not have a list holidays endpoint. Use validateHolidayByDate instead.');
-
-  return {
-    success: true,
-    data: [],
-    message: 'Holidays list endpoint not available. Use validateHolidayByDate for specific dates.',
-  };
-}
-
-/**
- * Get attendance configuration
- * GET /api/attendance/config/active
- *
- * @returns Active attendance configuration
- */
-export async function getAttendanceConfig(): Promise<AttendanceConfigurationResponse> {
-  const response = await apiClient.get<any>(`${BASE_URL}/config/active`);
-  const data = response.data;
-
-  return {
-    success: data?.success || true,
-    data: data?.data || {
-      grades: [],
-      sections: [],
-      holidays: [],
-      attendanceStatuses: [],
-    },
-    message: data?.message || 'Config retrieved successfully',
-  };
-}
-
-// ============================================================================
-// ERROR HANDLING
-// ============================================================================
-
-/**
- * Format API error messages for display
- * @param error - Error from API
- * @returns User-friendly error message
- */
-export function formatAttendanceError(error: unknown): string {
-  if (error instanceof Error) {
-    // Zod validation error
-    if (error.message.includes('Validation failed')) {
-      return error.message;
-    }
-
-    // API error with response
-    if ('response' in error) {
-      const response = (error as any).response;
-      const message = response?.data?.error?.message || response?.data?.message;
-      return message || 'An error occurred while processing attendance';
-    }
-
-    return error.message;
-  }
-
-  return 'An unexpected error occurred';
-}
-
-/**
- * Check if error is a validation error
- * @param error - Error to check
- * @returns true if validation error
- */
-export function isValidationError(error: unknown): boolean {
-  if (error instanceof Error) {
-    return error.message.includes('Validation failed');
-  }
-  return false;
-}
-
-// ============================================================================
-// EXPORT GROUPS FOR EASIER IMPORTING
-// ============================================================================
-
-/**
- * All mutation operations (create, update, delete)
- */
-export const attendanceMutations = {
-  registerAttendance,
-  registerTeacherAttendance,
-  registerBySchedules,
-  updateAttendance,
-  bulkUpdateAttendance,
-  bulkApplyStatus,
-  bulkDeleteAttendance,
+  return response.data.data;
 };
 
 /**
- * All query operations (get, list, search)
+ * Obtener grados del ciclo activo
+ * GET /api/attendance/cycle/active/grades
+ */
+export const getGradesFromActiveCycle = async (): Promise<any[]> => {
+  const response = await api.get<ApiResponse<any[]>>(
+    `${BASE_URL}/cycle/active/grades`
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener grados');
+  }
+
+  return response.data.data || [];
+};
+
+/**
+ * Obtener secciones de un grado
+ * GET /api/attendance/grades/:gradeId/sections
+ */
+export const getSectionsByGrade = async (gradeId: number): Promise<any[]> => {
+  const response = await api.get<ApiResponse<any[]>>(
+    `${BASE_URL}/grades/${gradeId}/sections`
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener secciones');
+  }
+
+  return response.data.data || [];
+};
+
+/**
+ * Obtener estados de asistencia permitidos para un rol
+ * GET /api/attendance/status/allowed/role/:roleId
+ */
+export const getAllowedAttendanceStatusesByRole = async (
+  roleId: number
+): Promise<AttendanceStatus[]> => {
+  const response = await api.get<ApiResponse<AttendanceStatus[]>>(
+    `${BASE_URL}/status/allowed/role/${roleId}`
+  );
+
+  if (!response.data.success) {
+    throw new Error(
+      response.data.message || 'Error al obtener estados permitidos'
+    );
+  }
+
+  return response.data.data || [];
+};
+
+/**
+ * Validar si una fecha es feriado
+ * GET /api/attendance/holiday/by-date
+ */
+export const validateHolidayByDate = async (
+  bimesterId: number,
+  date: string
+): Promise<any> => {
+  const response = await api.get<ApiResponse<any>>(
+    `${BASE_URL}/holiday/by-date`,
+    { params: { bimesterId, date } }
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al validar feriado');
+  }
+
+  return response.data.data;
+};
+
+/**
+ * Obtener configuración activa de asistencia
+ * GET /api/attendance/config/active
+ */
+export const getAttendanceConfig = async (): Promise<any> => {
+  const response = await api.get<ApiResponse<any>>(
+    `${BASE_URL}/config/active`
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener configuración');
+  }
+
+  return response.data.data;
+};
+
+// ====================================================================
+// UTILIDADES
+// ====================================================================
+
+/**
+ * Formatea errores de la API para mostrar al usuario
+ */
+export const formatAttendanceError = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'Error desconocido al procesar asistencia';
+};
+
+/**
+ * Verifica si es un error de validación
+ */
+export const isValidationError = (error: unknown): boolean => {
+  if (error instanceof Error) {
+    return error.message.includes('Validación fallida');
+  }
+  return false;
+};
+
+// ====================================================================
+// AGRUPAR MÉTODOS POR FUNCIONALIDAD
+// ====================================================================
+
+/**
+ * Operaciones de creación/registro
+ */
+export const attendanceCreation = {
+  createSingleAttendance,
+  registerDailyAttendance,
+  createJustification,
+};
+
+/**
+ * Operaciones de actualización
+ */
+export const attendanceUpdates = {
+  updateAttendance,
+  bulkUpdateAttendance,
+  updateJustification,
+};
+
+/**
+ * Operaciones de lectura
  */
 export const attendanceQueries = {
   getAttendanceHistory,
   getAttendanceReport,
+  getSectionAttendanceByDate,
   getSectionAttendanceStats,
+  getJustifications,
+};
+
+/**
+ * Configuración y validaciones
+ */
+export const attendanceConfig = {
   getActiveCycle,
   getGradesFromActiveCycle,
   getSectionsByGrade,
-  getGradesAndSections,
   getAllowedAttendanceStatusesByRole,
-  getAttendanceStatuses,
   validateHolidayByDate,
-  getHolidays,
   getAttendanceConfig,
 };
 
 /**
- * All justification operations
+ * Utilidades
  */
-export const justificationOperations = {
+export const attendanceUtils = {
+  formatAttendanceError,
+  isValidationError,
+};
+
+// ====================================================================
+// EXPORT DEFECTO - Objeto con todos los métodos
+// ====================================================================
+
+export default {
+  // Creación
+  createSingleAttendance,
+  registerDailyAttendance,
   createJustification,
+
+  // Actualización
+  updateAttendance,
+  bulkUpdateAttendance,
   updateJustification,
+
+  // Lectura
+  getAttendanceHistory,
+  getAttendanceReport,
+  getSectionAttendanceByDate,
+  getSectionAttendanceStats,
   getJustifications,
+
+  // Configuración
+  getActiveCycle,
+  getGradesFromActiveCycle,
+  getSectionsByGrade,
+  getAllowedAttendanceStatusesByRole,
+  validateHolidayByDate,
+  getAttendanceConfig,
+
+  // Utilidades
+  formatAttendanceError,
+  isValidationError,
+
+  // Agrupados
+  creation: attendanceCreation,
+  updates: attendanceUpdates,
+  queries: attendanceQueries,
+  config: attendanceConfig,
+  utils: attendanceUtils,
 };

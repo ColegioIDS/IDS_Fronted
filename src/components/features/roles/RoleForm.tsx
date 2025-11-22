@@ -27,7 +27,6 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { rolesService } from '@/services/roles.service';
-import { permissionsService } from '@/services/permissions.service';
 import { CreateRoleDto, UpdateRoleDto, RoleType } from '@/types/roles.types';
 import { Permission } from '@/types/permissions.types';
 import { getModuleTheme, getActionTheme } from '@/config/theme.config';
@@ -136,8 +135,8 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
 
   const loadAvailablePermissions = async () => {
     try {
-      const response = await permissionsService.getPermissions({
-        limit: 100,
+      const response = await rolesService.getAllPermissions({
+        limit: 500,
         isActive: true
       });
       setAvailablePermissions(response.data);
