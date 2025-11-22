@@ -133,7 +133,7 @@ export const bulkUpdateAttendance = async (
     throw new Error(`Validación fallida: ${validation.error.message}`);
   }
 
-  const response = await api.patch<ApiResponse<any>>(
+  const response = await api.patch<ApiResponse<{ successful: number; failed: number; total: number }>>(
     `${BASE_URL}/bulk/update`,
     validation.data
   );
@@ -217,8 +217,8 @@ export const getSectionAttendanceByDate = async (
 export const getSectionAttendanceStats = async (
   sectionId: number,
   params?: Partial<AttendanceQueryParams>
-): Promise<any> => {
-  const response = await api.get<ApiResponse<any>>(
+): Promise<Record<string, unknown>> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
     `${BASE_URL}/section/${sectionId}/stats`,
     { params }
   );
@@ -227,7 +227,7 @@ export const getSectionAttendanceStats = async (
     throw new Error(response.data.message || 'Error al obtener estadísticas');
   }
 
-  return response.data.data;
+  return response.data.data || {};
 };
 
 // ====================================================================
@@ -317,8 +317,8 @@ export const getJustifications = async (
  * Obtener ciclo escolar activo
  * GET /api/attendance/cycle/active
  */
-export const getActiveCycle = async (): Promise<any> => {
-  const response = await api.get<ApiResponse<any>>(
+export const getActiveCycle = async (): Promise<Record<string, unknown>> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
     `${BASE_URL}/cycle/active`
   );
 
@@ -326,15 +326,15 @@ export const getActiveCycle = async (): Promise<any> => {
     throw new Error(response.data.message || 'Error al obtener ciclo activo');
   }
 
-  return response.data.data;
+  return response.data.data || {};
 };
 
 /**
  * Obtener grados del ciclo activo
  * GET /api/attendance/cycle/active/grades
  */
-export const getGradesFromActiveCycle = async (): Promise<any[]> => {
-  const response = await api.get<ApiResponse<any[]>>(
+export const getGradesFromActiveCycle = async (): Promise<Record<string, unknown>[]> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>[]>>(
     `${BASE_URL}/cycle/active/grades`
   );
 
@@ -349,8 +349,8 @@ export const getGradesFromActiveCycle = async (): Promise<any[]> => {
  * Obtener secciones de un grado
  * GET /api/attendance/grades/:gradeId/sections
  */
-export const getSectionsByGrade = async (gradeId: number): Promise<any[]> => {
-  const response = await api.get<ApiResponse<any[]>>(
+export const getSectionsByGrade = async (gradeId: number): Promise<Record<string, unknown>[]> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>[]>>(
     `${BASE_URL}/grades/${gradeId}/sections`
   );
 
@@ -388,8 +388,8 @@ export const getAllowedAttendanceStatusesByRole = async (
 export const validateHolidayByDate = async (
   bimesterId: number,
   date: string
-): Promise<any> => {
-  const response = await api.get<ApiResponse<any>>(
+): Promise<Record<string, unknown>> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
     `${BASE_URL}/holiday/by-date`,
     { params: { bimesterId, date } }
   );
@@ -398,15 +398,15 @@ export const validateHolidayByDate = async (
     throw new Error(response.data.message || 'Error al validar feriado');
   }
 
-  return response.data.data;
+  return response.data.data || {};
 };
 
 /**
  * Obtener configuración activa de asistencia
  * GET /api/attendance/config/active
  */
-export const getAttendanceConfig = async (): Promise<any> => {
-  const response = await api.get<ApiResponse<any>>(
+export const getActiveAttendanceConfig = async (): Promise<Record<string, unknown>> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
     `${BASE_URL}/config/active`
   );
 
@@ -414,7 +414,289 @@ export const getAttendanceConfig = async (): Promise<any> => {
     throw new Error(response.data.message || 'Error al obtener configuración');
   }
 
-  return response.data.data;
+  return response.data.data || {};
+};
+
+/**
+ * Validar bimestre por fecha
+ * GET /api/attendance/bimester/by-date
+ */
+export const validateBimesterByDate = async (
+  cycleId: number,
+  date: string
+): Promise<Record<string, unknown>> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
+    `${BASE_URL}/bimester/by-date`,
+    { params: { cycleId, date } }
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al validar bimestre');
+  }
+
+  return response.data.data || {};
+};
+
+/**
+ * Validar semana académica por fecha
+ * GET /api/attendance/week/by-date
+ */
+export const validateAcademicWeekByDate = async (
+  bimesterId: number,
+  date: string
+): Promise<Record<string, unknown>> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
+    `${BASE_URL}/week/by-date`,
+    { params: { bimesterId, date } }
+  );
+
+  if (!response.data.success) {
+    // Si es error BREAK_WEEK, retorna la semana del error
+    const responseData = response.data as unknown as Record<string, unknown>;
+    if ('week' in responseData && responseData.week) {
+      return responseData.week as Record<string, unknown>;
+    }
+    throw new Error(response.data.message || 'Error al validar semana académica');
+  }
+
+  return response.data.data || {};
+};
+
+/**
+ * Validar horarios de maestro para un día
+ * GET /api/attendance/schedules/teacher/:teacherId/day/:dayOfWeek
+ */
+export const validateTeacherSchedules = async (
+  teacherId: number,
+  dayOfWeek: number,
+  sectionId: number
+): Promise<Record<string, unknown>[]> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>[]>>(
+    `${BASE_URL}/schedules/teacher/${teacherId}/day/${dayOfWeek}`,
+    { params: { sectionId } }
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al validar horarios');
+  }
+
+  return response.data.data || [];
+};
+
+/**
+ * Validar ausencia de maestro por fecha
+ * GET /api/attendance/teacher-absence/:teacherId
+ */
+export const validateTeacherAbsenceByDate = async (
+  teacherId: number,
+  date: string
+): Promise<Record<string, unknown>> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
+    `${BASE_URL}/teacher-absence/${teacherId}`,
+    { params: { date } }
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al validar ausencia');
+  }
+
+  return response.data.data || {};
+};
+
+/**
+ * Obtener lista de feriados
+ * GET /api/attendance/holidays
+ */
+export const getHolidays = async (bimesterId?: number): Promise<Record<string, unknown>[]> => {
+  const params = bimesterId ? { bimesterId } : {};
+  const response = await api.get<ApiResponse<Record<string, unknown>[]>>(
+    `${BASE_URL}/holidays`,
+    { params }
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener feriados');
+  }
+
+  return response.data.data || [];
+};
+
+/**
+ * Obtener bimestre activo actual
+ * GET /api/attendance/bimester/active
+ */
+export const getActiveBimester = async (): Promise<Record<string, unknown>> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
+    `${BASE_URL}/bimester/active`
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener bimestre activo');
+  }
+
+  return response.data.data || {};
+};
+
+/**
+ * Obtener estudiantes matriculados en una sección
+ * GET /api/attendance/enrollment/section/:sectionId/students
+ */
+export const getEnrollmentsBySection = async (
+  sectionId: number,
+  includeInactive: boolean = false
+): Promise<Record<string, unknown>[]> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>[]>>(
+    `${BASE_URL}/enrollment/section/${sectionId}/students`,
+    { params: { includeInactive } }
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener matrículas');
+  }
+
+  return response.data.data || [];
+};
+
+/**
+ * Obtener estudiantes activos de una sección en un ciclo
+ * GET /api/attendance/enrollment/section/:sectionId/cycle/:cycleId/active
+ */
+export const getActiveEnrollmentsBySectionAndCycle = async (
+  sectionId: number,
+  cycleId: number,
+  date?: string
+): Promise<Record<string, unknown>[]> => {
+  const params = date ? { date } : {};
+  const response = await api.get<ApiResponse<Record<string, unknown>[]>>(
+    `${BASE_URL}/enrollment/section/${sectionId}/cycle/${cycleId}/active`,
+    { params }
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener matrículas activas');
+  }
+
+  return response.data.data || [];
+};
+
+/**
+ * Obtener cursos del maestro para una fecha
+ * GET /api/attendance/teacher/courses/:date
+ */
+export const getTeacherCoursesByDate = async (
+  date: string,
+  userId: number
+): Promise<Record<string, unknown>> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
+    `${BASE_URL}/teacher/courses/${date}`,
+    { params: { userId } }
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener cursos del maestro');
+  }
+
+  return response.data.data || {};
+};
+
+/**
+ * Obtener cursos del maestro para HOY
+ * GET /api/attendance/teacher/today-courses
+ */
+export const getTodayCoursesForTeacher = async (userId: number): Promise<Record<string, unknown>> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
+    `${BASE_URL}/teacher/today-courses`,
+    { params: { userId } }
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener cursos de hoy');
+  }
+
+  return response.data.data || {};
+};
+
+/**
+ * Validar completitud de asistencia de un curso
+ * GET /api/attendance/course/:courseAssignmentId/validate/:date
+ */
+export const validateAttendanceCompleteness = async (
+  courseAssignmentId: number,
+  date: string
+): Promise<Record<string, unknown>> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
+    `${BASE_URL}/course/${courseAssignmentId}/validate/${date}`
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al validar completitud');
+  }
+
+  return response.data.data || {};
+};
+
+/**
+ * Obtener estado de registro diario para una sección y fecha
+ * GET /api/attendance/daily-registration/:sectionId/:date
+ */
+export const getDailyRegistrationStatus = async (
+  sectionId: number,
+  date: string
+): Promise<Record<string, unknown>> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
+    `${BASE_URL}/daily-registration/${sectionId}/${date}`
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener estado de registro');
+  }
+
+  return response.data.data || {};
+};
+
+/**
+ * Obtener asistencia de un curso en una fecha específica
+ * GET /api/attendance/course/:courseAssignmentId/date/:date
+ */
+export const getAttendanceByCourseDateAndTeacher = async (
+  courseAssignmentId: number,
+  date: string,
+  userId: number
+): Promise<Record<string, unknown>> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
+    `${BASE_URL}/course/${courseAssignmentId}/date/${date}`,
+    { params: { userId } }
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener asistencia del curso');
+  }
+
+  return response.data.data || {};
+};
+
+/**
+ * Obtener asistencia de una sección en una fecha (versión mejorada)
+ * GET /api/attendance/section/:sectionId/cycle/:cycleId/date/:date
+ */
+export const getSectionAttendanceByDateAndCycle = async (
+  sectionId: number,
+  cycleId: number,
+  date: string,
+  limit?: number,
+  offset?: number
+): Promise<Record<string, unknown>> => {
+  const params = { limit, offset };
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
+    `${BASE_URL}/section/${sectionId}/cycle/${cycleId}/date/${date}`,
+    { params }
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al obtener asistencia de sección');
+  }
+
+  return response.data.data || {};
 };
 
 // ====================================================================
@@ -470,8 +752,13 @@ export const attendanceQueries = {
   getAttendanceHistory,
   getAttendanceReport,
   getSectionAttendanceByDate,
+  getSectionAttendanceByDateAndCycle,
   getSectionAttendanceStats,
   getJustifications,
+  getTeacherCoursesByDate,
+  getTodayCoursesForTeacher,
+  getAttendanceByCourseDateAndTeacher,
+  getDailyRegistrationStatus,
 };
 
 /**
@@ -483,7 +770,16 @@ export const attendanceConfig = {
   getSectionsByGrade,
   getAllowedAttendanceStatusesByRole,
   validateHolidayByDate,
-  getAttendanceConfig,
+  validateBimesterByDate,
+  validateAcademicWeekByDate,
+  validateTeacherSchedules,
+  validateTeacherAbsenceByDate,
+  validateAttendanceCompleteness,
+  getActiveAttendanceConfig,
+  getHolidays,
+  getActiveBimester,
+  getEnrollmentsBySection,
+  getActiveEnrollmentsBySectionAndCycle,
 };
 
 /**
@@ -498,7 +794,7 @@ export const attendanceUtils = {
 // EXPORT DEFECTO - Objeto con todos los métodos
 // ====================================================================
 
-export default {
+const attendanceService = {
   // Creación
   createSingleAttendance,
   registerDailyAttendance,
@@ -513,16 +809,30 @@ export default {
   getAttendanceHistory,
   getAttendanceReport,
   getSectionAttendanceByDate,
+  getSectionAttendanceByDateAndCycle,
   getSectionAttendanceStats,
   getJustifications,
+  getTeacherCoursesByDate,
+  getTodayCoursesForTeacher,
+  getAttendanceByCourseDateAndTeacher,
+  getDailyRegistrationStatus,
 
-  // Configuración
+  // Configuración y Validaciones
   getActiveCycle,
   getGradesFromActiveCycle,
   getSectionsByGrade,
   getAllowedAttendanceStatusesByRole,
   validateHolidayByDate,
-  getAttendanceConfig,
+  validateBimesterByDate,
+  validateAcademicWeekByDate,
+  validateTeacherSchedules,
+  validateTeacherAbsenceByDate,
+  validateAttendanceCompleteness,
+  getActiveAttendanceConfig,
+  getHolidays,
+  getActiveBimester,
+  getEnrollmentsBySection,
+  getActiveEnrollmentsBySectionAndCycle,
 
   // Utilidades
   formatAttendanceError,
@@ -535,3 +845,7 @@ export default {
   config: attendanceConfig,
   utils: attendanceUtils,
 };
+
+export default attendanceService;
+
+

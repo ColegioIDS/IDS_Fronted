@@ -921,7 +921,10 @@
 
     rolePermissions       RoleAttendancePermission[]
     configMappings        ConfigStatusMapping[]         @relation("ConfigStatusMapping")
-    studentClassAttendances StudentClassAttendance[]
+    // 🔑 NUEVO: Status actual en StudentClassAttendance
+    currentClassAttendances StudentClassAttendance[]   @relation("CurrentStatus")
+    // 🔑 NUEVO: Status original en StudentClassAttendance (para auditoría)
+    originalClassAttendances StudentClassAttendance[]  @relation("OriginalStatus")
 
     @@index([code])
     @@map("attendance_statuses")
@@ -1012,43 +1015,68 @@
 
   model StudentClassAttendance {
     id                 Int       @id @default(autoincrement())
-    enrollmentId       Int       // ✨ NUEVO: Ahora autónoma
-    date               DateTime  // ✨ NUEVO: Fecha de la clase
+    
+    // 🔑 Identificadores principales
+    enrollmentId       Int
+    date               DateTime
+    
+    // Ya existían
     scheduleId         Int
     courseAssignmentId Int
     attendanceStatusId Int
 
     // Información de asistencia
-    status      String
-    arrivalTime String?
-    notes       String?
+    status        String    // Código actual: "PRESENT", "ABSENT", "TARDY"
+    arrivalTime   String?
+    departureTime String?   // Hora de salida temprana
+    minutesLate   Int?      // Minutos de retardo calculado
+    isEarlyExit   Boolean @default(false)  // Salida temprana registrada
+    exitReason    String?   // Razón de salida temprana
+    notes         String?
 
     // Registro inicial
     recordedBy Int?
     recordedAt DateTime @default(now())
 
-    // ✨ NUEVO: Auditoría integrada (reemplaza StudentAttendanceChange)
+    // 🔑 NUEVO: Estado original (NUNCA cambia)
+    originalAttendanceStatusId Int?
+    originalStatus             String?
+
+    // Auditoría integrada
     lastModifiedBy     Int?
     lastModifiedAt     DateTime?
     modificationReason String?
 
+    // 🔑 NUEVO: Agrupa registros del mismo "registro inicial"
+    recordingGroupId    String?
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    // Relaciones
+    // ✅ Relaciones actualizadas
     enrollment        Enrollment        @relation("ClassAttendanceEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
     schedule          Schedule          @relation(fields: [scheduleId], references: [id])
     courseAssignment  CourseAssignment  @relation(fields: [courseAssignmentId], references: [id])
-    attendanceStatus  AttendanceStatus  @relation(fields: [attendanceStatusId], references: [id])
+    
+    // 🔑 Status actual
+    attendanceStatus    AttendanceStatus  @relation("CurrentStatus", fields: [attendanceStatusId], references: [id])
+    
+    // 🔑 Status original (para auditoría)
+    originalAttendanceStatus AttendanceStatus? @relation("OriginalStatus", fields: [originalAttendanceStatusId], references: [id])
+    
     recordedByUser    User?             @relation("RecordedByClassAttendance", fields: [recordedBy], references: [id])
     modifiedByUser    User?             @relation("ModifiedByClassAttendance", fields: [lastModifiedBy], references: [id])
 
+    // ✅ Índices actualizados
     @@unique([enrollmentId, scheduleId, date], name: "unique_class_attendance")
     @@index([enrollmentId])
     @@index([scheduleId])
+    @@index([date])
     @@index([courseAssignmentId])
     @@index([attendanceStatusId])
-    @@index([date])
+    @@index([originalAttendanceStatusId])
+    @@index([recordingGroupId])
+    @@index([lastModifiedBy])
     @@index([enrollmentId, date], name: "idx_student_class_attendance_enrollment_date")
     @@map("student_class_attendances")
   }
@@ -1120,6 +1148,9 @@
 
     calculatedAt       DateTime @default(now())
     lastRecalculatedAt DateTime @updatedAt
+    
+    // 🔑 NUEVO: Snapshot de cálculo para auditoría
+    calculationSnapshot String? // JSON con detalles de cálculo
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

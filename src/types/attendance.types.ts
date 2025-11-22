@@ -174,6 +174,10 @@ export interface AttendanceRecord {
   id: number;
   enrollmentId: number;
   enrollment?: Enrollment;
+  name?: string; // ✅ NUEVO: Nombre del estudiante
+  enrollmentNumber?: string; // ✅ NUEVO: Número de matrícula
+  email?: string; // ✅ NUEVO: Email del estudiante
+  identificationNumber?: string; // ✅ NUEVO: Cédula/SIRE del estudiante
   scheduleId: number;
   schedule?: Schedule;
   date: string; // YYYY-MM-DD
