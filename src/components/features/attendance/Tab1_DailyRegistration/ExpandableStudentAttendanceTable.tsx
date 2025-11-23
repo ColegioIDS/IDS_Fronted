@@ -13,7 +13,8 @@ import {
   CheckCircle2, 
   BookOpen, 
   History, 
-  ArrowRight 
+  ArrowRight,
+  User
 } from 'lucide-react';
 import { AttendanceStatus } from '@/types/attendance.types';
 import {
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { AttendanceStatusSelector } from './AttendanceStatusSelector';
 
@@ -36,6 +38,7 @@ interface StudentData {
   enrollmentNumber?: string;
   email?: string;
   identificationNumber?: string;
+  avatarUrl?: string; // Opcional si tienes URL de imagen
 }
 
 interface StudentCourse {
@@ -102,17 +105,27 @@ export function ExpandableStudentAttendanceTable({
     return colorMap[colorCode] || '#808080';
   };
 
+  // Función para obtener iniciales
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  };
+
   return (
-    <div className="rounded-md border bg-card text-card-foreground shadow-sm">
+    <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow className="bg-muted/50 hover:bg-muted/50">
+          <TableRow className="bg-muted/40 hover:bg-muted/40">
             <TableHead className="w-[50px]"></TableHead>
-            <TableHead className="font-semibold text-foreground">Estudiante</TableHead>
+            <TableHead className="font-semibold text-foreground pl-4">Estudiante</TableHead>
             <TableHead className="font-semibold text-foreground">Matrícula</TableHead>
-            <TableHead className="w-[280px] font-semibold text-foreground">Estado</TableHead>
-            <TableHead className="w-[150px] text-center font-semibold text-foreground">Salida Temprana</TableHead>
-            <TableHead className="w-[150px] text-center font-semibold text-foreground">Estatus</TableHead>
+            <TableHead className="w-[220px] font-semibold text-foreground">Estado</TableHead>
+            <TableHead className="w-[140px] text-center font-semibold text-foreground">Salida Temprana</TableHead>
+            <TableHead className="w-[140px] text-center font-semibold text-foreground">Estatus</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -144,39 +157,46 @@ export function ExpandableStudentAttendanceTable({
                 {/* Fila principal del estudiante */}
                 <TableRow 
                   className={cn(
-                    "transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
-                    isExpanded && "bg-muted/30 border-b-0"
+                    "transition-all duration-200 hover:bg-muted/30 data-[state=selected]:bg-muted",
+                    isExpanded && "bg-muted/30 border-b-0 shadow-sm z-10 relative"
                   )}
                   style={{ borderLeft: `4px solid ${statusColorIndicator}` }}
                 >
-                  <TableCell className="py-3 pl-2">
+                  <TableCell className="py-4 pl-3">
                     {hasCourses && (
                       <button
                         onClick={() => toggleExpanded(enrollmentId)}
-                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                      >
-                        {isExpanded ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
+                        className={cn(
+                          "flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200",
+                          isExpanded && "bg-accent text-accent-foreground rotate-90"
                         )}
+                      >
+                        <ChevronRight className="h-4 w-4" />
                       </button>
                     )}
                   </TableCell>
-                  <TableCell className="font-medium py-3">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-foreground">{studentName}</span>
-                      {student.email && (
-                         <span className="text-xs text-muted-foreground hidden sm:inline-block">{student.email}</span>
-                      )}
+                  <TableCell className="py-4 pl-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9 border border-border/50">
+                        <AvatarImage src={student.avatarUrl} alt={studentName} />
+                        <AvatarFallback className="bg-primary/5 text-primary font-medium text-xs">
+                          {getInitials(studentName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-foreground">{studentName}</span>
+                        {student.email && (
+                           <span className="text-xs text-muted-foreground hidden sm:inline-block">{student.email}</span>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground py-3">
-                    <Badge variant="outline" className="font-mono font-normal text-xs">
+                  <TableCell className="text-sm text-muted-foreground py-4">
+                    <Badge variant="outline" className="font-mono font-normal text-xs bg-background/50">
                       {student.enrollmentNumber || `#${enrollmentId}`}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-3">
+                  <TableCell className="py-4">
                     <AttendanceStatusSelector
                       enrollmentId={enrollmentId}
                       value={attendance?.status || ''}
@@ -185,7 +205,7 @@ export function ExpandableStudentAttendanceTable({
                       disabled={isLoading}
                     />
                   </TableCell>
-                  <TableCell className="py-3">
+                  <TableCell className="py-4">
                     <div className="flex justify-center">
                       <Checkbox
                         checked={attendance?.isEarlyExit || false}
@@ -193,13 +213,13 @@ export function ExpandableStudentAttendanceTable({
                           onEarlyExitToggle(enrollmentId, checked as boolean)
                         }
                         disabled={isLoading || !attendance?.status}
-                        className="h-5 w-5"
+                        className="h-5 w-5 rounded-md border-2 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                       />
                     </div>
                   </TableCell>
-                  <TableCell className="py-3 text-center">
+                  <TableCell className="py-4 text-center">
                     {hasExistingRecord && (
-                      <Badge variant="secondary" className="gap-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 border-0">
+                      <Badge variant="secondary" className="gap-1.5 bg-green-500/10 text-green-700 dark:bg-green-500/20 dark:text-green-400 hover:bg-green-500/20 border-0 px-2.5 py-0.5">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         Registrado
                       </Badge>
@@ -210,17 +230,20 @@ export function ExpandableStudentAttendanceTable({
                 {/* Filas expandidas con detalles de cursos */}
                 {isExpanded && consolidatedStudent && (
                   <TableRow className="bg-muted/30 hover:bg-muted/30 border-t-0">
-                    <TableCell colSpan={6} className="p-0">
-                      <div className="px-4 pb-4 pt-2">
-                        <div className="rounded-md border bg-background">
+                    <TableCell colSpan={6} className="p-0 border-0">
+                      <div className="px-4 pb-6 pt-2 pl-[68px]">
+                        <div className="rounded-lg border bg-background/80 shadow-sm backdrop-blur-sm overflow-hidden">
+                          <div className="bg-muted/30 px-4 py-2 border-b flex items-center gap-2">
+                            <BookOpen className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Detalle de Cursos</span>
+                          </div>
                           <Table>
                             <TableHeader>
-                              <TableRow className="hover:bg-transparent border-b">
-                                <TableHead className="w-[40px]"></TableHead>
-                                <TableHead className="text-xs font-semibold uppercase text-muted-foreground">Curso</TableHead>
-                                <TableHead className="text-xs font-semibold uppercase text-muted-foreground">Estado Original</TableHead>
-                                <TableHead className="text-xs font-semibold uppercase text-muted-foreground">Estado Actual</TableHead>
-                                <TableHead className="w-[100px] text-right text-xs font-semibold uppercase text-muted-foreground">Cambios</TableHead>
+                              <TableRow className="hover:bg-transparent border-b bg-transparent">
+                                <TableHead className="text-xs font-medium text-muted-foreground pl-4 h-9">Curso</TableHead>
+                                <TableHead className="text-xs font-medium text-muted-foreground h-9">Estado Original</TableHead>
+                                <TableHead className="text-xs font-medium text-muted-foreground h-9">Estado Actual</TableHead>
+                                <TableHead className="w-[120px] text-right text-xs font-medium text-muted-foreground pr-4 h-9">Cambios</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -236,19 +259,16 @@ export function ExpandableStudentAttendanceTable({
                                 return (
                                   <TableRow 
                                     key={`${enrollmentId}-course-${courseIdx}`}
-                                    className="hover:bg-muted/50 border-b last:border-0"
+                                    className="hover:bg-muted/20 border-b last:border-0 transition-colors"
                                   >
-                                    <TableCell className="py-2 text-center">
-                                      <BookOpen className="h-4 w-4 text-muted-foreground" />
-                                    </TableCell>
-                                    <TableCell className="py-2 font-medium text-sm">
+                                    <TableCell className="py-3 pl-4 font-medium text-sm">
                                       {course.courseName}
                                     </TableCell>
-                                    <TableCell className="py-2">
+                                    <TableCell className="py-3">
                                       <div className="flex items-center gap-2">
                                         {originalStatus?.colorCode && (
                                           <div
-                                            className="h-2.5 w-2.5 rounded-full ring-1 ring-offset-1 ring-offset-background"
+                                            className="h-2 w-2 rounded-full ring-2 ring-offset-1 ring-offset-background/50 opacity-80"
                                             style={{
                                               backgroundColor: getStatusColor(originalStatus.colorCode),
                                               borderColor: getStatusColor(originalStatus.colorCode)
@@ -260,12 +280,12 @@ export function ExpandableStudentAttendanceTable({
                                         </span>
                                       </div>
                                     </TableCell>
-                                    <TableCell className="py-2">
+                                    <TableCell className="py-3">
                                       <div className="flex items-center gap-2">
-                                        {hasChanged && <ArrowRight className="h-3 w-3 text-muted-foreground" />}
+                                        {hasChanged && <ArrowRight className="h-3 w-3 text-muted-foreground/50" />}
                                         {currentStatus?.colorCode && (
                                           <div
-                                            className="h-2.5 w-2.5 rounded-full ring-1 ring-offset-1 ring-offset-background"
+                                            className="h-2 w-2 rounded-full ring-2 ring-offset-1 ring-offset-background/50"
                                             style={{
                                               backgroundColor: getStatusColor(currentStatus.colorCode),
                                               borderColor: getStatusColor(currentStatus.colorCode)
@@ -280,9 +300,9 @@ export function ExpandableStudentAttendanceTable({
                                         </span>
                                       </div>
                                     </TableCell>
-                                    <TableCell className="py-2 text-right">
+                                    <TableCell className="py-3 pr-4 text-right">
                                       {hasChanged && (
-                                        <Badge variant="outline" className="gap-1 border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400">
+                                        <Badge variant="outline" className="gap-1 border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors">
                                           <History className="h-3 w-3" />
                                           Modificado
                                         </Badge>
