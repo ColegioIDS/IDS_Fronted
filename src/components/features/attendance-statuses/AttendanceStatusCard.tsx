@@ -7,15 +7,18 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  AlertCircle,
+  AlertTriangle,
   Edit2,
   Trash2,
   Eye,
   EyeOff,
+  ShieldCheck,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ATTENDANCE_THEME, getStatusTypeStyle } from '@/constants/attendance-statuses-theme';
-import { BaseCard } from '@/components/features/attendance-statuses/card/base-card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 
 interface AttendanceStatusCardProps {
   status: AttendanceStatus;
@@ -32,216 +35,142 @@ export const AttendanceStatusCard = ({
   onToggleActive,
   isCompact = false,
 }: AttendanceStatusCardProps) => {
-  const statusTypeStyle = getStatusTypeStyle(status.isNegative, status.isExcused, status.isTemporal);
-
-  const getStatusIcon = () => {
-    if (status.isExcused) return <CheckCircle2 className="w-5 h-5" />;
-    if (status.isNegative) return <XCircle className="w-5 h-5" />;
-    if (status.isTemporal) return <Clock className="w-5 h-5" />;
-    return <AlertCircle className="w-5 h-5" />;
+  
+  const getStatusColor = (colorCode?: string) => {
+    return colorCode || '#94a3b8';
   };
 
   if (isCompact) {
     return (
-      <div
-        className={cn(
-          'p-3 rounded-lg border-2 transition-all duration-200',
-          'hover:shadow-md dark:hover:shadow-lg',
-          'bg-white dark:bg-slate-900',
-          'border-slate-200 dark:border-slate-700'
-        )}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white dark:border-slate-900 shadow-sm"
-            style={{ backgroundColor: status.colorCode || '#9CA3AF' }}
-          />
+      <Card className="overflow-hidden transition-all hover:shadow-md border-l-4" style={{ borderLeftColor: getStatusColor(status.colorCode) }}>
+        <CardContent className="p-4 flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-              {status.code}
-            </p>
-            <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
-              {status.name}
-            </p>
+            <div className="flex items-center gap-2 mb-1">
+              <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded border">
+                {status.code}
+              </code>
+              <span className="font-semibold text-sm truncate">{status.name}</span>
+            </div>
           </div>
-          <div className={cn('flex-shrink-0', statusTypeStyle.color)}>
-            {getStatusIcon()}
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <BaseCard className={cn(
-      'group overflow-hidden transition-all duration-200',
-      statusTypeStyle.bg,
-      'border-2 border-slate-200 dark:border-slate-700',
-      'hover:shadow-lg dark:hover:shadow-2xl'
-    )}>
-      <div className="flex items-start justify-between mb-6 pb-6 border-b-2 border-slate-200 dark:border-slate-700">
-        <div className="flex items-start gap-4 flex-1 min-w-0">
-          <div
-            className={cn(
-              'w-14 h-14 rounded-xl border-2 border-white dark:border-slate-800',
-              'flex items-center justify-center flex-shrink-0',
-              'font-bold text-white shadow-lg',
-              'text-lg'
-            )}
-            style={{ backgroundColor: status.colorCode || '#9CA3AF' }}
-          >
-            {status.code}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">
-              {status.name}
-            </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">
-              {status.description || 'Sin descripción'}
-            </p>
-            <div className="flex gap-4 mt-3 text-xs">
-              <span
-                className={cn(
-                  'px-2 py-1 rounded-full font-medium',
-                  status.isActive
-                    ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
-                )}
-              >
-                {status.isActive ? '✓ Activo' : '✕ Inactivo'}
-              </span>
-              <span className="px-2 py-1 rounded-full font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
-                Orden: {status.order}
-              </span>
+    <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg border-t-4" style={{ borderTopColor: getStatusColor(status.colorCode) }}>
+      <CardHeader className="pb-3 pt-5 px-5">
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-3">
+            <div 
+              className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold shadow-sm"
+              style={{ backgroundColor: getStatusColor(status.colorCode) }}
+            >
+              {status.code}
+            </div>
+            <div>
+              <h3 className="font-bold text-lg leading-tight">{status.name}</h3>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge 
+                  variant={status.isActive ? "secondary" : "outline"} 
+                  className={cn(
+                    "text-[10px] px-1.5 h-5", 
+                    status.isActive 
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {status.isActive ? "Activo" : "Inactivo"}
+                </Badge>
+                <span className="text-xs text-muted-foreground">Orden: {status.order}</span>
+              </div>
             </div>
           </div>
         </div>
-
-        <div className={cn('flex-shrink-0', statusTypeStyle.color)}>
-          {getStatusIcon()}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-6">
-        {status.isNegative && (
-          <span className={cn(
-            'px-3 py-1.5 text-xs font-semibold rounded-full',
-            'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200',
-            'border border-red-200 dark:border-red-700'
-          )}>
-            🚫 Ausencia
-          </span>
-        )}
-
-        {status.requiresJustification && (
-          <span className={cn(
-            'px-3 py-1.5 text-xs font-semibold rounded-full',
-            'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200',
-            'border border-amber-200 dark:border-amber-700'
-          )}>
-            📋 Justificación
-          </span>
-        )}
-
-        {status.isTemporal && (
-          <span className={cn(
-            'px-3 py-1.5 text-xs font-semibold rounded-full',
-            'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200',
-            'border border-orange-200 dark:border-orange-700'
-          )}>
-            ⏱️ Temporal
-          </span>
-        )}
-
-        {status.isExcused && (
-          <span className={cn(
-            'px-3 py-1.5 text-xs font-semibold rounded-full',
-            'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200',
-            'border border-blue-200 dark:border-blue-700'
-          )}>
-            ✓ Excusado
-          </span>
-        )}
-
-        {status.canHaveNotes && (
-          <span className={cn(
-            'px-3 py-1.5 text-xs font-semibold rounded-full',
-            'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200',
-            'border border-purple-200 dark:border-purple-700'
-          )}>
-            📝 Notas
-          </span>
-        )}
-      </div>
-
-      {(onEdit || onDelete || onToggleActive) && (
-        <div
-          className={cn(
-            'flex gap-2 pt-6 border-t-2 border-slate-200 dark:border-slate-700',
-            'opacity-0 group-hover:opacity-100 transition-all duration-200'
+      </CardHeader>
+      
+      <CardContent className="px-5 py-2 min-h-[80px]">
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+          {status.description || <span className="italic opacity-50">Sin descripción</span>}
+        </p>
+        
+        <div className="flex flex-wrap gap-1.5">
+          {status.isNegative && (
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 h-6 gap-1 border-red-200 bg-red-50 text-red-700 dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-400">
+              <AlertTriangle className="w-3 h-3" /> Ausencia
+            </Badge>
           )}
-        >
-          {onToggleActive && (
-            <button
-              onClick={() => onToggleActive(status.id, !status.isActive)}
-              className={cn(
-                'flex-1 px-3 py-2 rounded-lg transition-all duration-200',
-                'font-semibold text-sm flex items-center justify-center gap-2',
-                'text-white border-2 border-transparent',
-                status.isActive
-                  ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-md hover:shadow-lg'
-                  : 'bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 shadow-md hover:shadow-lg'
-              )}
-              title={status.isActive ? 'Desactivar' : 'Activar'}
-            >
-              {status.isActive ? (
-                <>
-                  <Eye className="w-4 h-4" />
-                  <span className="hidden sm:inline">Activo</span>
-                </>
-              ) : (
-                <>
-                  <EyeOff className="w-4 h-4" />
-                  <span className="hidden sm:inline">Inactivo</span>
-                </>
-              )}
-            </button>
+          {status.isExcused && (
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 h-6 gap-1 border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-400">
+              <ShieldCheck className="w-3 h-3" /> Justificable
+            </Badge>
           )}
-
-          {onEdit && (
-            <button
-              onClick={() => onEdit(status)}
-              className={cn(
-                'flex-1 px-3 py-2 rounded-lg transition-all duration-200',
-                'font-semibold text-sm flex items-center justify-center gap-2',
-                'text-white border-2 border-transparent',
-                'bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 shadow-md hover:shadow-lg'
-              )}
-              title="Editar"
-            >
-              <Edit2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Editar</span>
-            </button>
+          {status.isTemporal && (
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 h-6 gap-1 border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900/30 dark:bg-purple-950/20 dark:text-purple-400">
+              <Clock className="w-3 h-3" /> Temporal
+            </Badge>
           )}
-
-          {onDelete && (
-            <button
-              onClick={() => onDelete(status.id)}
-              className={cn(
-                'flex-1 px-3 py-2 rounded-lg transition-all duration-200',
-                'font-semibold text-sm flex items-center justify-center gap-2',
-                'text-white border-2 border-transparent',
-                'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-md hover:shadow-lg'
-              )}
-              title="Eliminar"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Eliminar</span>
-            </button>
+          
+          {(status.requiresJustification || status.canHaveNotes) && (
+            <div className="flex gap-1.5 ml-auto">
+               {status.requiresJustification && (
+                 <div className="w-6 h-6 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 dark:text-amber-500" title="Requiere justificación">
+                   <FileText className="w-3.5 h-3.5" />
+                 </div>
+               )}
+               {status.canHaveNotes && (
+                 <div className="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-500" title="Permite notas">
+                   <Edit2 className="w-3.5 h-3.5" />
+                 </div>
+               )}
+            </div>
           )}
         </div>
-      )}
-    </BaseCard>
+      </CardContent>
+
+      <CardFooter className="px-5 py-4 bg-muted/30 border-t flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {onToggleActive && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 h-8 text-xs"
+            onClick={() => onToggleActive(status.id, !status.isActive)}
+          >
+            {status.isActive ? (
+              <>
+                <EyeOff className="w-3.5 h-3.5 mr-1.5" /> Desactivar
+              </>
+            ) : (
+              <>
+                <Eye className="w-3.5 h-3.5 mr-1.5" /> Activar
+              </>
+            )}
+          </Button>
+        )}
+        
+        {onEdit && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 h-8 text-xs hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800"
+            onClick={() => onEdit(status)}
+          >
+            <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Editar
+          </Button>
+        )}
+        
+        {onDelete && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20"
+            onClick={() => onDelete(status.id)}
+            title="Eliminar"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
   );
 };

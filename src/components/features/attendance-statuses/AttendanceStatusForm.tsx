@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AlertCircle, Loader } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle, Loader, Save, X, AlertTriangle, ShieldCheck, Clock, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface AttendanceStatusFormProps {
   initialData?: AttendanceStatus;
@@ -105,275 +105,284 @@ export const AttendanceStatusForm = ({
   };
 
   return (
-    <Card className="shadow-lg">
-      <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b">
-        <div className="space-y-2">
-          <CardTitle className="text-2xl font-bold">
-            {initialData ? 'Editar Estado de Asistencia' : 'Crear Nuevo Estado'}
-          </CardTitle>
-          <CardDescription>
-            {initialData
-              ? 'Modifica los detalles del estado de asistencia'
-              : 'Define un nuevo estado con sus propiedades y configuración'}
-          </CardDescription>
+    <Card className="shadow-lg border-t-4 border-t-primary">
+      <CardHeader className="border-b bg-muted/10 pb-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-2xl font-bold">
+              {initialData ? 'Editar Estado' : 'Nuevo Estado'}
+            </CardTitle>
+            <CardDescription>
+              {initialData
+                ? 'Modifica los detalles del estado de asistencia seleccionado'
+                : 'Configura un nuevo estado de asistencia para el sistema'}
+            </CardDescription>
+          </div>
+          <div 
+            className="h-12 w-12 rounded-xl flex items-center justify-center shadow-sm border-2 border-white dark:border-slate-800"
+            style={{ backgroundColor: formData.colorCode }}
+          >
+            <span className="font-bold text-white text-lg drop-shadow-sm">
+              {formData.code || '?'}
+            </span>
+          </div>
         </div>
       </CardHeader>
 
       <CardContent className="pt-8">
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Sección 1: Información Básica */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-1 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full" />
-              <h3 className="text-lg font-semibold text-foreground">Información Básica</h3>
-            </div>
-
-            <div className="space-y-4 pl-4">
-              {/* Código */}
-              <div className="space-y-2">
-                <Label htmlFor="code" className="font-semibold">
-                  Código <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="code"
-                  type="text"
-                  name="code"
-                  value={formData.code}
-                  onChange={handleChange}
-                  placeholder="Ej: P, I, R"
-                  maxLength={10}
-                  disabled={isLoading || !!initialData}
-                  className="h-10 w-full"
-                />
-                {errors.code && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.code}
-                  </p>
-                )}
+          {/* Sección 1: Información Principal */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <div className="h-6 w-1 bg-primary rounded-full" />
+                <h3 className="font-semibold text-lg">Información Básica</h3>
               </div>
 
-              {/* Nombre */}
-              <div className="space-y-2">
-                <Label htmlFor="name" className="font-semibold">
-                  Nombre <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Ej: Presente"
-                  disabled={isLoading}
-                  className="h-10 w-full"
-                />
-                {errors.name && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.name}
-                  </p>
-                )}
-              </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Código */}
+                  <div className="space-y-2">
+                    <Label htmlFor="code" className="font-medium">
+                      Código <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="code"
+                      name="code"
+                      value={formData.code}
+                      onChange={handleChange}
+                      placeholder="Ej: P"
+                      maxLength={10}
+                      disabled={isLoading || !!initialData}
+                      className={cn(errors.code && "border-destructive focus-visible:ring-destructive")}
+                    />
+                    {errors.code && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" /> {errors.code}
+                      </p>
+                    )}
+                  </div>
 
-              {/* Descripción */}
-              <div className="space-y-2">
-                <Label htmlFor="description" className="font-semibold">
-                  Descripción
-                </Label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Describe este estado de asistencia..."
-                  rows={3}
-                  disabled={isLoading}
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                />
-                {errors.description && (
-                  <p className="text-sm text-destructive mt-1 flex items-center gap-1">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.description}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+                  {/* Orden */}
+                  <div className="space-y-2">
+                    <Label htmlFor="order" className="font-medium">
+                      Orden
+                    </Label>
+                    <Input
+                      id="order"
+                      type="number"
+                      name="order"
+                      value={formData.order}
+                      onChange={handleChange}
+                      min="0"
+                      max="999"
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
 
-          {/* Sección 2: Presentación Visual */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-1 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full" />
-              <h3 className="text-lg font-semibold text-foreground">Presentación Visual</h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-4">
-              {/* Color */}
-              <div className="space-y-3">
-                <Label htmlFor="color" className="font-semibold">
-                  Color del Estado
-                </Label>
-                <div className="flex gap-3 items-center">
-                  <input
-                    id="color"
-                    type="color"
-                    name="colorCode"
-                    value={formData.colorCode}
-                    onChange={handleChange}
-                    className="h-10 w-10 rounded-full border-2 border-input cursor-pointer shadow-md hover:shadow-lg transition-shadow"
-                    disabled={isLoading}
-                  />
+                {/* Nombre */}
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="font-medium">
+                    Nombre del Estado <span className="text-destructive">*</span>
+                  </Label>
                   <Input
-                    type="text"
-                    value={formData.colorCode}
+                    id="name"
+                    name="name"
+                    value={formData.name}
                     onChange={handleChange}
-                    name="colorCode"
-                    placeholder="#22c55e"
-                    className="flex-1 font-mono text-xs h-9"
+                    placeholder="Ej: Presente"
                     disabled={isLoading}
+                    className={cn(errors.name && "border-destructive focus-visible:ring-destructive")}
                   />
-                  <div
-                    className="h-10 w-10 rounded-full border-2 border-input shadow-md"
-                    style={{ backgroundColor: formData.colorCode }}
-                  />
+                  {errors.name && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {errors.name}
+                    </p>
+                  )}
                 </div>
-              </div>
 
-              {/* Orden */}
-              <div className="space-y-2">
-                <Label htmlFor="order" className="font-semibold">
-                  Orden de Visualización
-                </Label>
-                <Input
-                  id="order"
-                  type="number"
-                  name="order"
-                  value={formData.order}
-                  onChange={handleChange}
-                  min="0"
-                  max="999"
-                  className="h-10"
-                  disabled={isLoading}
-                />
+                {/* Descripción */}
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="font-medium">
+                    Descripción
+                  </Label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="Breve descripción del estado..."
+                    rows={3}
+                    disabled={isLoading}
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                  />
+                  {errors.description && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {errors.description}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Sección 3: Propiedades del Estado */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-1 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full" />
-              <h3 className="text-lg font-semibold text-foreground">Propiedades del Estado</h3>
-            </div>
-
-            {/* Grid de checkboxes - mejorado */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-4">
-              {/* Ausencia */}
-              <div className="flex items-center space-x-3 p-3 rounded-lg border border-orange-200 bg-orange-50 dark:border-orange-900/50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-950/40 transition-colors cursor-pointer">
-                <Checkbox
-                  id="isNegative"
-                  name="isNegative"
-                  checked={formData.isNegative}
-                  onCheckedChange={(checked) => {
-                    setFormData((prev) => ({ ...prev, isNegative: checked as boolean }));
-                  }}
-                  disabled={isLoading}
-                />
-                <div className="flex flex-col gap-0.5">
-                  <Label htmlFor="isNegative" className="text-sm font-semibold cursor-pointer">
-                    Es una Ausencia
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Marca negativamente el registro de asistencia
-                  </p>
-                </div>
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <div className="h-6 w-1 bg-primary rounded-full" />
+                <h3 className="font-semibold text-lg">Configuración y Propiedades</h3>
               </div>
 
-              {/* Temporal */}
-              <div className="flex items-center space-x-3 p-3 rounded-lg border border-purple-200 bg-purple-50 dark:border-purple-900/50 dark:bg-purple-950/20 hover:bg-purple-100 dark:hover:bg-purple-950/40 transition-colors cursor-pointer">
-                <Checkbox
-                  id="isTemporal"
-                  name="isTemporal"
-                  checked={formData.isTemporal}
-                  onCheckedChange={(checked) => {
-                    setFormData((prev) => ({ ...prev, isTemporal: checked as boolean }));
-                  }}
-                  disabled={isLoading}
-                />
-                <div className="flex flex-col gap-0.5">
-                  <Label htmlFor="isTemporal" className="text-sm font-semibold cursor-pointer">
-                    Es Temporal
+              <div className="space-y-6">
+                {/* Color */}
+                <div className="space-y-3">
+                  <Label htmlFor="color" className="font-medium">
+                    Color Identificativo
                   </Label>
-                  <p className="text-xs text-muted-foreground">Vigencia limitada en el tiempo</p>
+                  <div className="flex items-center gap-4 p-4 rounded-lg border bg-muted/20">
+                    <input
+                      id="color"
+                      type="color"
+                      name="colorCode"
+                      value={formData.colorCode}
+                      onChange={handleChange}
+                      className="h-12 w-12 rounded cursor-pointer border-0 p-0 bg-transparent"
+                      disabled={isLoading}
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Selecciona un color</p>
+                      <p className="text-xs text-muted-foreground">Este color se usará en reportes y tablas</p>
+                    </div>
+                    <div className="text-xs font-mono bg-muted px-2 py-1 rounded border">
+                      {formData.colorCode}
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {/* Excusado */}
-              <div className="flex items-center space-x-3 p-3 rounded-lg border border-cyan-200 bg-cyan-50 dark:border-cyan-900/50 dark:bg-cyan-950/20 hover:bg-cyan-100 dark:hover:bg-cyan-950/40 transition-colors cursor-pointer">
-                <Checkbox
-                  id="isExcused"
-                  name="isExcused"
-                  checked={formData.isExcused}
-                  onCheckedChange={(checked) => {
-                    setFormData((prev) => ({ ...prev, isExcused: checked as boolean }));
-                  }}
-                  disabled={isLoading}
-                />
-                <div className="flex flex-col gap-0.5">
-                  <Label htmlFor="isExcused" className="text-sm font-semibold cursor-pointer">
-                    Es Excusado
-                  </Label>
-                  <p className="text-xs text-muted-foreground">Considera como asistencia válida</p>
-                </div>
-              </div>
+                {/* Propiedades Checkboxes */}
+                <div className="grid grid-cols-1 gap-3">
+                  <div className={cn(
+                    "flex items-start space-x-3 p-3 rounded-lg border transition-colors",
+                    formData.isNegative ? "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900/50" : "hover:bg-muted/50"
+                  )}>
+                    <Checkbox
+                      id="isNegative"
+                      checked={formData.isNegative}
+                      onCheckedChange={(checked: boolean | 'indeterminate') => {
+                        setFormData((prev) => ({ ...prev, isNegative: checked === true }));
+                      }}
+                      className="mt-1 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="isNegative" className="font-medium cursor-pointer flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-red-500" />
+                        Es una Ausencia
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Marca negativamente el registro de asistencia del estudiante.
+                      </p>
+                    </div>
+                  </div>
 
-              {/* Activo */}
-              <div className="flex items-center space-x-3 p-3 rounded-lg border border-green-200 bg-green-50 dark:border-green-900/50 dark:bg-green-950/20 hover:bg-green-100 dark:hover:bg-green-950/40 transition-colors cursor-pointer">
-                <Checkbox
-                  id="isActive"
-                  name="isActive"
-                  checked={formData.isActive}
-                  onCheckedChange={(checked) => {
-                    setFormData((prev) => ({ ...prev, isActive: checked as boolean }));
-                  }}
-                  disabled={isLoading}
-                />
-                <div className="flex flex-col gap-0.5">
-                  <Label htmlFor="isActive" className="text-sm font-semibold cursor-pointer">
-                    Está Activo
-                  </Label>
-                  <p className="text-xs text-muted-foreground">Disponible para usar</p>
+                  <div className={cn(
+                    "flex items-start space-x-3 p-3 rounded-lg border transition-colors",
+                    formData.isExcused ? "bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/50" : "hover:bg-muted/50"
+                  )}>
+                    <Checkbox
+                      id="isExcused"
+                      checked={formData.isExcused}
+                      onCheckedChange={(checked: boolean | 'indeterminate') => {
+                        setFormData((prev) => ({ ...prev, isExcused: checked === true }));
+                      }}
+                      className="mt-1 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="isExcused" className="font-medium cursor-pointer flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-blue-500" />
+                        Es Justificable / Excusado
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        No afecta negativamente el porcentaje de asistencia.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={cn(
+                    "flex items-start space-x-3 p-3 rounded-lg border transition-colors",
+                    formData.isTemporal ? "bg-purple-50 border-purple-200 dark:bg-purple-950/20 dark:border-purple-900/50" : "hover:bg-muted/50"
+                  )}>
+                    <Checkbox
+                      id="isTemporal"
+                      checked={formData.isTemporal}
+                      onCheckedChange={(checked: boolean | 'indeterminate') => {
+                        setFormData((prev) => ({ ...prev, isTemporal: checked === true }));
+                      }}
+                      className="mt-1 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="isTemporal" className="font-medium cursor-pointer flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-purple-500" />
+                        Es Temporal
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Estado transitorio (ej. retardo) que puede cambiar.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={cn(
+                    "flex items-start space-x-3 p-3 rounded-lg border transition-colors",
+                    formData.isActive ? "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900/50" : "bg-muted/30"
+                  )}>
+                    <Checkbox
+                      id="isActive"
+                      checked={formData.isActive}
+                      onCheckedChange={(checked: boolean | 'indeterminate') => {
+                        setFormData((prev) => ({ ...prev, isActive: checked === true }));
+                      }}
+                      className="mt-1 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="isActive" className="font-medium cursor-pointer flex items-center gap-2">
+                        <Eye className="w-4 h-4 text-green-600" />
+                        Estado Activo
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Disponible para ser seleccionado en los registros.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Acciones */}
-          <div className="flex gap-3 pt-6 border-t">
+          <div className="flex justify-end gap-4 pt-6 border-t mt-4">
             <Button
               type="button"
+              variant="outline"
               onClick={onCancel}
               disabled={isLoading}
-              variant="outline"
-              className="flex-1 h-11"
+              className="min-w-[120px]"
             >
+              <X className="w-4 h-4 mr-2" />
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="flex-1 h-11 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+              className="min-w-[140px] shadow-md hover:shadow-lg transition-all"
             >
               {isLoading ? (
                 <>
                   <Loader className="h-4 w-4 mr-2 animate-spin" />
                   Guardando...
                 </>
-              ) : initialData ? (
-                'Actualizar Estado'
               ) : (
-                'Crear Estado'
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {initialData ? 'Guardar Cambios' : 'Crear Estado'}
+                </>
               )}
             </Button>
           </div>

@@ -1,16 +1,16 @@
+```typescript
 // src/components/features/attendance-statuses/AttendanceStatusesPageContent.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, AlertCircle, Grid3x3, List } from 'lucide-react';
+import { Plus, AlertCircle, Grid3x3, List, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AttendanceStatus } from '@/types/attendance-status.types';
 import { useAttendanceStatuses, useAttendanceStatusPermissions } from '@/hooks/data';
 import { attendanceStatusesService } from '@/services/attendance-statuses.service';
-import { ATTENDANCE_THEME } from '@/constants/attendance-statuses-theme';
-import { BaseCard } from '@/components/features/attendance-statuses/card/base-card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
 
 import { AttendanceStatusCard } from './AttendanceStatusCard';
 import { AttendanceStatusTable } from './AttendanceStatusTable';
@@ -136,45 +136,34 @@ export const AttendanceStatusesPageContent = () => {
   // ============================================
   if (!canReadStatuses) {
     return (
-      <BaseCard className={cn(
-        'flex items-center gap-4 p-6',
-        ATTENDANCE_THEME.operations.delete.bg,
-        'border',
-        ATTENDANCE_THEME.operations.delete.border
-      )}>
-        <div className={cn(
-          'p-3 rounded-lg',
-          ATTENDANCE_THEME.operations.delete.bg
-        )}>
-          <AlertCircle className={cn(
-            'w-6 h-6',
-            ATTENDANCE_THEME.operations.delete.muted
-          )} />
-        </div>
-        <div>
-          <h3 className={cn('font-semibold', ATTENDANCE_THEME.base.text.primary)}>
-            Acceso Denegado
-          </h3>
-          <p className={ATTENDANCE_THEME.base.text.muted}>
-            No tienes permisos para ver los estados de asistencia
-          </p>
-        </div>
-      </BaseCard>
+      <Card className="border-destructive/50 bg-destructive/5">
+        <CardContent className="flex items-center gap-4 p-6">
+          <div className="p-3 rounded-full bg-destructive/10 text-destructive">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-destructive">Acceso Denegado</h3>
+            <p className="text-muted-foreground">
+              No tienes permisos para ver los estados de asistencia
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-in fade-in duration-500">
       {/* ============================================
           SECCIÓN: HEADER
           ============================================ */}
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pb-6 border-b border-border/40">
         <div>
-          <h1 className={cn('text-3xl font-bold', ATTENDANCE_THEME.base.text.primary)}>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Estados de Asistencia
           </h1>
-          <p className={cn('mt-2', ATTENDANCE_THEME.base.text.muted)}>
-            Gestiona los estados de asistencia disponibles en el sistema
+          <p className="mt-2 text-muted-foreground text-lg">
+            Configura los estados disponibles para el registro diario.
           </p>
         </div>
 
@@ -185,14 +174,11 @@ export const AttendanceStatusesPageContent = () => {
               setEditingStatus(undefined);
               setViewMode('form');
             }}
-            className={cn(
-              ATTENDANCE_THEME.operations.create.button,
-              'text-white gap-2'
-            )}
+            className="shadow-sm hover:shadow-md transition-all"
+            size="lg"
           >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Crear Estado</span>
-            <span className="sm:hidden">Crear</span>
+            <Plus className="w-5 h-5 mr-2" />
+            Crear Estado
           </Button>
         )}
 
@@ -214,84 +200,61 @@ export const AttendanceStatusesPageContent = () => {
           SECCIÓN: FORMULARIO
           ============================================ */}
       {viewMode === 'form' && (
-        <AttendanceStatusForm
-          initialData={editingStatus}
-          onSubmit={editingStatus ? handleUpdate : handleCreate}
-          onCancel={() => {
-            setViewMode('list');
-            setEditingStatus(undefined);
-          }}
-          isLoading={isOperating}
-        />
+        <div className="animate-in slide-in-from-bottom-4 duration-500">
+          <AttendanceStatusForm
+            initialData={editingStatus}
+            onSubmit={editingStatus ? handleUpdate : handleCreate}
+            onCancel={() => {
+              setViewMode('list');
+              setEditingStatus(undefined);
+            }}
+            isLoading={isOperating}
+          />
+        </div>
       )}
 
       {/* ============================================
           SECCIÓN: LISTA/GRID
           ============================================ */}
       {viewMode !== 'form' && (
-        <>
-          {/* FILTROS */}
-          <AttendanceStatusFilters filters={query} onFilterChange={updateQuery} />
+        <div className="space-y-6">
+          {/* CONTROLES SUPERIORES */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+            <AttendanceStatusFilters filters={query} onFilterChange={updateQuery} />
+            
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)} className="w-full sm:w-auto">
+              <TabsList className="grid w-full grid-cols-2 sm:w-[200px]">
+                <TabsTrigger value="list" className="gap-2">
+                  <List className="w-4 h-4" />
+                  Lista
+                </TabsTrigger>
+                <TabsTrigger value="grid" className="gap-2">
+                  <Grid3x3 className="w-4 h-4" />
+                  Grid
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
 
-          {/* TOGGLE DE VISTA (TABS) - PEQUEÑO A LA DERECHA */}
-          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)} className="w-full">
-            <TabsList className={cn(
-              'grid grid-cols-2 w-fit ml-auto gap-1 p-0.5 bg-slate-100 dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700'
-            )}>
-              <TabsTrigger 
-                value="list" 
-                className={cn(
-                  'gap-1 py-1.5 px-2.5 text-xs transition-all',
-                  viewMode === 'list' 
-                    ? 'bg-white dark:bg-slate-700 shadow-sm' 
-                    : ''
-                )}
-              >
-                <List className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Lista</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="grid" 
-                className={cn(
-                  'gap-1 py-1.5 px-2.5 text-xs transition-all',
-                  viewMode === 'grid' 
-                    ? 'bg-white dark:bg-slate-700 shadow-sm' 
-                    : ''
-                )}
-              >
-                <Grid3x3 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Cuadrícula</span>
-              </TabsTrigger>
-            </TabsList>
-
-            {/* ESTADO DE ERROR */}
-            {error && (
-              <BaseCard className={cn(
-                'flex items-center gap-4 p-4',
-                ATTENDANCE_THEME.operations.delete.bg,
-                'border',
-                ATTENDANCE_THEME.operations.delete.border
-              )}>
-                <AlertCircle className={cn(
-                  'w-5 h-5 flex-shrink-0',
-                  ATTENDANCE_THEME.operations.delete.muted
-                )} />
+          {/* ESTADO DE ERROR */}
+          {error && (
+            <Card className="border-destructive/50 bg-destructive/5">
+              <CardContent className="flex items-center gap-4 p-4">
+                <AlertCircle className="w-5 h-5 text-destructive" />
                 <div>
-                  <h3 className={cn('font-semibold', ATTENDANCE_THEME.operations.delete.text)}>
-                    Error al cargar
-                  </h3>
-                  <p className={cn('text-sm', ATTENDANCE_THEME.operations.delete.muted)}>
-                    {error}
-                  </p>
+                  <h3 className="font-semibold text-destructive">Error al cargar</h3>
+                  <p className="text-sm text-muted-foreground">{error}</p>
                 </div>
-              </BaseCard>
-            )}
+              </CardContent>
+            </Card>
+          )}
 
-            {/* CONTENIDO */}
-            {!error && (
-              <>
-                {/* VISTA LISTA */}
-                <TabsContent value="list" className="space-y-4">
+          {/* CONTENIDO */}
+          {!error && (
+            <>
+              {/* VISTA LISTA */}
+              {viewMode === 'list' && (
+                <div className="animate-in fade-in duration-300">
                   <AttendanceStatusTable
                     statuses={statuses}
                     loading={isLoading}
@@ -304,59 +267,43 @@ export const AttendanceStatusesPageContent = () => {
                       if (status) handleDeleteClick(id, status.name);
                     }}
                     onToggleActive={handleToggleActive}
+                    onAdd={() => {
+                      setEditingStatus(undefined);
+                      setViewMode('form');
+                    }}
                   />
-                </TabsContent>
+                </div>
+              )}
 
-                {/* VISTA GRID */}
-                <TabsContent value="grid">
+              {/* VISTA GRID */}
+              {viewMode === 'grid' && (
+                <div className="animate-in fade-in duration-300">
                   {isLoading ? (
-                    <BaseCard className="flex flex-col items-center justify-center py-16 px-6">
-                      <div className="relative mb-6">
-                        <div className="h-16 w-16 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600 dark:border-blue-900 dark:border-t-blue-400"></div>
-                        <div className="absolute inset-0 h-16 w-16 animate-ping rounded-full bg-blue-600/20 opacity-20"></div>
-                      </div>
-                      <p className="text-base font-medium text-gray-700 dark:text-gray-300">
-                        Cargando estados de asistencia...
-                      </p>
-                      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                        Por favor espera un momento
-                      </p>
-                    </BaseCard>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="h-48 rounded-xl bg-muted/50 animate-pulse" />
+                      ))}
+                    </div>
                   ) : statuses.length === 0 ? (
-                    <BaseCard className="flex flex-col items-center justify-center py-16 px-6 border-dashed">
-                      <div className="relative mb-6">
-                        <div className="absolute inset-0 bg-blue-100 dark:bg-blue-900/20 rounded-full blur-2xl opacity-50"></div>
-                        <div className="relative bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 p-5 rounded-full">
-                          <Grid3x3 className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+                    <Card className="border-dashed">
+                      <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                        <div className="p-4 rounded-full bg-primary/5 mb-4">
+                          <ShieldCheck className="h-10 w-10 text-primary/50" />
                         </div>
-                      </div>
-                      
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        No hay estados registrados
-                      </h3>
-                      
-                      <p className="text-sm text-gray-600 dark:text-gray-400 text-center max-w-md mb-6">
-                        Aún no se han creado estados de asistencia. Comienza agregando tu primer estado.
-                      </p>
-                      
-                      {canCreateStatus && (
-                        <Button
-                          onClick={() => {
-                            setEditingStatus(undefined);
-                            setViewMode('form');
-                          }}
-                          className={cn(
-                            ATTENDANCE_THEME.operations.create.button,
-                            'text-white'
-                          )}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Crear primer estado
-                        </Button>
-                      )}
-                    </BaseCard>
+                        <h3 className="text-lg font-semibold mb-2">No hay estados registrados</h3>
+                        <p className="text-muted-foreground max-w-sm mb-6">
+                          Comienza creando los estados que utilizarás para registrar la asistencia.
+                        </p>
+                        {canCreateStatus && (
+                          <Button onClick={() => setViewMode('form')}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Crear primer estado
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {statuses.map((status) => (
                         <AttendanceStatusCard
                           key={status.id}
@@ -374,51 +321,41 @@ export const AttendanceStatusesPageContent = () => {
                       ))}
                     </div>
                   )}
-                </TabsContent>
-              </>
-            )}
-          </Tabs>
+                </div>
+              )}
+            </>
+          )}
 
-          {/* ============================================
-              SECCIÓN: PAGINACIÓN
-              ============================================ */}
+          {/* PAGINACIÓN */}
           {pagination && pagination.totalPages > 1 && (
-            <BaseCard className="flex items-center justify-between flex-wrap gap-4 p-4">
-              <p className={cn('text-sm', ATTENDANCE_THEME.base.text.muted)}>
-                Página {pagination.page} de {pagination.totalPages} ({pagination.total} registros)
+            <div className="flex items-center justify-between border-t pt-4">
+              <p className="text-sm text-muted-foreground">
+                Página {pagination.page} de {pagination.totalPages}
               </p>
               <div className="flex gap-2">
                 <Button
-                  onClick={() =>
-                    updateQuery({
-                      page: Math.max(1, (pagination.page || 1) - 1),
-                    })
-                  }
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateQuery({ page: Math.max(1, (pagination.page || 1) - 1) })}
                   disabled={pagination.page === 1}
-                  variant={pagination.page === 1 ? 'ghost' : 'outline'}
                 >
                   Anterior
                 </Button>
                 <Button
-                  onClick={() =>
-                    updateQuery({
-                      page: Math.min(pagination.totalPages, (pagination.page || 1) + 1),
-                    })
-                  }
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateQuery({ page: Math.min(pagination.totalPages, (pagination.page || 1) + 1) })}
                   disabled={pagination.page === pagination.totalPages}
-                  variant={pagination.page === pagination.totalPages ? 'ghost' : 'outline'}
                 >
                   Siguiente
                 </Button>
               </div>
-            </BaseCard>
+            </div>
           )}
-        </>
+        </div>
       )}
 
-      {/* ============================================
-          SECCIÓN: DIÁLOGO CONFIRMACIÓN ELIMINACIÓN
-          ============================================ */}
+      {/* DIÁLOGO CONFIRMACIÓN ELIMINACIÓN */}
       <DeleteStatusDialog
         isOpen={deleteDialogOpen}
         statusName={deleteTarget?.name || ''}
@@ -432,3 +369,4 @@ export const AttendanceStatusesPageContent = () => {
     </div>
   );
 };
+```

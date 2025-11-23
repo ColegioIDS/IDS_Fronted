@@ -29,24 +29,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   MoreHorizontal,
-  Search,
   Pencil,
   Trash2,
   FileText,
   AlertTriangle,
   ShieldCheck,
   Clock,
-  GripVertical,
   CheckCircle2,
   XCircle,
   Plus,
-  Filter,
+  GripVertical,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface AttendanceStatusTableProps {
   statuses: AttendanceStatus[];
@@ -92,242 +90,192 @@ export const AttendanceStatusTable = ({
     }
     setConfirmDialog({ open: false, statusId: 0, newValue: false });
   };
+
+  const getStatusColor = (colorCode?: string) => {
+    return colorCode || '#94a3b8'; // slate-400 default
+  };
+
   if (loading) {
     return (
-      <Card className="shadow-lg">
-        <CardContent className="flex flex-col items-center justify-center py-16 px-6">
-          <div className="relative mb-6">
-            <div className="h-16 w-16 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600 dark:border-blue-900 dark:border-t-blue-400"></div>
-            <div className="absolute inset-0 h-16 w-16 animate-ping rounded-full bg-blue-600/20 opacity-20"></div>
-          </div>
-          <p className="text-base font-medium text-gray-700 dark:text-gray-300">
-            Cargando estados de asistencia...
-          </p>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Por favor espera un momento
-          </p>
-        </CardContent>
-      </Card>
+      <div className="rounded-xl border bg-card shadow-sm p-8 flex flex-col items-center justify-center min-h-[300px]">
+        <div className="relative mb-6">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary"></div>
+        </div>
+        <p className="text-muted-foreground font-medium">Cargando estados...</p>
+      </div>
     );
   }
 
   if (statuses.length === 0) {
     return (
-      <Card className="shadow-lg border-dashed">
-        <CardContent className="flex flex-col items-center justify-center py-16 px-6">
-          <div className="relative mb-6">
-            <div className="absolute inset-0 bg-blue-100 dark:bg-blue-900/20 rounded-full blur-2xl opacity-50"></div>
-            <div className="relative bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 p-5 rounded-full">
-              <FileText className="h-12 w-12 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-          
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            No hay estados registrados
-          </h3>
-          
-          <p className="text-sm text-gray-600 dark:text-gray-400 text-center max-w-md mb-6">
-            Aún no se han creado estados de asistencia. Comienza agregando tu primer estado.
-          </p>
-          
-          {onAdd && (
-            <Button
-              onClick={onAdd}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Crear primer estado
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+      <div className="rounded-xl border border-dashed bg-muted/10 p-12 flex flex-col items-center justify-center text-center">
+        <div className="p-4 rounded-full bg-primary/5 mb-4">
+          <FileText className="h-8 w-8 text-primary/50" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">No hay estados registrados</h3>
+        <p className="text-muted-foreground max-w-sm mb-6">
+          Comienza creando los estados que utilizarás para registrar la asistencia.
+        </p>
+        {onAdd && (
+          <Button onClick={onAdd}>
+            <Plus className="h-4 w-4 mr-2" />
+            Crear primer estado
+          </Button>
+        )}
+      </div>
     );
   }
 
   return (
-    <Card className="shadow-lg">
-      
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b-2 bg-muted/50 hover:bg-muted/50">
-                <TableHead className="h-12 w-16 pl-6 font-semibold text-foreground">
-                  <span className="sr-only">Orden</span>
-                </TableHead>
-                <TableHead className="h-12 font-semibold text-foreground">Estado</TableHead>
-                <TableHead className="h-12 w-32 font-semibold text-foreground">Código</TableHead>
-                <TableHead className="h-12 font-semibold text-foreground">Propiedades</TableHead>
-                <TableHead className="h-12 font-semibold text-foreground">Opciones</TableHead>
-                <TableHead className="h-12 w-28 font-semibold text-foreground">Estado</TableHead>
-                <TableHead className="h-12 pr-6 text-right font-semibold text-foreground">
-                  Acciones
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {statuses.map((status) => (
-                <TableRow key={status.id} className="group transition-colors hover:bg-accent/50">
-                  <TableCell className="pl-6">
-                    <GripVertical className="h-4 w-4 text-muted-foreground/50 transition-colors group-hover:text-muted-foreground" />
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <div className="flex items-center gap-3.5">
-                      <div
-                        className="h-5 w-5 shrink-0 rounded border border-border/60 shadow-sm ring-1 ring-black/5"
-                        style={{ backgroundColor: status.colorCode || undefined }}
-                      />
-                      <div className="space-y-1.5">
-                        <div className="font-medium leading-none tracking-tight">{status.name}</div>
-                        {status.description && (
-                          <div className="max-w-xs text-sm leading-snug text-muted-foreground">
-                            {status.description}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <code className="rounded bg-muted px-2 py-1 text-xs font-semibold tracking-tight">
-                      {status.code}
-                    </code>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      {status.isNegative && (
-                        <Badge
-                          variant="outline"
-                          className="gap-1.5 border-orange-200 bg-orange-50 text-orange-700 shadow-sm dark:border-orange-900/50 dark:bg-orange-950/50 dark:text-orange-400"
-                        >
-                          <AlertTriangle className="h-3 w-3" />
-                          <span className="text-xs font-medium">Negativo</span>
-                        </Badge>
-                      )}
-                      {status.isExcused && (
-                        <Badge
-                          variant="outline"
-                          className="gap-1.5 border-blue-200 bg-blue-50 text-blue-700 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/50 dark:text-blue-400"
-                        >
-                          <ShieldCheck className="h-3 w-3" />
-                          <span className="text-xs font-medium">Justificable</span>
-                        </Badge>
-                      )}
-                      {status.isTemporal && (
-                        <Badge
-                          variant="outline"
-                          className="gap-1.5 border-purple-200 bg-purple-50 text-purple-700 shadow-sm dark:border-purple-900/50 dark:bg-purple-950/50 dark:text-purple-400"
-                        >
-                          <Clock className="h-3 w-3" />
-                          <span className="text-xs font-medium">Temporal</span>
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1.5">
-                      {status.requiresJustification && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm bg-primary/10">
-                            <FileText className="h-3 w-3 text-primary" />
-                          </div>
-                          <span>Justificación</span>
-                        </div>
-                      )}
-                      {status.canHaveNotes && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm bg-primary/10">
-                            <FileText className="h-3 w-3 text-primary" />
-                          </div>
-                          <span>Notas</span>
-                        </div>
-                      )}
-                      {!status.requiresJustification && !status.canHaveNotes && (
-                        <span className="text-xs text-muted-foreground/60">—</span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="w-28">
-                    {status.isActive ? (
-                      <Badge
-                        variant="outline"
-                        className="gap-1.5 border-green-200 bg-green-50 text-green-700 shadow-sm dark:border-green-900/50 dark:bg-green-950/50 dark:text-green-400"
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        <span className="text-xs font-medium">Activo</span>
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="gap-1.5 border-gray-200 bg-gray-50 text-gray-600 shadow-sm dark:border-gray-800 dark:bg-gray-900/50 dark:text-gray-400"
-                      >
-                        <XCircle className="h-3.5 w-3.5" />
-                        <span className="text-xs font-medium">Inactivo</span>
+    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
+              <TableHead className="w-[50px] pl-4"></TableHead>
+              <TableHead className="font-semibold text-foreground h-11">Estado</TableHead>
+              <TableHead className="font-semibold text-foreground h-11">Código</TableHead>
+              <TableHead className="font-semibold text-foreground h-11">Propiedades</TableHead>
+              <TableHead className="font-semibold text-foreground h-11">Configuración</TableHead>
+              <TableHead className="font-semibold text-foreground h-11 w-[100px]">Activo</TableHead>
+              <TableHead className="text-right font-semibold text-foreground h-11 pr-4">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {statuses.map((status) => (
+              <TableRow 
+                key={status.id} 
+                className="group transition-all duration-200 hover:bg-muted/30 border-b last:border-0"
+                style={{
+                  // Subtle colored background on hover based on status color
+                  // Using CSS variable for dynamic color if needed, but keeping it simple for now
+                }}
+              >
+                <TableCell className="pl-4 py-3">
+                  <div 
+                    className="w-1.5 h-8 rounded-full opacity-70"
+                    style={{ backgroundColor: getStatusColor(status.colorCode) }}
+                  />
+                </TableCell>
+                <TableCell className="py-3 font-medium">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-foreground">{status.name}</span>
+                    {status.description && (
+                      <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                        {status.description}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="py-3">
+                  <code className="relative rounded bg-muted px-[0.4rem] py-[0.2rem] font-mono text-sm font-semibold text-foreground border border-border/50">
+                    {status.code}
+                  </code>
+                </TableCell>
+                <TableCell className="py-3">
+                  <div className="flex flex-wrap gap-2">
+                    {status.isNegative && (
+                      <Badge variant="outline" className="gap-1 border-red-200 bg-red-50 text-red-700 dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                        <AlertTriangle className="h-3 w-3" />
+                        Ausencia
                       </Badge>
                     )}
-                  </TableCell>
-                  <TableCell className="pr-6 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-9 w-9 opacity-70 transition-opacity hover:opacity-100 data-[state=open]:opacity-100"
+                    {status.isExcused && (
+                      <Badge variant="outline" className="gap-1 border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+                        <ShieldCheck className="h-3 w-3" />
+                        Justificable
+                      </Badge>
+                    )}
+                    {status.isTemporal && (
+                      <Badge variant="outline" className="gap-1 border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900/30 dark:bg-purple-950/20 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
+                        <Clock className="h-3 w-3" />
+                        Temporal
+                      </Badge>
+                    )}
+                    {!status.isNegative && !status.isExcused && !status.isTemporal && (
+                      <span className="text-xs text-muted-foreground/50 italic">Sin propiedades</span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="py-3">
+                  <div className="flex gap-3 text-xs text-muted-foreground">
+                    <div className={cn(
+                      "flex items-center gap-1.5 transition-opacity",
+                      status.requiresJustification ? "opacity-100 text-amber-600 dark:text-amber-500" : "opacity-40"
+                    )}>
+                      <FileText className="h-3.5 w-3.5" />
+                      Justificación
+                    </div>
+                    <div className={cn(
+                      "flex items-center gap-1.5 transition-opacity",
+                      status.canHaveNotes ? "opacity-100 text-blue-600 dark:text-blue-500" : "opacity-40"
+                    )}>
+                      <FileText className="h-3.5 w-3.5" />
+                      Notas
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="py-3">
+                  {status.isActive ? (
+                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 border-0">
+                      Activo
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border-0">
+                      Inactivo
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell className="py-3 pr-4 text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Acciones</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-[160px]">
+                      <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Acciones</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {onEdit && (
+                        <DropdownMenuItem onClick={() => onEdit(status)} className="gap-2 cursor-pointer">
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                          Editar
+                        </DropdownMenuItem>
+                      )}
+                      {onToggleActive && (
+                        <DropdownMenuItem onClick={() => handleToggleActiveClick(status.id, status.isActive)} className="gap-2 cursor-pointer">
+                          {status.isActive ? (
+                            <>
+                              <XCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                              Desactivar
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
+                              Activar
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      {onDelete && (
+                        <DropdownMenuItem 
+                          onClick={() => onDelete(status.id)} 
+                          className="gap-2 text-destructive focus:text-destructive cursor-pointer"
                         >
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Abrir menú</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-52 shadow-lg">
-                        <DropdownMenuLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          Acciones
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {onEdit && (
-                          <DropdownMenuItem
-                            onClick={() => onEdit(status)}
-                            className="gap-3 py-2.5"
-                          >
-                            <Pencil className="h-4 w-4 text-muted-foreground" />
-                            <span>Editar estado</span>
-                          </DropdownMenuItem>
-                        )}
-                        {onToggleActive && (
-                          <DropdownMenuItem
-                            onClick={() => handleToggleActiveClick(status.id, status.isActive)}
-                            className="gap-3 py-2.5"
-                          >
-                            {status.isActive ? (
-                              <>
-                                <XCircle className="h-4 w-4 text-muted-foreground" />
-                                <span>Desactivar</span>
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                                <span>Activar</span>
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        {onDelete && (
-                          <DropdownMenuItem
-                            onClick={() => onDelete(status.id)}
-                            className="gap-3 py-2.5 text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span>Eliminar</span>
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* Confirmation Dialog */}
       <AlertDialog open={confirmDialog.open}>
@@ -338,11 +286,11 @@ export const AttendanceStatusTable = ({
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmDialog.newValue
-                ? '¿Estás seguro de que deseas activar este estado de asistencia? Estará disponible para usar en los registros.'
-                : '¿Estás seguro de que deseas desactivar este estado de asistencia? No estará disponible para nuevos registros.'}
+                ? '¿Estás seguro de que deseas activar este estado? Estará disponible para nuevos registros.'
+                : '¿Estás seguro de que deseas desactivar este estado? Ya no aparecerá en las opciones de registro.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="flex gap-3 justify-end">
+          <div className="flex gap-3 justify-end mt-4">
             <AlertDialogCancel 
               onClick={() => setConfirmDialog({ open: false, statusId: 0, newValue: false })}
             >
@@ -350,13 +298,13 @@ export const AttendanceStatusTable = ({
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmToggleActive}
-              className={confirmDialog.newValue ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+              className={confirmDialog.newValue ? 'bg-green-600 hover:bg-green-700' : 'bg-destructive hover:bg-destructive/90'}
             >
               {confirmDialog.newValue ? 'Sí, activar' : 'Sí, desactivar'}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </div>
   );
 };
