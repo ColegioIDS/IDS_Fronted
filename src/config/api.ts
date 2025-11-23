@@ -4,7 +4,7 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import { toast } from 'sonner';
 
 // ✅ Exportar API_BASE_URL para que lo usen otros servicios
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:5000';
 
 /**
  * Crear instancia de axios configurada para el proyecto
@@ -27,14 +27,11 @@ const api: AxiosInstance = axios.create({
 
 /**
  * Interceptor de request
- * Agrega token JWT si existe
+ * NOTA: Las cookies se envían automáticamente gracias a withCredentials: true
+ * El backend maneja las cookies en los headers Set-Cookie
  */
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
     return config;
   },
   (error) => {
