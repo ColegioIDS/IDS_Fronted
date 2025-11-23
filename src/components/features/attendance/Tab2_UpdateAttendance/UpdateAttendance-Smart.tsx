@@ -120,46 +120,58 @@ export function UpdateAttendanceTabSmartEdit() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600">Cargando datos de asistencia...</div>
+      <div className="flex min-h-[400px] items-center justify-center rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-12 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20">
+        <div className="space-y-4 text-center">
+          <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+          <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
+            Cargando datos de asistencia...
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Alertas */}
       {error && (
-        <Alert className="border-red-200 bg-red-50">
-          <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-900">{error}</AlertDescription>
+        <Alert className="animate-in fade-in-50 slide-in-from-top-5 border-l-4 border-red-500 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30">
+          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+          <AlertDescription className="font-medium text-red-900 dark:text-red-100">{error}</AlertDescription>
         </Alert>
       )}
 
       {successMessage && (
-        <Alert className="border-green-200 bg-green-50">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-900">{successMessage}</AlertDescription>
+        <Alert className="animate-in fade-in-50 slide-in-from-top-5 border-l-4 border-emerald-500 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30">
+          <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <AlertDescription className="font-medium text-emerald-900 dark:text-emerald-100">{successMessage}</AlertDescription>
         </Alert>
       )}
 
       {/* Instrucciones + Botón Reload */}
-      <div className="flex items-center justify-between gap-4">
-        <Alert className="border-blue-200 bg-blue-50 flex-1">
-          <AlertCircle className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-900">
-            💡 Haz clic en el botón <strong>✏️ Editar</strong> para cambiar el estado de cada asistencia
-          </AlertDescription>
-        </Alert>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex-1 rounded-xl border-2 border-cyan-200 bg-gradient-to-r from-cyan-50 via-blue-50 to-indigo-50 p-4 dark:from-cyan-950/20 dark:via-blue-950/20 dark:to-indigo-950/20 dark:border-cyan-800">
+          <div className="flex items-start gap-3">
+            <div className="rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 p-2 shadow-lg">
+              <AlertCircle className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <p className="font-medium text-cyan-900 dark:text-cyan-100">
+                💡 Edición Rápida Activada
+              </p>
+              <p className="text-sm text-cyan-700 dark:text-cyan-300">
+                Haz clic en <strong className="text-cyan-900 dark:text-cyan-100">✏️ Editar</strong> para cambiar el estado de asistencia
+              </p>
+            </div>
+          </div>
+        </div>
         <Button
           onClick={() => reloadData()}
           disabled={isReloading || loading}
-          variant="outline"
-          size="sm"
-          className="gap-2 whitespace-nowrap"
+          className="gap-2 whitespace-nowrap bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg hover:from-blue-700 hover:to-indigo-700"
         >
           <RefreshCw className={`h-4 w-4 ${isReloading ? 'animate-spin' : ''}`} />
-          {isReloading ? 'Recargando...' : 'Recargar'}
+          {isReloading ? 'Recargando...' : '🔄 Recargar'}
         </Button>
       </div>
 
@@ -171,12 +183,17 @@ export function UpdateAttendanceTabSmartEdit() {
           onStatusUpdate={handleStatusUpdate}
         />
       ) : (
-        <Alert className="border-blue-200 bg-blue-50">
-          <AlertCircle className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-900">
-            No hay datos de asistencia para mostrar en esta fecha
-          </AlertDescription>
-        </Alert>
+        <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-12 text-center dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20">
+          <div className="space-y-3">
+            <div className="text-7xl">📋</div>
+            <h3 className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+              Sin Datos de Asistencia
+            </h3>
+            <p className="text-blue-700 dark:text-blue-300">
+              No hay registros de asistencia para esta fecha
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

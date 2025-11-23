@@ -45,20 +45,33 @@ function AttendancePageContentInner() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-gray-900">Gestión de Asistencia</h1>
-        <p className="text-gray-600">
-          Registra, gestiona y visualiza la asistencia de estudiantes
-        </p>
+    <div className="space-y-8 p-6">
+      {/* Header with Gradient */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-8 shadow-xl">
+        <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,rgba(255,255,255,0.5))]" />
+        <div className="relative z-10 space-y-3">
+          <h1 className="text-4xl font-extrabold text-white drop-shadow-lg">
+            📚 Gestión de Asistencia
+          </h1>
+          <p className="text-lg text-indigo-100">
+            Registra, gestiona y visualiza la asistencia de estudiantes de forma fácil y rápida
+          </p>
+          <div className="flex gap-2 pt-2">
+            <div className="rounded-full bg-white/20 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
+              Usuario: {user?.firstName || 'Invitado'}
+            </div>
+            <div className="rounded-full bg-white/20 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
+              Fecha: {new Date().toLocaleDateString('es-GT', { dateStyle: 'long' })}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Error Display */}
       {attendanceState.error && (
-        <Alert className="border-red-200 bg-red-50">
-          <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-900">
+        <Alert className="animate-in fade-in-50 slide-in-from-top-5 border-l-4 border-red-500 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30">
+          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+          <AlertDescription className="font-medium text-red-900 dark:text-red-100">
             {attendanceState.error.message}
           </AlertDescription>
         </Alert>
@@ -69,18 +82,30 @@ function AttendancePageContentInner() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 bg-gray-100 p-1 rounded-lg">
-          <TabsTrigger value={ATTENDANCE_TABS.TAB_1} className="data-[state=active]:bg-white">
-            {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_1]}
+        <TabsList className="grid w-full grid-cols-4 gap-2 bg-gradient-to-r from-slate-100 to-slate-200 p-2 rounded-xl shadow-lg dark:from-slate-800 dark:to-slate-900">
+          <TabsTrigger
+            value={ATTENDANCE_TABS.TAB_1}
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-green-500/30 transition-all duration-200"
+          >
+            📝 {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_1]}
           </TabsTrigger>
-          <TabsTrigger value={ATTENDANCE_TABS.TAB_2} className="data-[state=active]:bg-white">
-            {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_2]}
+          <TabsTrigger
+            value={ATTENDANCE_TABS.TAB_2}
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/30 transition-all duration-200"
+          >
+            ✏️ {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_2]}
           </TabsTrigger>
-          <TabsTrigger value={ATTENDANCE_TABS.TAB_3} className="data-[state=active]:bg-white">
-            {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_3]}
+          <TabsTrigger
+            value={ATTENDANCE_TABS.TAB_3}
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 transition-all duration-200"
+          >
+            📊 {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_3]}
           </TabsTrigger>
-          <TabsTrigger value={ATTENDANCE_TABS.TAB_4} className="data-[state=active]:bg-white">
-            {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_4]}
+          <TabsTrigger
+            value={ATTENDANCE_TABS.TAB_4}
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 transition-all duration-200"
+          >
+            ✅ {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_4]}
           </TabsTrigger>
         </TabsList>
 
@@ -96,9 +121,18 @@ function AttendancePageContentInner() {
 
         {/* TAB 3: REPORTES */}
         <TabsContent value={ATTENDANCE_TABS.TAB_3} className="space-y-6">
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <div className="text-center py-12">
-              <p className="text-gray-600">TAB 3 - Reportes (En construcción)</p>
+          <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 p-12 shadow-lg dark:from-amber-950/20 dark:via-orange-950/20 dark:to-yellow-950/20">
+            <div className="text-center space-y-4">
+              <div className="text-7xl">📊</div>
+              <h3 className="text-2xl font-bold text-amber-900 dark:text-amber-100">
+                Reportes y Estadísticas
+              </h3>
+              <p className="text-lg text-amber-700 dark:text-amber-300">
+                Esta sección está en construcción
+              </p>
+              <div className="inline-block rounded-full bg-amber-200 px-6 py-2 text-sm font-semibold text-amber-900 dark:bg-amber-800 dark:text-amber-100">
+                Próximamente
+              </div>
             </div>
           </div>
         </TabsContent>

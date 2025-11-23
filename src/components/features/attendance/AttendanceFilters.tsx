@@ -192,20 +192,29 @@ export function AttendanceFilters() {
   const selectedSection = sectionsData.sections.find((s) => s.id === attendanceState.selectedSectionId);
 
   return (
-    <div className="space-y-6 rounded-lg border border-gray-200 bg-white p-6">
+    <div className="space-y-6 rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 p-8 shadow-xl dark:from-slate-900 dark:via-indigo-950/20 dark:to-purple-950/20 dark:border-indigo-800">
       {/* Header */}
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">Filtros de Asistencia</h2>
-        <p className="text-gray-600">
-          Selecciona el ciclo, bimestre, grado y sección para registrar asistencia
-        </p>
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-3 shadow-lg">
+            <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">🎯 Filtros de Asistencia</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Selecciona el ciclo, bimestre, grado y sección para continuar
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Error Display */}
       {attendanceState.error && (
-        <Alert className="border-red-200 bg-red-50">
-          <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-900">{attendanceState.error.message}</AlertDescription>
+        <Alert className="animate-in fade-in-50 border-l-4 border-red-500 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30">
+          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+          <AlertDescription className="font-medium text-red-900 dark:text-red-100">{attendanceState.error.message}</AlertDescription>
         </Alert>
       )}
 
@@ -347,10 +356,23 @@ export function AttendanceFilters() {
 
       {/* Summary */}
       {attendanceState.selectedSectionId && selectedSection && selectedGrade && (
-        <div className="rounded-lg bg-blue-50 p-4">
-          <p className="text-sm text-blue-900">
-            <strong>Seleccionado:</strong> {selectedGrade.name} • Sección {selectedSection.name}
-          </p>
+        <div className="animate-in fade-in-50 slide-in-from-bottom-5 rounded-xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 p-5 shadow-lg dark:from-emerald-950/30 dark:via-teal-950/30 dark:to-cyan-950/30 dark:border-emerald-800">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-2xl shadow-lg">
+              ✓
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Selección completada</p>
+              <p className="text-lg font-bold text-emerald-900 dark:text-emerald-100">
+                {selectedGrade.name} • Sección {selectedSection.name}
+              </p>
+              {studentsData.students && studentsData.students.length > 0 && (
+                <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                  👥 {studentsData.students.length} estudiante{studentsData.students.length !== 1 ? 's' : ''} encontrado{studentsData.students.length !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

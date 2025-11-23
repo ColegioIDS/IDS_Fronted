@@ -72,46 +72,88 @@ export function ValidationsChecker({
   const allPassed = validationState.overallStatus === 'success';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">Validaciones Previas</h2>
-        <p className="text-gray-600">
-          Verifica que todas las condiciones sean correctas antes de registrar asistencia
-        </p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-pink-600 to-rose-600 p-8 shadow-xl">
+        <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,rgba(255,255,255,0.5))]" />
+        <div className="relative z-10 space-y-2">
+          <h2 className="text-3xl font-extrabold text-white drop-shadow-lg">
+            ✅ Validaciones Previas
+          </h2>
+          <p className="text-lg text-purple-100">
+            Verifica que todas las condiciones sean correctas antes de registrar asistencia
+          </p>
+          <div className="flex gap-2 pt-2">
+            <div className="rounded-full bg-white/20 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
+              {successCount} / {totalCount} Validaciones Pasadas
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Overall Status */}
       {validationState.isValidating ? (
-        <Alert className="border-blue-200 bg-blue-50">
-          <div className="flex items-center gap-2">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-400 border-t-blue-600" />
-            <AlertDescription className="text-blue-900">
-              Ejecutando validaciones... ({successCount}/{totalCount})
-            </AlertDescription>
+        <div className="animate-in fade-in-50 rounded-2xl border-2 border-blue-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 p-6 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+            <div>
+              <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
+                Ejecutando validaciones...
+              </p>
+              <p className="text-sm text-blue-600 dark:text-blue-400">
+                Progreso: {successCount}/{totalCount}
+              </p>
+            </div>
           </div>
-        </Alert>
+        </div>
       ) : allPassed && validationState.isComplete ? (
-        <Alert className="border-green-200 bg-green-50">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-900">
-            ✅ Todas las validaciones pasaron correctamente. Listo para registrar asistencia.
-          </AlertDescription>
-        </Alert>
+        <div className="animate-in fade-in-50 slide-in-from-top-5 rounded-2xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 p-6 shadow-lg dark:from-emerald-950/20 dark:via-green-950/20 dark:to-teal-950/20">
+          <div className="flex items-center gap-4">
+            <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-3 shadow-lg">
+              <CheckCircle2 className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-emerald-900 dark:text-emerald-100">
+                ✅ ¡Todas las validaciones pasaron!
+              </p>
+              <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                El sistema está listo para registrar asistencia
+              </p>
+            </div>
+          </div>
+        </div>
       ) : validationState.globalError && !validationState.isValidating ? (
-        <Alert className="border-red-200 bg-red-50">
-          <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-900">
-            ❌ Error al ejecutar validaciones: {validationState.globalError.message}
-          </AlertDescription>
-        </Alert>
+        <div className="animate-in fade-in-50 slide-in-from-top-5 rounded-2xl border-2 border-red-200 bg-gradient-to-r from-red-50 via-rose-50 to-pink-50 p-6 shadow-lg dark:from-red-950/20 dark:via-rose-950/20 dark:to-pink-950/20">
+          <div className="flex items-center gap-4">
+            <div className="rounded-xl bg-gradient-to-br from-red-500 to-rose-600 p-3 shadow-lg">
+              <AlertCircle className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-red-900 dark:text-red-100">
+                ❌ Error en validaciones
+              </p>
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {validationState.globalError.message}
+              </p>
+            </div>
+          </div>
+        </div>
       ) : validationState.isComplete && !allPassed ? (
-        <Alert className="border-yellow-200 bg-yellow-50">
-          <AlertCircle className="h-4 w-4 text-yellow-600" />
-          <AlertDescription className="text-yellow-900">
-            ⚠️ Algunas validaciones no pasaron. Revisa los detalles abajo.
-          </AlertDescription>
-        </Alert>
+        <div className="animate-in fade-in-50 slide-in-from-top-5 rounded-2xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 p-6 shadow-lg dark:from-amber-950/20 dark:via-yellow-950/20 dark:to-orange-950/20">
+          <div className="flex items-center gap-4">
+            <div className="rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-3 shadow-lg">
+              <AlertCircle className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-amber-900 dark:text-amber-100">
+                ⚠️ Algunas validaciones fallaron
+              </p>
+              <p className="text-sm text-amber-600 dark:text-amber-400">
+                Revisa los detalles abajo para ver qué necesita corrección
+              </p>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {/* Validations Grid */}
