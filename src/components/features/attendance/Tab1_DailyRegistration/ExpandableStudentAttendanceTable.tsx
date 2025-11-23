@@ -6,7 +6,15 @@
 'use client';
 
 import { useState, Fragment } from 'react';
-import { ChevronDown, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { 
+  ChevronDown, 
+  ChevronRight, 
+  AlertCircle, 
+  CheckCircle2, 
+  BookOpen, 
+  History, 
+  ArrowRight 
+} from 'lucide-react';
 import { AttendanceStatus } from '@/types/attendance.types';
 import {
   Table,
@@ -17,6 +25,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { AttendanceStatusSelector } from './AttendanceStatusSelector';
 
 interface StudentData {
@@ -93,22 +103,20 @@ export function ExpandableStudentAttendanceTable({
   };
 
   return (
-    <div className="rounded-lg border border-gray-300 overflow-hidden shadow-md bg-white">
+    <div className="rounded-md border bg-card text-card-foreground shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow className="bg-gradient-to-r from-blue-600 to-blue-700">
-            <TableHead className="w-10 text-white">
-              <span className="text-xs font-bold">▼</span>
-            </TableHead>
-            <TableHead className="text-white font-bold">Estudiante</TableHead>
-            <TableHead className="text-white font-bold">Matrícula</TableHead>
-            <TableHead className="w-56 text-white font-bold">Estado</TableHead>
-            <TableHead className="w-32 text-center text-white font-bold">Salida Temprana</TableHead>
-            <TableHead className="w-32 text-center text-white font-bold">Estatus</TableHead>
+          <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableHead className="w-[50px]"></TableHead>
+            <TableHead className="font-semibold text-foreground">Estudiante</TableHead>
+            <TableHead className="font-semibold text-foreground">Matrícula</TableHead>
+            <TableHead className="w-[280px] font-semibold text-foreground">Estado</TableHead>
+            <TableHead className="w-[150px] text-center font-semibold text-foreground">Salida Temprana</TableHead>
+            <TableHead className="w-[150px] text-center font-semibold text-foreground">Estatus</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {students.map((student, index) => {
+          {students.map((student) => {
             const enrollmentId = student.enrollmentId as number;
             const attendance = studentAttendance.get(enrollmentId);
             const studentName = student.name || 'Sin nombre';
@@ -121,58 +129,63 @@ export function ExpandableStudentAttendanceTable({
             );
             const hasCourses = consolidatedStudent && consolidatedStudent.courses.length > 0;
 
-            // Obtener color del estado del primer curso si existe
-            let rowBackgroundStyle: React.CSSProperties | undefined;
+            // Obtener color del estado del primer curso si existe para borde lateral
+            let statusColorIndicator = 'transparent';
             if (hasExistingRecord && consolidatedStudent && consolidatedStudent.courses.length > 0) {
               const firstCourse = consolidatedStudent.courses[0];
               const statusObj = allowedStatuses.find(s => s.code === firstCourse.currentStatus);
-              const statusColor = statusObj?.colorCode || '#808080';
-              // Crear un color de fondo más visible (opacity 0.35)
-              rowBackgroundStyle = {
-                backgroundColor: statusColor,
-                opacity: 0.35,
-              };
+              if (statusObj?.colorCode) {
+                statusColorIndicator = getStatusColor(statusObj.colorCode);
+              }
             }
 
             return (
               <Fragment key={`student-${enrollmentId}`}>
                 {/* Fila principal del estudiante */}
-                <TableRow
-                  style={rowBackgroundStyle}
-                  className="border-b border-gray-200 hover:bg-blue-50 transition-colors"
+                <TableRow 
+                  className={cn(
+                    "transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+                    isExpanded && "bg-muted/30 border-b-0"
+                  )}
+                  style={{ borderLeft: `4px solid ${statusColorIndicator}` }}
                 >
-                  <TableCell className="w-10 text-center py-3">
+                  <TableCell className="py-3 pl-2">
                     {hasCourses && (
                       <button
                         onClick={() => toggleExpanded(enrollmentId)}
-                        className="p-1 hover:bg-blue-100 rounded-md transition-colors"
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                       >
                         {isExpanded ? (
-                          <ChevronDown className="h-5 w-5 text-blue-600" />
+                          <ChevronDown className="h-4 w-4" />
                         ) : (
-                          <ChevronRight className="h-5 w-5 text-blue-600" />
+                          <ChevronRight className="h-4 w-4" />
                         )}
                       </button>
                     )}
                   </TableCell>
-                  <TableCell className="font-bold text-gray-900 py-3">
-                    {studentName}
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-600 py-3 font-medium">
-                    {student.enrollmentNumber || `#${enrollmentId}`}
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <div className="bg-white rounded-lg border border-gray-300 p-2">
-                      <AttendanceStatusSelector
-                        enrollmentId={enrollmentId}
-                        value={attendance?.status || ''}
-                        onChange={onStatusChange}
-                        allowedStatuses={allowedStatuses}
-                        disabled={isLoading}
-                      />
+                  <TableCell className="font-medium py-3">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-foreground">{studentName}</span>
+                      {student.email && (
+                         <span className="text-xs text-muted-foreground hidden sm:inline-block">{student.email}</span>
+                      )}
                     </div>
                   </TableCell>
-                  <TableCell className="py-3 text-center">
+                  <TableCell className="text-sm text-muted-foreground py-3">
+                    <Badge variant="outline" className="font-mono font-normal text-xs">
+                      {student.enrollmentNumber || `#${enrollmentId}`}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <AttendanceStatusSelector
+                      enrollmentId={enrollmentId}
+                      value={attendance?.status || ''}
+                      onChange={onStatusChange}
+                      allowedStatuses={allowedStatuses}
+                      disabled={isLoading}
+                    />
+                  </TableCell>
+                  <TableCell className="py-3">
                     <div className="flex justify-center">
                       <Checkbox
                         checked={attendance?.isEarlyExit || false}
@@ -180,96 +193,110 @@ export function ExpandableStudentAttendanceTable({
                           onEarlyExitToggle(enrollmentId, checked as boolean)
                         }
                         disabled={isLoading || !attendance?.status}
-                        className="h-5 w-5 cursor-pointer"
+                        className="h-5 w-5"
                       />
                     </div>
                   </TableCell>
                   <TableCell className="py-3 text-center">
                     {hasExistingRecord && (
-                      <div className="flex items-center justify-center gap-1 bg-green-100 text-green-700 font-bold text-xs px-3 py-1 rounded-full w-fit mx-auto">
-                        <CheckCircle2 className="h-4 w-4" />
-                        <span>Registrado</span>
-                      </div>
+                      <Badge variant="secondary" className="gap-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 border-0">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Registrado
+                      </Badge>
                     )}
                   </TableCell>
                 </TableRow>
 
                 {/* Filas expandidas con detalles de cursos */}
                 {isExpanded && consolidatedStudent && (
-                  consolidatedStudent.courses.map((course, courseIdx) => {
-                    const originalStatus = allowedStatuses.find(
-                      s => s.code === course.originalStatus
-                    );
-                    const currentStatus = allowedStatuses.find(
-                      s => s.code === course.currentStatus
-                    );
-                    const hasChanged = course.originalStatus !== course.currentStatus;
+                  <TableRow className="bg-muted/30 hover:bg-muted/30 border-t-0">
+                    <TableCell colSpan={6} className="p-0">
+                      <div className="px-4 pb-4 pt-2">
+                        <div className="rounded-md border bg-background">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="hover:bg-transparent border-b">
+                                <TableHead className="w-[40px]"></TableHead>
+                                <TableHead className="text-xs font-semibold uppercase text-muted-foreground">Curso</TableHead>
+                                <TableHead className="text-xs font-semibold uppercase text-muted-foreground">Estado Original</TableHead>
+                                <TableHead className="text-xs font-semibold uppercase text-muted-foreground">Estado Actual</TableHead>
+                                <TableHead className="w-[100px] text-right text-xs font-semibold uppercase text-muted-foreground">Cambios</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {consolidatedStudent.courses.map((course, courseIdx) => {
+                                const originalStatus = allowedStatuses.find(
+                                  s => s.code === course.originalStatus
+                                );
+                                const currentStatus = allowedStatuses.find(
+                                  s => s.code === course.currentStatus
+                                );
+                                const hasChanged = course.originalStatus !== course.currentStatus;
 
-                    return (
-                      <TableRow
-                        key={`${enrollmentId}-course-${courseIdx}`}
-                        className={`bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 ${
-                          hasChanged ? 'border-l-4 border-amber-500 from-amber-50 to-amber-100' : ''
-                        }`}
-                      >
-                        <TableCell />
-                        <TableCell className="pl-12 py-3">
-                          <span className="font-semibold text-gray-900 text-sm">
-                            📚 {course.courseName}
-                          </span>
-                        </TableCell>
-                        <TableCell />
-                        <TableCell className="py-3">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-3">
-                              <span className="text-gray-600 text-xs font-bold uppercase tracking-wide">Original:</span>
-                              <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-gray-300">
-                                {originalStatus?.colorCode && (
-                                  <div
-                                    className="h-3 w-3 rounded-full flex-shrink-0"
-                                    style={{
-                                      backgroundColor: getStatusColor(originalStatus.colorCode),
-                                    }}
-                                  />
-                                )}
-                                <span className="text-gray-700 text-xs font-medium">
-                                  {course.originalStatusName || 'N/A'}
-                                </span>
-                              </div>
-                            </div>
-                            {hasChanged && (
-                              <div className="flex items-center gap-3">
-                                <span className="text-amber-600 text-xs font-bold uppercase tracking-wide">Actual:</span>
-                                <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border-2 border-amber-400">
-                                  {currentStatus?.colorCode && (
-                                    <div
-                                      className="h-3 w-3 rounded-full flex-shrink-0"
-                                      style={{
-                                        backgroundColor: getStatusColor(currentStatus.colorCode),
-                                      }}
-                                    />
-                                  )}
-                                  <span className="text-amber-900 font-bold text-xs">
-                                    {course.currentStatusName}
-                                  </span>
-                                </div>
-                                <span className="text-amber-600 font-bold text-xs">⚠️ Cambió</span>
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell />
-                        <TableCell>
-                          {hasChanged && (
-                            <div className="flex items-center gap-1 rounded bg-amber-100 px-2 py-1 text-amber-800 text-xs font-medium">
-                              <AlertCircle className="h-3 w-3" />
-                              <span>Cambió</span>
-                            </div>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                                return (
+                                  <TableRow 
+                                    key={`${enrollmentId}-course-${courseIdx}`}
+                                    className="hover:bg-muted/50 border-b last:border-0"
+                                  >
+                                    <TableCell className="py-2 text-center">
+                                      <BookOpen className="h-4 w-4 text-muted-foreground" />
+                                    </TableCell>
+                                    <TableCell className="py-2 font-medium text-sm">
+                                      {course.courseName}
+                                    </TableCell>
+                                    <TableCell className="py-2">
+                                      <div className="flex items-center gap-2">
+                                        {originalStatus?.colorCode && (
+                                          <div
+                                            className="h-2.5 w-2.5 rounded-full ring-1 ring-offset-1 ring-offset-background"
+                                            style={{
+                                              backgroundColor: getStatusColor(originalStatus.colorCode),
+                                              borderColor: getStatusColor(originalStatus.colorCode)
+                                            }}
+                                          />
+                                        )}
+                                        <span className="text-sm text-muted-foreground">
+                                          {course.originalStatusName || 'N/A'}
+                                        </span>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="py-2">
+                                      <div className="flex items-center gap-2">
+                                        {hasChanged && <ArrowRight className="h-3 w-3 text-muted-foreground" />}
+                                        {currentStatus?.colorCode && (
+                                          <div
+                                            className="h-2.5 w-2.5 rounded-full ring-1 ring-offset-1 ring-offset-background"
+                                            style={{
+                                              backgroundColor: getStatusColor(currentStatus.colorCode),
+                                              borderColor: getStatusColor(currentStatus.colorCode)
+                                            }}
+                                          />
+                                        )}
+                                        <span className={cn(
+                                          "text-sm font-medium",
+                                          hasChanged ? "text-foreground" : "text-muted-foreground"
+                                        )}>
+                                          {course.currentStatusName}
+                                        </span>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="py-2 text-right">
+                                      {hasChanged && (
+                                        <Badge variant="outline" className="gap-1 border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400">
+                                          <History className="h-3 w-3" />
+                                          Modificado
+                                        </Badge>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 )}
               </Fragment>
             );
