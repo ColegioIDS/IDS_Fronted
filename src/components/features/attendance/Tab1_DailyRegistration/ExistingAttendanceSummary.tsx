@@ -6,7 +6,7 @@
 'use client';
 
 import { AttendanceStatus, ConsolidatedAttendanceView } from '@/types/attendance.types';
-import { CheckCircle2, Clock } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 
 interface ExistingAttendanceSummaryProps {
   existingAttendance: Map<number, { statusId: number; isEarlyExit: boolean }>;
@@ -57,14 +57,14 @@ export function ExistingAttendanceSummary({
   });
 
   return (
-    <div className="animate-in fade-in-50 slide-in-from-top-5 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 p-6 shadow-lg dark:from-emerald-950/20 dark:via-teal-950/20 dark:to-cyan-950/20 dark:border-emerald-800">
+    <div className="animate-in fade-in-50 slide-in-from-top-5 rounded-xl border-2 border-emerald-500 bg-emerald-50 p-6 shadow-lg dark:border-emerald-600 dark:bg-emerald-950/30">
       <div className="flex items-center gap-3">
-        <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-3 shadow-lg">
-          <CheckCircle2 className="h-6 w-6 text-white" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-md dark:bg-emerald-500">
+          <CheckCircle className="h-6 w-6" />
         </div>
         <div>
           <h4 className="text-lg font-bold text-emerald-900 dark:text-emerald-100">
-            ✅ Asistencias Ya Registradas
+            Asistencias Ya Registradas
           </h4>
           <p className="text-sm text-emerald-600 dark:text-emerald-400">
             {existingAttendance.size} estudiante{existingAttendance.size !== 1 ? 's' : ''} con registro previo
@@ -81,15 +81,16 @@ export function ExistingAttendanceSummary({
           return (
             <div
               key={statusId}
-              className="group relative overflow-hidden rounded-xl border-2 bg-white p-4 shadow-md transition-all hover:scale-105 hover:shadow-xl dark:bg-slate-900"
-              style={{ borderColor: statusColor + '40' }}
+              className="group rounded-xl border-2 bg-white p-4 shadow-md transition-all hover:shadow-lg dark:bg-slate-800"
+              style={{ borderColor: statusColor }}
             >
-              <div className="absolute inset-0 opacity-5" style={{ backgroundColor: statusColor }} />
-              <div className="relative flex items-center gap-3">
+              <div className="flex items-center gap-3">
                 <div
-                  className="h-10 w-10 rounded-full shadow-lg ring-2 ring-white dark:ring-slate-800"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg shadow-md"
                   style={{ backgroundColor: statusColor }}
-                />
+                >
+                  <AlertCircle className="h-5 w-5 text-white" />
+                </div>
                 <div>
                   <p className="text-2xl font-extrabold text-gray-900 dark:text-gray-100">{records.length}</p>
                   <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{statusName}</p>
@@ -100,7 +101,7 @@ export function ExistingAttendanceSummary({
         })}
       </div>
 
-      <div className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-100 p-3 dark:bg-emerald-900/30">
+      <div className="mt-4 flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-100 p-3 dark:border-emerald-700 dark:bg-emerald-900/50">
         <Clock className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
         <span className="text-xs font-medium text-emerald-800 dark:text-emerald-200">
           Estos registros aparecen pre-cargados en la tabla. Puedes modificarlos si es necesario.

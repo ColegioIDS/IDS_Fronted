@@ -17,7 +17,7 @@ import { AttendanceProvider, useAttendanceContext } from '@/context/AttendanceCo
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, BookOpen, User, Calendar, Edit3, BarChart3, CheckCircle } from 'lucide-react';
 import { AttendanceFilters } from './AttendanceFilters';
 import { DailyRegistration } from './Tab1_DailyRegistration';
 import { UpdateAttendanceTabSmartEdit } from './Tab2_UpdateAttendance/UpdateAttendance-Smart';
@@ -45,23 +45,29 @@ function AttendancePageContentInner() {
   };
 
   return (
-    <div className="space-y-8 p-6">
-      {/* Header with Gradient */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-8 shadow-xl">
-        <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,rgba(255,255,255,0.5))]" />
-        <div className="relative z-10 space-y-3">
-          <h1 className="text-4xl font-extrabold text-white drop-shadow-lg">
-            📚 Gestión de Asistencia
-          </h1>
-          <p className="text-lg text-indigo-100">
-            Registra, gestiona y visualiza la asistencia de estudiantes de forma fácil y rápida
-          </p>
-          <div className="flex gap-2 pt-2">
-            <div className="rounded-full bg-white/20 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
-              Usuario: {user?.firstName || 'Invitado'}
-            </div>
-            <div className="rounded-full bg-white/20 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
-              Fecha: {new Date().toLocaleDateString('es-GT', { dateStyle: 'long' })}
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="rounded-xl border-2 border-indigo-200 bg-white p-8 shadow-lg dark:border-indigo-800 dark:bg-slate-900">
+        <div className="flex items-start gap-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md dark:bg-indigo-500">
+            <BookOpen className="h-8 w-8" />
+          </div>
+          <div className="flex-1 space-y-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Gestión de Asistencia
+            </h1>
+            <p className="text-base text-gray-600 dark:text-gray-400">
+              Registra, gestiona y visualiza la asistencia de estudiantes de forma fácil y rápida
+            </p>
+            <div className="flex flex-wrap gap-2 pt-2">
+              <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                <User className="h-4 w-4" />
+                {user?.firstName || 'Invitado'}
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                <Calendar className="h-4 w-4" />
+                {new Date().toLocaleDateString('es-GT', { dateStyle: 'long' })}
+              </div>
             </div>
           </div>
         </div>
@@ -69,7 +75,7 @@ function AttendancePageContentInner() {
 
       {/* Error Display */}
       {attendanceState.error && (
-        <Alert className="animate-in fade-in-50 slide-in-from-top-5 border-l-4 border-red-500 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30">
+        <Alert className="animate-in fade-in-50 slide-in-from-top-5 border-l-4 border-red-500 bg-red-50 dark:bg-red-950/20">
           <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
           <AlertDescription className="font-medium text-red-900 dark:text-red-100">
             {attendanceState.error.message}
@@ -82,30 +88,34 @@ function AttendancePageContentInner() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 gap-2 bg-gradient-to-r from-slate-100 to-slate-200 p-2 rounded-xl shadow-lg dark:from-slate-800 dark:to-slate-900">
+        <TabsList className="grid w-full grid-cols-4 gap-2 rounded-xl bg-gray-100 p-2 dark:bg-gray-800">
           <TabsTrigger
             value={ATTENDANCE_TABS.TAB_1}
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-green-500/30 transition-all duration-200"
+            className="data-[state=active]:bg-green-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
           >
-            📝 {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_1]}
+            <Edit3 className="mr-2 h-4 w-4" />
+            {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_1]}
           </TabsTrigger>
           <TabsTrigger
             value={ATTENDANCE_TABS.TAB_2}
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/30 transition-all duration-200"
+            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
           >
-            ✏️ {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_2]}
+            <Edit3 className="mr-2 h-4 w-4" />
+            {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_2]}
           </TabsTrigger>
           <TabsTrigger
             value={ATTENDANCE_TABS.TAB_3}
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 transition-all duration-200"
+            className="data-[state=active]:bg-amber-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
           >
-            📊 {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_3]}
+            <BarChart3 className="mr-2 h-4 w-4" />
+            {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_3]}
           </TabsTrigger>
           <TabsTrigger
             value={ATTENDANCE_TABS.TAB_4}
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 transition-all duration-200"
+            className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
           >
-            ✅ {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_4]}
+            <CheckCircle className="mr-2 h-4 w-4" />
+            {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_4]}
           </TabsTrigger>
         </TabsList>
 
@@ -121,16 +131,19 @@ function AttendancePageContentInner() {
 
         {/* TAB 3: REPORTES */}
         <TabsContent value={ATTENDANCE_TABS.TAB_3} className="space-y-6">
-          <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 p-12 shadow-lg dark:from-amber-950/20 dark:via-orange-950/20 dark:to-yellow-950/20">
-            <div className="text-center space-y-4">
-              <div className="text-7xl">📊</div>
+          <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-12 text-center shadow-lg dark:border-amber-800 dark:bg-amber-950/20">
+            <div className="mx-auto flex max-w-md flex-col items-center space-y-4">
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-amber-600 text-white shadow-lg">
+                <BarChart3 className="h-12 w-12" />
+              </div>
               <h3 className="text-2xl font-bold text-amber-900 dark:text-amber-100">
                 Reportes y Estadísticas
               </h3>
-              <p className="text-lg text-amber-700 dark:text-amber-300">
+              <p className="text-base text-amber-700 dark:text-amber-300">
                 Esta sección está en construcción
               </p>
-              <div className="inline-block rounded-full bg-amber-200 px-6 py-2 text-sm font-semibold text-amber-900 dark:bg-amber-800 dark:text-amber-100">
+              <div className="inline-flex items-center gap-2 rounded-lg border-2 border-amber-600 bg-amber-100 px-6 py-2 text-sm font-semibold text-amber-900 dark:border-amber-500 dark:bg-amber-900 dark:text-amber-100">
+                <Calendar className="h-4 w-4" />
                 Próximamente
               </div>
             </div>

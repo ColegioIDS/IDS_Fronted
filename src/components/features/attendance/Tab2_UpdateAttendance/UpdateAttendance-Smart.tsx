@@ -7,7 +7,7 @@ import { ConsolidatedAttendanceViewComponent } from './ConsolidatedAttendanceVie
 import { ConsolidatedAttendanceView, AttendanceStatus } from '@/types/attendance.types';
 import attendanceService from '@/services/attendance.service';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
+import { AlertCircle, CheckCircle, RefreshCw, Info, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -108,7 +108,7 @@ export function UpdateAttendanceTabSmartEdit() {
         await reloadData();
       }
 
-      setSuccessMessage(`✓ Estado actualizado correctamente`);
+      setSuccessMessage('Estado actualizado correctamente');
       
       // Limpiar mensaje después de 3 segundos
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -120,7 +120,7 @@ export function UpdateAttendanceTabSmartEdit() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-12 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20">
+      <div className="flex min-h-[400px] items-center justify-center rounded-xl border-2 border-blue-200 bg-blue-50 p-12 dark:border-blue-800 dark:bg-blue-950/20">
         <div className="space-y-4 text-center">
           <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
           <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
@@ -135,32 +135,32 @@ export function UpdateAttendanceTabSmartEdit() {
     <div className="space-y-6">
       {/* Alertas */}
       {error && (
-        <Alert className="animate-in fade-in-50 slide-in-from-top-5 border-l-4 border-red-500 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30">
+        <Alert className="animate-in fade-in-50 slide-in-from-top-5 border-l-4 border-red-500 bg-red-50 dark:bg-red-950/20">
           <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
           <AlertDescription className="font-medium text-red-900 dark:text-red-100">{error}</AlertDescription>
         </Alert>
       )}
 
       {successMessage && (
-        <Alert className="animate-in fade-in-50 slide-in-from-top-5 border-l-4 border-emerald-500 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30">
-          <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+        <Alert className="animate-in fade-in-50 slide-in-from-top-5 border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20">
+          <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
           <AlertDescription className="font-medium text-emerald-900 dark:text-emerald-100">{successMessage}</AlertDescription>
         </Alert>
       )}
 
       {/* Instrucciones + Botón Reload */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex-1 rounded-xl border-2 border-cyan-200 bg-gradient-to-r from-cyan-50 via-blue-50 to-indigo-50 p-4 dark:from-cyan-950/20 dark:via-blue-950/20 dark:to-indigo-950/20 dark:border-cyan-800">
+        <div className="flex-1 rounded-xl border-2 border-cyan-200 bg-cyan-50 p-4 dark:border-cyan-800 dark:bg-cyan-950/20">
           <div className="flex items-start gap-3">
-            <div className="rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 p-2 shadow-lg">
-              <AlertCircle className="h-5 w-5 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-600 text-white shadow-md dark:bg-cyan-500">
+              <Info className="h-5 w-5" />
             </div>
             <div>
               <p className="font-medium text-cyan-900 dark:text-cyan-100">
-                💡 Edición Rápida Activada
+                Edición Rápida Activada
               </p>
               <p className="text-sm text-cyan-700 dark:text-cyan-300">
-                Haz clic en <strong className="text-cyan-900 dark:text-cyan-100">✏️ Editar</strong> para cambiar el estado de asistencia
+                Haz clic en <strong>Editar</strong> para cambiar el estado de asistencia
               </p>
             </div>
           </div>
@@ -168,10 +168,10 @@ export function UpdateAttendanceTabSmartEdit() {
         <Button
           onClick={() => reloadData()}
           disabled={isReloading || loading}
-          className="gap-2 whitespace-nowrap bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg hover:from-blue-700 hover:to-indigo-700"
+          className="gap-2 whitespace-nowrap bg-blue-600 shadow-md hover:bg-blue-700"
         >
           <RefreshCw className={`h-4 w-4 ${isReloading ? 'animate-spin' : ''}`} />
-          {isReloading ? 'Recargando...' : '🔄 Recargar'}
+          {isReloading ? 'Recargando...' : 'Recargar'}
         </Button>
       </div>
 
@@ -183,9 +183,11 @@ export function UpdateAttendanceTabSmartEdit() {
           onStatusUpdate={handleStatusUpdate}
         />
       ) : (
-        <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-12 text-center dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20">
-          <div className="space-y-3">
-            <div className="text-7xl">📋</div>
+        <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-12 text-center dark:border-blue-800 dark:bg-blue-950/20">
+          <div className="mx-auto flex max-w-md flex-col items-center space-y-4">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg">
+              <FileText className="h-12 w-12" />
+            </div>
             <h3 className="text-2xl font-bold text-blue-900 dark:text-blue-100">
               Sin Datos de Asistencia
             </h3>
