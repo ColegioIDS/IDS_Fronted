@@ -802,12 +802,20 @@ export const updateAttendanceStatus = async (
     });
 
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Error al actualizar estado');
+      throw new Error(response.data.message || response.data.error || 'Error al actualizar estado');
     }
 
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating attendance status:', error);
+    
+    // Mantener el objeto error completo para que el componente pueda acceder a response.data
+    if (error.response?.data) {
+      const err = new Error(error.response.data.message || 'Error al actualizar estado');
+      (err as any).response = error.response;
+      throw err;
+    }
+    
     throw new Error(
       error instanceof Error
         ? error.message

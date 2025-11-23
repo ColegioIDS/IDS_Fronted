@@ -134,7 +134,14 @@ export const useAttendancePermissions = (
         const message =
           err instanceof Error ? err.message : 'Error desconocido';
         setError(message);
-        toast.error(message);
+        
+        // Mostrar mensaje de error pero no lanzar si es un error esperado
+        if (message.includes('Ya existe')) {
+          toast.info(message);
+        } else {
+          toast.error(message);
+        }
+        
         throw err;
       } finally {
         setLoading(false);
@@ -582,6 +589,69 @@ export const useAttendancePermissions = (
     setPage(1);
   }, []);
 
+  /**
+   * Obtener estados activos de asistencia
+   */
+  const getActiveAttendanceStatuses = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await attendancePermissionsService.getActiveAttendanceStatuses();
+      return result;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Error desconocido';
+      setError(message);
+      toast.error(message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * Obtener estado específico por ID
+   */
+  const getAttendanceStatusById = useCallback(async (id: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await attendancePermissionsService.getAttendanceStatusById(id);
+      return result;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Error desconocido';
+      setError(message);
+      toast.error(message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * Obtener lista de estados con filtros y paginación
+   */
+  const getAttendanceStatusesList = useCallback(
+    async (query: any = {}) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await attendancePermissionsService.getAttendanceStatusesList(query);
+        return result;
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Error desconocido';
+        setError(message);
+        toast.error(message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
   return {
     // Data
     permissions,
@@ -611,6 +681,9 @@ export const useAttendancePermissions = (
     getRolesByType,
     getRoles,
     getAttendanceStatuses,
+    getActiveAttendanceStatuses,
+    getAttendanceStatusById,
+    getAttendanceStatusesList,
 
     // Admin
     fetchMatrix,

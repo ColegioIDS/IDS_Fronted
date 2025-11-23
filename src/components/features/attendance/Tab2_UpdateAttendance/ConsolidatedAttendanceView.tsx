@@ -127,13 +127,30 @@ function StudentRow({
     const course = student.courses.find(c => c.courseId === editingCourse.courseId);
     if (!course) return;
     
+    if (!course.classAttendanceId) {
+      console.error('❌ classAttendanceId es undefined o null');
+      console.error('⚠️ El backend NO está devolviendo classAttendanceId');
+      console.error('📝 Datos disponibles:', JSON.stringify(course, null, 2));
+      throw new Error('El backend no devuelve el ID de asistencia (classAttendanceId). Contacta al administrador.');
+    }
+    
     setEditingCourse(prev => prev ? { ...prev, isSaving: true } : null);
     try {
       await onStatusUpdate(course.classAttendanceId, editingCourse.newStatusId, editingCourse.reason);
       setEditingCourse(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating status:', error);
-      // El error será manejado por el componente padre
+      
+      // Re-lanzar con mejor mensaje
+      let errorMessage = 'Error al actualizar el estado.';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
     } finally {
       setEditingCourse(prev => prev ? { ...prev, isSaving: false } : null);
     }
@@ -284,9 +301,16 @@ function StudentRow({
                 {isEditing ? (
                   <div className="flex items-center justify-end gap-2">
                     <button
-                      onClick={handleSaveStatus}
+                      onClick={async () => {
+                        try {
+                          await handleSaveStatus();
+                        } catch (err: any) {
+                          // El error se propagará al componente padre a través de onStatusUpdate
+                          console.error('Error from handleSaveStatus:', err);
+                        }
+                      }}
                       disabled={editingCourse.isSaving || !editingCourse.newStatusId}
-                      className="p-1 rounded hover:bg-green-100 disabled:opacity-50"
+                      className="p-1 rounded hover:bg-green-100 disabled:opacity-50 transition"
                       title="Guardar cambios"
                     >
                       <Save className="h-4 w-4 text-green-600" />
@@ -294,7 +318,7 @@ function StudentRow({
                     <button
                       onClick={() => setEditingCourse(null)}
                       disabled={editingCourse.isSaving}
-                      className="p-1 rounded hover:bg-red-100"
+                      className="p-1 rounded hover:bg-red-100 transition"
                       title="Cancelar"
                     >
                       <X className="h-4 w-4 text-red-600" />

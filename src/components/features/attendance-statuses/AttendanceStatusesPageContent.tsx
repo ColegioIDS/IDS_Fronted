@@ -1,10 +1,10 @@
 // src/components/features/attendance-statuses/AttendanceStatusesPageContent.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, AlertCircle, Grid3x3, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { AttendanceStatus, AttendanceStatusQuery } from '@/types/attendance-status.types';
+import { AttendanceStatus } from '@/types/attendance-status.types';
 import { useAttendanceStatuses, useAttendanceStatusPermissions } from '@/hooks/data';
 import { attendanceStatusesService } from '@/services/attendance-statuses.service';
 import { ATTENDANCE_THEME } from '@/constants/attendance-statuses-theme';
@@ -28,7 +28,6 @@ export const AttendanceStatusesPageContent = () => {
   // ESTADO
   // ============================================
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [filters, setFilters] = useState<AttendanceStatusQuery>({ page: 1, limit: 10 });
   const [editingStatus, setEditingStatus] = useState<AttendanceStatus | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
@@ -37,10 +36,24 @@ export const AttendanceStatusesPageContent = () => {
   // ============================================
   // DATOS
   // ============================================
-  const { data: statusesData, isLoading, error, refresh, updateQuery } = useAttendanceStatuses(filters);
+  const {
+    statuses,
+    isLoading,
+    error,
+    successMessage,
+    pagination,
+    query,
+    refresh,
+    updateQuery,
+    getStatuses,
+    clearError,
+    clearSuccess,
+  } = useAttendanceStatuses();
 
-  const statuses = statusesData?.data || [];
-  const meta = statusesData?.meta;
+  // Load data on mount
+  useEffect(() => {
+    getStatuses();
+  }, [getStatuses]);
 
   // ============================================
   // HANDLERS - CREATE
@@ -218,7 +231,7 @@ export const AttendanceStatusesPageContent = () => {
       {viewMode !== 'form' && (
         <>
           {/* FILTROS */}
-          <AttendanceStatusFilters filters={filters} onFilterChange={setFilters} />
+          <AttendanceStatusFilters filters={query} onFilterChange={updateQuery} />
 
           {/* TOGGLE DE VISTA (TABS) - PEQUEÑO A LA DERECHA */}
           <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)} className="w-full">
@@ -369,31 +382,31 @@ export const AttendanceStatusesPageContent = () => {
           {/* ============================================
               SECCIÓN: PAGINACIÓN
               ============================================ */}
-          {meta && meta.totalPages > 1 && (
+          {pagination && pagination.totalPages > 1 && (
             <BaseCard className="flex items-center justify-between flex-wrap gap-4 p-4">
               <p className={cn('text-sm', ATTENDANCE_THEME.base.text.muted)}>
-                Página {meta.page} de {meta.totalPages} ({meta.total} registros)
+                Página {pagination.page} de {pagination.totalPages} ({pagination.total} registros)
               </p>
               <div className="flex gap-2">
                 <Button
                   onClick={() =>
                     updateQuery({
-                      page: Math.max(1, (filters.page || 1) - 1),
+                      page: Math.max(1, (pagination.page || 1) - 1),
                     })
                   }
-                  disabled={meta.page === 1}
-                  variant={meta.page === 1 ? 'ghost' : 'outline'}
+                  disabled={pagination.page === 1}
+                  variant={pagination.page === 1 ? 'ghost' : 'outline'}
                 >
                   Anterior
                 </Button>
                 <Button
                   onClick={() =>
                     updateQuery({
-                      page: Math.min(meta.totalPages, (filters.page || 1) + 1),
+                      page: Math.min(pagination.totalPages, (pagination.page || 1) + 1),
                     })
                   }
-                  disabled={meta.page === meta.totalPages}
-                  variant={meta.page === meta.totalPages ? 'ghost' : 'outline'}
+                  disabled={pagination.page === pagination.totalPages}
+                  variant={pagination.page === pagination.totalPages ? 'ghost' : 'outline'}
                 >
                   Siguiente
                 </Button>

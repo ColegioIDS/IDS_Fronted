@@ -31,10 +31,8 @@ export const AttendanceStatusForm = ({
     description: initialData?.description || '',
     colorCode: initialData?.colorCode || '#22c55e',
     isNegative: initialData?.isNegative || false,
-    requiresJustification: initialData?.requiresJustification || false,
     isTemporal: initialData?.isTemporal || false,
     isExcused: initialData?.isExcused || false,
-    canHaveNotes: initialData?.canHaveNotes ?? true,
     order: initialData?.order || 0,
     isActive: initialData?.isActive ?? true,
   });
@@ -292,25 +290,6 @@ export const AttendanceStatusForm = ({
                 </div>
               </div>
 
-              {/* Justificación */}
-              <div className="flex items-center space-x-3 p-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-900/50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors cursor-pointer">
-                <Checkbox
-                  id="requiresJustification"
-                  name="requiresJustification"
-                  checked={formData.requiresJustification}
-                  onCheckedChange={(checked) => {
-                    setFormData((prev) => ({ ...prev, requiresJustification: checked as boolean }));
-                  }}
-                  disabled={isLoading}
-                />
-                <div className="flex flex-col gap-0.5">
-                  <Label htmlFor="requiresJustification" className="text-sm font-semibold cursor-pointer">
-                    Requiere Justificación
-                  </Label>
-                  <p className="text-xs text-muted-foreground">El estudiante debe justificar</p>
-                </div>
-              </div>
-
               {/* Temporal */}
               <div className="flex items-center space-x-3 p-3 rounded-lg border border-purple-200 bg-purple-50 dark:border-purple-900/50 dark:bg-purple-950/20 hover:bg-purple-100 dark:hover:bg-purple-950/40 transition-colors cursor-pointer">
                 <Checkbox
@@ -327,25 +306,6 @@ export const AttendanceStatusForm = ({
                     Es Temporal
                   </Label>
                   <p className="text-xs text-muted-foreground">Vigencia limitada en el tiempo</p>
-                </div>
-              </div>
-
-              {/* Notas */}
-              <div className="flex items-center space-x-3 p-3 rounded-lg border border-green-200 bg-green-50 dark:border-green-900/50 dark:bg-green-950/20 hover:bg-green-100 dark:hover:bg-green-950/40 transition-colors cursor-pointer">
-                <Checkbox
-                  id="canHaveNotes"
-                  name="canHaveNotes"
-                  checked={formData.canHaveNotes}
-                  onCheckedChange={(checked) => {
-                    setFormData((prev) => ({ ...prev, canHaveNotes: checked as boolean }));
-                  }}
-                  disabled={isLoading}
-                />
-                <div className="flex flex-col gap-0.5">
-                  <Label htmlFor="canHaveNotes" className="text-sm font-semibold cursor-pointer">
-                    Puede Tener Notas
-                  </Label>
-                  <p className="text-xs text-muted-foreground">Permite agregar anotaciones</p>
                 </div>
               </div>
 

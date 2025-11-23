@@ -73,19 +73,35 @@ export const AttendancePermissionsPageContent: React.FC<
       if (propsRoles.length === 0 || propsStatuses.length === 0) {
         setLoadingData(true);
         try {
+          console.log('🔄 Cargando roles y estados de asistencia...');
+          
           // Cargar roles desde API centralizada
-          const rolesData = await getRoles();
-          if (rolesData && Array.isArray(rolesData)) {
-            setRoles(rolesData);
+          try {
+            const rolesData = await getRoles();
+            console.log('✅ Roles cargados:', rolesData);
+            if (rolesData && Array.isArray(rolesData) && rolesData.length > 0) {
+              setRoles(rolesData);
+            } else {
+              console.warn('⚠️ getRoles retornó un array vacío o inválido:', rolesData);
+            }
+          } catch (rolesError) {
+            console.error('❌ Error cargando roles:', rolesError);
           }
 
           // Cargar estados desde API centralizada
-          const statusesData = await getAttendanceStatuses();
-          if (statusesData && Array.isArray(statusesData)) {
-            setStatuses(statusesData);
+          try {
+            const statusesData = await getAttendanceStatuses();
+            console.log('✅ Estados cargados:', statusesData);
+            if (statusesData && Array.isArray(statusesData) && statusesData.length > 0) {
+              setStatuses(statusesData);
+            } else {
+              console.warn('⚠️ getAttendanceStatuses retornó un array vacío o inválido:', statusesData);
+            }
+          } catch (statusesError) {
+            console.error('❌ Error cargando estados:', statusesError);
           }
         } catch (error) {
-          console.error('Error loading roles and statuses:', error);
+          console.error('❌ Error general cargando roles y estados:', error);
         } finally {
           setLoadingData(false);
         }
@@ -128,14 +144,29 @@ export const AttendancePermissionsPageContent: React.FC<
           selectedPermission.attendanceStatusId,
           data
         );
+        toast.success('Permiso actualizado exitosamente');
       } else {
         await createPermission(data);
+        toast.success('Permiso creado exitosamente');
       }
       setShowForm(false);
       setSelectedPermission(null);
       await getPermissions();
-    } catch (error) {
-      console.error('Error submitting form:', error);
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Error desconocido';
+      
+      // Detectar si es un error de duplicado y ofrecer actualizar
+      if (errorMessage.includes('Ya existe un permiso')) {
+        toast.info('Este permiso ya existe. Usa la vista de tabla para editarlo.', {
+          action: {
+            label: 'Cerrar',
+            onClick: () => setShowForm(false),
+          },
+        });
+      } else {
+        console.error('Error submitting form:', error);
+        toast.error(errorMessage);
+      }
     } finally {
       setFormLoading(false);
     }
@@ -271,7 +302,7 @@ export const AttendancePermissionsPageContent: React.FC<
                 Por favor espera un momento
               </p>
             </div>
-          ) : roles.length === 0 || statuses.length === 0 ? (
+          ) : !loadingData && (roles.length === 0 || statuses.length === 0) ? (
             <div className="flex flex-col items-center justify-center py-12 px-6">
               <div className="relative mb-6">
                 <div className="absolute inset-0 bg-amber-100 dark:bg-amber-900/20 rounded-full blur-2xl opacity-50"></div>

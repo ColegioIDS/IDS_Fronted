@@ -30,11 +30,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import {
   MoreVertical,
-  GripVertical,
   Edit2,
   Trash2,
   Eye,
   EyeOff,
+  CheckCheck,
+  XCircle,
+  MessageSquare,
+  FileText,
 } from 'lucide-react';
 import { AttendancePermissionWithRelations } from '@/types/attendance-permissions.types';
 import { useAttendancePermissions } from '@/hooks/data/useAttendancePermissions';
@@ -81,53 +84,65 @@ export const AttendancePermissionTable: React.FC<
         confirmDialog.permissionId.attendanceStatusId
       );
       setConfirmDialog({ open: false });
+      toast.success('Permiso eliminado correctamente');
     } catch (error) {
+      toast.error('Error al eliminar el permiso');
       console.error('Error deleting permission:', error);
     }
   };
 
-  const getPermissionBadgeColor = (
+  const getPermissionBadgeVariant = (
     hasPermission: boolean,
     isDanger?: boolean
-  ) => {
-    if (isDanger) {
-      return hasPermission ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-    }
-    return hasPermission ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+  ): 'default' | 'secondary' | 'destructive' | 'outline' => {
+    if (!hasPermission) return 'outline';
+    if (isDanger) return 'destructive';
+    return 'default';
+  };
+
+  const getPermissionIcon = (hasPermission: boolean) => {
+    return hasPermission ? (
+      <CheckCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
+    ) : (
+      <XCircle className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+    );
   };
 
   return (
     <>
-      <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-900">
         <Table>
-          <TableHeader className="bg-gray-50 dark:bg-gray-800/50">
-            <TableRow>
-              <TableHead className="w-10"></TableHead>
-              <TableHead className="font-semibold">Rol</TableHead>
-              <TableHead className="font-semibold">Estado</TableHead>
-              <TableHead className="font-semibold text-center">Ver</TableHead>
-              <TableHead className="font-semibold text-center">Crear</TableHead>
-              <TableHead className="font-semibold text-center">
+          <TableHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="font-semibold text-gray-700 dark:text-gray-300">Rol</TableHead>
+              <TableHead className="font-semibold text-gray-700 dark:text-gray-300">Estado</TableHead>
+              <TableHead className="font-semibold text-center text-gray-700 dark:text-gray-300">Ver</TableHead>
+              <TableHead className="font-semibold text-center text-gray-700 dark:text-gray-300">Crear</TableHead>
+              <TableHead className="font-semibold text-center text-gray-700 dark:text-gray-300">
                 Modificar
               </TableHead>
-              <TableHead className="font-semibold text-center">
+              <TableHead className="font-semibold text-center text-gray-700 dark:text-gray-300">
                 Eliminar
               </TableHead>
-              <TableHead className="font-semibold text-center">
+              <TableHead className="font-semibold text-center text-gray-700 dark:text-gray-300">
                 Aprobar
               </TableHead>
-              <TableHead className="font-semibold text-center">
+              <TableHead className="font-semibold text-center text-gray-700 dark:text-gray-300">
                 Justificar
               </TableHead>
-              <TableHead className="w-10"></TableHead>
+              <TableHead className="font-semibold text-center text-gray-700 dark:text-gray-300">
+                <MessageSquare className="h-4 w-4 mx-auto" />
+              </TableHead>
+              <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
                 <TableCell colSpan={10} className="text-center py-8">
-                  <div className="inline-block animate-spin">
-                    <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+                  <div className="inline-flex items-center gap-2">
+                    <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-gray-600 dark:text-gray-400">Cargando permisos...</span>
                   </div>
                 </TableCell>
               </TableRow>
@@ -135,71 +150,62 @@ export const AttendancePermissionTable: React.FC<
               <TableRow>
                 <TableCell
                   colSpan={10}
-                  className="text-center py-8 text-gray-500 dark:text-gray-400"
+                  className="text-center py-12 text-gray-500 dark:text-gray-400"
                 >
-                  No hay permisos registrados
+                  <div className="flex flex-col items-center gap-2">
+                    <FileText className="h-8 w-8 opacity-50" />
+                    <p>No hay permisos registrados</p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
               permissions.map((permission) => (
                 <TableRow
                   key={`${permission.roleId}-${permission.attendanceStatusId}`}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-200 dark:border-gray-700"
                 >
-                  <TableCell className="text-gray-400 dark:text-gray-500">
-                    <GripVertical className="h-4 w-4" />
-                  </TableCell>
                   <TableCell className="font-medium text-gray-900 dark:text-gray-100">
-                    {permission.role?.name || '-'}
+                    <div>
+                      <p className="font-semibold">{permission.role?.name || '-'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {permission.role?.roleType || '-'}
+                      </p>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"
                       className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700"
+                      style={{ backgroundColor: permission.attendanceStatus?.colorCode + '20' }}
                     >
-                      {permission.attendanceStatus?.name || '-'}
+                      {permission.attendanceStatus?.name || '-'} ({permission.attendanceStatus?.code})
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center">
-                    {permission.canView ? (
-                      <Eye className="h-4 w-4 text-green-600 dark:text-green-400 mx-auto" />
-                    ) : (
-                      <EyeOff className="h-4 w-4 text-gray-400 dark:text-gray-500 mx-auto" />
-                    )}
+                    {getPermissionIcon(permission.canView)}
                   </TableCell>
                   <TableCell className="text-center">
-                    {permission.canCreate ? (
-                      <div className="h-4 w-4 rounded bg-green-600 dark:bg-green-400 mx-auto" />
-                    ) : (
-                      <div className="h-4 w-4 rounded bg-gray-300 dark:bg-gray-600 mx-auto" />
-                    )}
+                    {getPermissionIcon(permission.canCreate)}
                   </TableCell>
                   <TableCell className="text-center">
-                    {permission.canModify ? (
-                      <div className="h-4 w-4 rounded bg-blue-600 dark:bg-blue-400 mx-auto" />
-                    ) : (
-                      <div className="h-4 w-4 rounded bg-gray-300 dark:bg-gray-600 mx-auto" />
-                    )}
+                    {getPermissionIcon(permission.canModify)}
                   </TableCell>
                   <TableCell className="text-center">
-                    {permission.canDelete ? (
-                      <div className="h-4 w-4 rounded bg-red-600 dark:bg-red-400 mx-auto" />
-                    ) : (
-                      <div className="h-4 w-4 rounded bg-gray-300 dark:bg-gray-600 mx-auto" />
-                    )}
+                    {getPermissionIcon(permission.canDelete)}
                   </TableCell>
                   <TableCell className="text-center">
-                    {permission.canApprove ? (
-                      <div className="h-4 w-4 rounded bg-purple-600 dark:bg-purple-400 mx-auto" />
-                    ) : (
-                      <div className="h-4 w-4 rounded bg-gray-300 dark:bg-gray-600 mx-auto" />
-                    )}
+                    {getPermissionIcon(permission.canApprove)}
                   </TableCell>
                   <TableCell className="text-center">
-                    {permission.canAddJustification ? (
-                      <div className="h-4 w-4 rounded bg-orange-600 dark:bg-orange-400 mx-auto" />
+                    {getPermissionIcon(permission.canAddJustification)}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {permission.justificationRequired ? (
+                      <Badge variant="default" className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">
+                        Sí
+                      </Badge>
                     ) : (
-                      <div className="h-4 w-4 rounded bg-gray-300 dark:bg-gray-600 mx-auto" />
+                      <Badge variant="outline">No</Badge>
                     )}
                   </TableCell>
                   <TableCell>
@@ -221,7 +227,7 @@ export const AttendancePermissionTable: React.FC<
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => handleDeleteClick(permission)}
-                          className="text-red-600 dark:text-red-400"
+                          className="text-red-600 dark:text-red-400 focus:text-red-600 focus:dark:text-red-400"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Eliminar
@@ -250,13 +256,15 @@ export const AttendancePermissionTable: React.FC<
               Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={confirmDelete}
-            className="bg-red-600 hover:bg-red-700 text-white"
-          >
-            Eliminar
-          </AlertDialogAction>
+          <div className="flex gap-3 justify-end">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
     </>

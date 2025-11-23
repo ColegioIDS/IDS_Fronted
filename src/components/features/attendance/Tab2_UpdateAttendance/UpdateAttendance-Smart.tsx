@@ -112,9 +112,49 @@ export function UpdateAttendanceTabSmartEdit() {
       
       // Limpiar mensaje después de 3 segundos
       setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating attendance status:', err);
-      setError('Error al actualizar el estado. Intenta nuevamente.');
+      console.error('Full error object:', err);
+      
+      // Mejorar mensajes de error basados en la respuesta del servidor
+      let errorMessage = 'Error al actualizar el estado. Intenta nuevamente.';
+      
+      // Intentar obtener el mensaje del backend
+      const backendMessage = 
+        err.response?.data?.message || 
+        err.response?.data?.error ||
+        err.message ||
+        '';
+      
+      console.log('Backend message:', backendMessage);
+      
+      if (backendMessage) {
+        // Mapear mensajes comunes del backend a mensajes más descriptivos
+        if (backendMessage.toLowerCase().includes('permiso')) {
+          errorMessage = `❌ Permiso Denegado\n\n"${backendMessage}"\n\nContacta al administrador para obtener permisos.`;
+        } else if (backendMessage.toLowerCase().includes('no encontrado') || backendMessage.toLowerCase().includes('not found')) {
+          errorMessage = `⚠️ Registro no encontrado\n\n"${backendMessage}"\n\nIntenta recargar los datos.`;
+        } else if (backendMessage.toLowerCase().includes('validación') || backendMessage.toLowerCase().includes('validation')) {
+          errorMessage = `⚠️ Error de validación\n\n"${backendMessage}"`;
+        } else if (backendMessage.toLowerCase().includes('duplicado') || backendMessage.toLowerCase().includes('duplicate')) {
+          errorMessage = `⚠️ Cambio duplicado\n\n"${backendMessage}"`;
+        } else {
+          // Usar el mensaje del backend directamente
+          errorMessage = `⚠️ ${backendMessage}`;
+        }
+      } else if (err.response?.status === 403) {
+        errorMessage = `❌ Permiso Denegado\n\nNo tienes permiso para realizar esta acción. Contacta al administrador.`;
+      } else if (err.response?.status === 404) {
+        errorMessage = `⚠️ Registro no encontrado\n\nIntenta recargar los datos.`;
+      } else if (err.response?.status === 400) {
+        errorMessage = `⚠️ Datos inválidos\n\nVerifica el estado y el motivo.`;
+      } else if (err.response?.status === 500) {
+        errorMessage = `❌ Error en el servidor\n\nIntenta más tarde.`;
+      } else if (err.message?.includes('Network')) {
+        errorMessage = `⚠️ Error de conexión\n\nVerifica tu internet.`;
+      }
+      
+      setError(errorMessage);
     }
   };
 
@@ -137,7 +177,7 @@ export function UpdateAttendanceTabSmartEdit() {
       {error && (
         <Alert className="animate-in fade-in-50 slide-in-from-top-5 border-l-4 border-red-500 bg-red-50 dark:bg-red-950/20">
           <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-          <AlertDescription className="font-medium text-red-900 dark:text-red-100">{error}</AlertDescription>
+          <AlertDescription className="font-medium text-red-900 dark:text-red-100 whitespace-pre-line">{error}</AlertDescription>
         </Alert>
       )}
 

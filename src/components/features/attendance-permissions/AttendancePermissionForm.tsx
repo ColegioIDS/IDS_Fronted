@@ -50,7 +50,8 @@ const permissionSchema = z.object({
   canDelete: z.boolean(),
   canApprove: z.boolean(),
   canAddJustification: z.boolean(),
-  requiresNotes: z.boolean(),
+  justificationRequired: z.boolean(),
+  requiresNotes: z.boolean().optional(),
   minNotesLength: z.coerce.number().nullable().optional(),
   maxNotesLength: z.coerce.number().nullable().optional(),
   notes: z.string().nullable().optional(),
@@ -91,6 +92,7 @@ export const AttendancePermissionForm: React.FC<
           canDelete: permission.canDelete,
           canApprove: permission.canApprove,
           canAddJustification: permission.canAddJustification,
+          justificationRequired: permission.justificationRequired,
           requiresNotes: permission.requiresNotes,
           minNotesLength: permission.minNotesLength,
           maxNotesLength: permission.maxNotesLength,
@@ -105,6 +107,7 @@ export const AttendancePermissionForm: React.FC<
           canDelete: false,
           canApprove: false,
           canAddJustification: false,
+          justificationRequired: false,
           requiresNotes: false,
           minNotesLength: null,
           maxNotesLength: null,
@@ -346,9 +349,30 @@ export const AttendancePermissionForm: React.FC<
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border border-cyan-200 bg-cyan-50 dark:border-cyan-900 dark:bg-cyan-900/20 p-3">
                     <div>
-                      <FormLabel className="font-medium">Justificar</FormLabel>
+                      <FormLabel className="font-medium">Agregar Justificación</FormLabel>
                       <FormDescription className="text-xs">
-                        Agregar justificaciones
+                        Agregar justificaciones a registros
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="justificationRequired"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border border-rose-200 bg-rose-50 dark:border-rose-900 dark:bg-rose-900/20 p-3">
+                    <div>
+                      <FormLabel className="font-medium">Justificación Obligatoria</FormLabel>
+                      <FormDescription className="text-xs">
+                        Se requiere justificación para esta asistencia
                       </FormDescription>
                     </div>
                     <FormControl>

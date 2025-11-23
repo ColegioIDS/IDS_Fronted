@@ -1,5 +1,77 @@
 // src/types/attendance-permissions.types.ts
 
+// ============================================
+// DASHBOARD & STATUS TYPES
+// ============================================
+
+// ✅ Dashboard summary response
+export interface DashboardSummaryResponse {
+  success: boolean;
+  data: {
+    totalRoles: number;
+    totalStatuses: number;
+    rolesWithoutPermissions: number;
+    statusesWithoutAssignments: number;
+    totalPermissions: number;
+    rolesWithFullAccess: number;
+    lastUpdated: string;
+  };
+}
+
+// ✅ Attendance status response
+export interface AttendanceStatusResponse {
+  id: number;
+  code: string;
+  name: string;
+  description: string;
+  isNegative: boolean;
+  isExcused: boolean;
+  isTemporal: boolean;
+  colorCode: string;
+  order: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ✅ Role with permission count
+export interface RoleWithPermissionCount {
+  id: number;
+  name: string;
+  roleType: string;
+  permissionCount: number;
+  isActive: boolean;
+}
+
+// ✅ Status list query params
+export interface StatusListQueryParams {
+  page?: number;
+  limit?: number;
+  isActive?: boolean;
+  isNegative?: boolean;
+  isExcused?: boolean;
+  isTemporal?: boolean;
+  search?: string;
+  sortBy?: 'code' | 'name' | 'order' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+// ✅ Paginated status response
+export interface PaginatedStatusResponse {
+  success: boolean;
+  data: AttendanceStatusResponse[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+// ============================================
+// PERMISSION BASE TYPES
+// ============================================
+
 // ✅ Permission base
 export interface AttendancePermission {
   id?: number;
@@ -11,7 +83,8 @@ export interface AttendancePermission {
   canDelete: boolean;
   canApprove: boolean;
   canAddJustification: boolean;
-  requiresNotes: boolean;
+  justificationRequired: boolean;
+  requiresNotes?: boolean;
   minNotesLength?: number | null;
   maxNotesLength?: number | null;
   notes?: string | null;
@@ -114,18 +187,18 @@ export interface RolePermissionsSummary {
 export interface PermissionTemplate {
   roleType: string;
   description: string;
-  template: {
+  defaultPermissions: Array<{
+    statusCode: string;
+    statusName: string;
     canView: boolean;
     canCreate: boolean;
     canModify: boolean;
     canDelete: boolean;
     canApprove: boolean;
     canAddJustification: boolean;
-    requiresNotes: boolean;
-    minNotesLength?: number | null;
-    maxNotesLength?: number | null;
-  };
-  note?: string;
+    justificationRequired?: boolean;
+    requiresNotes?: boolean;
+  }>;
 }
 
 // ✅ Query params
@@ -160,7 +233,8 @@ export interface CreateAttendancePermissionDto {
   canDelete: boolean;
   canApprove: boolean;
   canAddJustification: boolean;
-  requiresNotes: boolean;
+  justificationRequired: boolean;
+  requiresNotes?: boolean;
   minNotesLength?: number | null;
   maxNotesLength?: number | null;
   notes?: string | null;
@@ -173,6 +247,7 @@ export interface UpdateAttendancePermissionDto {
   canDelete?: boolean;
   canApprove?: boolean;
   canAddJustification?: boolean;
+  justificationRequired?: boolean;
   requiresNotes?: boolean;
   minNotesLength?: number | null;
   maxNotesLength?: number | null;
