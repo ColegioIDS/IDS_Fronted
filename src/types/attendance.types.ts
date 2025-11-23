@@ -563,3 +563,59 @@ export type AttendanceResponse = AttendanceRecord | DailyAttendanceSummary | Att
 
 // Estados
 export type AttendanceLoadingState = 'idle' | 'loading' | 'success' | 'error';
+
+// ====================================================================
+// VISTA CONSOLIDADA DE ASISTENCIA (Consolidated View)
+// ====================================================================
+
+/**
+ * Detalles de modificación de asistencia
+ */
+export interface ModificationDetails {
+  modifiedBy: string;
+  modifiedAt: string;
+  reason?: string;
+}
+
+/**
+ * Asistencia de un curso para un estudiante
+ */
+export interface ConsolidatedCourseAttendance {
+  classAttendanceId: number; // ID del registro StudentClassAttendance para PATCH
+  courseId: number;
+  courseName: string;
+  courseCode?: string;
+  originalStatus: string; // Código dinámico (A, I, R, etc.)
+  originalStatusName: string; // Nombre para mostrar
+  currentStatus: string;
+  currentStatusName: string;
+  hasModifications: boolean;
+  modificationDetails?: ModificationDetails;
+  recordedBy: string;
+  recordedAt: string;
+  arrivalTime?: string;
+  minutesLate?: number | null;
+}
+
+/**
+ * Asistencia consolidada de un estudiante
+ */
+export interface ConsolidatedStudentAttendance {
+  enrollmentId: number;
+  studentName: string;
+  studentId: number;
+  courses: ConsolidatedCourseAttendance[];
+}
+
+/**
+ * Vista consolidada de asistencia por sección y fecha
+ */
+export interface ConsolidatedAttendanceView {
+  sectionId: number;
+  date: string;
+  dayName: string;
+  dayOfWeek: number; // 1-7 ISO 8601
+  totalStudents: number;
+  totalRecords: number;
+  students: ConsolidatedStudentAttendance[];
+}

@@ -27,8 +27,10 @@ import {
   getActiveAttendanceConfig,
   getAllowedAttendanceStatusesByRole,
   getActiveCycle,
+  validateSectionSchedulesByDay,
 } from '@/services/attendance.service';
 import { parseApiError, ApiErrorResponse } from '@/middleware/api-handler';
+import { getIsoDayOfWeek } from '@/utils/dateUtils';
 
 /**
  * Resultado de una validación individual
@@ -368,6 +370,48 @@ export function useAttendanceValidations(): [ValidationState, ValidationActions]
   }, []);
 
   /**
+   * Valida que hay horarios configurados para la sección en el día especificado
+   */
+  const validateSectionSchedules = useCallback(
+    async (sectionId: number, date: string): Promise<ValidationResult> => {
+      const id = 9;
+      const name = 'Horarios de la Sección';
+
+      try {
+        const isoDay = getIsoDayOfWeek(date);
+        const schedules = await validateSectionSchedulesByDay(sectionId, isoDay);
+
+        if (schedules && schedules.length > 0) {
+          return {
+            id,
+            name,
+            passed: true,
+            message: `${schedules.length} horario(s) configurado(s)`,
+            data: { count: schedules.length, schedules },
+          };
+        } else {
+          return {
+            id,
+            name,
+            passed: false,
+            message: 'No hay horarios configurados para este día en la sección',
+          };
+        }
+      } catch (error) {
+        const apiError = parseApiError(error);
+        return {
+          id,
+          name,
+          passed: false,
+          message: apiError.message || 'Error al validar horarios',
+          error: apiError,
+        };
+      }
+    },
+    []
+  );
+
+  /**
    * Valida que hay estudiantes
    */
   const validateStudents = useCallback(async (studentCount: number = 0): Promise<ValidationResult> => {
@@ -405,7 +449,7 @@ export function useAttendanceValidations(): [ValidationState, ValidationActions]
       }));
 
       try {
-        const [cycle, bimester, holiday, week, absence, config, statuses, students] =
+        const [cycle, bimester, holiday, week, absence, config, statuses, sectionSchedules, students] =
           await Promise.all([
             validateCycle(),
             params.bimesterId ? validateBimester(params.cycleId, params.date) : Promise.resolve(null),
@@ -414,10 +458,11 @@ export function useAttendanceValidations(): [ValidationState, ValidationActions]
             params.teacherId ? validateTeacherAbsence(params.teacherId, params.date) : Promise.resolve(null),
             validateConfig(),
             params.roleId ? validateAllowedStatuses(params.roleId) : Promise.resolve(null),
+            params.sectionId ? validateSectionSchedules(params.sectionId, params.date) : Promise.resolve(null),
             validateStudents(params.studentCount),
           ]);
 
-        const results = [cycle, bimester, holiday, week, absence, config, statuses, students].filter(
+        const results = [cycle, bimester, holiday, week, absence, config, statuses, sectionSchedules, students].filter(
           Boolean
         ) as ValidationResult[];
 
@@ -451,6 +496,7 @@ export function useAttendanceValidations(): [ValidationState, ValidationActions]
       validateTeacherAbsence,
       validateConfig,
       validateAllowedStatuses,
+      validateSectionSchedules,
       validateStudents,
     ]
   );
@@ -477,6 +523,15 @@ export function useAttendanceValidations(): [ValidationState, ValidationActions]
           return validateCycle();
         case 8:
           return validateStudents(params.studentCount);
+        case 9:
+          return params.sectionId
+            ? validateSectionSchedules(params.sectionId, params.date)
+            : Promise.resolve({
+                id: validationId,
+                name: 'Horarios de la Sección',
+                passed: false,
+                message: 'No hay sección seleccionada',
+              });
         default:
           return {
             id: validationId,
@@ -494,6 +549,7 @@ export function useAttendanceValidations(): [ValidationState, ValidationActions]
       validateTeacherAbsence,
       validateConfig,
       validateAllowedStatuses,
+      validateSectionSchedules,
       validateStudents,
     ]
   );

@@ -400,9 +400,9 @@ export default function SchedulesViewContent() {
                       </div>
                     </th>
                     {(selectedDay === 'all' ? workingDays : [daysOfWeek[parseInt(selectedDay)]]).map(
-                      (day) => (
+                      (day, index) => (
                         <th
-                          key={day}
+                          key={`day-header-${index}-${day}`}
                           className="px-4 py-3 text-left font-bold text-slate-900 dark:text-slate-100 min-w-[200px] border-l-2 border-slate-300 dark:border-slate-700"
                         >
                           {day}

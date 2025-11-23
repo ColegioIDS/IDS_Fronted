@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table';
 import { AttendanceStatusSelector } from './AttendanceStatusSelector';
 import { AttendanceStatus } from '@/types/attendance.types';
+import { CheckCircle2 } from 'lucide-react';
 
 interface StudentData {
   id?: number;
@@ -33,6 +34,7 @@ interface StudentAttendanceProps {
   onEarlyExitToggle: (enrollmentId: number, isEarlyExit: boolean) => void;
   allowedStatuses?: AttendanceStatus[];
   isLoading?: boolean;
+  existingAttendance?: Map<number, { statusId: number; isEarlyExit: boolean }>;
 }
 
 export function StudentAttendanceTable({
@@ -42,6 +44,7 @@ export function StudentAttendanceTable({
   onEarlyExitToggle,
   allowedStatuses,
   isLoading = false,
+  existingAttendance = new Map(),
 }: StudentAttendanceProps) {
   return (
     <div className="rounded-lg border border-gray-200 overflow-hidden">
@@ -53,6 +56,7 @@ export function StudentAttendanceTable({
             <TableHead>Matrícula</TableHead>
             <TableHead className="w-48">Estado</TableHead>
             <TableHead className="w-24">Salida Temprana</TableHead>
+            <TableHead className="w-12">Estatus</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -60,9 +64,13 @@ export function StudentAttendanceTable({
             const enrollmentId = student.enrollmentId as number;
             const attendance = studentAttendance.get(enrollmentId);
             const studentName = student.name || 'Sin nombre';
+            const hasExistingRecord = existingAttendance.has(enrollmentId);
 
             return (
-              <TableRow key={enrollmentId} className="hover:bg-gray-50">
+              <TableRow 
+                key={enrollmentId} 
+                className={hasExistingRecord ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'}
+              >
                 <TableCell className="text-sm font-medium text-gray-600">
                   {index + 1}
                 </TableCell>
@@ -90,6 +98,14 @@ export function StudentAttendanceTable({
                     disabled={isLoading || !attendance?.status}
                     className="h-5 w-5"
                   />
+                </TableCell>
+                <TableCell>
+                  {hasExistingRecord && (
+                    <div className="flex items-center gap-1 text-green-700 font-medium text-xs">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>Registrado</span>
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             );

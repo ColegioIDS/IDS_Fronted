@@ -18,12 +18,15 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAttendanceContext } from '@/context/AttendanceContext';
 import { useAuth } from '@/context/AuthContext';
-import { registerDailyAttendance, getAllowedAttendanceStatusesByRole } from '@/services/attendance.service';
+import { useAttendanceValidations } from '@/hooks/data/attendance/useAttendanceValidations';
+import { registerDailyAttendance, getAllowedAttendanceStatusesByRole, getSectionAttendanceConsolidatedView } from '@/services/attendance.service';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle2, Loader2, Save } from 'lucide-react';
-import { StudentAttendanceTable } from './StudentAttendanceTable';
+import { AlertCircle, CheckCircle2, Loader2, Save, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ExpandableStudentAttendanceTable } from './ExpandableStudentAttendanceTable';
 import { RegistrationSummary } from './RegistrationSummary';
-import type { DailyRegistrationPayload, AttendanceStatus } from '@/types/attendance.types';
+import { ExistingAttendanceSummary } from './ExistingAttendanceSummary';
+import type { DailyRegistrationPayload, AttendanceStatus, ConsolidatedAttendanceView } from '@/types/attendance.types';
 
 interface StudentData {
   id?: number;
@@ -44,6 +47,7 @@ interface StudentAttendance {
 export function DailyRegistration() {
   const { state: attendanceState } = useAttendanceContext();
   const { user } = useAuth();
+  const [validationState, validationActions] = useAttendanceValidations();
   
   // Estado local para registros de asistencia
   const [studentAttendance, setStudentAttendance] = useState<Map<number, StudentAttendance>>(new Map());
@@ -56,29 +60,41 @@ export function DailyRegistration() {
   const [allowedStatuses, setAllowedStatuses] = useState<AttendanceStatus[]>([]);
   const [hasPermission, setHasPermission] = useState(true);
   const [isLoadingStatuses, setIsLoadingStatuses] = useState(true);
+  const [existingAttendance, setExistingAttendance] = useState<Map<number, { statusId: number; isEarlyExit: boolean }>>(new Map());
+  const [isLoadingExisting, setIsLoadingExisting] = useState(false);
+  const [consolidatedData, setConsolidatedData] = useState<ConsolidatedAttendanceView | null>(null);
 
   // Cargar estados permitidos y validar permisos
   useEffect(() => {
+    // Si no authenticated yet, don't try to load
+    if (!user || !user.role?.id) {
+      setHasPermission(false);
+      setIsLoadingStatuses(false);
+      return;
+    }
+
     const loadPermissions = async () => {
       try {
-        // ✅ Obtener roleId del usuario autenticado
         const roleId = user?.role?.id;
-        
         if (!roleId) {
-          console.warn('No roleId found in authenticated user');
           setHasPermission(false);
           setIsLoadingStatuses(false);
           return;
         }
 
+        console.log('Loading allowed statuses for roleId:', roleId);
+        
         const statuses = await getAllowedAttendanceStatusesByRole(roleId);
-        setAllowedStatuses(statuses); // ✅ Ya es AttendanceStatus[]
+        console.log('Loaded statuses:', statuses);
+        
+        setAllowedStatuses(statuses || []);
         
         // Validar que tenga al menos un estado permitido
         if (!statuses || statuses.length === 0) {
+          console.warn('No allowed statuses for this role');
           setHasPermission(false);
         } else {
-          setHasPermission(true); // ✅ Asegurar que se establece true si hay permisos
+          setHasPermission(true);
         }
       } catch (error) {
         console.error('Error loading permissions:', error);
@@ -90,19 +106,101 @@ export function DailyRegistration() {
     };
     
     loadPermissions();
-  }, [user?.role?.id]);
+  }, [user?.role?.id, user]);
 
-  // Inicializar estudiantes en el mapa
+  // Función para recargar datos de asistencia existente
+  const reloadExistingAttendance = useCallback(async () => {
+    if (!attendanceState.selectedSectionId || !attendanceState.selectedDate) {
+      setExistingAttendance(new Map());
+      setConsolidatedData(null);
+      return;
+    }
+
+    setIsLoadingExisting(true);
+    try {
+      const data = await getSectionAttendanceConsolidatedView(
+        attendanceState.selectedSectionId!,
+        attendanceState.selectedDate
+      );
+      
+      const consolidatedView = data as unknown as ConsolidatedAttendanceView;
+      
+      // Guardar datos consolidados para mostrar en tabla expandible
+      setConsolidatedData(consolidatedView);
+      
+      // Crear mapa de enrollmentId -> { statusId, isEarlyExit }
+      const attendanceMap = new Map<number, { statusId: number; isEarlyExit: boolean }>();
+      
+      consolidatedView.students.forEach(student => {
+        if (student.courses.length > 0) {
+          const firstCourse = student.courses[0];
+          const allowedStatus = allowedStatuses.find(s => s.code === firstCourse.currentStatus);
+          
+          attendanceMap.set(student.enrollmentId, {
+            statusId: allowedStatus?.id || 0,
+            isEarlyExit: false,
+          });
+        }
+      });
+      
+      setExistingAttendance(attendanceMap);
+      console.log('Loaded existing attendance:', attendanceMap);
+    } catch (error) {
+      console.error('Error loading existing attendance:', error);
+      setExistingAttendance(new Map());
+      setConsolidatedData(null);
+    } finally {
+      setIsLoadingExisting(false);
+    }
+  }, [attendanceState.selectedSectionId, attendanceState.selectedDate, allowedStatuses]);
+
+  // Cargar asistencias existentes cuando cambia la sección o fecha
+  useEffect(() => {
+    reloadExistingAttendance();
+  }, [reloadExistingAttendance]);
+
+  // Ejecutar validaciones previas cuando cambia la sección, ciclo o fecha
+  useEffect(() => {
+    if (!attendanceState.selectedCycleId) return;
+
+    const runValidations = async () => {
+      await validationActions.validate({
+        cycleId: attendanceState.selectedCycleId || 0,
+        bimesterId: attendanceState.selectedBimesterId || undefined,
+        date: attendanceState.selectedDate,
+        teacherId: undefined,
+        roleId: user?.role?.id,
+        sectionId: attendanceState.selectedSectionId || undefined,
+        studentCount: attendanceState.students.length,
+      });
+    };
+
+    runValidations();
+  }, [
+    attendanceState.selectedCycleId,
+    attendanceState.selectedBimesterId,
+    attendanceState.selectedDate,
+    attendanceState.selectedSectionId,
+    attendanceState.students.length,
+    user?.role?.id,
+    validationActions,
+  ]);
+
+  // Inicializar estudiantes en el mapa con asistencias existentes
   useEffect(() => {
     if (attendanceState.students && attendanceState.students.length > 0) {
       const newMap = new Map<number, StudentAttendance>();
       (attendanceState.students as unknown as StudentData[]).forEach((student: StudentData) => {
         const enrollmentId = student.enrollmentId as number;
+        
+        // Buscar si hay asistencia existente para este estudiante
+        const existingRecord = existingAttendance.get(enrollmentId);
+        
         if (!studentAttendance.has(enrollmentId)) {
           newMap.set(enrollmentId, {
             enrollmentId,
-            status: '',
-            isEarlyExit: false,
+            status: existingRecord?.statusId?.toString() || '',
+            isEarlyExit: existingRecord?.isEarlyExit || false,
           });
         }
       });
@@ -111,7 +209,7 @@ export function DailyRegistration() {
         setStudentAttendance(prev => new Map([...prev, ...newMap]));
       }
     }
-  }, [attendanceState.students, studentAttendance]);
+  }, [attendanceState.students, existingAttendance]);
 
   // Actualizar estado de un estudiante
   const handleStatusChange = useCallback(
@@ -192,6 +290,9 @@ export function DailyRegistration() {
         details: result as unknown as Record<string, unknown>,
       });
 
+      // Recargar datos consolidados después del registro exitoso
+      await reloadExistingAttendance();
+
       // Limpiar form después de 2 segundos
       setTimeout(() => {
         setStudentAttendance(new Map());
@@ -236,12 +337,59 @@ export function DailyRegistration() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="space-y-2">
-        <h3 className="text-lg font-semibold text-gray-900">Registro Diario de Asistencia</h3>
-        <p className="text-sm text-gray-600">
-          Selecciona el estado de asistencia para cada estudiante y guarda los cambios
-        </p>
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold text-gray-900">Registro Diario de Asistencia</h3>
+          <p className="text-sm text-gray-600">
+            Selecciona el estado de asistencia para cada estudiante y guarda los cambios
+          </p>
+        </div>
+        <Button
+          onClick={() => reloadExistingAttendance()}
+          disabled={isLoadingExisting || isRegistering}
+          variant="outline"
+          size="sm"
+          className="gap-2 whitespace-nowrap"
+        >
+          <RefreshCw className={`h-4 w-4 ${isLoadingExisting ? 'animate-spin' : ''}`} />
+          {isLoadingExisting ? 'Recargando...' : 'Recargar'}
+        </Button>
       </div>
+
+      {/* Validaciones Previas - Mostrar alertas de validaciones fallidas */}
+      {validationState.isComplete && validationState.results.length > 0 && (
+        <>
+          {/* Alert de éxito si todas pasaron */}
+          {validationState.results.every(r => r.passed) && (
+            <Alert className="border-green-200 bg-green-50">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-900">
+                ✅ Todas las validaciones previas pasaron. Listo para registrar.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Alertas de validaciones fallidas */}
+          {validationState.results.filter(r => !r.passed).map(result => (
+            <Alert key={result.id} className="border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-900">
+                <span className="font-medium">{result.name}:</span> {result.message || 'Validación fallida'}
+              </AlertDescription>
+            </Alert>
+          ))}
+        </>
+      )}
+
+      {/* Alerta si hay asistencias ya registradas */}
+      {existingAttendance.size > 0 && (
+        <Alert className="border-blue-200 bg-blue-50">
+          <CheckCircle2 className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-900">
+            ✅ <span className="font-medium">{existingAttendance.size} estudiante(s)</span> ya tienen asistencia registrada para esta fecha. Estos registros aparecen pre-cargados en la tabla.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Resultado del registro */}
       {registrationResult && (
@@ -265,14 +413,23 @@ export function DailyRegistration() {
         </Alert>
       )}
 
-      {/* Tabla de estudiantes */}
-      <StudentAttendanceTable
+      {/* Tabla de estudiantes con vista expandible */}
+      <ExpandableStudentAttendanceTable
         students={students}
         studentAttendance={studentAttendance}
         onStatusChange={handleStatusChange}
         onEarlyExitToggle={handleEarlyExitToggle}
         allowedStatuses={allowedStatuses}
         isLoading={isRegistering}
+        existingAttendance={existingAttendance}
+        consolidatedData={consolidatedData || undefined}
+      />
+
+      {/* Resumen de asistencias ya registradas */}
+      <ExistingAttendanceSummary
+        existingAttendance={existingAttendance}
+        allowedStatuses={allowedStatuses}
+        consolidatedData={consolidatedData || undefined}
       />
 
       {/* Resumen y botón de guardar */}

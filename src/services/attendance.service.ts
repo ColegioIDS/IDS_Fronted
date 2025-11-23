@@ -484,6 +484,25 @@ export const validateTeacherSchedules = async (
 };
 
 /**
+ * Validar horarios de sección por día
+ * GET /api/attendance/schedules/section/:sectionId/day/:dayOfWeek
+ */
+export const validateSectionSchedulesByDay = async (
+  sectionId: number,
+  dayOfWeek: number
+): Promise<Record<string, unknown>[]> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>[]>>(
+    `${BASE_URL}/schedules/section/${sectionId}/day/${dayOfWeek}`
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al validar horarios de la sección');
+  }
+
+  return response.data.data || [];
+};
+
+/**
  * Validar ausencia de maestro por fecha
  * GET /api/attendance/teacher-absence/:teacherId
  */
@@ -699,6 +718,104 @@ export const getSectionAttendanceByDateAndCycle = async (
   return response.data.data || {};
 };
 
+/**
+ * Obtener vista consolidada de asistencia por sección y fecha
+ * Agrupa asistencias por estudiante y curso con detalles de modificaciones
+ * GET /api/attendance/section/:sectionId/date/:date/consolidated-view
+ */
+export const getSectionAttendanceConsolidatedView = async (
+  sectionId: number,
+  date: string
+): Promise<Record<string, unknown>> => {
+  const response = await api.get<ApiResponse<Record<string, unknown>>>(
+    `${BASE_URL}/section/${sectionId}/date/${date}/consolidated-view`
+  );
+
+  if (!response.data.success) {
+    throw new Error(
+      response.data.message || 'Error al obtener vista consolidada de asistencia'
+    );
+  }
+
+  return response.data.data || {};
+};
+
+/**
+ * Obtener asistencias simples agrupadas por estudiante (para TAB 1)
+ * Versión simplificada del endpoint consolidado
+ * GET /api/attendance/section/:sectionId/date/:date/by-student
+ */
+export const getSectionAttendanceByStudent = async (
+  sectionId: number,
+  date: string
+): Promise<Record<string, unknown>> => {
+  // Usar el endpoint consolidado pero extraer solo lo necesario
+  const consolidatedData = await getSectionAttendanceConsolidatedView(sectionId, date);
+  
+  // Transformar a formato simple: { enrollmentId: statusId }
+  const consolidatedView = consolidatedData as unknown as {
+    students: Array<{ enrollmentId: number; courses: Array<{ currentStatus: string }> }>;
+  };
+  
+  const result: Record<number, { statusId: number; isEarlyExit: boolean }> = {};
+  
+  if (consolidatedView.students) {
+    consolidatedView.students.forEach(student => {
+      if (student.courses.length > 0) {
+        // Tomar el primer curso como referencia
+        result[student.enrollmentId] = {
+          statusId: 0, // Se obtendría del código de status real
+          isEarlyExit: false,
+        };
+      }
+    });
+  }
+  
+  return result;
+};
+
+/**
+ * Actualizar estado de asistencia (TAB 2 - OPCIÓN C SMART EDIT)
+ * PATCH /api/attendance/update-status
+ * 
+ * Permite cambiar el estado de asistencia de un estudiante en un curso específico
+ * con motivo del cambio registrado
+ */
+/**
+ * Actualizar estado de asistencia de una clase específica
+ * PATCH /api/attendance/class/:classAttendanceId
+ * 
+ * Parámetros:
+ * - classAttendanceId: ID del registro StudentClassAttendance
+ * - statusId: Nuevo ID de estado de asistencia
+ * - reason: Motivo del cambio
+ */
+export const updateAttendanceStatus = async (
+  classAttendanceId: number,
+  attendanceStatusId: number,
+  changeReason: string = 'Estado modificado'
+): Promise<{ success: boolean; message: string; data: unknown }> => {
+  try {
+    const response = await api.patch(`${BASE_URL}/class/${classAttendanceId}`, {
+      attendanceStatusId,
+      changeReason,
+    });
+
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Error al actualizar estado');
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('Error updating attendance status:', error);
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : 'Error al actualizar estado de asistencia'
+    );
+  }
+};
+
 // ====================================================================
 // UTILIDADES
 // ====================================================================
@@ -811,6 +928,9 @@ const attendanceService = {
   getSectionAttendanceByDate,
   getSectionAttendanceByDateAndCycle,
   getSectionAttendanceStats,
+  getSectionAttendanceConsolidatedView,
+  getSectionAttendanceByStudent,
+  updateAttendanceStatus,
   getJustifications,
   getTeacherCoursesByDate,
   getTodayCoursesForTeacher,
@@ -826,6 +946,7 @@ const attendanceService = {
   validateBimesterByDate,
   validateAcademicWeekByDate,
   validateTeacherSchedules,
+  validateSectionSchedulesByDay,
   validateTeacherAbsenceByDate,
   validateAttendanceCompleteness,
   getActiveAttendanceConfig,

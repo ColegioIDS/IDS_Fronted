@@ -14,11 +14,13 @@
 
 import { useState, useEffect } from 'react';
 import { AttendanceProvider, useAttendanceContext } from '@/context/AttendanceContext';
+import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { AttendanceFilters } from './AttendanceFilters';
 import { DailyRegistration } from './Tab1_DailyRegistration';
+import { UpdateAttendanceTabSmartEdit } from './Tab2_UpdateAttendance/UpdateAttendance-Smart';
 import { ValidationsChecker } from './Tab4_Validations';
 import { ATTENDANCE_TABS, ATTENDANCE_TAB_LABELS } from '@/constants/attendance.constants';
 
@@ -26,7 +28,8 @@ type AttendanceTabType = typeof ATTENDANCE_TABS[keyof typeof ATTENDANCE_TABS];
 
 function AttendancePageContentInner() {
   const { state: attendanceState } = useAttendanceContext();
-  const [activeTab, setActiveTab] = useState<AttendanceTabType>(ATTENDANCE_TABS.TAB_4);
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<AttendanceTabType>(ATTENDANCE_TABS.TAB_1);
 
   // Guardar tab activo en localStorage
   useEffect(() => {
@@ -86,13 +89,9 @@ function AttendancePageContentInner() {
           <DailyRegistration />
         </TabsContent>
 
-        {/* TAB 2: GESTIÓN POR CURSO */}
+        {/* TAB 2: ACTUALIZAR ASISTENCIA */}
         <TabsContent value={ATTENDANCE_TABS.TAB_2} className="space-y-6">
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <div className="text-center py-12">
-              <p className="text-gray-600">TAB 2 - Gestión por Curso (En construcción)</p>
-            </div>
-          </div>
+          <UpdateAttendanceTabSmartEdit />
         </TabsContent>
 
         {/* TAB 3: REPORTES */}
@@ -111,7 +110,7 @@ function AttendancePageContentInner() {
             bimesterId={attendanceState.selectedBimesterId || undefined}
             date={attendanceState.selectedDate}
             teacherId={undefined}
-            roleId={undefined}
+            roleId={user?.role?.id}
             sectionId={attendanceState.selectedSectionId || undefined}
             studentCount={attendanceState.students.length}
           />

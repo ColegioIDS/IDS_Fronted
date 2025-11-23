@@ -16,6 +16,8 @@ import { BimesterCheck } from './BimesterCheck';
 import { HolidayCheck } from './HolidayCheck';
 import { WeekCheck } from './WeekCheck';
 import { TeacherAbsenceCheck } from './TeacherAbsenceCheck';
+import { ScheduleCheck } from './ScheduleCheck';
+import { TodayScheduleCheck } from './TodayScheduleCheck';
 import { ConfigDisplay } from './ConfigDisplay';
 import { AllowedStatusesDisplay } from './AllowedStatusesDisplay';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -133,14 +135,27 @@ export function ValidationsChecker({
                   date={date}
                   isLoading={validationState.isValidating}
                 />
+                <TodayScheduleCheck
+                  date={date}
+                  sectionId={sectionId || undefined}
+                  isLoading={validationState.isValidating}
+                />
               </>
             )}
             {teacherId && (
-              <TeacherAbsenceCheck
-                teacherId={teacherId}
-                date={date}
-                isLoading={validationState.isValidating}
-              />
+              <>
+                <TeacherAbsenceCheck
+                  teacherId={teacherId}
+                  date={date}
+                  isLoading={validationState.isValidating}
+                />
+                <ScheduleCheck
+                  teacherId={teacherId}
+                  sectionId={sectionId || null}
+                  date={date}
+                  isLoading={validationState.isValidating}
+                />
+              </>
             )}
             <ConfigDisplay isLoading={validationState.isValidating} />
             {roleId && (
