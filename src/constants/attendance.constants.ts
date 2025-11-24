@@ -15,22 +15,19 @@
 export const ATTENDANCE_TABS = {
   TAB_1: 'daily-registration',
   TAB_2: 'course-management',
-  TAB_3: 'reports',
-  TAB_4: 'validations',
+  TAB_3: 'validations',
 } as const;
 
 export const ATTENDANCE_TAB_LABELS = {
   [ATTENDANCE_TABS.TAB_1]: 'Registro Diario',
   [ATTENDANCE_TABS.TAB_2]: 'Gestión por Curso',
-  [ATTENDANCE_TABS.TAB_3]: 'Reportes',
-  [ATTENDANCE_TABS.TAB_4]: 'Validaciones',
+  [ATTENDANCE_TABS.TAB_3]: 'Validaciones',
 } as const;
 
 export const ATTENDANCE_TAB_DESCRIPTIONS = {
   [ATTENDANCE_TABS.TAB_1]: 'Registro masivo de asistencia por sección y fecha',
   [ATTENDANCE_TABS.TAB_2]: 'Edición individual de registros por curso',
-  [ATTENDANCE_TABS.TAB_3]: 'Análisis y estadísticas de asistencia',
-  [ATTENDANCE_TABS.TAB_4]: 'Validaciones previas antes de registrar',
+  [ATTENDANCE_TABS.TAB_3]: 'Validaciones previas antes de registrar',
 } as const;
 
 // ====================================================================

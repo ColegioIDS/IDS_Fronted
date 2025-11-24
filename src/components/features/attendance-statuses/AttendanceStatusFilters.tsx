@@ -84,12 +84,12 @@ export const AttendanceStatusFilters = ({
   };
 
   return (
-    <BaseCard variant="default" className="space-y-4">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm p-5 space-y-5">
       {/* ============================================
           SECCIÓN: HEADER CON TÍTULO Y BOTÓN LIMPIAR
           ============================================ */}
-      <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
-        <h3 className={cn('text-sm font-semibold', ATTENDANCE_THEME.base.text.primary)}>
+      <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
           Filtros y Ordenamiento
         </h3>
         {hasActiveFilters && (
@@ -97,9 +97,9 @@ export const AttendanceStatusFilters = ({
             variant="outline"
             size="sm"
             onClick={handleReset}
-            className="gap-2"
+            className="gap-2 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5" />
             Limpiar filtros
           </Button>
         )}
@@ -108,30 +108,22 @@ export const AttendanceStatusFilters = ({
       {/* ============================================
           SECCIÓN: GRID DE FILTROS
           ============================================ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* ============================================
             FILTRO 1: BÚSQUEDA
             ============================================ */}
         <div className="md:col-span-2 lg:col-span-2">
-          <label className={cn('block text-xs font-medium mb-2', ATTENDANCE_THEME.base.text.primary)}>
+          <label className="block text-xs font-semibold mb-2 text-slate-700 dark:text-slate-300">
             Búsqueda
           </label>
           <div className="relative">
-            <Search className={cn(
-              'absolute left-3 top-2.5 w-4 h-4',
-              ATTENDANCE_THEME.base.text.muted
-            )} />
+            <Search className="absolute left-3 top-3 w-4 h-4 text-slate-500 dark:text-slate-400" />
             <Input
               type="text"
               placeholder="Código, nombre..."
               value={filters.search || ''}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className={cn(
-                'pl-9',
-                ATTENDANCE_THEME.base.bg.secondary,
-                ATTENDANCE_THEME.base.border.light,
-                'border'
-              )}
+              className="pl-9 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400"
             />
           </div>
         </div>
@@ -140,18 +132,14 @@ export const AttendanceStatusFilters = ({
             FILTRO 2: ESTADO (ACTIVO/INACTIVO)
             ============================================ */}
         <div>
-          <label className={cn('block text-xs font-medium mb-2', ATTENDANCE_THEME.base.text.primary)}>
+          <label className="block text-xs font-semibold mb-2 text-slate-700 dark:text-slate-300">
             Estado
           </label>
           <Select
             value={filters.isActive === undefined ? 'all' : filters.isActive ? 'true' : 'false'}
             onValueChange={handleActiveChange}
           >
-            <SelectTrigger className={cn(
-              ATTENDANCE_THEME.base.bg.secondary,
-              ATTENDANCE_THEME.base.border.light,
-              'border'
-            )}>
+            <SelectTrigger className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -166,18 +154,14 @@ export const AttendanceStatusFilters = ({
             FILTRO 3: TIPO (AUSENCIA/PRESENCIA)
             ============================================ */}
         <div>
-          <label className={cn('block text-xs font-medium mb-2', ATTENDANCE_THEME.base.text.primary)}>
+          <label className="block text-xs font-semibold mb-2 text-slate-700 dark:text-slate-300">
             Tipo
           </label>
           <Select
             value={filters.isNegative === undefined ? 'all' : filters.isNegative ? 'true' : 'false'}
             onValueChange={handleNegativeChange}
           >
-            <SelectTrigger className={cn(
-              ATTENDANCE_THEME.base.bg.secondary,
-              ATTENDANCE_THEME.base.border.light,
-              'border'
-            )}>
+            <SelectTrigger className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -192,18 +176,14 @@ export const AttendanceStatusFilters = ({
             FILTRO 4: JUSTIFICACIÓN REQUERIDA
             ============================================ */}
         <div>
-          <label className={cn('block text-xs font-medium mb-2', ATTENDANCE_THEME.base.text.primary)}>
+          <label className="block text-xs font-semibold mb-2 text-slate-700 dark:text-slate-300">
             Justificación
           </label>
           <Select
             value={filters.requiresJustification === undefined ? 'all' : filters.requiresJustification ? 'true' : 'false'}
             onValueChange={handleJustificationChange}
           >
-            <SelectTrigger className={cn(
-              ATTENDANCE_THEME.base.bg.secondary,
-              ATTENDANCE_THEME.base.border.light,
-              'border'
-            )}>
+            <SelectTrigger className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -218,18 +198,14 @@ export const AttendanceStatusFilters = ({
             FILTRO 5: ORDENAMIENTO
             ============================================ */}
         <div>
-          <label className={cn('block text-xs font-medium mb-2', ATTENDANCE_THEME.base.text.primary)}>
+          <label className="block text-xs font-semibold mb-2 text-slate-700 dark:text-slate-300">
             Ordenar
           </label>
           <Select
             value={`${filters.sortBy || 'order'}:${filters.sortOrder || 'asc'}`}
             onValueChange={handleSortChange}
           >
-            <SelectTrigger className={cn(
-              ATTENDANCE_THEME.base.bg.secondary,
-              ATTENDANCE_THEME.base.border.light,
-              'border'
-            )}>
+            <SelectTrigger className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -245,6 +221,6 @@ export const AttendanceStatusFilters = ({
           </Select>
         </div>
       </div>
-    </BaseCard>
+    </div>
   );
 };

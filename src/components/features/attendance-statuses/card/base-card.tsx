@@ -5,7 +5,6 @@
 
 import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { ATTENDANCE_THEME } from '@/constants/attendance-statuses-theme';
 
 interface BaseCardProps {
   children: ReactNode;
@@ -24,25 +23,22 @@ export const BaseCard = ({
 }: BaseCardProps) => {
   const variantStyles = {
     default: cn(
-      ATTENDANCE_THEME.base.bg.primary,
-      ATTENDANCE_THEME.base.border.light,
-      'border',
-      ATTENDANCE_THEME.radius.md,
-      ATTENDANCE_THEME.spacing.card.padding
+      'bg-white dark:bg-slate-900',
+      'border border-slate-200 dark:border-slate-800',
+      'rounded-xl',
+      'p-5'
     ),
     compact: cn(
-      ATTENDANCE_THEME.base.bg.primary,
-      ATTENDANCE_THEME.base.border.light,
-      'border',
-      ATTENDANCE_THEME.radius.md,
-      ATTENDANCE_THEME.spacing.card.compact
+      'bg-white dark:bg-slate-900',
+      'border border-slate-200 dark:border-slate-800',
+      'rounded-xl',
+      'p-3'
     ),
     elevated: cn(
-      ATTENDANCE_THEME.base.bg.primary,
-      ATTENDANCE_THEME.base.border.light,
-      'border shadow-lg',
-      ATTENDANCE_THEME.radius.md,
-      ATTENDANCE_THEME.spacing.card.padding
+      'bg-white dark:bg-slate-900',
+      'border border-slate-200 dark:border-slate-800',
+      'rounded-xl shadow-lg',
+      'p-5'
     ),
   };
 
@@ -50,7 +46,11 @@ export const BaseCard = ({
     <div
       className={cn(
         variantStyles[variant],
-        isHoverable && cn(ATTENDANCE_THEME.base.bg.hover, ATTENDANCE_THEME.transition.fast),
+        isHoverable && cn(
+          'transition-all duration-300',
+          'hover:shadow-md dark:hover:shadow-lg',
+          'hover:border-slate-300 dark:hover:border-slate-700'
+        ),
         isClickable && 'cursor-pointer',
         className
       )}

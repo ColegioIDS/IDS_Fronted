@@ -1,4 +1,3 @@
-```typescript
 // src/components/features/attendance-statuses/AttendanceStatusesPageContent.tsx
 'use client';
 
@@ -136,14 +135,14 @@ export const AttendanceStatusesPageContent = () => {
   // ============================================
   if (!canReadStatuses) {
     return (
-      <Card className="border-destructive/50 bg-destructive/5">
+      <Card className="border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20">
         <CardContent className="flex items-center gap-4 p-6">
-          <div className="p-3 rounded-full bg-destructive/10 text-destructive">
+          <div className="p-3 rounded-lg bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400">
             <AlertCircle className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-semibold text-destructive">Acceso Denegado</h3>
-            <p className="text-muted-foreground">
+            <h3 className="font-semibold text-red-700 dark:text-red-400">Acceso Denegado</h3>
+            <p className="text-red-600 dark:text-red-400/80 text-sm">
               No tienes permisos para ver los estados de asistencia
             </p>
           </div>
@@ -157,13 +156,16 @@ export const AttendanceStatusesPageContent = () => {
       {/* ============================================
           SECCIÓN: HEADER
           ============================================ */}
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pb-6 border-b border-border/40">
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          <div className="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 text-xs font-semibold rounded-full mb-3">
+            Configuración de Asistencia
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
             Estados de Asistencia
           </h1>
-          <p className="mt-2 text-muted-foreground text-lg">
-            Configura los estados disponibles para el registro diario.
+          <p className="mt-3 text-slate-600 dark:text-slate-400 text-base">
+            Configura los estados disponibles para el registro diario de asistencia.
           </p>
         </div>
 
@@ -174,7 +176,7 @@ export const AttendanceStatusesPageContent = () => {
               setEditingStatus(undefined);
               setViewMode('form');
             }}
-            className="shadow-sm hover:shadow-md transition-all"
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
             size="lg"
           >
             <Plus className="w-5 h-5 mr-2" />
@@ -190,6 +192,7 @@ export const AttendanceStatusesPageContent = () => {
               setViewMode('list');
               setEditingStatus(undefined);
             }}
+            className="border-slate-200 dark:border-slate-700"
           >
             Volver a Lista
           </Button>
@@ -223,14 +226,16 @@ export const AttendanceStatusesPageContent = () => {
             <AttendanceStatusFilters filters={query} onFilterChange={updateQuery} />
             
             <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)} className="w-full sm:w-auto">
-              <TabsList className="grid w-full grid-cols-2 sm:w-[200px]">
-                <TabsTrigger value="list" className="gap-2">
+              <TabsList className="grid w-full grid-cols-2 sm:w-auto bg-slate-100 dark:bg-slate-800">
+                <TabsTrigger value="list" className="gap-2 text-xs sm:text-sm">
                   <List className="w-4 h-4" />
-                  Lista
+                  <span className="hidden sm:inline">Lista</span>
+                  <span className="sm:hidden">Lista</span>
                 </TabsTrigger>
-                <TabsTrigger value="grid" className="gap-2">
+                <TabsTrigger value="grid" className="gap-2 text-xs sm:text-sm">
                   <Grid3x3 className="w-4 h-4" />
-                  Grid
+                  <span className="hidden sm:inline">Grid</span>
+                  <span className="sm:hidden">Grid</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -238,12 +243,12 @@ export const AttendanceStatusesPageContent = () => {
 
           {/* ESTADO DE ERROR */}
           {error && (
-            <Card className="border-destructive/50 bg-destructive/5">
+            <Card className="border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20">
               <CardContent className="flex items-center gap-4 p-4">
-                <AlertCircle className="w-5 h-5 text-destructive" />
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold text-destructive">Error al cargar</h3>
-                  <p className="text-sm text-muted-foreground">{error}</p>
+                  <h3 className="font-semibold text-red-700 dark:text-red-400">Error al cargar</h3>
+                  <p className="text-sm text-red-600 dark:text-red-400/80">{error}</p>
                 </div>
               </CardContent>
             </Card>
@@ -281,21 +286,21 @@ export const AttendanceStatusesPageContent = () => {
                   {isLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-48 rounded-xl bg-muted/50 animate-pulse" />
+                        <div key={i} className="h-56 rounded-xl bg-slate-200 dark:bg-slate-800 animate-pulse" />
                       ))}
                     </div>
                   ) : statuses.length === 0 ? (
-                    <Card className="border-dashed">
+                    <Card className="border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30">
                       <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
-                        <div className="p-4 rounded-full bg-primary/5 mb-4">
-                          <ShieldCheck className="h-10 w-10 text-primary/50" />
+                        <div className="p-4 rounded-xl bg-blue-100 dark:bg-blue-950/30 mb-4">
+                          <ShieldCheck className="h-10 w-10 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <h3 className="text-lg font-semibold mb-2">No hay estados registrados</h3>
-                        <p className="text-muted-foreground max-w-sm mb-6">
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">No hay estados registrados</h3>
+                        <p className="text-slate-600 dark:text-slate-400 max-w-sm mb-6">
                           Comienza creando los estados que utilizarás para registrar la asistencia.
                         </p>
                         {canCreateStatus && (
-                          <Button onClick={() => setViewMode('form')}>
+                          <Button onClick={() => setViewMode('form')} className="bg-blue-600 hover:bg-blue-700 text-white">
                             <Plus className="h-4 w-4 mr-2" />
                             Crear primer estado
                           </Button>
@@ -328,8 +333,8 @@ export const AttendanceStatusesPageContent = () => {
 
           {/* PAGINACIÓN */}
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between border-t pt-4">
-              <p className="text-sm text-muted-foreground">
+            <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 pt-6">
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
                 Página {pagination.page} de {pagination.totalPages}
               </p>
               <div className="flex gap-2">
@@ -338,6 +343,7 @@ export const AttendanceStatusesPageContent = () => {
                   size="sm"
                   onClick={() => updateQuery({ page: Math.max(1, (pagination.page || 1) - 1) })}
                   disabled={pagination.page === 1}
+                  className="border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
                 >
                   Anterior
                 </Button>
@@ -346,6 +352,7 @@ export const AttendanceStatusesPageContent = () => {
                   size="sm"
                   onClick={() => updateQuery({ page: Math.min(pagination.totalPages, (pagination.page || 1) + 1) })}
                   disabled={pagination.page === pagination.totalPages}
+                  className="border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
                 >
                   Siguiente
                 </Button>
@@ -369,4 +376,3 @@ export const AttendanceStatusesPageContent = () => {
     </div>
   );
 };
-```

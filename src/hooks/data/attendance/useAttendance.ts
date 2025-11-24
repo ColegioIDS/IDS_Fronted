@@ -14,6 +14,8 @@
 
 'use client';
 
+import { getTodayInConfiguredTimezone } from '@/config/timezone';
+
 import { useState, useCallback, useEffect } from 'react';
 import { AttendanceRecord } from '@/types/attendance.types';
 import { parseApiError, ApiErrorResponse } from '@/middleware/api-handler';
@@ -89,7 +91,7 @@ export function useAttendance(): [AttendanceState, AttendanceActions] {
     selectedCycleId: null,
     selectedBimesterId: null,
     selectedSectionId: null,
-    selectedDate: new Date().toISOString().split('T')[0],
+    selectedDate: getTodayInConfiguredTimezone(),
     activeCycle: null,
     students: [],
     registrations: new Map(),
@@ -278,7 +280,7 @@ export function useAttendance(): [AttendanceState, AttendanceActions] {
       selectedCycleId: null,
       selectedBimesterId: null,
       selectedSectionId: null,
-      selectedDate: new Date().toISOString().split('T')[0],
+      selectedDate: getTodayInConfiguredTimezone(),
       activeCycle: null,
       students: [],
       registrations: new Map(),

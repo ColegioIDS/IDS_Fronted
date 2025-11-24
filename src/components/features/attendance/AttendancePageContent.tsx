@@ -17,7 +17,7 @@ import { AttendanceProvider, useAttendanceContext } from '@/context/AttendanceCo
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, BookOpen, User, Calendar, Edit3, BarChart3, CheckCircle } from 'lucide-react';
+import { AlertCircle, BookOpen, User, Calendar, Edit3, CheckCircle } from 'lucide-react';
 import { AttendanceFilters } from './AttendanceFilters';
 import { DailyRegistration } from './Tab1_DailyRegistration';
 import { UpdateAttendanceTabSmartEdit } from './Tab2_UpdateAttendance/UpdateAttendance-Smart';
@@ -88,7 +88,7 @@ function AttendancePageContentInner() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 gap-2 rounded-xl bg-gray-100 p-2 dark:bg-gray-800">
+        <TabsList className="grid w-full grid-cols-3 gap-2 rounded-xl bg-gray-100 p-2 dark:bg-gray-800">
           <TabsTrigger
             value={ATTENDANCE_TABS.TAB_1}
             className="data-[state=active]:bg-green-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
@@ -105,17 +105,10 @@ function AttendancePageContentInner() {
           </TabsTrigger>
           <TabsTrigger
             value={ATTENDANCE_TABS.TAB_3}
-            className="data-[state=active]:bg-amber-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
-          >
-            <BarChart3 className="mr-2 h-4 w-4" />
-            {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_3]}
-          </TabsTrigger>
-          <TabsTrigger
-            value={ATTENDANCE_TABS.TAB_4}
             className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
           >
             <CheckCircle className="mr-2 h-4 w-4" />
-            {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_4]}
+            {ATTENDANCE_TAB_LABELS[ATTENDANCE_TABS.TAB_3]}
           </TabsTrigger>
         </TabsList>
 
@@ -129,29 +122,8 @@ function AttendancePageContentInner() {
           <UpdateAttendanceTabSmartEdit />
         </TabsContent>
 
-        {/* TAB 3: REPORTES */}
+        {/* TAB 3: VALIDACIONES */}
         <TabsContent value={ATTENDANCE_TABS.TAB_3} className="space-y-6">
-          <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-12 text-center shadow-lg dark:border-amber-800 dark:bg-amber-950/20">
-            <div className="mx-auto flex max-w-md flex-col items-center space-y-4">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-amber-600 text-white shadow-lg">
-                <BarChart3 className="h-12 w-12" />
-              </div>
-              <h3 className="text-2xl font-bold text-amber-900 dark:text-amber-100">
-                Reportes y Estadísticas
-              </h3>
-              <p className="text-base text-amber-700 dark:text-amber-300">
-                Esta sección está en construcción
-              </p>
-              <div className="inline-flex items-center gap-2 rounded-lg border-2 border-amber-600 bg-amber-100 px-6 py-2 text-sm font-semibold text-amber-900 dark:border-amber-500 dark:bg-amber-900 dark:text-amber-100">
-                <Calendar className="h-4 w-4" />
-                Próximamente
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* TAB 4: VALIDACIONES */}
-        <TabsContent value={ATTENDANCE_TABS.TAB_4} className="space-y-6">
           <ValidationsChecker
             cycleId={attendanceState.selectedCycleId}
             bimesterId={attendanceState.selectedBimesterId || undefined}
