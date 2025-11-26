@@ -1,8 +1,13 @@
-// src/app/(admin)/enrollments/page.tsx
 'use client';
 
-import EnrollmentsContent from '@/components/enrollments/EnrollmentsContent';
+import { EnrollmentsPageContent } from '@/components/features/enrollments';
 
 export default function EnrollmentPage() {
-  return <EnrollmentsContent />;
+  return (
+    <div className="min-h-screen bg-white dark:bg-slate-950">
+      <div className="container mx-auto px-4 py-8">
+        <EnrollmentsPageContent />
+      </div>
+    </div>
+  );
 }

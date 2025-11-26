@@ -1,16 +1,24 @@
 // src/app/layout.tsx
+
 import { Outfit } from "next/font/google";
 import "./globals.css";
-import "react-toastify/dist/ReactToastify.css";
 
 import { SidebarProvider } from "@/context/SidebarContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
-import Toaster from "@/components/common/Toaster"; // Importa el nuevo componente
+import { QueryProvider } from "@/providers/QueryProvider";
 
 const outfit = Outfit({
   subsets: ["latin"],
 });
+
+export const metadata = {
+  title: "Sistema de Gestión Académica",
+  description: "Plataforma de gestión de ciclos, bimestres y calificaciones",
+  other: {
+    google: "notranslate", // ← Previene que Google Translate traduzca
+  },
+};
 
 export default function RootLayout({
   children,
@@ -18,16 +26,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-<body className={`${outfit.className} dark:bg-gray-900 overflow-x-hidden`}>
-        <ThemeProvider>
-          <AuthProvider>
-            <SidebarProvider>
-              {children}
-              <Toaster /> {/* Usa el componente cliente aquí */}
-            </SidebarProvider>
-          </AuthProvider>
-        </ThemeProvider>
+    <html 
+      lang="es" 
+      suppressHydrationWarning
+    >
+      <body 
+        className={`${outfit.className} dark:bg-gray-900 overflow-x-hidden`}
+        suppressHydrationWarning
+      >
+          <QueryProvider>
+            <ThemeProvider>
+              <AuthProvider>
+                <SidebarProvider>
+                  {children}
+                </SidebarProvider>
+              </AuthProvider>
+            </ThemeProvider>
+          </QueryProvider>
       </body>
     </html>
   );

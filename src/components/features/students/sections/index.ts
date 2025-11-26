@@ -1,0 +1,10 @@
+export { PersonalDataSection } from './PersonalDataSection';
+export { EnrollmentSection } from './EnrollmentSection';
+export { ParentsDataSection } from './ParentsDataSection';
+export { MedicalInfoSection } from './MedicalInfoSection';
+export { AcademicDataSection } from './AcademicDataSection';
+export { EmergencyInfoSection } from './EmergencyInfoSection';
+export { AuthorizedPersonsSection } from './AuthorizedPersonsSection';
+export { BusServiceSection } from './BusServiceSection';
+export { SiblingsSection } from './SiblingsSection';
+export { SponsorshipPreferencesSection } from './SponsorshipPreferencesSection';

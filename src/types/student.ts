@@ -1,6 +1,6 @@
 //src\types\student.ts
 
-export type EnrollmentStatus = 'active' | 'inactive' | 'graduated' | 'transferred';
+export type EnrollmentStatus = 'ACTIVE' | 'INACTIVE' | 'GRADUATED' | 'TRANSFERRED';
 export type Gender = 'Masculino' | 'Femenino' | 'Otro' | null;
 export type RelationshipType = 'Madre' | 'Padre' | 'Tutor' | 'Abuelo' | 'Tío' | 'Otro';
 

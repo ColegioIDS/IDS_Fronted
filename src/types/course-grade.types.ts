@@ -1,6 +1,6 @@
 //src/types/course-grade.types.ts
 import type { Schedule, DayOfWeek, ScheduleFormValues } from "@/types/schedules";
-import type { User as Teacher } from "@/types/user";
+import type { User as Teacher } from "@/types/users.types";
 import type { Course } from "@/types/courses";
 import type { Grade } from "./grades";
 

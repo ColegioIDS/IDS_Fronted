@@ -88,7 +88,7 @@ const navItems: NavItem[] = [
     subItems: [
       {
         name: "Ciclos Escolares",
-        path: "/cycle",
+        path: "/school-cycles",
         pro: false,
         requiredPermission: { module: 'school-cycle', action: 'read' }
       },
@@ -121,16 +121,14 @@ const navItems: NavItem[] = [
     // Mostrar si tiene AL MENOS UNO de estos permisos
     requiredAnyPermissions: [
       { module: 'user', action: 'read' },
-      { module: 'user', action: 'create' }
     ],
 
     subItems: [
       {
-        name: "Lista de Usuarios",
-        path: "/users/list",
+        name: "Gestionar Usuarios",
+        path: "/users",
         requiredPermission: { module: 'user', action: 'read' }
       },
-      { name: "Crear Usuario", path: "/users/create", requiredPermission: { module: 'user', action: 'create' } },
 
     ]
 
@@ -142,7 +140,8 @@ const navItems: NavItem[] = [
     name: "Grados & Secciones",
     requiredAnyPermissions: [
       { module: 'grade', action: 'read' },
-      { module: 'section', action: 'read' }
+      { module: 'section', action: 'read' },
+      { module: 'grade-cycle', action: 'read' }
     ],
     subItems: [
       {
@@ -153,7 +152,9 @@ const navItems: NavItem[] = [
         name: "Secciones", path: "/sections",
         requiredPermission: { module: 'section', action: 'read' }
       },
-      { name: "Asignacion Grados - Ciclos", path: "/grade-cycle" },
+      { name: "Asignacion Grados - Ciclos", path: "/grade-cycles",
+        requiredPermission: { module: 'grade-cycle', action: 'read' }
+      },
 
     ]
 
@@ -206,7 +207,7 @@ const navItems: NavItem[] = [
         requiredPermission: { module: 'course-grade', action: 'read' }
       },
       {
-        name: "Cursos Maestros", path: "/course-teachers",
+        name: "Cursos Maestros", path: "/course-assignment",
         requiredPermission: { module: 'course-assignment', action: 'read' }
       },
       {
@@ -218,20 +219,16 @@ const navItems: NavItem[] = [
   {
     icon: <ClipboardList className="w-5 h-5" />,
     name: "Matrículas",
-    requiredAnyPermissions: [
-      { module: 'enrollment', action: 'read' },
-      { module: 'enrollment', action: 'create' }
-    ],
+    requiredPermission: { module: 'enrollments', action: 'read' },
     subItems: [
-      { name: "Lista de Matrículas", path: "/enrollments/list", pro: false, requiredPermission: { module: 'enrollment', action: 'read' } },
-      { name: "Crear Matrícula", path: "/enrollments/create", pro: false, requiredPermission: { module: 'enrollment', action: 'create' } },
+      { name: "Matrículas", path: "/enrollments", requiredPermission: { module: 'enrollments', action: 'read' } },
     ]
   },
   {
     icon: <CalendarCheck2 className="w-5 h-5" />,
     name: "Asistencia",
-  requiredPermission: { module: 'attendance', action: 'read' },
-    path: "/attendance", 
+    path: "/attendance"
+
   }
 
 ];

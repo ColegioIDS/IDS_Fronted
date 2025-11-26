@@ -1,5 +1,6 @@
+// src/services/authService.ts
 import { api } from '@/config/api';  // ✅ Cambio aquí
-import { UserPermissionsResponse } from '@/types/permissions'; 
+import { UserPermissionsResponse } from '@/types/permissions.types'; 
 
 export interface LoginCredentials {
   dpi?: string;
@@ -44,10 +45,17 @@ export const logout = async () => {
 export const verifySession = async () => {
   try {
     const response = await api.get('/api/auth/verify');
+    
+    // ✅ Verificar que la respuesta fue exitosa
+    if (!response.data.success || !response.data.data) {
+      console.warn('❌ Respuesta no exitosa:', response.data);
+      throw new Error('Sesión inválida');
+    }
+    
     const user = response.data.data;
     
     if (!user?.id) {
-      throw new Error('Respuesta de sesión inválida');
+      throw new Error('Respuesta de sesión inválida: sin ID de usuario');
     }
     
     console.log("✅ Session verified:", user);

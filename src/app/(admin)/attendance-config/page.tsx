@@ -2,42 +2,34 @@
 
 'use client';
 
-import dynamic from 'next/dynamic';
 import Breadcrumb from '@/components/common/Breadcrumb';
-import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
-
-const AttendanceConfigWrapper = dynamic(
-  () => import('@/components/attendance-config/AttendanceConfigWrapper'),
-  {
-    loading: () => <ProfileSkeleton type="meta" />,
-    ssr: false,
-  }
-);
+import { AttendanceConfigPage } from '@/components/features/attendance-config';
 
 /**
  * Página de Configuración de Asistencia
- * Ruta: /attendance-config
+ * Ruta: /admin/attendance-config
  * 
  * Características:
- * - Ver configuración activa
- * - Editar configuración
- * - Crear nuevas configuraciones
- * - Listar todas las configuraciones
- * - Activar/desactivar configuraciones
- * - Soporta dark mode
+ * - Ver configuración activa del sistema
+ * - Editar parámetros de asistencia
+ * - Restaurar a valores por defecto
+ * - Eliminar configuración
+ * - Validaciones en tiempo real
+ * - Soporte para dark mode
+ * - Tema de colores consistente con attendance
  */
-export default function AttendanceConfigPage() {
+export default function AdminAttendanceConfigPage() {
   return (
     <div className="space-y-6">
       <Breadcrumb
-        pageTitle="Configuración de Asistencia"
+        pageTitle=""
         items={[
-          { label: "Inicio", href: "/dashboard" },
+          { label: "Administración", href: "/admin" },
           { label: "Configuración", href: "#" },
           { label: "Asistencia", href: "#" },
         ]}
       />
-      <AttendanceConfigWrapper />
+      <AttendanceConfigPage />
     </div>
   );
 }

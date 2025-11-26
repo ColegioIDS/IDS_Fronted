@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { verifySession, logout as apiLogout, getMyPermissions } from '@/services/authService';
-import { UserPermission } from '@/types/permissions';
+import { UserPermission } from '@/types/permissions.types';
 import { usePathname, useRouter } from 'next/navigation';
 
 // ✅ ACTUALIZADO: Role con permissions
@@ -96,7 +96,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
- const checkAuth = useCallback(
+  const checkAuth = useCallback(
   async (force = false) => {
     // Si ya verificamos recientemente, no volver a hacerlo
     if (!force && user && Date.now() - lastCheck < 5 * 60 * 1000) {
@@ -107,6 +107,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
 
     try {
+      console.log('🔐 Verificando autenticación...');
       const userData = await verifySession();
       console.log("✅ Usuario verificado:", userData);
       setUser(userData);
@@ -118,16 +119,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setPermissions([]);
       setRole(null);
       setLastCheck(0);
+      
+      // ✅ Limpiar cookie inválida si existe
+      if (typeof window !== 'undefined') {
+        document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      }
     } finally {
       setIsLoading(false);
     }
   },
   [user, lastCheck, loadPermissions]
-);
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
+);  useEffect(() => {
+    // ✅ IMPORTANTE: Ejecutar verificación al montar
+    checkAuth(true); // force = true para verificar siempre al inicio
+  }, []); // Ejecutar solo una vez
 
   const login = useCallback(
     async (userData: User) => {

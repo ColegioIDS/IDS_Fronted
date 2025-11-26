@@ -174,7 +174,7 @@ export const enrollmentFormSchema = enrollmentSchema.superRefine(async (data, ct
   /*
   try {
     const existingEnrollment = await checkExistingEnrollment(data.studentId, data.cycleId);
-    if (existingEnrollment && existingEnrollment.status === 'active') {
+    if (existingEnrollment && existingEnrollment.status === 'ACTIVE') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "El estudiante ya tiene una matrícula activa en este ciclo",

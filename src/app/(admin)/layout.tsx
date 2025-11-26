@@ -1,3 +1,4 @@
+//src\app\(admin)\layout.tsx
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
@@ -29,8 +30,8 @@ export default function AdminLayout({
   const mainContentMargin = isMobileOpen
     ? "ml-0"
     : isExpanded || isHovered
-    ? "lg:ml-[290px]"
-    : "lg:ml-[90px]";
+      ? "lg:ml-[290px]"
+      : "lg:ml-[90px]";
 
   // ⚠️ IMPORTANTE: Mostrar loading mientras se verifica
   if (isLoading) {
@@ -72,13 +73,14 @@ export default function AdminLayout({
         closeButton={true}
         toastOptions={{
           style: {
-            background: "hsl(var(--background))",
-            color: "hsl(var(--foreground))",
-            border: "1px solid hsl(var(--border))",
+            backgroundColor: "rgb(24, 24, 27)", // fondo sólido dark
+            color: "#fff",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
           },
-          className: "sonner-toast",
+          className: "shadow-xl rounded-lg",
           duration: 4000,
         }}
+
         style={{ zIndex: 9999 }}
       />
     </div>

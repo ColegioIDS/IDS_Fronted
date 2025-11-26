@@ -1,0 +1,3277 @@
+[
+  {
+    "name": "ids-fronted",
+    "type": "directory",
+    "children": [
+      {
+        "name": ".claude",
+        "type": "directory",
+        "children": []
+      },
+      {
+        "name": ".env",
+        "type": "file"
+      },
+      {
+        "name": ".eslintrc.json",
+        "type": "file"
+      },
+      {
+        "name": ".gitignore",
+        "type": "file"
+      },
+      {
+        "name": ".idea",
+        "type": "directory",
+        "children": [
+          {
+            "name": ".gitignore",
+            "type": "file"
+          },
+          {
+            "name": "free-nextjs-admin-dashboard.iml",
+            "type": "file"
+          },
+          {
+            "name": "modules.xml",
+            "type": "file"
+          },
+          {
+            "name": "prettier.xml",
+            "type": "file"
+          },
+          {
+            "name": "vcs.xml",
+            "type": "file"
+          }
+        ]
+      },
+      {
+        "name": "banner.png",
+        "type": "file"
+      },
+      {
+        "name": "components.json",
+        "type": "file"
+      },
+      {
+        "name": "eslint.config.mjs",
+        "type": "file"
+      },
+      {
+        "name": "generate-project-structure.js",
+        "type": "file"
+      },
+      {
+        "name": "jsvectormap.d.ts",
+        "type": "file"
+      },
+      {
+        "name": "LICENSE",
+        "type": "file"
+      },
+      {
+        "name": "next-env.d.ts",
+        "type": "file"
+      },
+      {
+        "name": "next.config.ts",
+        "type": "file"
+      },
+      {
+        "name": "package-lock.json",
+        "type": "file"
+      },
+      {
+        "name": "package.json",
+        "type": "file"
+      },
+      {
+        "name": "postcss.config.js",
+        "type": "file"
+      },
+      {
+        "name": "prettier.config.js",
+        "type": "file"
+      },
+      {
+        "name": "project-structure.json",
+        "type": "file"
+      },
+      {
+        "name": "project-structure.md",
+        "type": "file"
+      },
+      {
+        "name": "README.md",
+        "type": "file"
+      },
+      {
+        "name": "src",
+        "type": "directory",
+        "children": [
+          {
+            "name": "actions",
+            "type": "directory",
+            "children": [
+              {
+                "name": "schedule-actions.ts",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "api",
+            "type": "directory",
+            "children": [
+              {
+                "name": "auth",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "check",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "route.ts",
+                        "type": "file"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "app",
+            "type": "directory",
+            "children": [
+              {
+                "name": "(admin)",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "(Roles-Permisos)",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "permissions",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "roles",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "name": "(ui-elements)",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "alerts",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "avatars",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "badge",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "buttons",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "images",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "modals",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "videos",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "name": "academic-weeks",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "attendance",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "attendance-config",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "bimesters",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "course-grades",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "assign",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "[gradeId]",
+                            "type": "directory",
+                            "children": [
+                              {
+                                "name": "page.tsx",
+                                "type": "file"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "course-teachers",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "courses",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "cycle",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "dashboard",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "enrollments",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "erica",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "erica-history",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "erica-topics",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "grade-cycle",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "grades",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "holiday",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "layout.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "layout.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "schedules",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "sections",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "page.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "students",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "create",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "edit",
+                        "type": "directory",
+                        "children": []
+                      },
+                      {
+                        "name": "list",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "profile",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "[id]",
+                            "type": "directory",
+                            "children": [
+                              {
+                                "name": "page.tsx",
+                                "type": "file"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "name": "users",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "create",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "edit",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "[id]",
+                            "type": "directory",
+                            "children": [
+                              {
+                                "name": "page.tsx",
+                                "type": "file"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "name": "list",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          },
+                          {
+                            "name": "UserListContent.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "(full-width-pages)",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "(auth)",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "layout.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "signin",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "signup",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "name": "(error-pages)",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "error-404",
+                        "type": "directory",
+                        "children": [
+                          {
+                            "name": "page.tsx",
+                            "type": "file"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "name": "layout.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "favicon.ico",
+                "type": "file"
+              },
+              {
+                "name": "globals.css",
+                "type": "file"
+              },
+              {
+                "name": "layout.tsx",
+                "type": "file"
+              },
+              {
+                "name": "not-found.tsx",
+                "type": "file"
+              },
+              {
+                "name": "page.tsx",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "components",
+            "type": "directory",
+            "children": [
+              {
+                "name": "academic-weeks",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "academic-week-card.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "academic-weeks.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "create-week-dialog.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "current-week-card.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "delete-week-dialog.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "edit-week-dialog.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "week-filters.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "week-stats.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "Alerts",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "ErrorAlert.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "attendance",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "AttendanceManager.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "AttendanceManagerWrapper.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "courses",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "CourseSelector.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "header",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "AttendanceHeader.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "save",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "SaveButton.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "section",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "SectionCard.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "states",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "EmptyAndLoadingStates.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "table",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "AttendanceTable.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "attendance-config",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "AttendanceConfigCard.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "AttendanceConfigDialogs.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "AttendanceConfigWrapper.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "auth",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "SignInForm.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "SignUpForm.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "bimester",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "BimesterDialog.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "bimesters-table.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "content.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "calendar",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "Calendar.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "charts",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "bar",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "BarChartOne.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "line",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "LineChartOne.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "common",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "Breadcrumb.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "ChartTab.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "ComponentCard.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "GridShape.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "LoadingSpinner.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "PageBreadCrumb.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "ProtectedContent.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "ThemeToggleButton.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "ThemeTogglerTwo.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "Toaster.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "course-assignments",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "components",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "assignment-summary.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "bulk-save-actions.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "course-teacher-table.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "grade-section-selector.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "course-assignments-content.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "forms",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "assignment-form.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "bulk-assignment-form.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "course-grades",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "BatchActionsBar.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "CourseAssignmentTable.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "CourseGradeFilters.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "CourseGradeForm.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "CourseGradeManager.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "CourseGradeTable.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "courses",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "CourseCard.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "CourseForm.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "CoursesContent.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "CoursesList.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "CourseTableRow.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "custom",
+                "type": "directory",
+                "children": []
+              },
+              {
+                "name": "cycles",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "CycleForm.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "datatable.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "SchoolCycleTable.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "ecommerce",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "CountryMap.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "DemographicCard.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "EcommerceMetrics.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "MonthlySalesChart.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "MonthlyTarget.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "RecentOrders.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "StatisticsChart.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "enrollments",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "EnrollmentsContent.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "erica-evaluations",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "common",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "loading-states.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "context-info",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "academic-context-card.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "teacher-course-info.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "topic-info-card.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "erica-evaluations-content.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "evaluation-grid",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "compact-table-view.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "evaluation-cell.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "evaluation-copy-tool.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "evaluation-dropdown.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "evaluation-grid-header.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "evaluation-grid-row.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "evaluation-grid.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "evaluation-patterns.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "grid-stats.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "scale-selector.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "selection-flow",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "course-selection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "cycle-selection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "grade-selection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "section-selection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "selection-breadcrumbs.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "teacher-selection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "topic-selection.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "utils",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "data-formatters.ts",
+                        "type": "file"
+                      },
+                      {
+                        "name": "evaluation-helpers.ts",
+                        "type": "file"
+                      },
+                      {
+                        "name": "validation-helpers.ts",
+                        "type": "file"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "erica-history",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "erica-content.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "qna-grid",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "qna-grid-headers.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "qna-grid-main.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "qna-grid-stats.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "qna-grid-student-row.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "qna-grid.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "selection-flow",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "bimester-selection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "course-selection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "grade-selection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "section-selection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "teacher-selection.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "shared",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "academic-context-info.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "erica-topics",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "columns.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "erica-topics-content.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "erica-topics-form.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "erica-topics-table.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "errors",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "ErrorManager.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "example",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "ModalExample",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "DefaultModal.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "FormInModal.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "FullScreenModal.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "ModalBasedAlerts.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "VerticallyCenteredModal.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "form",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "AvatarUploader",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "AvatarUploader.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "date-picker.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "form-elements",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "CheckboxComponents.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "DefaultInputs.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "DropZone.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "FileInputExample.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "InputGroup.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "InputStates.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "RadioButtons.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "SelectInputs.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "TextAreaInput.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "ToggleSwitch.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "Form.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "group-input",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "PhoneInput.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "input",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "Checkbox.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "FileInput.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "IconInput.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "InputField.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "Radio.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "RadioSm.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "TextArea.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "Label.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "MultiSelect.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "Select.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "switch",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "Switch.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "UploadImage",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "image-upload.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "grade-cycle",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "components",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "configuration-summary.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "cycle-info-card.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "cycle-selection-list.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "empty-state.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "grade-selection-card.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "grade-summary-card.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "loading-skeleton.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "step-indicator.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "forms",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "create-grade-form.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "grade-cycle-content.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "grade-cycle-dashboard.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "steps",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "configure-grades-step.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "create-cycle-step.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "link-grade-cycles-step.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "wizard-summary.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "grades",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "GradeFilters.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "GradeForm.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "GradeFormDialog.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "GradesContent.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "GradeStats.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "GradeTable.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "header",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "NotificationDropdown.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "UserDropdown.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "holidays",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "ContentModalForm.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "ContentPage.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "holiday-calendar.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "holiday-filters.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "HolidayForm.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "HolidayTable.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "loading",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "AllLoading.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "loading.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "navigation",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "ProtectedNavItem.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "noresult",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "NoData.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "permissions",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "PermissionCard.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "PermissionDetailDialog.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "PermissionModuleCard.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "PermissionModuleDetailDialog.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "PermissionsContent.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "roles",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "RoleCardImproved.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "RoleDetailDialog.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "RoleForm.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "RolesContent.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "RolesList.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "RolesTable.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "schedules",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "calendar",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "DroppableTimeSlot.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "ScheduleConfigModal.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "ScheduleGrid.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "ScheduleHeader.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "ScheduleSidebar.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "ContentSchedules.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "draggable",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "DraggableCourse.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "DraggableSchedule.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "DraggableTeacher.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "ScheduleCalendarView.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "sections",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "SectionFormDialog.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "SectionsContent.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "SectionsDataTable.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "SectionsFilter.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "SectionsHeader.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "skeletons",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "ProfileSkeleton.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "students",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "sections",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "AcademicDataSection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "AuthorizedPersonsSection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "BusServiceSection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "EmergencyInfoSection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "EnrollmentSection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "MedicalInfoSection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "ParentsDataSection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "PersonalDataSection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "SiblingsSection.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "SponsorshipPreferencesSection.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "StudentCard.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "StudentDataTable.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "StudentForm.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "StudentList.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "StudentProfile.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "tables",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "BasicTableOne.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "Pagination.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "ui",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "alert",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "Alert.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "alert-dialog.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "alert.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "avatar",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "Avatar.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "AvatarText.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "avatar.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "avatardicebear",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "Avatar.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "index.ts",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "badge",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "Badge.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "badge.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "button",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "Button.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "button.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "calendar.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "card.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "checkbox.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "collapsible.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "command.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "dialog.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "drawer",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "drawer-modal.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "side-modal.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "dropdown",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "Dropdown.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "DropdownItem.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "dropdown-menu.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "form.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "images",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "ResponsiveImage.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "ThreeColumnImageGrid.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "TwoColumnImageGrid.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "input.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "label.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "modal",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "index.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "Modal.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "ModalWarningConfirm.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "popover.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "progress.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "scroll-area.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "select.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "separator.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "sheet.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "skeleton.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "slider.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "sonner.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "switch.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "table",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "index.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "table.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "tableCustom.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "tabs.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "textarea.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "toggle-group.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "toggle.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "tooltip.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "video",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "VideosExample.tsx",
+                        "type": "file"
+                      },
+                      {
+                        "name": "YouTubeEmbed.tsx",
+                        "type": "file"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "user-profile",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "UserAddressCard.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "UserInfoCard.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "UserMetaCard.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "users",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "NoResultsFound.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "UserForm.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "UserList.tsx",
+                    "type": "file"
+                  }
+                ]
+              },
+              {
+                "name": "videos",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "FourIsToThree.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "OneIsToOne.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "SixteenIsToNine.tsx",
+                    "type": "file"
+                  },
+                  {
+                    "name": "TwentyOneIsToNine.tsx",
+                    "type": "file"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "config",
+            "type": "directory",
+            "children": [
+              {
+                "name": "api.ts",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "constants",
+            "type": "directory",
+            "children": [
+              {
+                "name": "attendanceStatuses.ts",
+                "type": "file"
+              },
+              {
+                "name": "rolesTable.ts",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "context",
+            "type": "directory",
+            "children": [
+              {
+                "name": "AcademicWeeksContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "AuthContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "BimesterContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "CourseAssignmentContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "CourseContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "CyclesContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "EricaEvaluationContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "EricaTopicsContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "GradeContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "GradeCycleContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "HolidayContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "HolidaysContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "newBimesterContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "newTeachersContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "QnaContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "RoleContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "ScheduleConfigContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "ScheduleContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "SchoolCycleContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "SectionsContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "SidebarContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "StudentContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "TeacherContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "ThemeContext.tsx",
+                "type": "file"
+              },
+              {
+                "name": "UserContext.tsx",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "helpers",
+            "type": "directory",
+            "children": [
+              {
+                "name": "scheduleHelpers.ts",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "hooks",
+            "type": "directory",
+            "children": [
+              {
+                "name": "newuseGrade.ts",
+                "type": "file"
+              },
+              {
+                "name": "useAcademicWeeks.ts",
+                "type": "file"
+              },
+              {
+                "name": "useAttendance.ts",
+                "type": "file"
+              },
+              {
+                "name": "useAttendanceActions.tsx",
+                "type": "file"
+              },
+              {
+                "name": "useAttendanceConfig.ts",
+                "type": "file"
+              },
+              {
+                "name": "useAttendanceFilters.tsx",
+                "type": "file"
+              },
+              {
+                "name": "useAttendanceLogic.tsx",
+                "type": "file"
+              },
+              {
+                "name": "useAttendanceManager.ts",
+                "type": "file"
+              },
+              {
+                "name": "useAttendanceSystem.ts",
+                "type": "file"
+              },
+              {
+                "name": "useAuth.ts",
+                "type": "file"
+              },
+              {
+                "name": "useAutoClearError.ts",
+                "type": "file"
+              },
+              {
+                "name": "useBimester.ts",
+                "type": "file"
+              },
+              {
+                "name": "useBimesters.ts",
+                "type": "file"
+              },
+              {
+                "name": "useCourse.ts",
+                "type": "file"
+              },
+              {
+                "name": "useCourseAssignment.ts",
+                "type": "file"
+              },
+              {
+                "name": "useCourseGrade.ts",
+                "type": "file"
+              },
+              {
+                "name": "useDebounce.ts",
+                "type": "file"
+              },
+              {
+                "name": "useDragManager.ts",
+                "type": "file"
+              },
+              {
+                "name": "useEnrollment.ts",
+                "type": "file"
+              },
+              {
+                "name": "useGlobal.ts",
+                "type": "file"
+              },
+              {
+                "name": "useGoBack.ts",
+                "type": "file"
+              },
+              {
+                "name": "useGrade.ts",
+                "type": "file"
+              },
+              {
+                "name": "useHoliday.ts",
+                "type": "file"
+              },
+              {
+                "name": "useHolidayValidation.tsx",
+                "type": "file"
+              },
+              {
+                "name": "useJustifications.ts",
+                "type": "file"
+              },
+              {
+                "name": "useLoginForm.ts",
+                "type": "file"
+              },
+              {
+                "name": "useModal.ts",
+                "type": "file"
+              },
+              {
+                "name": "usePagination.ts",
+                "type": "file"
+              },
+              {
+                "name": "usePermissions.ts",
+                "type": "file"
+              },
+              {
+                "name": "useReports.ts",
+                "type": "file"
+              },
+              {
+                "name": "useRoles.ts",
+                "type": "file"
+              },
+              {
+                "name": "useSchedule.ts",
+                "type": "file"
+              },
+              {
+                "name": "useScheduleConfig.ts",
+                "type": "file"
+              },
+              {
+                "name": "useScheduleIntegration.ts",
+                "type": "file"
+              },
+              {
+                "name": "useSchoolCycle.ts",
+                "type": "file"
+              },
+              {
+                "name": "useSchoolCycles.ts",
+                "type": "file"
+              },
+              {
+                "name": "useSections.ts",
+                "type": "file"
+              },
+              {
+                "name": "useStudent.ts",
+                "type": "file"
+              },
+              {
+                "name": "useTeachers.ts",
+                "type": "file"
+              },
+              {
+                "name": "useUser.ts",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "icons",
+            "type": "directory",
+            "children": [
+              {
+                "name": "alert.svg",
+                "type": "file"
+              },
+              {
+                "name": "angle-down.svg",
+                "type": "file"
+              },
+              {
+                "name": "angle-left.svg",
+                "type": "file"
+              },
+              {
+                "name": "angle-right.svg",
+                "type": "file"
+              },
+              {
+                "name": "angle-up.svg",
+                "type": "file"
+              },
+              {
+                "name": "arrow-down.svg",
+                "type": "file"
+              },
+              {
+                "name": "arrow-right.svg",
+                "type": "file"
+              },
+              {
+                "name": "arrow-up.svg",
+                "type": "file"
+              },
+              {
+                "name": "audio.svg",
+                "type": "file"
+              },
+              {
+                "name": "bell.svg",
+                "type": "file"
+              },
+              {
+                "name": "bolt.svg",
+                "type": "file"
+              },
+              {
+                "name": "box-cube.svg",
+                "type": "file"
+              },
+              {
+                "name": "box-line.svg",
+                "type": "file"
+              },
+              {
+                "name": "box.svg",
+                "type": "file"
+              },
+              {
+                "name": "calendar.svg",
+                "type": "file"
+              },
+              {
+                "name": "calender-line.svg",
+                "type": "file"
+              },
+              {
+                "name": "chat.svg",
+                "type": "file"
+              },
+              {
+                "name": "check-circle.svg",
+                "type": "file"
+              },
+              {
+                "name": "check-line.svg",
+                "type": "file"
+              },
+              {
+                "name": "chevron-down.svg",
+                "type": "file"
+              },
+              {
+                "name": "chevron-left.svg",
+                "type": "file"
+              },
+              {
+                "name": "chevron-up.svg",
+                "type": "file"
+              },
+              {
+                "name": "close-line.svg",
+                "type": "file"
+              },
+              {
+                "name": "close.svg",
+                "type": "file"
+              },
+              {
+                "name": "copy.svg",
+                "type": "file"
+              },
+              {
+                "name": "docs.svg",
+                "type": "file"
+              },
+              {
+                "name": "dollar-line.svg",
+                "type": "file"
+              },
+              {
+                "name": "download.svg",
+                "type": "file"
+              },
+              {
+                "name": "envelope.svg",
+                "type": "file"
+              },
+              {
+                "name": "eye-close.svg",
+                "type": "file"
+              },
+              {
+                "name": "eye.svg",
+                "type": "file"
+              },
+              {
+                "name": "file.svg",
+                "type": "file"
+              },
+              {
+                "name": "folder.svg",
+                "type": "file"
+              },
+              {
+                "name": "grid.svg",
+                "type": "file"
+              },
+              {
+                "name": "group.svg",
+                "type": "file"
+              },
+              {
+                "name": "horizontal-dots.svg",
+                "type": "file"
+              },
+              {
+                "name": "index.tsx",
+                "type": "file"
+              },
+              {
+                "name": "info-hexa.svg",
+                "type": "file"
+              },
+              {
+                "name": "info.svg",
+                "type": "file"
+              },
+              {
+                "name": "list.svg",
+                "type": "file"
+              },
+              {
+                "name": "lock.svg",
+                "type": "file"
+              },
+              {
+                "name": "mail-line.svg",
+                "type": "file"
+              },
+              {
+                "name": "more-dot.svg",
+                "type": "file"
+              },
+              {
+                "name": "page.svg",
+                "type": "file"
+              },
+              {
+                "name": "paper-plane.svg",
+                "type": "file"
+              },
+              {
+                "name": "pencil.svg",
+                "type": "file"
+              },
+              {
+                "name": "pie-chart.svg",
+                "type": "file"
+              },
+              {
+                "name": "plug-in.svg",
+                "type": "file"
+              },
+              {
+                "name": "plus.svg",
+                "type": "file"
+              },
+              {
+                "name": "shooting-star.svg",
+                "type": "file"
+              },
+              {
+                "name": "table.svg",
+                "type": "file"
+              },
+              {
+                "name": "task-icon.svg",
+                "type": "file"
+              },
+              {
+                "name": "task.svg",
+                "type": "file"
+              },
+              {
+                "name": "time.svg",
+                "type": "file"
+              },
+              {
+                "name": "trash.svg",
+                "type": "file"
+              },
+              {
+                "name": "user-circle.svg",
+                "type": "file"
+              },
+              {
+                "name": "user-line.svg",
+                "type": "file"
+              },
+              {
+                "name": "users.svg",
+                "type": "file"
+              },
+              {
+                "name": "videos.svg",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "layout",
+            "type": "directory",
+            "children": [
+              {
+                "name": "AppHeader.tsx",
+                "type": "file"
+              },
+              {
+                "name": "AppSidebar.tsx",
+                "type": "file"
+              },
+              {
+                "name": "Backdrop.tsx",
+                "type": "file"
+              },
+              {
+                "name": "SidebarWidget.tsx",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "lib",
+            "type": "directory",
+            "children": [
+              {
+                "name": "cloudinary.ts",
+                "type": "file"
+              },
+              {
+                "name": "utils.ts",
+                "type": "file"
+              },
+              {
+                "name": "utils2.ts",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "middleware.ts",
+            "type": "file"
+          },
+          {
+            "name": "providers",
+            "type": "directory",
+            "children": [
+              {
+                "name": "Providers.tsx",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "schemas",
+            "type": "directory",
+            "children": [
+              {
+                "name": "academic-week.schemas.ts",
+                "type": "file"
+              },
+              {
+                "name": "attendance.schemas.ts",
+                "type": "file"
+              },
+              {
+                "name": "bimester.schema.ts",
+                "type": "file"
+              },
+              {
+                "name": "course-assignment.schema.ts",
+                "type": "file"
+              },
+              {
+                "name": "courseGradeSchema.ts",
+                "type": "file"
+              },
+              {
+                "name": "courses.ts",
+                "type": "file"
+              },
+              {
+                "name": "enrollment.ts",
+                "type": "file"
+              },
+              {
+                "name": "erica-evaluations.ts",
+                "type": "file"
+              },
+              {
+                "name": "erica-topics.ts",
+                "type": "file"
+              },
+              {
+                "name": "grade.ts",
+                "type": "file"
+              },
+              {
+                "name": "gradeCycle.ts",
+                "type": "file"
+              },
+              {
+                "name": "holiday.schema.ts",
+                "type": "file"
+              },
+              {
+                "name": "permissions.ts",
+                "type": "file"
+              },
+              {
+                "name": "qna.ts",
+                "type": "file"
+              },
+              {
+                "name": "roles.ts",
+                "type": "file"
+              },
+              {
+                "name": "schedule-config.ts",
+                "type": "file"
+              },
+              {
+                "name": "schedule.ts",
+                "type": "file"
+              },
+              {
+                "name": "SchoolCycle.ts",
+                "type": "file"
+              },
+              {
+                "name": "section.ts",
+                "type": "file"
+              },
+              {
+                "name": "signin-schema.ts",
+                "type": "file"
+              },
+              {
+                "name": "Students.ts",
+                "type": "file"
+              },
+              {
+                "name": "user-form.schema.ts",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "services",
+            "type": "directory",
+            "children": [
+              {
+                "name": "academic-weeks.ts",
+                "type": "file"
+              },
+              {
+                "name": "api.ts",
+                "type": "file"
+              },
+              {
+                "name": "attendanceConfigService.ts",
+                "type": "file"
+              },
+              {
+                "name": "attendanceService.ts",
+                "type": "file"
+              },
+              {
+                "name": "authService.ts",
+                "type": "file"
+              },
+              {
+                "name": "course-assignments.ts",
+                "type": "file"
+              },
+              {
+                "name": "course-grade.ts",
+                "type": "file"
+              },
+              {
+                "name": "enrollment.service.ts",
+                "type": "file"
+              },
+              {
+                "name": "erica-topics.ts",
+                "type": "file"
+              },
+              {
+                "name": "ericaEvaluationService.ts",
+                "type": "file"
+              },
+              {
+                "name": "globalService.ts",
+                "type": "file"
+              },
+              {
+                "name": "gradeCycles.ts",
+                "type": "file"
+              },
+              {
+                "name": "gradeCycleService.ts",
+                "type": "file"
+              },
+              {
+                "name": "gradeService.ts",
+                "type": "file"
+              },
+              {
+                "name": "justificationService.ts",
+                "type": "file"
+              },
+              {
+                "name": "permissionsService.ts",
+                "type": "file"
+              },
+              {
+                "name": "qnaService.ts",
+                "type": "file"
+              },
+              {
+                "name": "reportService.ts",
+                "type": "file"
+              },
+              {
+                "name": "rolesService.ts",
+                "type": "file"
+              },
+              {
+                "name": "schedule.ts",
+                "type": "file"
+              },
+              {
+                "name": "ScheduleConfig.ts",
+                "type": "file"
+              },
+              {
+                "name": "sectionService.ts",
+                "type": "file"
+              },
+              {
+                "name": "teacherService.ts",
+                "type": "file"
+              },
+              {
+                "name": "useCloudinary.ts",
+                "type": "file"
+              },
+              {
+                "name": "useCourses.ts",
+                "type": "file"
+              },
+              {
+                "name": "useHoliday.ts",
+                "type": "file"
+              },
+              {
+                "name": "usePermission.ts",
+                "type": "file"
+              },
+              {
+                "name": "useRole.ts",
+                "type": "file"
+              },
+              {
+                "name": "useSchoolBimester.ts",
+                "type": "file"
+              },
+              {
+                "name": "useSchoolCycles.ts",
+                "type": "file"
+              },
+              {
+                "name": "useStudents.ts",
+                "type": "file"
+              },
+              {
+                "name": "useUser.ts",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "svg.d.ts",
+            "type": "file"
+          },
+          {
+            "name": "theme",
+            "type": "directory",
+            "children": [
+              {
+                "name": "attendanceConfigTheme.ts",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "types",
+            "type": "directory",
+            "children": [
+              {
+                "name": "academic-week.types.ts",
+                "type": "file"
+              },
+              {
+                "name": "api.ts",
+                "type": "file"
+              },
+              {
+                "name": "attendance.ts",
+                "type": "file"
+              },
+              {
+                "name": "attendanceConfig.ts",
+                "type": "file"
+              },
+              {
+                "name": "attendanceTypes.ts",
+                "type": "file"
+              },
+              {
+                "name": "auth.ts",
+                "type": "file"
+              },
+              {
+                "name": "course-assignments.ts",
+                "type": "file"
+              },
+              {
+                "name": "course-grade.types.ts",
+                "type": "file"
+              },
+              {
+                "name": "courses.ts",
+                "type": "file"
+              },
+              {
+                "name": "enrollment.types.ts",
+                "type": "file"
+              },
+              {
+                "name": "erica-evaluations.ts",
+                "type": "file"
+              },
+              {
+                "name": "erica-topics.ts",
+                "type": "file"
+              },
+              {
+                "name": "global.ts",
+                "type": "file"
+              },
+              {
+                "name": "gradeCycles.ts",
+                "type": "file"
+              },
+              {
+                "name": "grades.ts",
+                "type": "file"
+              },
+              {
+                "name": "holiday.ts",
+                "type": "file"
+              },
+              {
+                "name": "justification.ts",
+                "type": "file"
+              },
+              {
+                "name": "permission.ts",
+                "type": "file"
+              },
+              {
+                "name": "permissions.ts",
+                "type": "file"
+              },
+              {
+                "name": "qna.ts",
+                "type": "file"
+              },
+              {
+                "name": "report.ts",
+                "type": "file"
+              },
+              {
+                "name": "role.ts",
+                "type": "file"
+              },
+              {
+                "name": "roles.ts",
+                "type": "file"
+              },
+              {
+                "name": "schedule-config.d.ts",
+                "type": "file"
+              },
+              {
+                "name": "schedules.ts",
+                "type": "file"
+              },
+              {
+                "name": "schedules.types.ts",
+                "type": "file"
+              },
+              {
+                "name": "SchoolBimesters.ts",
+                "type": "file"
+              },
+              {
+                "name": "SchoolCycle.ts",
+                "type": "file"
+              },
+              {
+                "name": "sections.ts",
+                "type": "file"
+              },
+              {
+                "name": "signin.ts",
+                "type": "file"
+              },
+              {
+                "name": "student.ts",
+                "type": "file"
+              },
+              {
+                "name": "teacher.types.ts",
+                "type": "file"
+              },
+              {
+                "name": "user.ts",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "utils",
+            "type": "directory",
+            "children": [
+              {
+                "name": "attendanceHelpers.ts",
+                "type": "file"
+              },
+              {
+                "name": "cleanNulls.ts",
+                "type": "file"
+              },
+              {
+                "name": "date-helpers.ts",
+                "type": "file"
+              },
+              {
+                "name": "date.ts",
+                "type": "file"
+              },
+              {
+                "name": "dateUtils.ts",
+                "type": "file"
+              },
+              {
+                "name": "exportUtils.ts",
+                "type": "file"
+              },
+              {
+                "name": "getInitials.ts",
+                "type": "file"
+              },
+              {
+                "name": "RoleBadgeColor.tsx",
+                "type": "file"
+              },
+              {
+                "name": "transformToCreateUserPayload.ts",
+                "type": "file"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "tsconfig.json",
+        "type": "file"
+      }
+    ]
+  }
+]

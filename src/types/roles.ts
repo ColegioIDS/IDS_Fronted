@@ -1,11 +1,15 @@
 // src/types/roles.ts
 
-import { Permission } from './permissions';
+import { Permission } from './permissions.types';
+
+// ✅ Tipos de rol disponibles
+export type RoleType = 'ADMIN' | 'TEACHER' | 'COORDINATOR' | 'PARENT' | 'STUDENT' | 'STAFF' | 'CUSTOM';
 
 export interface Role {
   id: number;
   name: string;
   description?: string | null;
+  roleType: RoleType;
   isActive: boolean;
   isSystem: boolean;
   createdAt: string;
@@ -35,6 +39,7 @@ export interface RoleFilters {
   sortOrder?: 'asc' | 'desc';
   isActive?: boolean;
   isSystem?: boolean;
+  roleType?: RoleType;
 }
 
 // ✨ NUEVO: Type para permiso con scope
@@ -46,10 +51,11 @@ export interface RolePermissionWithScope {
 // ✨ ACTUALIZAR: RoleFormValues ahora usa el nuevo formato
 export interface RoleFormValues {
   name: string;
-   description?: string | null;
+  description?: string | null;
+  roleType?: RoleType;
   permissions?: RolePermissionWithScope[]; 
   isActive: boolean;
-   createdById?: number | null;
+  createdById?: number | null;
   modifiedById?: number | null;  
 }
 
@@ -72,4 +78,11 @@ export interface BulkOperationResponse {
   success: boolean;
   data: RoleWithRelations[] | { count: number };
   message: string;
+}
+
+// ✅ Role Type Info
+export interface RoleTypeInfo {
+  value: RoleType;
+  label: string;
+  description: string;
 }

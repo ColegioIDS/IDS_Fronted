@@ -10,15 +10,31 @@ export interface Course {
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
+  createdById?: number | null;
+  modifiedById?: number | null;
 }
 
 export interface CourseWithRelations extends Course {
+  _count?: {
+    schedules: number;
+    students: number;
+  };
   cycles?: Array<{ id: number; name: string }>;
   courseGrades?: CourseGradeRelation[];
   schedules?: CourseSchedule[];
+  createdBy?: {
+    id: number;
+    givenNames: string;
+    lastNames: string;
+  };
+  modifiedBy?: {
+    id: number;
+    givenNames: string;
+    lastNames: string;
+  };
 }
 
-// Añade esta interfaz para la relación curso-grado
+// Relación curso-grado
 export interface CourseGradeRelation {
   id: number;
   courseId: number;
@@ -31,7 +47,7 @@ export interface CourseGradeRelation {
   };
 }
 
-// Añade esta interfaz para los filtros
+// Filtros
 export interface CourseFilters {
   isActive?: boolean;
   area?: CourseArea;
@@ -39,6 +55,7 @@ export interface CourseFilters {
   gradeId?: number;
 }
 
+// Horarios del curso
 export interface CourseSchedule {
   id: number;
   dayOfWeek: number;
@@ -59,12 +76,40 @@ export interface CourseSchedule {
   };
 }
 
+// Formulario de curso
 export interface CourseFormValues {
   code: string;
   name: string;
   area?: CourseArea | null;
   color?: string | null;
   isActive: boolean;
+}
+
+// DTOs
+export interface CreateCourseDto {
+  code: string;
+  name: string;
+  area?: CourseArea | null;
+  color?: string | null;
+  isActive?: boolean;
+}
+
+export interface UpdateCourseDto {
+  code?: string;
+  name?: string;
+  area?: CourseArea | null;
+  color?: string | null;
+  isActive?: boolean;
+}
+
+export interface PaginatedCourses {
+  data: Course[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 export interface CourseGradeFormValues {

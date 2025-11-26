@@ -1,0 +1,282 @@
+// src/components/features/course-assignments/components/grade-section-selector.tsx
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { GraduationCap, Users, ChevronRight, AlertCircle, CheckCircle2, Check } from 'lucide-react';
+import { CycleGradesData } from '@/types/course-assignments.types';
+import { toast } from 'sonner';
+
+interface GradeSectionSelectorProps {
+  formData: CycleGradesData;
+  onSelectionComplete: (gradeId: number, sectionId: number) => void;
+}
+
+export default function GradeSectionSelector({ 
+  formData, 
+  onSelectionComplete 
+}: GradeSectionSelectorProps) {
+  const [selectedGradeId, setSelectedGradeId] = useState<number | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
+
+  const grades = formData.grades;
+
+  // Obtener el grado seleccionado
+  const selectedGrade = grades.find(g => g.id === selectedGradeId);
+  const sections = selectedGrade?.sections || [];
+
+  // Notificar cuando se complete la selección
+  useEffect(() => {
+    if (selectedGradeId && selectedSectionId) {
+      onSelectionComplete(selectedGradeId, selectedSectionId);
+    }
+  }, [selectedGradeId, selectedSectionId, onSelectionComplete]);
+
+  const handleGradeSelect = (gradeId: number) => {
+    const grade = grades.find(g => g.id === gradeId);
+    setSelectedGradeId(gradeId);
+    setSelectedSectionId(null); // Reset section when grade changes
+
+    toast.info('Grado seleccionado', {
+      description: `${grade?.name || 'Grado'} - Ahora seleccione una sección`,
+      icon: <GraduationCap className="w-5 h-5" />,
+    });
+  };
+
+  const handleSectionSelect = (sectionId: number) => {
+    const section = selectedGrade?.sections.find(s => s.id === sectionId);
+    setSelectedSectionId(sectionId);
+
+    toast.success('Sección seleccionada', {
+      description: `${selectedGrade?.name} - Sección ${section?.name || ''}`,
+      icon: <CheckCircle2 className="w-5 h-5" />,
+    });
+  };
+
+  // Filtrar grados activos
+const activeGrades = grades;
+
+  if (activeGrades.length === 0) {
+    return (
+      <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950">
+        <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+        <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+          No hay grados activos disponibles. Configure los grados primero.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Paso 1: Seleccionar Grado */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-sm font-medium">
+            1
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Seleccionar Grado
+          </h3>
+        </div>
+
+        <TooltipProvider>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {activeGrades.map(grade => (
+              <Tooltip key={grade.id}>
+                <TooltipTrigger asChild>
+                  <Card
+                    className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
+                      selectedGradeId === grade.id
+                        ? 'border-2 border-blue-500 bg-blue-50 dark:border-blue-500 dark:bg-blue-950 shadow-xl'
+                        : 'border-2 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700'
+                    }`}
+                    onClick={() => handleGradeSelect(grade.id)}
+                  >
+                    <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-2 rounded-lg ${
+                      selectedGradeId === grade.id
+                        ? 'bg-blue-100 dark:bg-blue-800'
+                        : 'bg-gray-100 dark:bg-gray-700'
+                    }`}>
+                      <GraduationCap className={`h-5 w-5 ${
+                        selectedGradeId === grade.id
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-gray-600 dark:text-gray-400'
+                      }`} />
+                    </div>
+                    {selectedGradeId === grade.id && (
+                      <Badge variant="default" className="bg-blue-600 text-white">
+                        Seleccionado
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                  {grade.name}
+                </h4>
+                
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Nivel: {grade.level}
+                </p>
+                
+                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                  <span>Orden:</span>
+                  <span className="font-medium">{grade.order}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </TooltipTrigger>
+          <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+            <p className="font-semibold">Seleccionar {grade.name}</p>
+            <p className="text-xs mt-1">Nivel: {grade.level} • Orden: {grade.order}</p>
+          </TooltipContent>
+        </Tooltip>
+      ))}
+    </div>
+  </TooltipProvider>
+      </div>
+
+      {/* Paso 2: Seleccionar Sección (solo si hay grado seleccionado) */}
+      {selectedGradeId && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center justify-center w-6 h-6 rounded-full text-sm font-medium ${
+              selectedSectionId 
+                ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+            }`}>
+              2
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Seleccionar Sección
+            </h3>
+            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {selectedGrade?.name}
+            </span>
+          </div>
+
+          {sections.length === 0 ? (
+            <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950">
+              <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+              <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                No hay secciones disponibles para este grado. Configure las secciones primero.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <TooltipProvider>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {sections.map(section => (
+                  <Tooltip key={section.id}>
+                    <TooltipTrigger asChild>
+                      <Card
+                        className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
+                          selectedSectionId === section.id
+                            ? 'border-2 border-green-500 bg-green-50 dark:border-green-500 dark:bg-green-950 shadow-xl'
+                            : 'border-2 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 hover:border-green-300 dark:hover:border-green-700'
+                        }`}
+                        onClick={() => handleSectionSelect(section.id)}
+                      >
+                        <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={`p-2 rounded-lg ${
+                        selectedSectionId === section.id
+                          ? 'bg-green-100 dark:bg-green-800'
+                          : 'bg-gray-100 dark:bg-gray-700'
+                      }`}>
+                        <Users className={`h-4 w-4 ${
+                          selectedSectionId === section.id
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-gray-600 dark:text-gray-400'
+                        }`} />
+                      </div>
+                      {selectedSectionId === section.id && (
+                        <Badge variant="default" className="bg-green-600 text-white text-xs">
+                          Seleccionada
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                      Sección {section.name}
+                    </h4>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-500 dark:text-gray-400">Capacidad:</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">
+                          {section.capacity} estudiantes
+                        </span>
+                      </div>
+                      
+                      {section.teacher && (
+                        <div className="space-y-1">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            Maestro Titular:
+                          </span>
+                          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+                            {section.teacher.givenNames} {section.teacher.lastNames}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {!section.teacher && (
+                        <div className="flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3 text-amber-500" />
+                          <span className="text-xs text-amber-600 dark:text-amber-400">
+                            Sin maestro titular
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Seleccionar Sección {section.name}</p>
+                <p className="text-xs mt-1">Capacidad: {section.capacity} estudiantes</p>
+                {section.teacher && (
+                  <p className="text-xs">Titular: {section.teacher.givenNames} {section.teacher.lastNames}</p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+      </TooltipProvider>
+    )}
+        </div>
+      )}
+
+      {/* Indicador de progreso */}
+      {selectedGradeId && selectedSectionId && (
+        <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-green-600 text-white text-xs font-medium">
+              <Check className="w-3 h-3" />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-green-800 dark:text-green-200">
+                Selección completada
+              </p>
+              <p className="text-sm text-green-700 dark:text-green-300">
+                {selectedGrade?.name} - Sección {sections.find(s => s.id === selectedSectionId)?.name}
+              </p>
+            </div>
+          </div>
+        </Alert>
+      )}
+    </div>
+  );
+}

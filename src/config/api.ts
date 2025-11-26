@@ -1,12 +1,57 @@
 // src/config/api.ts
-import axios from 'axios';
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+import axios, { AxiosInstance, AxiosError } from 'axios';
+import { toast } from 'sonner';
 
-// ✅ Crear instancia de axios con withCredentials
-export const api = axios.create({
+// ✅ Exportar API_BASE_URL para que lo usen otros servicios
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:5000';
+
+/**
+ * Crear instancia de axios configurada para el proyecto
+ * Configura:
+ * - Base URL
+ * - Timeout
+ * - Credenciales (CRÍTICO para cookies)
+ * - Validación de status (NO lanzar error automáticamente)
+ */
+const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,  // Incluir cookies en todas las peticiones
+  timeout: 30000,
+  withCredentials: true,  // ✅ CRÍTICO: Permite enviar y recibir cookies
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  // ⚠️ CRÍTICO: NO validar status (dejar que axios retorne la respuesta completa)
+  validateStatus: () => true, // ← Retorna TODAS las respuestas, no lanza error
 });
 
-export default api;
+/**
+ * Interceptor de request
+ * NOTA: Las cookies se envían automáticamente gracias a withCredentials: true
+ * El backend maneja las cookies en los headers Set-Cookie
+ */
+api.interceptors.request.use(
+  (config) => {
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+/**
+ * Interceptor de response
+ * Maneja errores comunes de autenticación
+ */
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error: AxiosError) => {
+    // Este interceptor casi no se ejecuta porque validateStatus: () => true
+    // Pero si hay network error, sí entra aquí
+    return Promise.reject(error);
+  }
+);
+
+export { api };
