@@ -31,8 +31,8 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import ProtectedContent from '@/components/common/ProtectedContent';
 import { useCourseAssignment } from '@/hooks/useCourseAssignment';
-import GradeSectionSelector from './GradeSectionSelector';
-import CourseAssignmentsTable from './CourseAssignmentsTable';
+import GradeSectionSelector from './components/grade-section-selector';
+import CourseAssignmentsTable from './components/course-teacher-table';
 import { toast } from 'sonner';
 
 export default function CourseAssignmentsPageContent() {

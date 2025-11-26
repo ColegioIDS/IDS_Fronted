@@ -34,15 +34,15 @@ export default function RootLayout({
         className={`${outfit.className} dark:bg-gray-900 overflow-x-hidden`}
         suppressHydrationWarning
       >
-        <QueryProvider>
-          <ThemeProvider>
-            <AuthProvider>
-              <SidebarProvider>
-                {children}
-              </SidebarProvider>
-            </AuthProvider>
-          </ThemeProvider>
-        </QueryProvider>
+          <QueryProvider>
+            <ThemeProvider>
+              <AuthProvider>
+                <SidebarProvider>
+                  {children}
+                </SidebarProvider>
+              </AuthProvider>
+            </ThemeProvider>
+          </QueryProvider>
       </body>
     </html>
   );

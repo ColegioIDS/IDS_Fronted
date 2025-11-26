@@ -1,6 +1,6 @@
 // src/services/authService.ts
 import { api } from '@/config/api';  // ✅ Cambio aquí
-import { UserPermissionsResponse } from '@/types/permissions'; 
+import { UserPermissionsResponse } from '@/types/permissions.types'; 
 
 export interface LoginCredentials {
   dpi?: string;

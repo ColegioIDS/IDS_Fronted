@@ -137,9 +137,8 @@ export function SchoolCycleCard({
                         r="20"
                         fill="none"
                         stroke="currentColor"
-                        className="text-blue-500 dark:text-blue-400"
-                        strokeWidth="4"
                         className="text-blue-600 dark:text-blue-400"
+                        strokeWidth="4"
                         strokeDasharray={`${(progressPercentage / 100) * 125.6} 125.6`}
                         strokeLinecap="round"
                       />

@@ -619,3 +619,148 @@ export interface ConsolidatedAttendanceView {
   totalRecords: number;
   students: ConsolidatedStudentAttendance[];
 }
+
+// ====================================================================
+// CONFIGURATION TYPES - Para attendance-configuration.service
+// ====================================================================
+
+/**
+ * Día festivo del sistema
+ */
+export interface Holiday {
+  id: number;
+  date: string; // ISO date format
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Query parameters para configuración
+ */
+export interface ConfigurationQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+  sortBy?: 'date' | 'name' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+/**
+ * Response con grados y secciones
+ */
+export interface GradesAndSectionsResponse {
+  success: boolean;
+  data: {
+    grades: Grade[];
+    sections: Section[];
+  };
+  message?: string;
+}
+
+/**
+ * Response de días festivos
+ */
+export interface HolidaysResponse {
+  success: boolean;
+  data: Holiday[];
+  meta?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  message?: string;
+}
+
+/**
+ * Response de configuración general de asistencia
+ */
+export interface AttendanceConfigurationResponse {
+  success: boolean;
+  data: {
+    grades: Grade[];
+    sections: Section[];
+    holidays: Holiday[];
+    statuses: any[];
+  };
+  meta?: {
+    lastUpdated: string;
+  };
+  message?: string;
+}
+
+// ====================================================================
+// TEACHER COURSES TYPES - Para attendance-teacher-courses.service
+// ====================================================================
+
+/**
+ * Curso del maestro para un día específico
+ */
+export interface TeacherCourse {
+  id: number;
+  courseAssignmentId: number;
+  courseName: string;
+  courseCode?: string;
+  sectionId: number;
+  sectionName: string;
+  gradeId: number;
+  gradeName: string;
+  startTime: string; // HH:MM
+  endTime: string; // HH:MM
+  studentCount: number;
+  hasAttendanceRecorded?: boolean;
+  lastRecordedAt?: string;
+  attendanceStatus?: string;
+  notes?: string;
+}
+
+/**
+ * Response al obtener cursos del maestro por fecha
+ */
+export interface GetTeacherCoursesResponse {
+  success: boolean;
+  data: {
+    date: string; // YYYY-MM-DD
+    dayOfWeek: number; // 0-6 ISO 8601
+    dayName: string;
+    courses: TeacherCourse[];
+    totalCourses: number;
+  };
+  message?: string;
+}
+
+/**
+ * Request para registrar asistencia por cursos
+ */
+export interface BulkTeacherAttendanceByCourseRequest {
+  date: string; // YYYY-MM-DD
+  courseAssignmentIds: number[]; // Máximo 10
+  attendanceStatusId: number;
+  notes?: string;
+  recordedBy?: string;
+}
+
+/**
+ * Response al registrar asistencia por cursos
+ */
+export interface BulkTeacherAttendanceByCourseResponse {
+  success: boolean;
+  data: {
+    recordsCreated: number;
+    recordsFailed: number;
+    courses: Array<{
+      courseAssignmentId: number;
+      courseName: string;
+      recordsCreated: number;
+      recordsFailed: number;
+      errors?: string[];
+    }>;
+    date: string;
+    timestamp: string;
+  };
+  message?: string;
+}

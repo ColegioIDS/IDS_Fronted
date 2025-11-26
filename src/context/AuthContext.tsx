@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { verifySession, logout as apiLogout, getMyPermissions } from '@/services/authService';
-import { UserPermission } from '@/types/permissions';
+import { UserPermission } from '@/types/permissions.types';
 import { usePathname, useRouter } from 'next/navigation';
 
 // ✅ ACTUALIZADO: Role con permissions

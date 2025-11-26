@@ -11,15 +11,4 @@ export { useSectionsByGrade } from './useSectionsByGrade';
 export { useActiveCycleAndBimester } from './useActiveCycleAndBimester';
 export { useStudentsBySection } from './useStudentsBySection';
 
-// Reports Hooks
-export { useAttendanceSummary } from './useAttendanceSummary';
-export { useAttendanceByStatus } from './useAttendanceByStatus';
-export { useAttendanceStatistics } from './useAttendanceStatistics';
-export { useSectionAttendanceReport } from './useSectionAttendanceReport';
-export { useGradeSectionBreakdown } from './useGradeSectionBreakdown';
-export { useActiveCycle } from './useActiveCycle';
 
-// Detailed Reports Hooks - NEW
-
-// Trend & Analysis Hooks
-export { useWeeklyTrendData } from './useWeeklyTrendData';

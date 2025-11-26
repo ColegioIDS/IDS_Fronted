@@ -1,5 +1,5 @@
 // src/types/teacher.types.ts
-import { User } from '@/types/user';
+import { User } from '@/types/users.types';
 
 // Extender el tipo User para incluir propiedades específicas de profesores
 export interface Teacher extends User {

@@ -1,6 +1,6 @@
 // src/types/roles.ts
 
-import { Permission } from './permissions';
+import { Permission } from './permissions.types';
 
 // ✅ Tipos de rol disponibles
 export type RoleType = 'ADMIN' | 'TEACHER' | 'COORDINATOR' | 'PARENT' | 'STUDENT' | 'STAFF' | 'CUSTOM';

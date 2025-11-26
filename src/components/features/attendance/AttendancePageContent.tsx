@@ -62,7 +62,7 @@ function AttendancePageContentInner() {
             <div className="flex flex-wrap gap-2 pt-2">
               <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                 <User className="h-4 w-4" />
-                {user?.firstName || 'Invitado'}
+                {user?.fullName || 'Invitado'}
               </div>
               <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                 <Calendar className="h-4 w-4" />

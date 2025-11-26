@@ -99,3 +99,84 @@ export interface ApiResponse<T = unknown> {
 export interface PaginatedResponse<T> extends ApiResponse<T[]> {
   total: number;
 }
+
+/**
+ * Attendance Summary Statistics
+ */
+export interface AttendanceSummaryStats {
+  totalClasses: number;
+  totalAttendances: number;
+  totalAbsences: number;
+  totalLateArrivals: number;
+  totalJustified: number;
+  attendancePercentage: number;
+  absencePercentage: number;
+  lateArrivalsPercentage: number;
+  justifiedPercentage: number;
+}
+
+/**
+ * Attendance by Day
+ */
+export interface AttendanceByDay {
+  date: string;
+  present: number;
+  absent: number;
+  lateArrivals: number;
+  justified: number;
+  percentage: number;
+}
+
+/**
+ * Attendance by Course
+ */
+export interface AttendanceByCourse {
+  courseId: number;
+  courseName: string;
+  courseCode: string;
+  teacherName: string;
+  totalClasses: number;
+  totalAttendances: number;
+  totalAbsences: number;
+  totalLateArrivals: number;
+  totalJustified: number;
+  attendancePercentage: number;
+}
+
+/**
+ * Risk Student
+ */
+export interface RiskStudent {
+  studentId: number;
+  givenNames: string;
+  lastNames: string;
+  attendancePercentage: number;
+  status: 'HIGH_RISK' | 'MEDIUM_RISK' | 'LOW_RISK';
+}
+
+/**
+ * Section Info for Attendance
+ */
+export interface SectionInfo {
+  id: number;
+  name: string;
+  totalStudents: number;
+}
+
+/**
+ * Attendance Summary Response
+ */
+export interface AttendanceSummary {
+  section: SectionInfo;
+  filters: {
+    gradeId: number;
+    sectionId: number;
+    courseId: number;
+    bimesterId?: number | null;
+    academicWeekId?: number | null;
+  };
+  summary: AttendanceSummaryStats;
+  byDay: AttendanceByDay[];
+  byCourse: AttendanceByCourse[];
+  riskStudents: RiskStudent[];
+}

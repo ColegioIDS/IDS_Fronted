@@ -296,8 +296,8 @@ export const useAttendancePermissions = (
       setError(null);
 
       try {
-        const result = await attendancePermissionsService.getTeachersList(query);
-        setPermissions(result.data);
+        const result = await attendancePermissionsService.getTeacherRoles(query.page, query.limit, query.search);
+        setPermissions(result.data || []);
         setTotal(result.meta?.total || 0);
         setPage(result.meta?.page || 1);
         setLimit(result.meta?.limit || 10);

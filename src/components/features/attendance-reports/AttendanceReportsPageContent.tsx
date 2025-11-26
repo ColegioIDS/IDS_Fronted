@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { attendanceReportsService } from '@/services/attendance-reports.service';
+import { useAttendanceSummary } from '@/hooks/data/attendance-reports/useAttendanceSummary';
+import { AttendanceSummaryCharts } from './AttendanceSummaryCharts';
 import { GradesSelector, SectionsSelector, CoursesSelector, BimestersSelector, AcademicWeeksSelector } from './shared';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,6 +32,20 @@ export function AttendanceReportsPageContent() {
     queryKey: ['attendance-reports', 'active-cycle'],
     queryFn: () => attendanceReportsService.getActiveCycle(),
     staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
+  // Hook para obtener el resumen de asistencia
+  const {
+    data: attendanceSummary,
+    isLoading: isSummaryLoading,
+    error: summaryError,
+    isError: summaryIsError,
+  } = useAttendanceSummary({
+    gradeId: selectedGradeId,
+    sectionId: selectedSectionId,
+    courseId: selectedCourseId,
+    bimesterId: selectedBimesterId,
+    academicWeekId: selectedWeekId,
   });
 
   const calculateProgress = () => {
@@ -523,16 +539,43 @@ export function AttendanceReportsPageContent() {
         </div>
       )}
 
+      {/* Summary Error */}
+      {summaryIsError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {summaryError?.message || 'Error al cargar el resumen de asistencia'}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Attendance Summary Charts */}
+      {selectedGradeId && selectedSectionId && selectedCourseId && (
+        <div className="space-y-6">
+          {isSummaryLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-64 rounded-lg" />
+              <Skeleton className="h-96 rounded-lg" />
+              <Skeleton className="h-72 rounded-lg" />
+            </div>
+          ) : attendanceSummary ? (
+            <AttendanceSummaryCharts data={attendanceSummary} isLoading={isSummaryLoading} />
+          ) : null}
+        </div>
+      )}
+
       {/* Placeholder for future content */}
-      <Card className="border-gray-200 dark:border-gray-700 border-dashed">
-        <CardContent className="p-12 text-center">
-          <div className="space-y-2">
-            <TrendingUp className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto" />
-            <p className="text-gray-500 dark:text-gray-400 font-medium">Más análisis próximamente</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500">Las otras secciones de reportes estarán disponibles pronto</p>
-          </div>
-        </CardContent>
-      </Card>
+      {(!selectedGradeId || !selectedSectionId || !selectedCourseId) && (
+        <Card className="border-gray-200 dark:border-gray-700 border-dashed">
+          <CardContent className="p-12 text-center">
+            <div className="space-y-2">
+              <TrendingUp className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto" />
+              <p className="text-gray-500 dark:text-gray-400 font-medium">Completa los filtros base</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">Selecciona grado, sección y curso para ver el reporte</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

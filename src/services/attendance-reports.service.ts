@@ -9,6 +9,7 @@ import {
   Bimester,
   AcademicWeek,
   Course,
+  AttendanceSummary,
 } from '@/types/attendance-reports.types';
 
 const BASE_URL = '/api/attendance-reports';
@@ -130,6 +131,45 @@ class AttendanceReportsService {
       return response.data.data;
     } catch (error) {
       console.error('Error en getCoursesBySection:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get attendance summary with optional filters
+   */
+  async getAttendanceSummary(
+    gradeId: number,
+    sectionId: number,
+    courseId: number,
+    bimesterId?: number | null,
+    academicWeekId?: number | null
+  ): Promise<AttendanceSummary> {
+    try {
+      const params = new URLSearchParams({
+        gradeId: gradeId.toString(),
+        courseId: courseId.toString(),
+      });
+
+      if (bimesterId !== null && bimesterId !== undefined) {
+        params.append('bimesterId', bimesterId.toString());
+      }
+
+      if (academicWeekId !== null && academicWeekId !== undefined) {
+        params.append('academicWeekId', academicWeekId.toString());
+      }
+
+      const response = await api.get<ApiResponse<AttendanceSummary>>(
+        `${BASE_URL}/sections/${sectionId}/attendance-summary?${params.toString()}`
+      );
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Error al obtener resumen de asistencia');
+      }
+
+      return response.data.data;
+    } catch (error) {
+      console.error('Error en getAttendanceSummary:', error);
       throw error;
     }
   }
