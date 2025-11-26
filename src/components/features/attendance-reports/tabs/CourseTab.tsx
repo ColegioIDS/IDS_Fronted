@@ -1,0 +1,1 @@
+// Course tab component

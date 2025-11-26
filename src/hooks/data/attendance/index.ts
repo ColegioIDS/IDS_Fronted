@@ -19,13 +19,7 @@ export { useSectionAttendanceReport } from './useSectionAttendanceReport';
 export { useGradeSectionBreakdown } from './useGradeSectionBreakdown';
 export { useActiveCycle } from './useActiveCycle';
 
-// Cascade Filters & Options Hooks
-export { useCascadeAttendanceFilters } from './cascade';
-export { useBimesterOptions } from './cascade';
-export { useGradeOptions } from './cascade';
-export { useSectionOptions } from './cascade';
-export { useWeekOptions } from './cascade';
-export { useSectionAttendanceData } from './cascade';
+// Detailed Reports Hooks - NEW
 
 // Trend & Analysis Hooks
 export { useWeeklyTrendData } from './useWeeklyTrendData';
