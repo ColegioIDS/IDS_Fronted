@@ -1,1 +1,1 @@
-// Main component exports
+export { AttendanceReportsPageContent } from './AttendanceReportsPageContent';
