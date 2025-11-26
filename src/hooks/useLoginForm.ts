@@ -5,14 +5,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema } from "@/schemas/signin-schema";
 import { signin } from "@/services/authService";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export const useLoginForm = () => {
   const [errorMessage, setErrorMessage] = useState<string | string[]>("");
-  const router = useRouter();
   const { login } = useAuth();
 
   const {
@@ -28,9 +26,9 @@ export const useLoginForm = () => {
       setErrorMessage(""); // Limpiar errores previos
       
       const user = await signin(dataForm);
+      // ✅ El método login() en AuthContext ya maneja la redirección a /dashboard
       login(user);
       console.log("Usuario autenticado:", user);
-      router.push("/dashboard");
     } catch (error: any) {
       console.error('Login error:', error);
       
