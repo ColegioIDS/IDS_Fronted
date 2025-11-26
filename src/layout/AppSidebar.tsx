@@ -106,7 +106,7 @@ const navItems: NavItem[] = [
       },
       {
         name: "Dias Libres",
-        path: "/holiday",
+        path: "/holidays",
         pro: false,
         requiredPermission: { module: 'holiday', action: 'read' }
       }

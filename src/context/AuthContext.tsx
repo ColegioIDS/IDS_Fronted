@@ -138,7 +138,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     async (userData: User) => {
       setUser(userData);
       setLastCheck(Date.now());
-      await loadPermissions();
+      try {
+        await loadPermissions();
+      } catch (error) {
+        console.error("Error loading permissions:", error);
+      }
+      // ✅ Redireccionar al dashboard después de cargar permisos
       router.replace('/dashboard');
     },
     [router, loadPermissions]
