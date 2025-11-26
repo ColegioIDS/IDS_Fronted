@@ -9,7 +9,14 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutos por defecto
       gcTime: 1000 * 60 * 10, // 10 minutos (anteriormente cacheTime)
-      retry: 1,
+      retry: (failureCount, error: any) => {
+        // No reintentar en errores 4xx (cliente)
+        if (error?.response?.status >= 400 && error?.response?.status < 500) {
+          return false;
+        }
+        // Reintentar máximo 1 vez en otros errores
+        return failureCount < 1;
+      },
     },
   },
 });

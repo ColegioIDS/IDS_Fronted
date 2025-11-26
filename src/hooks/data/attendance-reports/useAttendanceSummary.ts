@@ -46,7 +46,7 @@ export function useAttendanceSummary({
       ),
     enabled: !!(gradeId && sectionId && courseId),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 1,
+    retry: 0, // Sin reintentos automáticos (el QueryProvider maneja esto)
   });
 
   return {

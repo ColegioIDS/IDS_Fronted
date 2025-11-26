@@ -91,7 +91,8 @@ export function DroppableTimeSlot({
     <div
       ref={dropRef}
       className={cn(
-        "min-h-[80px] p-2 border transition-all relative",
+        "min-h-[80px] p-2.5 border-2 transition-all relative rounded-lg",
+        "overflow-hidden max-w-full w-full",
         isHovered && !isFull && (
           "bg-blue-50 dark:bg-blue-900/30 border-blue-400 dark:border-blue-600 border-dashed border-2"
         ),
@@ -107,32 +108,34 @@ export function DroppableTimeSlot({
       onMouseLeave={handleMouseLeave}
       onMouseUp={handleMouseUp}
     >
-      <div className="space-y-1">
+      <div className="space-y-1 overflow-hidden max-w-full w-full">
         {schedules.map((schedule) => (
-          <DraggableSchedule
-            key={`${schedule.id}-${day}-${timeSlot.start}-${timeSlot.end}`}
-            schedule={schedule}
-            onEdit={handleScheduleEdit}
-            onDelete={handleScheduleDelete}
-            isTemp={('isPending' in schedule) ? (schedule as TempSchedule).isPending : false}
-          />
+          <div key={`${schedule.id}-${day}-${timeSlot.start}-${timeSlot.end}`} className="max-w-full w-full overflow-hidden">
+            <DraggableSchedule
+              schedule={schedule}
+              onEdit={handleScheduleEdit}
+              onDelete={handleScheduleDelete}
+              isTemp={('isPending' in schedule) ? (schedule as TempSchedule).isPending : false}
+            />
+          </div>
         ))}
 
         {/* Drop indicator */}
         {schedules.length === 0 && isHovered && !isFull && (
           <div className={cn(
-            "flex items-center justify-center h-12 text-sm animate-pulse text-blue-600 dark:text-blue-400"
+            "flex flex-col items-center justify-center h-12 text-xs font-medium animate-pulse gap-1",
+            "text-blue-600 dark:text-blue-400"
           )}>
-            <Plus className="h-4 w-4 mr-1" />
-            <span>Soltar aquí</span>
+            <Plus className="h-4 w-4" />
+            <span>Soltar curso aquí</span>
           </div>
         )}
 
         {/* Full slot indicator */}
         {isFull && isHovered && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-sm font-medium text-red-600 dark:text-red-400">
-            <AlertCircle className="h-4 w-4 mr-1" />
-            <span>Slot ocupado</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-red-500/10 dark:bg-red-500/5 text-xs font-semibold text-red-600 dark:text-red-400 rounded-md backdrop-blur-sm">
+            <AlertCircle className="h-4 w-4" />
+            <span>Este slot ya está ocupado</span>
           </div>
         )}
 

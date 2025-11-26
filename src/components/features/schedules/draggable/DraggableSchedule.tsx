@@ -90,46 +90,61 @@ export function DraggableSchedule({
 
   const courseData = getCourseData();
   const teacherData = getTeacherData();
+  
+  // Get course color and generate dynamic styles
+  const courseColor = courseData?.color || '#3b82f6'; // Default blue
 
   return (
     <div
       ref={elementRef}
       className={cn(
-        "p-2 rounded-md border transition-all group",
+        "p-3 rounded-lg border-2 transition-all group relative overflow-hidden",
         "cursor-grab active:cursor-grabbing select-none",
+        "max-w-full w-full overflow-hidden backdrop-blur-sm",
         isDark ? "hover:shadow-lg shadow-black/20" : "hover:shadow-md",
         isTemp
           ? isDark
-            ? "border-orange-700 bg-gradient-to-br from-orange-900/40 to-orange-800/40 hover:from-orange-900/50 hover:to-orange-800/50"
-            : "border-orange-300 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200"
-          : isDark
-            ? "bg-gray-750 border-blue-700 hover:border-blue-600 hover:bg-gray-700"
-            : "bg-white border-blue-200 hover:border-blue-400 hover:bg-blue-50"
+            ? "border-orange-500/60 bg-gradient-to-br from-orange-900/30 to-orange-800/30 hover:from-orange-900/40 hover:to-orange-800/40"
+            : "border-orange-400/60 bg-gradient-to-br from-orange-50/80 to-orange-100/80 hover:from-orange-100 hover:to-orange-150"
+          : ""
       )}
+      style={!isTemp ? {
+        borderColor: `${courseColor}66`,
+        backgroundColor: isDark 
+          ? `${courseColor}12` 
+          : `${courseColor}0a`,
+      } : undefined}
       onMouseDown={handleMouseDown}
     >
-      <div className="space-y-1">
-        <div className="flex items-start justify-between gap-1">
-          <div className="flex-1 min-w-0">
+      {/* Decorative top bar with course color */}
+      <div 
+        className="absolute top-0 left-0 right-0 h-1.5 rounded-t-md"
+        style={{ backgroundColor: courseColor }}
+      />
+      
+      <div className="space-y-1.5 pt-2 overflow-hidden">
+        <div className="flex items-start justify-between gap-1 min-w-0">
+          <div className="flex-1 min-w-0 overflow-hidden max-w-full">
             <span className={cn(
-              "text-xs font-medium block truncate",
+              "text-xs font-semibold block truncate max-w-full",
               isTemp
                 ? isDark ? "text-orange-300" : "text-orange-700"
-                : isDark ? "text-blue-300" : "text-blue-700"
-            )}>
+                : isDark ? "text-gray-100" : "text-gray-800"
+            )}
+            style={!isTemp ? { color: courseColor } : undefined}
+            >
               {courseData?.name || "Sin curso asignado"}
             </span>
             {isTemp && (
               <Badge
-                variant="secondary"
                 className={cn(
-                  "mt-1 text-[10px] h-4 px-1",
+                  "mt-1 text-[10px] h-5 px-1.5 font-semibold border",
                   isDark
-                    ? "bg-orange-900/50 text-orange-300"
-                    : "bg-orange-200 text-orange-700"
+                    ? "bg-orange-900/60 text-orange-100 border-orange-700"
+                    : "bg-orange-100 text-orange-800 border-orange-300"
                 )}
               >
-                Pendiente
+                ⏳ Pendiente
               </Badge>
             )}
           </div>
@@ -144,57 +159,61 @@ export function DraggableSchedule({
               size="sm"
               variant="ghost"
               className={cn(
-                "h-5 w-5 p-0",
+                "h-6 w-6 p-0 transition-colors",
                 isTemp
-                  ? isDark ? "hover:bg-orange-900/50" : "hover:bg-orange-200"
-                  : isDark ? "hover:bg-blue-900/50" : "hover:bg-blue-100"
+                  ? isDark ? "hover:bg-orange-900/70 text-orange-400" : "hover:bg-orange-200 text-orange-600"
+                  : isDark ? "text-gray-400 hover:bg-gray-700" : "text-gray-600 hover:bg-gray-200"
               )}
+              style={!isTemp ? { color: courseColor } : undefined}
               onClick={handleEdit}
             >
-              <Edit className="h-3 w-3" />
+              <Edit className="h-3.5 w-3.5" />
             </Button>
             <Button
               size="sm"
               variant="ghost"
               className={cn(
-                "h-5 w-5 p-0",
+                "h-6 w-6 p-0 transition-colors",
                 isDark
-                  ? "hover:bg-red-900/50 hover:text-red-400"
-                  : "hover:bg-red-100 hover:text-red-600"
+                  ? "hover:bg-red-900/70 text-red-400"
+                  : "hover:bg-red-100 text-red-600"
               )}
               onClick={handleDelete}
             >
-              <Trash2 className="h-3 w-3" />
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
 
+        {/* Teacher info */}
         {teacherData && (
           <div className={cn(
-            "flex items-center gap-1 text-[11px]",
-            isDark ? "text-gray-400" : "text-gray-600"
+            "flex items-center gap-1.5 text-[10px] min-w-0 overflow-hidden font-medium",
+            isDark ? "text-gray-300" : "text-gray-700"
           )}>
-            <User className="h-3 w-3 flex-shrink-0" />
+            <User className="h-3 w-3 flex-shrink-0 opacity-70" />
             <span className="truncate">{getTeacherName()}</span>
           </div>
         )}
 
+        {/* Classroom info */}
         {schedule.classroom && (
           <div className={cn(
-            "flex items-center gap-1 text-[11px]",
-            isDark ? "text-gray-400" : "text-gray-500"
+            "flex items-center gap-1.5 text-[10px] min-w-0 overflow-hidden",
+            isDark ? "text-gray-400" : "text-gray-600"
           )}>
-            <MapPin className="h-3 w-3 flex-shrink-0" />
+            <MapPin className="h-3 w-3 flex-shrink-0 opacity-70" />
             <span className="truncate">{schedule.classroom}</span>
           </div>
         )}
 
+        {/* Time info */}
         <div className={cn(
-          "flex items-center gap-1 text-[11px]",
-          isDark ? "text-gray-400" : "text-gray-500"
+          "flex items-center gap-1.5 text-[10px] min-w-0 overflow-hidden font-mono border-t pt-1.5",
+          isDark ? "border-gray-700 text-gray-400" : "border-gray-200 text-gray-600"
         )}>
-          <Clock className="h-3 w-3 flex-shrink-0" />
-          <span className="font-mono text-[10px]">
+          <Clock className="h-3 w-3 flex-shrink-0 opacity-70" />
+          <span className="truncate font-semibold">
             {schedule.startTime} - {schedule.endTime}
           </span>
         </div>

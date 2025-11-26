@@ -90,6 +90,48 @@ export function ScheduleGrid({
     return grid;
   }, [schedules, tempSchedules, courseAssignments]);
 
+  // Count courses per day
+  const coursesPerDay = useMemo(() => {
+    const counts: { [key: number]: number } = {};
+    
+    currentWorkingDays.forEach(day => {
+      counts[day.value] = 0;
+    });
+    
+    // Count all schedules for each day
+    [...schedules, ...tempSchedules].forEach(schedule => {
+      if (counts.hasOwnProperty(schedule.dayOfWeek)) {
+        counts[schedule.dayOfWeek]++;
+      }
+    });
+    
+    return counts;
+  }, [schedules, tempSchedules, currentWorkingDays]);
+
+  // Count unique courses per day
+  const uniqueCoursesPerDay = useMemo(() => {
+    const uniqueCourses: { [key: number]: Set<number> } = {};
+    
+    currentWorkingDays.forEach(day => {
+      uniqueCourses[day.value] = new Set();
+    });
+    
+    // Count unique courseAssignmentIds for each day
+    [...schedules, ...tempSchedules].forEach(schedule => {
+      if (uniqueCourses.hasOwnProperty(schedule.dayOfWeek)) {
+        uniqueCourses[schedule.dayOfWeek].add(schedule.courseAssignmentId);
+      }
+    });
+    
+    // Convert sets to counts
+    const counts: { [key: number]: number } = {};
+    Object.entries(uniqueCourses).forEach(([day, courses]) => {
+      counts[Number(day)] = courses.size;
+    });
+    
+    return counts;
+  }, [schedules, tempSchedules, currentWorkingDays]);
+
   // Handle schedule actions
   const handleScheduleEdit = (schedule: Schedule | TempSchedule) => {
     if (onScheduleClick) {
@@ -124,24 +166,38 @@ export function ScheduleGrid({
     <Card className="backdrop-blur-sm border-0 shadow-xl overflow-hidden bg-white/95 dark:bg-gray-800/95">
       <CardContent className="p-0">
         <div className="overflow-x-auto">
-          <div className="min-w-[900px]">
+          <div className="min-w-[900px]" style={{ minWidth: '100%' }}>
             {/* Header */}
-            <div className="grid border-b bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 border-gray-200 dark:border-gray-700" 
-                 style={{ gridTemplateColumns: `120px repeat(${currentWorkingDays.length}, 1fr)` }}>
-              <div className="p-4 font-semibold border-r flex items-center justify-center text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700">
-                <span className="text-sm uppercase tracking-wide text-gray-700 dark:text-gray-300">Horario</span>
+            <div className="grid border-b-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-750 border-blue-200 dark:border-gray-700" 
+                 style={{ gridTemplateColumns: `120px repeat(${currentWorkingDays.length}, minmax(0, 1fr))` }}>
+              <div className="p-4 font-semibold border-r flex items-center justify-center text-blue-900 dark:text-blue-300 border-blue-200 dark:border-gray-700 bg-blue-100/40 dark:bg-blue-900/20">
+                <span className="text-xs uppercase tracking-widest font-bold text-blue-900 dark:text-blue-300">⏰ Horario</span>
               </div>
               {currentWorkingDays.map((day, index) => (
                 <div
                   key={day.value}
-                  className={`p-4 font-semibold text-center ${
+                  className={`p-4 font-semibold text-center transition-colors ${
                     index !== currentWorkingDays.length - 1 
-                      ? 'border-r border-gray-200 dark:border-gray-700'
+                      ? 'border-r border-blue-200 dark:border-gray-700'
                       : ''
-                  }`}
+                  } hover:bg-blue-50/50 dark:hover:bg-gray-700/50`}
                 >
-                  <div className="text-gray-800 dark:text-gray-200">
-                    {day.shortLabel}
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-blue-900 dark:text-blue-200 font-bold">
+                      {day.shortLabel}
+                    </span>
+                    {coursesPerDay[day.value] > 0 && (
+                      <div className="flex gap-1.5">
+                        <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50" title="Total de clases">
+                          {coursesPerDay[day.value]}
+                        </span>
+                        {uniqueCoursesPerDay[day.value] > 0 && uniqueCoursesPerDay[day.value] !== coursesPerDay[day.value] && (
+                          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700/50" title="Cursos únicos">
+                            {uniqueCoursesPerDay[day.value]}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="text-xs font-normal mt-1 text-gray-500 dark:text-gray-400">
                     {day.label}
@@ -164,7 +220,7 @@ export function ScheduleGrid({
                       ? 'bg-white dark:bg-gray-800'
                       : 'bg-gray-50/50 dark:bg-gray-750'
                   }`}
-                  style={{ gridTemplateColumns: `120px repeat(${currentWorkingDays.length}, 1fr)` }}
+                  style={{ gridTemplateColumns: `120px repeat(${currentWorkingDays.length}, minmax(0, 1fr))` }}
                 >
                   {/* Time column */}
                   <div className={`
@@ -223,22 +279,22 @@ export function ScheduleGrid({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t text-xs bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400">
+        <div className="px-4 py-4 border-t-2 text-xs bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-750 border-blue-200 dark:border-gray-700 text-gray-600 dark:text-gray-400">
           <div className="flex flex-wrap gap-6 items-center justify-between">
             <div className="flex gap-6">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-semibold">
                 <Calendar className="h-4 w-4" />
-                <span><strong>{currentWorkingDays.length}</strong> días laborales</span>
+                <span><strong>{currentWorkingDays.length}</strong> días</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 font-semibold">
                 <Clock className="h-4 w-4" />
-                <span><strong>{currentTimeSlots.length}</strong> slots de tiempo</span>
+                <span><strong>{currentTimeSlots.length}</strong> slots</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-purple-700 dark:text-purple-400 font-semibold">
                 <BookOpen className="h-4 w-4" />
-                <span><strong>{currentTimeSlots.filter(s => !s.isBreak).length}</strong> períodos de clase</span>
+                <span><strong>{currentTimeSlots.filter(s => !s.isBreak).length}</strong> clases</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 font-semibold">
                 <Coffee className="h-4 w-4" />
                 <span><strong>{currentTimeSlots.filter(s => s.isBreak).length}</strong> recreos</span>
               </div>
