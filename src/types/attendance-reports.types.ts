@@ -155,6 +155,62 @@ export interface RiskStudent {
 }
 
 /**
+ * Attendance Count
+ */
+export interface AttendanceCount {
+  code: string;
+  name: string;
+  count: number;
+  colorCode?: string;
+}
+
+/**
+ * Student Attendance Detail
+ */
+export interface StudentAttendanceDetail {
+  studentId: number;
+  givenNames: string;
+  lastNames: string;
+  totalClasses: number;
+  attendanceCounts: AttendanceCount[];
+  attendancePercentage: number;
+  riskStatus: 'NORMAL' | 'HIGH_RISK' | 'MEDIUM_RISK' | 'LOW_RISK';
+}
+
+/**
+ * Course Info for Students Attendance
+ */
+export interface CourseInfo {
+  id: number;
+  code: string;
+  name: string;
+  teacher: Teacher;
+}
+
+/**
+ * Students Attendance Response
+ */
+export interface StudentsAttendanceResponse {
+  section: SectionInfo;
+  course: CourseInfo;
+  filters?: {
+    gradeId: number;
+    sectionId: number;
+    courseId: number;
+    bimesterId?: number | null;
+    academicWeekId?: number | null;
+  };
+  summary: {
+    totalStudents: number;
+    totalClasses: number;
+    averageAttendance: number;
+    studentsWithHighRisk: number;
+    studentsWithMediumRisk: number;
+  };
+  students: StudentAttendanceDetail[];
+}
+
+/**
  * Section Info for Attendance
  */
 export interface SectionInfo {
@@ -179,4 +235,22 @@ export interface AttendanceSummary {
   byDay: AttendanceByDay[];
   byCourse: AttendanceByCourse[];
   riskStudents: RiskStudent[];
+}
+
+/**
+ * Export Format Types
+ */
+export type ExportFormat = 'excel' | 'pdf' | 'csv';
+
+/**
+ * Export Parameters
+ */
+export interface ExportParams {
+  gradeId: number;
+  sectionId: number;
+  courseId: number;
+  format?: ExportFormat;
+  bimesterId?: number | null;
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD
 }
