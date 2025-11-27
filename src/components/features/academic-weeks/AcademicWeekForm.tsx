@@ -126,7 +126,8 @@ export function AcademicWeekForm({
     setIsInitialized(false);
     setDynamicBimesters([]);
     setDynamicBimesterDateRange(null);
-  }, [initialData]);
+    console.log('🔄 Initializing form with new initialData:', initialData);
+  }, [(initialData as any)?.id]); // Solo cambiar cuando cambia el ID (es decir, se selecciona otra semana)
 
   // Reset form cuando cambia initialData (especialmente importante para modo edición)
   useEffect(() => {
@@ -144,8 +145,10 @@ export function AcademicWeekForm({
             number: b.number,
           }));
           setDynamicBimesters(bimestersData);
+          
+          console.log('✅ Bimesters loaded:', bimestersData);
         } catch (error) {
-          console.error('Error al cargar bimesters:', error);
+          console.error('❌ Error al cargar bimesters:', error);
           setDynamicBimesters([]);
         } finally {
           setIsLoadingBimesters(false);
@@ -157,8 +160,9 @@ export function AcademicWeekForm({
           try {
             const range = await academicWeekService.getBimesterDateRange(initialData.bimesterId);
             setDynamicBimesterDateRange(range);
+            console.log('✅ Date range loaded:', range);
           } catch (error) {
-            console.error('Error al cargar rango de fechas:', error);
+            console.error('❌ Error al cargar rango de fechas:', error);
             setDynamicBimesterDateRange(null);
           } finally {
             setIsLoadingDateRange(false);
@@ -166,8 +170,10 @@ export function AcademicWeekForm({
         }
 
         // PASO 3: Ahora SÍ resetear el formulario con TODOS los datos
-        // Esperar un tick para asegurar que los bimesters están en el estado
-        await new Promise(resolve => setTimeout(resolve, 50));
+        // Usar un pequeño delay más robusto para asegurar que el estado se actualizó
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        console.log('🔄 Resetting form with initialData:', initialData);
         
         form.reset({
           cycleId: initialData.cycleId,

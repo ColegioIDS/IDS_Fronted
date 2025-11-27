@@ -166,33 +166,36 @@ export function AcademicWeekPageContent({
     setFormMode('edit');
     
     try {
-      // Obtener información completa del bimestre para obtener el cycleId
-      const bimesterInfo = await academicWeekService.getBimesterInfo(week.bimesterId);
-      const cycleId = (bimesterInfo as any).schoolCycleId || bimesterInfo.id;
+      // STEP 1: Obtener la semana académica completa con todas sus relaciones
+      const completeWeek = await academicWeekService.getById(week.id);
       
-      // Si el cycleId es diferente, actualizarlo (esto cargará los bimesters automáticamente)
-      if (cycleId && cycleId !== selectedCycleId) {
-        setSelectedCycleId(cycleId);
-        // Dar tiempo para que se carguen los bimesters
-        await new Promise(resolve => setTimeout(resolve, 300));
+      // STEP 2: Extraer el cycleId del bimestre relacionado
+      const cycleId = completeWeek.bimester?.schoolCycleId;
+      
+      if (!cycleId) {
+        throw new Error('No se pudo obtener el ciclo escolar de la semana académica');
       }
       
-      // Asegurar que el bimestre correcto esté seleccionado
-      if (week.bimesterId && week.bimesterId !== selectedBimesterId) {
-        setSelectedBimesterId(week.bimesterId);
-      }
+      // STEP 3: Actualizar el ciclo seleccionado
+      setSelectedCycleId(cycleId);
       
-      // Agregar el cycleId a los datos de la semana
+      // STEP 4: Esperar a que se carguen los bimesters del nuevo ciclo
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // STEP 5: Establecer el bimestre correcto
+      setSelectedBimesterId(week.bimesterId);
+      
+      // STEP 6: Preparar los datos de la semana con el cycleId
       const weekWithCycle = {
-        ...week,
+        ...completeWeek,
         cycleId: cycleId,
-      };
+      } as any;
       
-      setSelectedWeek(weekWithCycle as any);
+      setSelectedWeek(weekWithCycle);
       setIsFormDialogOpen(true);
     } catch (error) {
       console.error('Error al preparar edición:', error);
-      toast.error('Error al cargar los datos del bimestre');
+      toast.error('Error al cargar los datos de la semana académica');
     }
   };
 
@@ -209,21 +212,24 @@ export function AcademicWeekPageContent({
   const handleFormSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
+      // Validar que tenemos los campos requeridos
+      if (!data.cycleId) {
+        throw new Error('Debe seleccionar un ciclo escolar.');
+      }
+      
+      if (!data.bimesterId) {
+        throw new Error('Debe seleccionar un bimestre.');
+      }
+
       if (formMode === 'create') {
-  const bimesterId = data.bimesterId;
-  if (!bimesterId) {
-    throw new Error('Debe seleccionar un bimestre antes de crear la semana académica.');
-  }
-
-  await academicWeekService.create(bimesterId, data);
-  toast.success('Semana académica creada exitosamente');
-}
-
-      
-      
-      else if (selectedWeek) {
+        const bimesterId = data.bimesterId;
+        await academicWeekService.create(bimesterId, data);
+        toast.success('Semana académica creada exitosamente');
+      } else if (selectedWeek) {
         await academicWeekService.update(selectedWeek.id, data);
         toast.success('Semana académica actualizada exitosamente');
+      } else {
+        throw new Error('No se pudo determinar la acción a realizar.');
       }
       
       setIsFormDialogOpen(false);
