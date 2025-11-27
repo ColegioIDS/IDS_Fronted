@@ -34,6 +34,7 @@ import { cn } from '@/lib/utils';
 import { WeekType, AcademicMonth, WEEK_TYPE_LABELS, MONTH_LABELS } from '@/types/academic-week.types';
 import { getWeekTypeTheme } from '@/config/theme.config';
 import { academicWeekService } from '@/services/academic-week.service';
+import { parseISODateForTimezone, formatISODateWithTimezone, formatDateWithTimezone } from '@/utils/dateUtils';
 
 // Esquema de validación
 const academicWeekFormSchema = z.object({
@@ -125,7 +126,8 @@ export function AcademicWeekForm({
     setIsInitialized(false);
     setDynamicBimesters([]);
     setDynamicBimesterDateRange(null);
-  }, [initialData]);
+    console.log('🔄 Initializing form with new initialData:', initialData);
+  }, [(initialData as any)?.id]); // Solo cambiar cuando cambia el ID (es decir, se selecciona otra semana)
 
   // Reset form cuando cambia initialData (especialmente importante para modo edición)
   useEffect(() => {
@@ -143,8 +145,10 @@ export function AcademicWeekForm({
             number: b.number,
           }));
           setDynamicBimesters(bimestersData);
+          
+          console.log('✅ Bimesters loaded:', bimestersData);
         } catch (error) {
-          console.error('Error al cargar bimesters:', error);
+          console.error('❌ Error al cargar bimesters:', error);
           setDynamicBimesters([]);
         } finally {
           setIsLoadingBimesters(false);
@@ -156,8 +160,9 @@ export function AcademicWeekForm({
           try {
             const range = await academicWeekService.getBimesterDateRange(initialData.bimesterId);
             setDynamicBimesterDateRange(range);
+            console.log('✅ Date range loaded:', range);
           } catch (error) {
-            console.error('Error al cargar rango de fechas:', error);
+            console.error('❌ Error al cargar rango de fechas:', error);
             setDynamicBimesterDateRange(null);
           } finally {
             setIsLoadingDateRange(false);
@@ -165,8 +170,10 @@ export function AcademicWeekForm({
         }
 
         // PASO 3: Ahora SÍ resetear el formulario con TODOS los datos
-        // Esperar un tick para asegurar que los bimesters están en el estado
-        await new Promise(resolve => setTimeout(resolve, 50));
+        // Usar un pequeño delay más robusto para asegurar que el estado se actualizó
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        console.log('🔄 Resetting form with initialData:', initialData);
         
         form.reset({
           cycleId: initialData.cycleId,
@@ -433,8 +440,8 @@ export function AcademicWeekForm({
               {dynamicBimesterDateRange && (
                 <FormDescription className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
                   <Calendar className="h-3.5 w-3.5" />
-                  Rango: {format(new Date(dynamicBimesterDateRange.startDate), 'd MMM', { locale: es })} -{' '}
-                  {format(new Date(dynamicBimesterDateRange.endDate), 'd MMM yyyy', { locale: es })}
+                  Rango: {formatISODateWithTimezone(dynamicBimesterDateRange.startDate, 'dd MMM')} -{' '}
+                  {formatISODateWithTimezone(dynamicBimesterDateRange.endDate, 'dd MMM yyyy')}
                 </FormDescription>
               )}
               <FormMessage />
@@ -538,7 +545,7 @@ export function AcademicWeekForm({
                         disabled={isSubmitting}
                       >
                         {field.value ? (
-                          format(field.value, "d 'de' MMMM, yyyy", { locale: es })
+                          formatDateWithTimezone(field.value, "d 'de' MMMM, yyyy")
                         ) : (
                           <span>Seleccionar fecha</span>
                         )}
@@ -593,7 +600,7 @@ export function AcademicWeekForm({
                         disabled={isSubmitting}
                       >
                         {field.value ? (
-                          format(field.value, "d 'de' MMMM, yyyy", { locale: es })
+                          formatDateWithTimezone(field.value, "d 'de' MMMM, yyyy")
                         ) : (
                           <span>Seleccionar fecha</span>
                         )}

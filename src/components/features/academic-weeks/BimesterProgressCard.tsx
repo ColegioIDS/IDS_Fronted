@@ -10,6 +10,7 @@ import { getWeekTypeTheme } from '@/config/theme.config';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { WeekType, WEEK_TYPE_LABELS } from '@/types/academic-week.types';
+import { parseISODateForTimezone, formatISODateWithTimezone } from '@/utils/dateUtils';
 
 interface BimesterInfo {
   id: number;
@@ -67,8 +68,8 @@ export function BimesterProgressCard({
     }
 
     // Calcular semanas esperadas (aproximadamente)
-    const start = new Date(bimesterInfo.startDate);
-    const end = new Date(bimesterInfo.endDate);
+    const start = parseISODateForTimezone(bimesterInfo.startDate);
+    const end = parseISODateForTimezone(bimesterInfo.endDate);
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const expectedWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7));
 
@@ -228,8 +229,8 @@ export function BimesterProgressCard({
           </div>
         </div>
         <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-          {format(new Date(bimesterInfo.startDate), "d 'de' MMMM", { locale: es })} -{' '}
-          {format(new Date(bimesterInfo.endDate), "d 'de' MMMM, yyyy", { locale: es })}
+          {formatISODateWithTimezone(bimesterInfo.startDate, "d 'de' MMMM")} -{' '}
+          {formatISODateWithTimezone(bimesterInfo.endDate, "d 'de' MMMM, yyyy")}
         </p>
       </CardHeader>
 

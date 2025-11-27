@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { parseISODateForTimezone, formatDateWithTimezone } from '@/utils/dateUtils';
 import { AcademicWeek, WEEK_TYPE_LABELS } from '@/types/academic-week.types';
 import { getWeekTypeTheme } from '@/config/theme.config';
 import { cn } from '@/lib/utils';
@@ -43,8 +44,8 @@ export function AcademicWeekCard({
 
   // Verificar si la semana está en progreso
   const now = new Date();
-  const start = new Date(week.startDate);
-  const end = new Date(week.endDate);
+  const start = parseISODateForTimezone(week.startDate);
+  const end = parseISODateForTimezone(week.endDate);
   const isInProgress = now >= start && now <= end;
 
   return (
@@ -146,14 +147,14 @@ export function AcademicWeekCard({
             <Calendar className={cn('h-4 w-4', theme.icon)} />
             <div className="flex-1">
               <p className="text-gray-700 dark:text-gray-300 font-medium">
-                {format(start, "d 'de' MMMM", { locale: es })}
+                {formatDateWithTimezone(start, "d 'de' MMMM")}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Inicio</p>
             </div>
             <div className="w-8 h-px bg-gray-300 dark:bg-gray-600" />
             <div className="flex-1 text-right">
               <p className="text-gray-700 dark:text-gray-300 font-medium">
-                {format(end, "d 'de' MMMM", { locale: es })}
+                {formatDateWithTimezone(end, "d 'de' MMMM")}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Fin</p>
             </div>

@@ -18,6 +18,7 @@ import {
 import { Bimester } from '@/types/bimester.types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatISODateWithTimezone } from '@/utils/dateUtils';
 
 interface BimesterCardProps {
   bimester: Bimester;
@@ -37,7 +38,7 @@ export function BimesterCard({
 }: BimesterCardProps) {
   const formatDate = (date: string) => {
     try {
-      return format(new Date(date), 'dd MMM yyyy', { locale: es });
+      return formatISODateWithTimezone(date, 'dd MMM yyyy');
     } catch {
       return date;
     }

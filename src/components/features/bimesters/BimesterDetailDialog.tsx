@@ -27,6 +27,7 @@ import { Bimester } from '@/types/bimester.types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Card, CardContent } from '@/components/ui/card';
+import { formatISODateWithTimezone } from '@/utils/dateUtils';
 
 interface BimesterDetailDialogProps {
   open: boolean;
@@ -50,7 +51,7 @@ export function BimesterDetailDialog({
 
   const formatDate = (date: string) => {
     try {
-      return format(new Date(date), "dd 'de' MMMM 'de' yyyy", { locale: es });
+      return formatISODateWithTimezone(date, "EEEE, dd 'de' MMMM 'de' yyyy");
     } catch {
       return date;
     }

@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CheckCircle, Alert
 import { DayPicker } from 'react-day-picker';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDateWithTimezone, parseISODateForTimezone } from '@/utils/dateUtils';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -167,7 +168,7 @@ const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
               )}
             >
               {value ? (
-                format(value, 'PPP', { locale: es })
+                formatDateWithTimezone(value, 'PPP')
               ) : (
                 <span>{placeholder}</span>
               )}
@@ -359,8 +360,8 @@ export function SchoolCycleForm({
     name: cycle?.name || '',
     description: cycle?.description || '',
     academicYear: cycle?.academicYear?.toString() || new Date().getFullYear().toString(),
-    startDate: cycle?.startDate ? new Date(cycle.startDate) : null,
-    endDate: cycle?.endDate ? new Date(cycle.endDate) : null,
+    startDate: cycle?.startDate ? parseISODateForTimezone(cycle.startDate) : null,
+    endDate: cycle?.endDate ? parseISODateForTimezone(cycle.endDate) : null,
     isActive: cycle?.isActive || false,
     canEnroll: cycle?.canEnroll ?? true,
   });

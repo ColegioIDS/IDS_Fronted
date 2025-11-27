@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { AcademicWeekForm } from './AcademicWeekForm';
 import { AcademicWeek } from '@/types/academic-week.types';
+import { parseISODateForTimezone } from '@/utils/dateUtils';
 
 interface AcademicWeekFormDialogProps {
   isOpen: boolean;
@@ -67,8 +68,8 @@ export function AcademicWeekFormDialog({
               bimesterId: (initialData as any).bimesterId,
               number: initialData.number,
               weekType: initialData.weekType,
-              startDate: new Date(initialData.startDate),
-              endDate: new Date(initialData.endDate),
+              startDate: parseISODateForTimezone(initialData.startDate),
+              endDate: parseISODateForTimezone(initialData.endDate),
               year: initialData.year,
               month: initialData.month,
               objectives: initialData.objectives,
