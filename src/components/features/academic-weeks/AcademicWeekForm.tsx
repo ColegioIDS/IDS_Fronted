@@ -333,14 +333,21 @@ export function AcademicWeekForm({
     }
   }, [startDate, form]);
 
-  // Validar fechas contra rango del bimestre
+  // Validar fechas contra rango del bimestre (comparar como strings YYYY-MM-DD)
   const isDateInBimesterRange = (date: Date | undefined): boolean => {
     if (!date || !dynamicBimesterDateRange) return true;
 
-    const bimesterStart = parseISODateForTimezone(dynamicBimesterDateRange.startDate);
-    const bimesterEnd = parseISODateForTimezone(dynamicBimesterDateRange.endDate);
-
-    return date >= bimesterStart && date <= bimesterEnd;
+    // Convertir date a string YYYY-MM-DD usando métodos locales
+    const dateStr = date.getFullYear() + '-' + 
+      String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(date.getDate()).padStart(2, '0');
+    
+    // Extraer la parte YYYY-MM-DD de las fechas ISO del backend
+    const startDateStr = dynamicBimesterDateRange.startDate.split('T')[0];
+    const endDateStr = dynamicBimesterDateRange.endDate.split('T')[0];
+    
+    // Comparar como strings evita problemas de timezone
+    return dateStr >= startDateStr && dateStr <= endDateStr;
   };
 
   const handleSubmit = async (data: AcademicWeekFormValues) => {
