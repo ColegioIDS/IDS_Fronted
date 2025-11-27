@@ -23,6 +23,7 @@ import { es } from 'date-fns/locale';
 import { AcademicWeek, WEEK_TYPE_LABELS } from '@/types/academic-week.types';
 import { getWeekTypeTheme } from '@/config/theme.config';
 import { cn } from '@/lib/utils';
+import { parseISODateForTimezone, formatISODateWithTimezone } from '@/utils/dateUtils';
 
 interface AcademicWeekCalendarProps {
   weeks: AcademicWeek[];

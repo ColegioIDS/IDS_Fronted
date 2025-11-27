@@ -34,6 +34,7 @@ import { cn } from '@/lib/utils';
 import { WeekType, AcademicMonth, WEEK_TYPE_LABELS, MONTH_LABELS } from '@/types/academic-week.types';
 import { getWeekTypeTheme } from '@/config/theme.config';
 import { academicWeekService } from '@/services/academic-week.service';
+import { parseISODateForTimezone, formatISODateWithTimezone, formatDateWithTimezone } from '@/utils/dateUtils';
 
 // Esquema de validación
 const academicWeekFormSchema = z.object({

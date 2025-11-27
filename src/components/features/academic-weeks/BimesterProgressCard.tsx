@@ -10,6 +10,7 @@ import { getWeekTypeTheme } from '@/config/theme.config';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { WeekType, WEEK_TYPE_LABELS } from '@/types/academic-week.types';
+import { parseISODateForTimezone, formatISODateWithTimezone } from '@/utils/dateUtils';
 
 interface BimesterInfo {
   id: number;

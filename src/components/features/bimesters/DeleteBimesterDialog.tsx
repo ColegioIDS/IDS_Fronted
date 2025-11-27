@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Loader2, Trash2, X } from 'lucide-react';
 import { Bimester } from '@/types/bimester.types';
+import { formatISODateWithTimezone } from '@/utils/dateUtils';
 
 interface DeleteBimesterDialogProps {
   open: boolean;

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { AcademicWeekForm } from './AcademicWeekForm';
 import { AcademicWeek } from '@/types/academic-week.types';
+import { parseISODateForTimezone } from '@/utils/dateUtils';
 
 interface AcademicWeekFormDialogProps {
   isOpen: boolean;

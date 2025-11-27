@@ -167,7 +167,7 @@ export function formatDateToSpanish(dateString: string): string {
  */
 export function formatISODateWithTimezone(
   isoDateString: string,
-  formatPattern: 'dd MMM yyyy' | "EEEE, dd 'de' MMMM 'de' yyyy" | 'dd MMM'
+  formatPattern: 'dd MMM yyyy' | "EEEE, dd 'de' MMMM 'de' yyyy" | 'dd MMM' | "d 'de' MMMM 'de' yyyy" | "d 'de' MMMM" | "d 'de' MMMM, yyyy" | 'd MMM yyyy' | 'yyyy' | 'MMMM' = 'dd MMM yyyy'
 ): string {
   try {
     // Extraer solo la parte YYYY-MM-DD del ISO string
@@ -224,6 +224,18 @@ export function formatISODateWithTimezone(
       return `${weekdayStr}, ${day} de ${fullMonth} de ${year}`;
     } else if (formatPattern === 'dd MMM') {
       return `${day} ${shortMonth}`;
+    } else if (formatPattern === "d 'de' MMMM 'de' yyyy") {
+      return `${day} de ${fullMonth} de ${year}`;
+    } else if (formatPattern === "d 'de' MMMM") {
+      return `${day} de ${fullMonth}`;
+    } else if (formatPattern === "d 'de' MMMM, yyyy") {
+      return `${day} de ${fullMonth}, ${year}`;
+    } else if (formatPattern === 'd MMM yyyy') {
+      return `${day} ${shortMonth} ${year}`;
+    } else if (formatPattern === 'yyyy') {
+      return `${year}`;
+    } else if (formatPattern === 'MMMM') {
+      return `${fullMonth}`;
     }
 
     return `${day} ${shortMonth} ${year}`;
