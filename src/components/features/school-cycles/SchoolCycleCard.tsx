@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { format, differenceInDays, isAfter, isBefore, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatISODateWithTimezone } from '@/utils/dateUtils';
 
 interface SchoolCycleCardProps {
   cycle: SchoolCycle;
@@ -206,7 +207,7 @@ export function SchoolCycleCard({
                     </TooltipTrigger>
                     <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
                       <p className="text-xs">
-                        Creado: {format(new Date(cycle.createdAt), "dd 'de' MMMM 'de' yyyy", { locale: es })}
+                        Creado: {formatISODateWithTimezone(cycle.createdAt, "EEEE, dd 'de' MMMM 'de' yyyy")}
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -316,14 +317,14 @@ export function SchoolCycleCard({
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold uppercase tracking-wide text-blue-700 dark:text-blue-400">Inicio</p>
                       <p className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate">
-                        {format(startDate, 'dd MMM yyyy', { locale: es })}
+                        {formatISODateWithTimezone(cycle.startDate, 'dd MMM yyyy')}
                       </p>
                     </div>
                   </div>
                 </div>
               </TooltipTrigger>
               <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
-                <p className="font-semibold">{format(startDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: es })}</p>
+                <p className="font-semibold">{formatISODateWithTimezone(cycle.startDate, "EEEE, dd 'de' MMMM 'de' yyyy")}</p>
               </TooltipContent>
             </Tooltip>
 
@@ -337,14 +338,14 @@ export function SchoolCycleCard({
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold uppercase tracking-wide text-red-700 dark:text-red-400">Fin</p>
                       <p className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate">
-                        {format(endDate, 'dd MMM yyyy', { locale: es })}
+                        {formatISODateWithTimezone(cycle.endDate, 'dd MMM yyyy')}
                       </p>
                     </div>
                   </div>
                 </div>
               </TooltipTrigger>
               <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
-                <p className="font-semibold">{format(endDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: es })}</p>
+                <p className="font-semibold">{formatISODateWithTimezone(cycle.endDate, "EEEE, dd 'de' MMMM 'de' yyyy")}</p>
               </TooltipContent>
             </Tooltip>
           </div>

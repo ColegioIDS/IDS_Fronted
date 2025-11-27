@@ -133,3 +133,76 @@ export function formatDateToSpanish(dateString: string): string {
 
   return formatter.format(date);
 }
+
+/**
+ * Formatea una fecha ISO (del backend) respetando la zona horaria de Guatemala
+ * Evita el problema de diferencia de 1 día al convertir fechas UTC
+ *
+ * @param isoDateString - Fecha en formato ISO (ej: "2026-01-12T00:00:00.000Z")
+ * @param formatPattern - Patrón de formato (ej: "dd MMM yyyy", "EEEE, dd 'de' MMMM")
+ * @returns string - Fecha formateada
+ *
+ * @example
+ * formatISODateWithTimezone("2026-01-12T00:00:00.000Z", "dd MMM yyyy")
+ * // Devuelve "12 ene 2026" (no "11 ene 2026")
+ */
+export function formatISODateWithTimezone(
+  isoDateString: string,
+  format: 'dd MMM yyyy' | "EEEE, dd 'de' MMMM 'de' yyyy" | 'dd MMM'
+): string {
+  try {
+    // Parsear la fecha ISO
+    const date = new Date(isoDateString);
+    
+    // Obtener componentes en la zona horaria especificada
+    const formatter = new Intl.DateTimeFormat('es-ES', {
+      timeZone: TIMEZONE,
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long',
+    });
+
+    const parts = formatter.formatToParts(date);
+    const dateParts: Record<string, string> = {};
+    parts.forEach((part) => {
+      dateParts[part.type] = part.value;
+    });
+
+    const monthMap: Record<string, string> = {
+      'enero': 'ene',
+      'febrero': 'feb',
+      'marzo': 'mar',
+      'abril': 'abr',
+      'mayo': 'may',
+      'junio': 'jun',
+      'julio': 'jul',
+      'agosto': 'ago',
+      'septiembre': 'sep',
+      'octubre': 'oct',
+      'noviembre': 'nov',
+      'diciembre': 'dic',
+    };
+
+    const day = dateParts.day;
+    const month = dateParts.month;
+    const year = dateParts.year;
+    const weekday = dateParts.weekday;
+
+    if (format === 'dd MMM yyyy') {
+      const shortMonth = monthMap[month.toLowerCase()] || month.substring(0, 3);
+      return `${day} ${shortMonth} ${year}`;
+    } else if (format === "EEEE, dd 'de' MMMM 'de' yyyy") {
+      const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+      return `${capitalizedWeekday}, ${day} de ${month} de ${year}`;
+    } else if (format === 'dd MMM') {
+      const shortMonth = monthMap[month.toLowerCase()] || month.substring(0, 3);
+      return `${day} ${shortMonth}`;
+    }
+
+    return date.toLocaleDateString('es-ES');
+  } catch (error) {
+    console.error('❌ Error formatting ISO date:', error);
+    return isoDateString;
+  }
+}

@@ -17,6 +17,7 @@ import { SchoolCycle, SchoolCycleStats } from '@/types/school-cycle.types';
 import { schoolCycleService } from '@/services/school-cycle.service';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatISODateWithTimezone } from '@/utils/dateUtils';
 import {
   Calendar,
   BookOpen,
@@ -179,7 +180,7 @@ export function SchoolCycleDetailDialog({
                       <p className="text-xs font-bold uppercase text-blue-700 dark:text-blue-400">Inicio</p>
                     </div>
                     <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                      {format(startDate, 'dd MMM yyyy', { locale: es })}
+                      {formatISODateWithTimezone(cycle.startDate, 'dd MMM yyyy')}
                     </p>
                   </div>
 
@@ -190,7 +191,7 @@ export function SchoolCycleDetailDialog({
                       <p className="text-xs font-bold uppercase text-red-700 dark:text-red-400">Fin</p>
                     </div>
                     <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                      {format(endDate, 'dd MMM yyyy', { locale: es })}
+                      {formatISODateWithTimezone(cycle.endDate, 'dd MMM yyyy')}
                     </p>
                   </div>
                 </div>
@@ -271,9 +272,9 @@ export function SchoolCycleDetailDialog({
                                 {bimester.name}
                               </p>
                               <p className="text-xs text-gray-600 dark:text-gray-400">
-                                {format(new Date(bimester.startDate), 'dd MMM', { locale: es })} -
+                                {formatISODateWithTimezone(bimester.startDate, 'dd MMM')} -
                                 {' '}
-                                {format(new Date(bimester.endDate), 'dd MMM yyyy', { locale: es })}
+                                {formatISODateWithTimezone(bimester.endDate, 'dd MMM yyyy')}
                               </p>
                             </div>
                           </div>
