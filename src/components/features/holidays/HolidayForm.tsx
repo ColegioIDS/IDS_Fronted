@@ -335,7 +335,7 @@ export function HolidayForm({
                   />
                 </PopoverContent>
               </Popover>
-              {field.value && !isDateInRange(field.value) && (
+              {field.value && !isDateInBimesterRange(field.value) && (
                 <div className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md px-3 py-2">
                   <AlertCircle className="h-4 w-4 flex-shrink-0" />
                   <span>Fecha fuera del rango del bimestre</span>
