@@ -63,7 +63,7 @@ export function DeleteBimesterDialog({
                 <li><strong>{bimester.name}</strong></li>
                 <li>Bimestre {bimester.number}</li>
                 <li>
-                  Período: {new Date(bimester.startDate).toLocaleDateString()} - {new Date(bimester.endDate).toLocaleDateString()}
+                  Período: {formatISODateWithTimezone(bimester.startDate, 'dd MMM yyyy')} - {formatISODateWithTimezone(bimester.endDate, 'dd MMM yyyy')}
                 </li>
               </ul>
             </AlertDescription>

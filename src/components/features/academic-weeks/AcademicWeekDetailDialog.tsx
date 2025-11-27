@@ -16,6 +16,7 @@ import { es } from 'date-fns/locale';
 import { AcademicWeek, WEEK_TYPE_LABELS } from '@/types/academic-week.types';
 import { getWeekTypeTheme } from '@/config/theme.config';
 import { cn } from '@/lib/utils';
+import { parseISODateForTimezone, formatDateWithTimezone } from '@/utils/dateUtils';
 
 interface AcademicWeekDetailDialogProps {
   week: AcademicWeek | null;
@@ -36,8 +37,8 @@ export function AcademicWeekDetailDialog({
   if (!week) return null;
 
   const theme = getWeekTypeTheme(week.weekType);
-  const start = new Date(week.startDate);
-  const end = new Date(week.endDate);
+  const start = parseISODateForTimezone(week.startDate);
+  const end = parseISODateForTimezone(week.endDate);
   const duration = differenceInDays(end, start) + 1;
   const now = new Date();
   const isInProgress = now >= start && now <= end;
@@ -103,10 +104,10 @@ export function AcademicWeekDetailDialog({
                   Fecha de Inicio
                 </p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {format(start, "d 'de' MMMM", { locale: es })}
+                  {formatDateWithTimezone(start, "d 'de' MMMM")}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {format(start, 'yyyy', { locale: es })}
+                  {formatDateWithTimezone(start, 'yyyy')}
                 </p>
               </div>
 
@@ -129,10 +130,10 @@ export function AcademicWeekDetailDialog({
                   Fecha de Fin
                 </p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {format(end, "d 'de' MMMM", { locale: es })}
+                  {formatDateWithTimezone(end, "d 'de' MMMM")}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {format(end, 'yyyy', { locale: es })}
+                  {formatDateWithTimezone(end, 'yyyy')}
                 </p>
               </div>
             </div>
@@ -184,7 +185,7 @@ export function AcademicWeekDetailDialog({
                   Mes Principal
                 </p>
                 <p className="text-base font-medium text-gray-900 dark:text-gray-100 capitalize">
-                  {format(start, 'MMMM', { locale: es })}
+                  {formatDateWithTimezone(start, 'MMMM')}
                 </p>
               </div>
             </div>

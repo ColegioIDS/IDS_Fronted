@@ -330,8 +330,8 @@ export function AcademicWeekForm({
   const isDateInBimesterRange = (date: Date | undefined): boolean => {
     if (!date || !dynamicBimesterDateRange) return true;
 
-    const bimesterStart = new Date(dynamicBimesterDateRange.startDate);
-    const bimesterEnd = new Date(dynamicBimesterDateRange.endDate);
+    const bimesterStart = parseISODateForTimezone(dynamicBimesterDateRange.startDate);
+    const bimesterEnd = parseISODateForTimezone(dynamicBimesterDateRange.endDate);
 
     return date >= bimesterStart && date <= bimesterEnd;
   };
@@ -427,8 +427,8 @@ export function AcademicWeekForm({
               {dynamicBimesterDateRange && (
                 <FormDescription className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
                   <Calendar className="h-3.5 w-3.5" />
-                  Rango: {format(new Date(dynamicBimesterDateRange.startDate), 'd MMM', { locale: es })} -{' '}
-                  {format(new Date(dynamicBimesterDateRange.endDate), 'd MMM yyyy', { locale: es })}
+                  Rango: {formatISODateWithTimezone(dynamicBimesterDateRange.startDate, 'dd MMM')} -{' '}
+                  {formatISODateWithTimezone(dynamicBimesterDateRange.endDate, 'dd MMM yyyy')}
                 </FormDescription>
               )}
               <FormMessage />
@@ -532,7 +532,7 @@ export function AcademicWeekForm({
                         disabled={isSubmitting}
                       >
                         {field.value ? (
-                          format(field.value, "d 'de' MMMM, yyyy", { locale: es })
+                          formatDateWithTimezone(field.value, "d 'de' MMMM, yyyy")
                         ) : (
                           <span>Seleccionar fecha</span>
                         )}
@@ -587,7 +587,7 @@ export function AcademicWeekForm({
                         disabled={isSubmitting}
                       >
                         {field.value ? (
-                          format(field.value, "d 'de' MMMM, yyyy", { locale: es })
+                          formatDateWithTimezone(field.value, "d 'de' MMMM, yyyy")
                         ) : (
                           <span>Seleccionar fecha</span>
                         )}

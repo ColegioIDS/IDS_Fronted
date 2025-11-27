@@ -57,7 +57,7 @@ console.log(weeks);
     // Ordenar semanas dentro de cada sección
     sections.forEach((section) => {
       section.weeks.sort((a, b) => {
-        return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+        return parseISODateForTimezone(a.startDate).getTime() - parseISODateForTimezone(b.startDate).getTime();
       });
     });
 
@@ -128,8 +128,8 @@ console.log(weeks);
           <div className="space-y-4 ml-6">
             {section.weeks.map((week, weekIndex) => {
               const theme = getWeekTypeTheme(week.weekType);
-              const start = new Date(week.startDate);
-              const end = new Date(week.endDate);
+              const start = parseISODateForTimezone(week.startDate);
+              const end = parseISODateForTimezone(week.endDate);
               const isInProgress = isWithinInterval(today, { start, end });
               const isPast = end < today;
               const duration = differenceInDays(end, start) + 1;
@@ -201,7 +201,7 @@ console.log(weeks);
                           <Calendar className={cn('h-4 w-4', theme.icon)} />
                           <div>
                             <p className="text-gray-700 dark:text-gray-300 font-medium">
-                              {format(start, "d 'de' MMMM", { locale: es })}
+                              {formatDateWithTimezone(start, "d 'de' MMMM")}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">Inicio</p>
                           </div>

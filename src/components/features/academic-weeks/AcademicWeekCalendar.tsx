@@ -74,8 +74,8 @@ export function AcademicWeekCalendar({
   // Encontrar semanas académicas para cada día
   const getWeeksForDay = (day: Date): AcademicWeek[] => {
     return weeks.filter((week) => {
-      const start = new Date(week.startDate);
-      const end = new Date(week.endDate);
+      const start = parseISODateForTimezone(week.startDate);
+      const end = parseISODateForTimezone(week.endDate);
       return isWithinInterval(day, { start, end });
     });
   };
@@ -183,7 +183,7 @@ export function AcademicWeekCalendar({
                       <div className="space-y-1">
                         {weeksForDay.slice(0, 2).map((week) => {
                           const theme = getWeekTypeTheme(week.weekType);
-                          const start = new Date(week.startDate);
+                          const start = parseISODateForTimezone(week.startDate);
                           const isStartDay = isSameDay(day, start);
 
                           return (
@@ -263,8 +263,8 @@ export function AcademicWeekCalendar({
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {weeks.filter((w) => {
-                const start = new Date(w.startDate);
-                const end = new Date(w.endDate);
+                const start = parseISODateForTimezone(w.startDate);
+                const end = parseISODateForTimezone(w.endDate);
                 return isWithinInterval(today, { start, end });
               }).length}
             </p>

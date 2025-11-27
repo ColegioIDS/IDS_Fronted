@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { format, differenceInDays, isAfter, isBefore, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { formatDateWithTimezone, formatISODateWithTimezone, parseISODateForTimezone } from '@/utils/dateUtils';
 
 interface CycleProgressCardProps {
   cycle?: {
@@ -33,8 +34,8 @@ export function CycleProgressCard({ cycle }: CycleProgressCardProps) {
     if (!cycle) return null;
 
     const today = new Date();
-    const startDate = new Date(cycle.startDate);
-    const endDate = new Date(cycle.endDate);
+    const startDate = parseISODateForTimezone(cycle.startDate);
+    const endDate = parseISODateForTimezone(cycle.endDate);
 
     // Total de días del ciclo
     const totalDays = differenceInDays(endDate, startDate) + 1;
@@ -172,9 +173,9 @@ export function CycleProgressCard({ cycle }: CycleProgressCardProps) {
                   )}
                 </div>
                 <p className={`text-sm ${config.subtextColor}`}>
-                  {format(startDate, "d 'de' MMMM 'de' yyyy", { locale: es })} 
+                  {formatDateWithTimezone(startDate, "d 'de' MMMM 'de' yyyy")}
                   {' - '}
-                  {format(endDate, "d 'de' MMMM 'de' yyyy", { locale: es })}
+                  {formatDateWithTimezone(endDate, "d 'de' MMMM 'de' yyyy")}
                 </p>
               </div>
             </div>

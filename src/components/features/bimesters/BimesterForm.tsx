@@ -34,6 +34,7 @@ import { bimesterService } from '@/services/bimester.service';
 import { handleApiError, handleApiSuccess } from '@/utils/handleApiError';
 import { Bimester } from '@/types/bimester.types';
 import { useBimesterCycles } from '@/hooks/data/useBimesterCycles';
+import { parseISODateForTimezone } from '@/utils/dateUtils';
 
 // ============================================
 // SCHEMA ZOD
@@ -86,10 +87,10 @@ export function BimesterForm({
   const [isLoading, setIsLoading] = useState(false);
   // cycle id is managed by react-hook-form; we'll read it via watch('cycleId')
   const [startDate, setStartDate] = useState<Date | undefined>(
-    editingBimester?.startDate ? new Date(editingBimester.startDate) : undefined
+    editingBimester?.startDate ? parseISODateForTimezone(editingBimester.startDate) : undefined
   );
   const [endDate, setEndDate] = useState<Date | undefined>(
-    editingBimester?.endDate ? new Date(editingBimester.endDate) : undefined
+    editingBimester?.endDate ? parseISODateForTimezone(editingBimester.endDate) : undefined
   );
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
@@ -135,8 +136,8 @@ export function BimesterForm({
   console.log('[BimesterForm] editingBimester changed:', editingBimester);
 
     if (editingBimester) {
-      setStartDate(editingBimester.startDate ? new Date(editingBimester.startDate) : undefined);
-      setEndDate(editingBimester.endDate ? new Date(editingBimester.endDate) : undefined);
+      setStartDate(editingBimester.startDate ? parseISODateForTimezone(editingBimester.startDate) : undefined);
+      setEndDate(editingBimester.endDate ? parseISODateForTimezone(editingBimester.endDate) : undefined);
 
       // eslint-disable-next-line no-console
       console.log('[BimesterForm] resetting form with cycleId:', editingCycleId);
