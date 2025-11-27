@@ -37,6 +37,7 @@ import { useHolidayCycles } from '@/hooks/data/useHolidayCycles';
 import { useHolidayBimesters } from '@/hooks/data/useHolidayBimesters';
 import { useHolidayBreakWeeks } from '@/hooks/data/useHolidayBreakWeeks';
 import { holidaysService } from '@/services/holidays.service';
+import { isDateInRange as isDateInRangeUtil } from '@/utils/dateUtils';
 
 // Esquema de validación
 const holidayFormSchema = z.object({
@@ -99,19 +100,23 @@ export function HolidayForm({
     }
   }, [selectedBimesterId, bimesters]);
 
-  const isDateInRange = (date: Date | undefined): boolean => {
+  // Validar si una fecha está dentro del rango del bimestre (comparación YYYY-MM-DD)
+  const isDateInBimesterRange = (date: Date | undefined): boolean => {
     if (!date || !selectedBimester) return true;
-    return holidaysService.isDateInBimesterRange(
-      date.toISOString(),
-      selectedBimester.startDate,
-      selectedBimester.endDate
-    );
+    
+    // Convertir date a string YYYY-MM-DD
+    const dateStr = date.getFullYear() + '-' + 
+      String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(date.getDate()).padStart(2, '0');
+    
+    // Usar la función robusta de comparación
+    return isDateInRangeUtil(dateStr, selectedBimester.startDate, selectedBimester.endDate);
   };
 
   // Función para deshabilitar fechas en el calendario
   const isDateDisabled = (date: Date): boolean => {
     // Deshabilitar si está fuera del rango del bimestre
-    if (!isDateInRange(date)) return true;
+    if (!isDateInBimesterRange(date)) return true;
     
     // Deshabilitar si está en una semana BREAK
     if (isDateInBreak(date.toISOString())) return true;

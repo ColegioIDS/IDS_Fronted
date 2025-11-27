@@ -381,3 +381,64 @@ export function parseISODateForTimezone(isoDateString: string): Date {
     return new Date();
   }
 }
+
+/**
+ * Extrae la parte YYYY-MM-DD de una fecha ISO como string
+ * Útil para comparaciones de fechas sin preocuparse por timezone
+ *
+ * @param isoDateString - Fecha en formato ISO (ej: "2026-01-12T00:00:00.000Z")
+ * @returns string - Fecha en formato YYYY-MM-DD (ej: "2026-01-12")
+ *
+ * @example
+ * const dateStr = extractDatePart("2026-01-12T06:00:00.000Z");
+ * // Devuelve "2026-01-12"
+ */
+export function extractDatePart(isoDateString: string): string {
+  return isoDateString.split('T')[0];
+}
+
+/**
+ * Compara dos fechas ISO considerando solo la fecha (YYYY-MM-DD)
+ * Ignora la hora y zona horaria completamente
+ *
+ * @param isoDate1 - Primera fecha en formato ISO
+ * @param isoDate2 - Segunda fecha en formato ISO
+ * @returns number - Negativo si date1 < date2, 0 si son iguales, positivo si date1 > date2
+ *
+ * @example
+ * compareDateParts("2026-01-12T06:00:00.000Z", "2026-01-13T00:00:00.000Z")
+ * // Devuelve -1 (enero 12 es antes que enero 13)
+ */
+export function compareDateParts(isoDate1: string, isoDate2: string): number {
+  const date1Str = extractDatePart(isoDate1);
+  const date2Str = extractDatePart(isoDate2);
+  
+  if (date1Str < date2Str) return -1;
+  if (date1Str > date2Str) return 1;
+  return 0;
+}
+
+/**
+ * Verifica si una fecha está dentro de un rango, comparando solo YYYY-MM-DD
+ * Ignora completamente la hora y zona horaria
+ *
+ * @param isoDateToCheck - Fecha ISO a verificar
+ * @param isoStartDate - Inicio del rango en formato ISO
+ * @param isoEndDate - Fin del rango en formato ISO
+ * @returns boolean - true si la fecha está dentro del rango (inclusivo)
+ *
+ * @example
+ * isDateInRange("2026-01-15T12:00:00.000Z", "2026-01-12T00:00:00.000Z", "2026-03-13T18:00:00.000Z")
+ * // Devuelve true
+ */
+export function isDateInRange(
+  isoDateToCheck: string,
+  isoStartDate: string,
+  isoEndDate: string
+): boolean {
+  const dateToCheckStr = extractDatePart(isoDateToCheck);
+  const startStr = extractDatePart(isoStartDate);
+  const endStr = extractDatePart(isoEndDate);
+  
+  return dateToCheckStr >= startStr && dateToCheckStr <= endStr;
+}

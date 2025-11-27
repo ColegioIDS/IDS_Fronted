@@ -9,6 +9,7 @@ import { Calendar, Coffee, Umbrella, ChevronLeft, ChevronRight, Check, X } from 
 import { Button } from '@/components/ui/button';
 import { Holiday, BreakWeek } from '@/types/holidays.types';
 import { cn } from '@/lib/utils';
+import { extractDatePart, isDateInRange, parseISODateForTimezone } from '@/utils/dateUtils';
 
 interface HolidaysCalendarProps {
   holidays: Holiday[];
@@ -43,24 +44,22 @@ export function HolidaysCalendar({
     setCurrentMonth(new Date());
   };
 
-  // Mapear holidays por fecha para búsqueda rápida
+  // Mapear holidays por fecha para búsqueda rápida (usando YYYY-MM-DD sin timezone)
   const holidaysByDate = useMemo(() => {
     const map = new Map<string, Holiday>();
     holidays.forEach(holiday => {
-      const dateKey = format(parseISO(holiday.date), 'yyyy-MM-dd');
+      const dateKey = extractDatePart(holiday.date);
       map.set(dateKey, holiday);
     });
     return map;
   }, [holidays]);
 
-  // Función para verificar si una fecha está en una semana BREAK
+  // Función para verificar si una fecha está en una semana BREAK (usando comparación de strings YYYY-MM-DD)
   const isDateInBreakWeek = (date: Date): BreakWeek | null => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    return breakWeeks.find(week => {
-      const start = parseISO(week.startDate);
-      const end = parseISO(week.endDate);
-      return isWithinInterval(date, { start, end });
-    }) || null;
+    return breakWeeks.find(week => 
+      isDateInRange(dateStr, week.startDate, week.endDate)
+    ) || null;
   };
 
   // Obtener el día de la semana del primer día del mes (0 = Domingo)

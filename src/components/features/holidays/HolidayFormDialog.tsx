@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { HolidayForm } from './HolidayForm';
 import { CreateHolidayDto, Holiday } from '@/types/holidays.types';
+import { parseISODateForTimezone } from '@/utils/dateUtils';
 
 interface HolidayFormDialogProps {
   open: boolean;
@@ -48,7 +49,7 @@ export function HolidayFormDialog({
         id: holiday.id,
         cycleId: holiday.bimester.cycle.id,
         bimesterId: holiday.bimester.id,
-        date: new Date(holiday.date),
+        date: parseISODateForTimezone(holiday.date),
         description: holiday.description,
         isRecovered: holiday.isRecovered,
       }

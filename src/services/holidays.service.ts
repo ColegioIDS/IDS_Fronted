@@ -1,6 +1,7 @@
 // src/services/holidays.service.ts
 
 import { api } from '@/config/api';
+import { isDateInRange, compareDateParts } from '@/utils/dateUtils';
 import type {
   Holiday,
   CreateHolidayDto,
@@ -166,54 +167,53 @@ export const holidaysService = {
 
   /**
    * Validar si una fecha está en un rango de bimestre
+   * Usa comparación de strings YYYY-MM-DD para evitar problemas de timezone
    */
   isDateInBimesterRange(
     date: string,
     bimesterStart: string,
     bimesterEnd: string
   ): boolean {
-    const selectedDate = new Date(date);
-    const start = new Date(bimesterStart);
-    const end = new Date(bimesterEnd);
-    return selectedDate >= start && selectedDate <= end;
+    return isDateInRange(date, bimesterStart, bimesterEnd);
   },
 
   /**
    * Validar si una fecha cae en una semana BREAK
+   * Usa comparación de strings YYYY-MM-DD para evitar problemas de timezone
    */
   isDateInBreakWeek(date: string, breakWeeks: BreakWeek[]): boolean {
     if (!Array.isArray(breakWeeks) || breakWeeks.length === 0) return false;
     
-    const selectedDate = new Date(date);
-    return breakWeeks.some((week) => {
-      const start = new Date(week.startDate);
-      const end = new Date(week.endDate);
-      return selectedDate >= start && selectedDate <= end;
-    });
+    return breakWeeks.some((week) =>
+      isDateInRange(date, week.startDate, week.endDate)
+    );
   },
 
   /**
-   * Obtener el nombre del mes de una fecha
+   * Obtener el nombre del mes de una fecha ISO
    */
   getMonthName(date: string): string {
     const monthNames = [
       'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
-    const d = new Date(date);
-    return monthNames[d.getMonth()];
+    const datePart = date.split('T')[0]; // Extraer YYYY-MM-DD
+    const [, monthStr] = datePart.split('-');
+    const month = parseInt(monthStr, 10) - 1;
+    return monthNames[month];
   },
 
   /**
-   * Formatear fecha para display
+   * Formatear fecha ISO para display
    */
   formatDate(date: string, format: 'full' | 'short' = 'full'): string {
-    const d = new Date(date);
-    const day = d.getDate();
+    const datePart = date.split('T')[0]; // Extraer YYYY-MM-DD
+    const [yearStr, monthStr, dayStr] = datePart.split('-');
+    const day = parseInt(dayStr, 10);
     const month = format === 'full' 
       ? this.getMonthName(date)
       : this.getMonthName(date).substring(0, 3);
-    const year = d.getFullYear();
+    const year = yearStr;
 
     return format === 'full' 
       ? `${day} de ${month}, ${year}`

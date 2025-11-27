@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, BookOpen, FileText, CheckCircle2, XCircle, Archive } from 'lucide-react';
 import { Holiday } from '@/types/holidays.types';
+import { parseISODateForTimezone } from '@/utils/dateUtils';
 
 interface HolidayDetailDialogProps {
   open: boolean;
@@ -66,7 +67,7 @@ export function HolidayDetailDialog({
                 Fecha
               </p>
               <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
-                {format(new Date(holiday.date), "EEEE d 'de' MMMM, yyyy", { locale: es })}
+                {format(parseISODateForTimezone(holiday.date), "EEEE d 'de' MMMM, yyyy", { locale: es })}
               </p>
             </div>
           </div>
@@ -83,8 +84,8 @@ export function HolidayDetailDialog({
                   Bimestre {holiday.bimester.number} - {holiday.bimester.name}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {format(new Date(holiday.bimester.startDate), 'd MMM', { locale: es })} -{' '}
-                  {format(new Date(holiday.bimester.endDate), 'd MMM yyyy', { locale: es })}
+                  {format(parseISODateForTimezone(holiday.bimester.startDate), 'd MMM', { locale: es })} -{' '}
+                  {format(parseISODateForTimezone(holiday.bimester.endDate), 'd MMM yyyy', { locale: es })}
                 </p>
               </div>
             </div>

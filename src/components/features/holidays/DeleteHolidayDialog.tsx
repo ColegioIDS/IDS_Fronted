@@ -18,6 +18,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { Holiday } from '@/types/holidays.types';
+import { parseISODateForTimezone } from '@/utils/dateUtils';
 
 interface DeleteHolidayDialogProps {
   open: boolean;
@@ -73,7 +74,7 @@ export function DeleteHolidayDialog({
                   Fecha:
                 </p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  {format(new Date(holiday.date), "d 'de' MMMM, yyyy", { locale: es })}
+                  {format(parseISODateForTimezone(holiday.date), "d 'de' MMMM, yyyy", { locale: es })}
                 </p>
               </div>
 

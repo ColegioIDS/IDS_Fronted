@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Holiday } from '@/types/holidays.types';
 import { cn } from '@/lib/utils';
+import { parseISODateForTimezone } from '@/utils/dateUtils';
 
 interface HolidayCardProps {
   holiday: Holiday;
@@ -39,7 +40,7 @@ export function HolidayCard({
   canEdit = false,
   canDelete = false,
 }: HolidayCardProps) {
-  const holidayDate = new Date(holiday.date);
+  const holidayDate = parseISODateForTimezone(holiday.date);
   const isPast = holidayDate < new Date();
   const isArchived = holiday.bimester?.cycle?.isArchived;
 
