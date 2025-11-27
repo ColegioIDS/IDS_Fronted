@@ -330,10 +330,16 @@ export function AcademicWeekForm({
   const isDateInBimesterRange = (date: Date | undefined): boolean => {
     if (!date || !dynamicBimesterDateRange) return true;
 
-    const bimesterStart = new Date(dynamicBimesterDateRange.startDate);
-    const bimesterEnd = new Date(dynamicBimesterDateRange.endDate);
+    // Extraer solo la fecha YYYY-MM-DD (ignorar la hora y timezone)
+    const checkDateStr = date.getFullYear() + '-' + 
+      String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(date.getDate()).padStart(2, '0');
+    
+    const startDateStr = dynamicBimesterDateRange.startDate.split('T')[0];
+    const endDateStr = dynamicBimesterDateRange.endDate.split('T')[0];
 
-    return date >= bimesterStart && date <= bimesterEnd;
+    // Comparar solo las fechas como strings (YYYY-MM-DD)
+    return checkDateStr >= startDateStr && checkDateStr <= endDateStr;
   };
 
   const handleSubmit = async (data: AcademicWeekFormValues) => {
