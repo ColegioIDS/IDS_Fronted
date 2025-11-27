@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatISODateWithTimezone } from '@/utils/dateUtils';
 import { AcademicWeek, WEEK_TYPE_LABELS } from '@/types/academic-week.types';
 import { getWeekTypeTheme } from '@/config/theme.config';
 import { cn } from '@/lib/utils';
@@ -117,8 +118,8 @@ export function DeleteAcademicWeekDialog({
                       Periodo
                     </p>
                     <p className="text-sm text-gray-700 dark:text-gray-300">
-                      {format(new Date(week.startDate), "d 'de' MMMM", { locale: es })} -{' '}
-                      {format(new Date(week.endDate), "d 'de' MMMM, yyyy", { locale: es })}
+                      {formatISODateWithTimezone(week.startDate, "d 'de' MMMM")} -{' '}
+                      {formatISODateWithTimezone(week.endDate, "d 'de' MMMM, yyyy")}
                     </p>
                   </div>
 

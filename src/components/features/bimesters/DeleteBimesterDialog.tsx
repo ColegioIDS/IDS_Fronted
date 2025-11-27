@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Loader2, Trash2, X } from 'lucide-react';
 import { Bimester } from '@/types/bimester.types';
+import { formatISODateWithTimezone } from '@/utils/dateUtils';
 
 interface DeleteBimesterDialogProps {
   open: boolean;
@@ -63,7 +64,7 @@ export function DeleteBimesterDialog({
                 <li><strong>{bimester.name}</strong></li>
                 <li>Bimestre {bimester.number}</li>
                 <li>
-                  Período: {new Date(bimester.startDate).toLocaleDateString()} - {new Date(bimester.endDate).toLocaleDateString()}
+                  Período: {formatISODateWithTimezone(bimester.startDate, 'dd MMM yyyy')} - {formatISODateWithTimezone(bimester.endDate, 'dd MMM yyyy')}
                 </li>
               </ul>
             </AlertDescription>

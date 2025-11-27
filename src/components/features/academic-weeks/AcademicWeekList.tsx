@@ -7,6 +7,7 @@ import { Calendar, Clock, Edit2, Trash2, Eye, CheckCircle2, XCircle, ArrowUpDown
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { parseISODateForTimezone, formatDateWithTimezone } from '@/utils/dateUtils';
 import { AcademicWeek, WEEK_TYPE_LABELS } from '@/types/academic-week.types';
 import { getWeekTypeTheme } from '@/config/theme.config';
 import { cn } from '@/lib/utils';
@@ -119,8 +120,8 @@ export function AcademicWeekList({
       <div className="space-y-2">
         {weeks.map((week) => {
           const theme = getWeekTypeTheme(week.weekType);
-          const start = new Date(week.startDate);
-          const end = new Date(week.endDate);
+          const start = parseISODateForTimezone(week.startDate);
+          const end = parseISODateForTimezone(week.endDate);
           const isInProgress = now >= start && now <= end;
 
           return (
@@ -168,7 +169,7 @@ export function AcademicWeekList({
                 <div className="flex items-center gap-2">
                   <Calendar className={cn('h-4 w-4', theme.icon)} />
                   <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {format(start, 'd MMM yyyy', { locale: es })}
+                    {formatDateWithTimezone(start, 'd MMM yyyy')}
                   </span>
                 </div>
               </div>
@@ -176,7 +177,7 @@ export function AcademicWeekList({
               {/* Fecha fin */}
               <div className="col-span-2 flex items-center">
                 <span className="text-sm text-gray-700 dark:text-gray-300">
-                  {format(end, 'd MMM yyyy', { locale: es })}
+                  {formatDateWithTimezone(end, 'd MMM yyyy')}
                 </span>
               </div>
 

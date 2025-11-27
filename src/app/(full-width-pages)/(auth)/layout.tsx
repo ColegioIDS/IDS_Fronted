@@ -34,7 +34,7 @@ export default function AuthLayout({
                   />
                 </Link>
                 <h2 className="text-center text-gray-400 dark:text-white/60 text-2xl mb-2 font-semibold">
-                  Colegio Innovacion de Soñadores
+                   Innovating Dreamers School
                 </h2>
                 <h3 className="text-center text-gray-400 dark:text-white/60 mb-6">
                   Bienvenido a la plataforma administrativa
