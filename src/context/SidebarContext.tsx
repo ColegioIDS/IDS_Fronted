@@ -1,14 +1,18 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
 
+export type SidebarMode = "extended" | "minimal" | "hidden";
+
 type SidebarContextType = {
   isExpanded: boolean;
   isMobileOpen: boolean;
   isHovered: boolean;
   activeItem: string | null;
   openSubmenu: string | null;
+  sidebarMode: SidebarMode;
   toggleSidebar: () => void;
   toggleMobileSidebar: () => void;
+  cycleSidebarMode: () => void;
   setIsHovered: (isHovered: boolean) => void;
   setActiveItem: (item: string | null) => void;
   toggleSubmenu: (item: string) => void;
@@ -34,21 +38,21 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
-
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
+  const [sidebarMode, setSidebarMode] = useState<SidebarMode>("extended");
 
+  // Load sidebar mode from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('sidebarExpanded');
-    if (saved !== null) {
-      setIsExpanded(JSON.parse(saved));
+    const saved = localStorage.getItem('sidebarMode');
+    if (saved && (saved === "extended" || saved === "minimal" || saved === "hidden")) {
+      setSidebarMode(saved as SidebarMode);
     }
   }, []);
 
+  // Save sidebar mode to localStorage when it changes
   useEffect(() => {
-    if (!isMobile) {
-      localStorage.setItem('sidebarExpanded', JSON.stringify(isExpanded));
-    }
-  }, [isExpanded, isMobile]);
+    localStorage.setItem('sidebarMode', sidebarMode);
+  }, [sidebarMode]);
 
 
   useEffect(() => {
@@ -76,6 +80,15 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsMobileOpen((prev) => !prev);
   };
 
+  const cycleSidebarMode = () => {
+    setSidebarMode((prev) => {
+      const modes: SidebarMode[] = ["extended", "minimal", "hidden"];
+      const currentIndex = modes.indexOf(prev);
+      const nextIndex = (currentIndex + 1) % modes.length;
+      return modes[nextIndex];
+    });
+  };
+
   const toggleSubmenu = (item: string) => {
     setOpenSubmenu((prev) => (prev === item ? null : item));
   };
@@ -88,12 +101,14 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
         isHovered,
         activeItem,
         openSubmenu,
+        sidebarMode,
         toggleSidebar,
         toggleMobileSidebar,
+        cycleSidebarMode,
         setIsHovered,
         setActiveItem,
         toggleSubmenu,
-        setIsExpanded, // Expose the setter for isExpanded
+        setIsExpanded,
       }}
     >
       {children}

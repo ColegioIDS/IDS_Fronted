@@ -10,13 +10,17 @@ import React, { useState ,useEffect,useRef} from "react";
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
 
-  const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
+  const { isMobileOpen, cycleSidebarMode, toggleMobileSidebar } = useSidebar();
 
-  const handleToggle = () => {
-    if (window.innerWidth >= 1024) {
-      toggleSidebar();
-    } else {
+  const handleSidebarToggle = () => {
+    // En mobile: toggle simple abierto/cerrado
+    // En desktop: cicla entre los 3 modos
+    if (window.innerWidth < 1024) {
+      // Mobile: solo abre/cierra
       toggleMobileSidebar();
+    } else {
+      // Desktop: cicla los modos
+      cycleSidebarMode();
     }
   };
 
@@ -46,7 +50,7 @@ const AppHeader: React.FC = () => {
         <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
           <button
             className="items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-40 dark:border-gray-800 lg:flex dark:text-gray-400 lg:h-11 lg:w-11 lg:border"
-            onClick={handleToggle}
+            onClick={handleSidebarToggle}
             aria-label="Toggle Sidebar"
           >
             {isMobileOpen ? (
