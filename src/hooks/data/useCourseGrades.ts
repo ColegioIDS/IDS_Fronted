@@ -85,7 +85,6 @@ export function useCourseGrades(
       setGrades(gradesData);
       setCourses(coursesData);
     } catch (err: any) {
-      console.error('Error loading available data:', err);
     }
   }, []);
 

@@ -41,7 +41,6 @@ export const PersonalDataSection = () => {
         const data = await studentsService.getDepartmentsWithMunicipalities();
         setDepartments(data || []);
       } catch (error) {
-        console.error('Error loading departments:', error);
         setDepartments([]);
       } finally {
         setLoadingLocations(false);

@@ -38,7 +38,6 @@ export function AttendanceStatusProvider({ children }: { children: React.ReactNo
     setError(null);
 
     try {
-      console.log('[AttendanceStatusContext] 🔄 Cargando estados de asistencia...');
 
       // Get user role from localStorage or use default
       const userRole = localStorage.getItem('userRole') || '1';
@@ -55,13 +54,11 @@ export function AttendanceStatusProvider({ children }: { children: React.ReactNo
       }
 
       const loadedStatuses = response.data.data || [];
-      console.log('[AttendanceStatusContext] ✅ Estados cargados:', loadedStatuses.length, loadedStatuses.map(s => ({ id: s.id, code: s.code, name: s.name })));
 
       setStatuses(loadedStatuses);
       setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      console.error('[AttendanceStatusContext] ❌ Error:', errorMessage);
       setError(errorMessage);
 
       // If that fails, provide helpful error message

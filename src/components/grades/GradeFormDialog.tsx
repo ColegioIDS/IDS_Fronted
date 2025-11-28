@@ -142,7 +142,6 @@ export default function GradeFormDialog({
       // Success - close dialog
       handleClose();
     } catch (error: any) {
-      console.error('Form submission error:', error);
       
       // Handle server validation errors
       if (error.response?.data?.details) {

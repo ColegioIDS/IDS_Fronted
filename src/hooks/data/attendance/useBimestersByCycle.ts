@@ -47,10 +47,8 @@ export const useBimestersByCycle = (): UseBimestersByCycleReturn => {
           startDate: data.startDate ? String(data.startDate) : undefined,
           endDate: data.endDate ? String(data.endDate) : undefined,
         };
-        console.log('[useBimestersByCycle] Bimestre cargado:', bimesterItem);
         setBimesters([bimesterItem]);
       } else {
-        console.log('[useBimestersByCycle] No hay data o id:', data);
         setBimesters([]);
       }
     } catch (err: unknown) {
@@ -58,7 +56,6 @@ export const useBimestersByCycle = (): UseBimestersByCycleReturn => {
         ? String((err as Record<string, unknown>).message)
         : 'Error al obtener bimestre activo';
       setError(errorMessage);
-      console.error('[useBimestersByCycle] Error:', errorMessage);
       setBimesters([]);
     } finally {
       setLoading(false);

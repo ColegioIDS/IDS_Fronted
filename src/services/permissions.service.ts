@@ -25,7 +25,6 @@ export const permissionsService = {
     if (query.sortOrder) params.append('sortOrder', query.sortOrder);
 
     const response = await api.get(`/api/permissions?${params.toString()}`);
-        console.log('Response data:', response);
 
     // ✅ VALIDACIÓN AGREGADA
     if (!response.data.data) {
@@ -69,7 +68,6 @@ export const permissionsService = {
     if (!response.data.data) {
       throw new Error('Permiso no encontrado');
     }
-    console.log('Permission data:', response.data.data);
     return response.data.data;
   },
 

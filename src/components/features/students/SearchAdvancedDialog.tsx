@@ -93,7 +93,6 @@ export const SearchAdvancedDialog: React.FC<SearchAdvancedDialogProps> = ({
         sections: allSections || [],
       });
     } catch (err) {
-      console.error('Error loading filter options:', err);
       toast.error('Error al cargar opciones de filtro');
     } finally {
       setLoading(false);
@@ -107,7 +106,6 @@ export const SearchAdvancedDialog: React.FC<SearchAdvancedDialogProps> = ({
       try {
         setSavedSearches(JSON.parse(saved));
       } catch (err) {
-        console.error('Error loading saved searches:', err);
       }
     }
   };

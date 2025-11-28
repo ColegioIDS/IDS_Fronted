@@ -36,7 +36,6 @@ export function useHolidayBreakWeeks(cycleId: number | undefined, bimesterId?: n
       } catch (err: any) {
         const errorMessage = err.message || 'Error al cargar semanas de receso';
         setError(errorMessage);
-        console.error('Error loading break weeks:', err);
         setBreakWeeks([]);
       } finally {
         setIsLoading(false);

@@ -43,7 +43,6 @@ export function useAcademicWeeks(initialQuery: QueryAcademicWeeksDto = {}) {
     } catch (err: any) {
       const errorMessage = err.message || 'Error al cargar semanas académicas';
       setError(errorMessage);
-      console.error('Error loading academic weeks:', err);
       setData([]);
     } finally {
       setIsLoading(false);

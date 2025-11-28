@@ -90,7 +90,6 @@ export default function SchedulesPageContent({
       }
     } catch (err) {
       toast.error('Error al actualizar datos');
-      console.error('Refresh error:', err);
     }
   };
 
@@ -166,7 +165,6 @@ export default function SchedulesPageContent({
     try {
       return ScheduleTimeGenerator.generateTimeSlots(config);
     } catch (error) {
-      console.error('Error generating time slots:', error);
       return DEFAULT_TIME_SLOTS;
     }
   }, [config, selectedSection]);
@@ -219,7 +217,6 @@ export default function SchedulesPageContent({
             operationResults.deleted++;
           } catch (err) {
             hasErrors = true;
-            console.error('Error deleting schedule:', err);
           }
         }
       }
@@ -239,7 +236,6 @@ export default function SchedulesPageContent({
             operationResults.updated++;
           } catch (err) {
             hasErrors = true;
-            console.error('Error updating schedule:', err);
           }
         }
       }
@@ -262,17 +258,13 @@ export default function SchedulesPageContent({
         try {
           batchResult = await batchSave(schedulesToCreate);
 
-          console.log('📦 batchResult after batchSave:', batchResult);
           
           // Ensure batchResult has the expected structure
           if (!batchResult) {
-            console.warn('⚠️ batchResult is null!');
             hasErrors = true;
           } else if (!batchResult.data) {
-            console.warn('⚠️ batchResult.data is missing! Structure:', Object.keys(batchResult));
             // Fallback: if batchResult IS the data (not wrapped), treat it specially
             if ((batchResult as any).stats && (batchResult as any).items) {
-              console.log('ℹ️ batchResult seems to be unwrapped, wrapping it now');
               batchResult = {
                 success: false,
                 message: 'Operación completada',
@@ -299,7 +291,6 @@ export default function SchedulesPageContent({
         } catch (error: any) {
           hasErrors = true;
           batchError = error;
-          console.error('Error in batch save:', error);
         }
       }
 
@@ -307,7 +298,6 @@ export default function SchedulesPageContent({
       setTempSchedules([]);
       setPendingChanges([]);
       
-      console.log('📊 BATCH SAVE RESULT CHECK:', {
         hasErrors,
         'batchResult?.success': batchResult?.success,
         'batchResult?.data?.stats': batchResult?.data?.stats,
@@ -321,7 +311,6 @@ export default function SchedulesPageContent({
         let errors = batchResult?.data?.items?.errors || [];
         const batchStats = batchResult?.data?.stats ?? { created: 0, updated: 0, deleted: 0, errors: 0 };
         
-        console.log('🔴 BATCH ERROR DEBUG:', {
           batchResult,
           errors,
           batchError,
@@ -332,10 +321,8 @@ export default function SchedulesPageContent({
         
         // If no errors found in the expected location, check if backend sent them differently
         if (!errors || errors.length === 0) {
-          console.warn('⚠️ No errors found in expected location, checking alternative structures');
           // Maybe the backend is returning errors in a different format
           if (batchResult?.data && typeof batchResult.data === 'object') {
-            console.log('Available data keys:', Object.keys(batchResult.data));
           }
         }
         
@@ -371,14 +358,12 @@ export default function SchedulesPageContent({
         // Scenario 2: Validation errors from backend (errors in items)
         else if (errors.length > 0) {
           // Show all errors clearly with their details
-          console.log(`📋 Mostrando ${errors.length} errores`);
           
           errors.forEach((err: any, errorIndex: number) => {
             // Determine delay for sequential display
             const baseDelay = errorIndex * 400; // Increased delay for better visibility
             
             // Main error message
-            console.log(`Error ${errorIndex + 1}:`, err);
             
             const errorDescription = err.details && err.details.length > 0 
               ? err.details[0] 
@@ -401,7 +386,6 @@ export default function SchedulesPageContent({
             }
           });
         } else {
-          console.warn('⚠️ Has errors pero sin errores específicos');
           toast.error('Operación completada con errores', {
             duration: 5000,
           });
@@ -429,7 +413,6 @@ export default function SchedulesPageContent({
       
       return { success: true };
     } catch (error: any) {
-      console.error('Error saving changes:', error);
       
       const errorMessage = error?.message || 'Error al guardar cambios';
       const errorDetails = error?.details || [];
@@ -479,7 +462,6 @@ export default function SchedulesPageContent({
     if (item.type !== 'courseAssignment') return;
     if (!selectedSection || selectedSection === 0) return;
 
-    console.log('🎯 Drop:', { item, day, timeSlot });
 
     // Find the course assignment
     const assignment = courseAssignments.find(ca => ca.id === item.id);
@@ -615,7 +597,6 @@ export default function SchedulesPageContent({
         }
       }
     } catch (error: any) {
-      console.error('Error saving config:', error);
 
       const errorMessage = error?.message || 'Error al guardar configuración';
       const errorDetails = error?.details || error?.response?.data?.details || [];
@@ -1053,7 +1034,6 @@ export default function SchedulesPageContent({
                   setPendingChanges(prev => [...prev, ...changes]);
                 }}
                 onScheduleClick={(schedule) => {
-                  console.log('Schedule clicked:', schedule);
                   // TODO: Open edit modal
                 }}
                 canEdit={canUpdate}

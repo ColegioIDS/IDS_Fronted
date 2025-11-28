@@ -59,7 +59,6 @@ export const useActiveCycleAndBimester = (): UseActiveCycleAndBimesterReturn => 
         ? String((err as Record<string, unknown>).message)
         : 'Error al obtener ciclo y bimestre activos';
       setError(errorMessage);
-      console.error('[useActiveCycleAndBimester] Error:', errorMessage);
     } finally {
       setLoading(false);
     }

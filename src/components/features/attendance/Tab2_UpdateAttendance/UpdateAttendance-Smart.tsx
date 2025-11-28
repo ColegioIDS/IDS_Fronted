@@ -56,7 +56,6 @@ export function UpdateAttendanceTabSmartEdit() {
       );
       setAllowedStatuses(statuses);
     } catch (err) {
-      console.error('Error loading attendance data:', err);
       setError('Error al cargar los datos de asistencia. Intenta nuevamente.');
     } finally {
       setIsReloading(false);
@@ -113,8 +112,6 @@ export function UpdateAttendanceTabSmartEdit() {
       // Limpiar mensaje después de 3 segundos
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
-      console.error('Error updating attendance status:', err);
-      console.error('Full error object:', err);
       
       // Mejorar mensajes de error basados en la respuesta del servidor
       let errorMessage = 'Error al actualizar el estado. Intenta nuevamente.';
@@ -126,7 +123,6 @@ export function UpdateAttendanceTabSmartEdit() {
         err.message ||
         '';
       
-      console.log('Backend message:', backendMessage);
       
       if (backendMessage) {
         // Mapear mensajes comunes del backend a mensajes más descriptivos

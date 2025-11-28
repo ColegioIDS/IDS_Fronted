@@ -232,7 +232,6 @@ export function ScheduleConfigModal({
 
       await onSave(configToSave);
     } catch (error) {
-      console.error('Error saving config:', error);
     } finally {
       setIsSaving(false);
     }

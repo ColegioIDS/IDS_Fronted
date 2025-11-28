@@ -76,7 +76,6 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
 
             return { ...cycle, grades };
           } catch (err) {
-            console.error(`Error loading grades for cycle ${cycle.id}:`, err);
             return { ...cycle, grades: [] };
           }
         })
@@ -85,7 +84,6 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
       setCycles(cyclesWithGrades);
       toast.success('Configuraciones cargadas correctamente');
     } catch (err: any) {
-      console.error('Error loading data:', err);
       setError(err.message || 'Error al cargar datos');
       toast.error('Error al cargar configuraciones');
     } finally {
@@ -125,7 +123,6 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
       setDeleteDialog({ open: false, cycleId: 0, cycleName: '', grade: null });
     } catch (err: any) {
       toast.error(err.message || 'Error al eliminar el grado');
-      console.error('Error deleting:', err);
     } finally {
       setIsDeleting(false);
     }

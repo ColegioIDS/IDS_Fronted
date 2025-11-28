@@ -109,7 +109,6 @@ export const rolesService = {
    */
   async createRole(data: CreateRoleDto): Promise<Role> {
     const response = await api.post('/api/roles', data);
-      console.log(response);
 
     if (!response.data?.success) {
       throw new Error(response.data?.message || 'Error al crear el rol');

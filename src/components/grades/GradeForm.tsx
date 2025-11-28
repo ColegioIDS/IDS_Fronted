@@ -88,7 +88,6 @@ export default function GradeForm({ mode, onCancel, onSuccess }: GradeFormProps)
         toast.error(result.message || 'Error al guardar el grado');
       }
     } catch (error: any) {
-      console.error('Error en el formulario:', error);
       
       // Si el error tiene detalles de validación, procesarlos
       if (error.response?.data?.details) {

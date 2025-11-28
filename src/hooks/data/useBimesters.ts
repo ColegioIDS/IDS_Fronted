@@ -52,7 +52,6 @@ export function useBimesters(initialQuery: QueryBimestersDto = {}) {
     } catch (err: any) {
       const errorMessage = err.message || 'Error al cargar bimestres';
       setError(errorMessage);
-      console.error('Error loading bimesters:', err);
       setData([]);
     } finally {
       setIsLoading(false);

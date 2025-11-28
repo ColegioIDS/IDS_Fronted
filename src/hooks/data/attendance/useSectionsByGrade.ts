@@ -65,7 +65,6 @@ export const useSectionsByGrade = (
         ? String((err as Record<string, unknown>).message)
         : 'Error al obtener secciones';
       setError(errorMessage);
-      console.error('[useSectionsByGrade] Error:', errorMessage);
       setSections([]);
     } finally {
       setLoading(false);

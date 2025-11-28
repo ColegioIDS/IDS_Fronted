@@ -28,9 +28,7 @@ export const attendanceConfigurationService = {
     try {
       // Use the attendance API endpoint that returns grades from active cycle
       const url = `/api/attendance/cycle/active/grades`;
-      console.log('[attendanceConfigurationService] getGrades URL:', url);
       const response = await api.get<{ success: boolean; data: any[]; message?: string }>(url);
-      console.log('[attendanceConfigurationService] getGrades response:', response.data);
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Error al cargar grados');
@@ -43,7 +41,6 @@ export const attendanceConfigurationService = {
 
       return grades;
     } catch (error) {
-      console.error('Error loading grades:', error);
       throw error;
     }
   },
@@ -56,9 +53,7 @@ export const attendanceConfigurationService = {
   async getSectionsByGrade(gradeId: number): Promise<Section[]> {
     try {
       const url = `/api/attendance/grades/${gradeId}/sections`;
-      console.log('[attendanceConfigurationService] getSectionsByGrade URL:', url);
       const response = await api.get<{ success: boolean; data: Section[]; message?: string }>(url);
-      console.log('[attendanceConfigurationService] getSectionsByGrade response:', response.data);
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Error al cargar secciones');
@@ -66,7 +61,6 @@ export const attendanceConfigurationService = {
 
       return response.data.data || [];
     } catch (error) {
-      console.error(`Error loading sections for grade ${gradeId}:`, error);
       throw error;
     }
   },
@@ -79,22 +73,18 @@ export const attendanceConfigurationService = {
   async getStudentsBySection(sectionId: number): Promise<any[]> {
     try {
       const url = `/api/attendance/enrollment/section/${sectionId}/students`;
-      console.log('[AttendanceConfig] 🔍 Llamando endpoint:', url);
 
       const response = await api.get<{ success: boolean; data: any[]; message?: string }>(url);
 
-      console.log('[AttendanceConfig] ✅ Response recibido:', response.status, response.data);
 
       if (!response.data?.success) {
         // 404 es OK - significa que no hay estudiantes, no es un error
         if (response.status === 404) {
-          console.log(`[AttendanceConfig] ⓘ Sin estudiantes para sección ${sectionId}`);
           return [];
         }
         throw new Error(response.data?.message || 'Error al cargar estudiantes');
       }
 
-      console.log(
         `[AttendanceConfig] 📊 Estudiantes cargados para sección ${sectionId}:`,
         response.data.data?.length || 0,
         'estudiantes'
@@ -104,11 +94,9 @@ export const attendanceConfigurationService = {
     } catch (error: any) {
       // If it's a 404, it's not really an error - just no students
       if (error.response?.status === 404) {
-        console.log(`[AttendanceConfig] ⓘ Sin estudiantes para sección ${sectionId}`);
         return [];
       }
 
-      console.error(`[AttendanceConfig] ❌ Error loading students for section ${sectionId}:`, error);
       // Return empty array instead of throwing, so UI doesn't break
       return [];
     }
@@ -139,7 +127,6 @@ export const attendanceConfigurationService = {
         },
       };
     } catch (error) {
-      console.error('Error loading grades and sections:', error);
       throw error;
     }
   },
@@ -151,10 +138,8 @@ export const attendanceConfigurationService = {
   async getHolidays(query?: ConfigurationQuery): Promise<Holiday[]> {
     try {
       const url = '/api/attendance/holidays';
-      console.log('[AttendanceConfig] getHolidays URL:', url);
       const response = await api.get<{ success: boolean; data: Holiday[]; message?: string }>(url);
 
-      console.log('[AttendanceConfig] getHolidays response:', response.data);
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Error al cargar días festivos');
@@ -162,7 +147,6 @@ export const attendanceConfigurationService = {
 
       return response.data.data || [];
     } catch (error) {
-      console.error('Error loading holidays:', error);
       throw error;
     }
   },
@@ -175,12 +159,10 @@ export const attendanceConfigurationService = {
   async getHolidayByDate(date: string): Promise<Holiday | null> {
     try {
       const url = `/api/attendance/holiday/by-date`;
-      console.log('[AttendanceConfig] getHolidayByDate URL:', url, 'date:', date);
       const response = await api.get<{ success: boolean; data: Holiday | null }>(url, {
         params: { date },
       });
 
-      console.log('[AttendanceConfig] getHolidayByDate response:', response.data);
 
       if (!response.data?.success) {
         return null;
@@ -188,7 +170,6 @@ export const attendanceConfigurationService = {
 
       return response.data.data || null;
     } catch (error) {
-      console.error(`Error checking holiday for date ${date}:`, error);
       return null;
     }
   },
@@ -205,7 +186,6 @@ export const attendanceConfigurationService = {
       };
       localStorage.setItem('attendance_grades_cache', JSON.stringify(cache));
     } catch (error) {
-      console.warn('Failed to cache grades:', error);
     }
   },
 
@@ -225,7 +205,6 @@ export const attendanceConfigurationService = {
       
       return data;
     } catch (error) {
-      console.warn('Failed to retrieve cached grades:', error);
       return null;
     }
   },
@@ -240,7 +219,6 @@ export const attendanceConfigurationService = {
       localStorage.removeItem('attendance_holidays_cache');
       localStorage.removeItem('attendance_statuses_cache');
     } catch (error) {
-      console.warn('Failed to clear cache:', error);
     }
   },
 
@@ -260,7 +238,6 @@ export const attendanceConfigurationService = {
 
       return response.data.data || [];
     } catch (error) {
-      console.error('Error loading attendance statuses:', error);
       throw error;
     }
   },
@@ -277,7 +254,6 @@ export const attendanceConfigurationService = {
       };
       localStorage.setItem('attendance_statuses_cache', JSON.stringify(cache));
     } catch (error) {
-      console.warn('Failed to cache statuses:', error);
     }
   },
 
@@ -297,7 +273,6 @@ export const attendanceConfigurationService = {
       
       return data;
     } catch (error) {
-      console.warn('Failed to retrieve cached statuses:', error);
       return null;
     }
   },

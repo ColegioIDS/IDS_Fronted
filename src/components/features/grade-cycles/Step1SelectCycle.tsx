@@ -52,7 +52,6 @@ export function Step1SelectCycle({
         const data = await gradeCyclesService.getAvailableCycles();
         setCycles(data);
       } catch (err: any) {
-        console.error('Error loading cycles:', err);
         setError(err.message || 'Error al cargar ciclos');
       } finally {
         setIsLoading(false);

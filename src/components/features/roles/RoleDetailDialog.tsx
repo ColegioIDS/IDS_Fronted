@@ -60,7 +60,6 @@ export function RoleDetailDialog({ roleId, open, onClose }: RoleDetailDialogProp
       setStats(statsData);
     } catch (err: any) {
       setError(err.message || 'Error al cargar el rol');
-      console.error('Error loading role details:', err);
     } finally {
       setIsLoading(false);
     }

@@ -77,7 +77,6 @@ export function useGradeCycleHelpers(): UseGradeCycleHelpersReturn {
       try {
         return await gradeCyclesService.getAvailableGradesForCycle(cycleId);
       } catch (err: any) {
-        console.error('Error fetching available grades for cycle:', err);
         throw err;
       }
     },
@@ -89,7 +88,6 @@ export function useGradeCycleHelpers(): UseGradeCycleHelpersReturn {
       try {
         return await gradeCyclesService.getAvailableCyclesForGrade(gradeId);
       } catch (err: any) {
-        console.error('Error fetching available cycles for grade:', err);
         throw err;
       }
     },

@@ -44,7 +44,6 @@ export function ScheduleCheck({
         // ✅ Usar función utility que respeta la zona horaria de Guatemala
         const isoDay = getIsoDayOfWeek(date);
 
-        console.log('📅 ScheduleCheck using timezone-aware date:', { date, isoDay });
 
         const schedules = await validateTeacherSchedules(
           teacherId,
@@ -63,7 +62,6 @@ export function ScheduleCheck({
         const message = err instanceof Error ? err.message : 'Error al validar horarios';
         setError(message);
         setScheduleData(null);
-        console.error('[ScheduleCheck]', message);
       } finally {
         setIsValidating(false);
       }

@@ -29,7 +29,6 @@ export function useUserProfile(): UseUserProfileReturn {
       setProfile(data);
     } catch (err: any) {
       setError(err.message || 'Error al cargar el perfil');
-      console.error('Error fetching profile:', err);
     } finally {
       setIsLoading(false);
     }

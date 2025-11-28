@@ -57,7 +57,6 @@ export function Step2SelectGrades({
         );
         setGrades(data);
       } catch (err: any) {
-        console.error('Error loading grades:', err);
         setError(err.message || 'Error al cargar grados');
       } finally {
         setIsLoading(false);

@@ -12,7 +12,6 @@ export const userProfileService = {
   async getProfile(): Promise<UserProfile> {
     const response = await api.get('/api/user-profile');
     
-    console.log('🔍 user-profile response:', response.data);
 
     if (!response.data?.success) {
       throw new Error(response.data?.message || 'Error al obtener el perfil');

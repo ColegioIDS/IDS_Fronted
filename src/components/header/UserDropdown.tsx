@@ -156,10 +156,35 @@ export default function UserDropdown() {
             </DropdownItem>
           </li>
           <li>
+            <DropdownItem
+              onItemClick={closeDropdown}
+              tag="a"
+              href="/auth/password-reset/request"
+              className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+            >
+              <svg
+                className="fill-gray-500 group-hover:fill-gray-700 dark:fill-gray-400 dark:group-hover:fill-gray-300"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M3 5C3 3.9 3.9 3 5 3H14C14.55 3 15 3.45 15 4C15 4.55 14.55 5 14 5H5V19H14C14.55 19 15 19.45 15 20C15 20.55 14.55 21 14 21H5C3.9 21 3 20.1 3 19V5ZM16.3 8.3C16.69 8.69 17.32 8.69 17.71 8.3L20 6.01L22.29 8.3C22.68 8.69 23.31 8.69 23.7 8.3C24.09 7.91 24.09 7.28 23.7 6.89L21.41 4.6C21.02 4.21 20.39 4.21 20 4.6L17.71 6.89C17.32 7.28 17.32 7.91 17.71 8.3C17.32 7.28 16.69 7.28 16.3 7.89V8.3Z"
+                  fill=""
+                />
+              </svg>
+              Verificar correo
+            </DropdownItem>
+          </li>
+          <li>
   <DropdownItem
     onItemClick={() => {
       closeDropdown();
-      handleLogout(); // <-- aquí llamas a tu función de logout
+      handleLogout();
     }}
     tag="button"
     className="flex w-full items-center gap-3 px-3 py-2 font-medium text-red-600 rounded-lg group text-theme-sm hover:bg-red-50 dark:hover:bg-white/5 dark:text-red-400 dark:hover:text-red-300"

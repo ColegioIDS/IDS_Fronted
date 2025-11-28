@@ -87,7 +87,6 @@ export function ArchiveReasonDialog({
     } catch (err: any) {
       // El error ya debería ser manejado en el componente padre
       // Pero si llega aquí, mostrar localmente
-      console.error('Archive error:', err);
       toast.error('Error al archivar el ciclo escolar');
     }
   };

@@ -113,7 +113,6 @@ export function useAttendanceStatuses(
       } catch (err: any) {
         const message = err.message || 'Error al cargar estados de asistencia';
         setError(message);
-        console.error('Error getStatuses:', err);
       } finally {
         setIsLoading(false);
       }

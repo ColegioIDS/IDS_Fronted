@@ -16,12 +16,10 @@ export const attendanceRecordService = {
   ): Promise<any[]> {
     try {
       const url = `/api/attendance/section/${sectionId}/cycle/${cycleId}/date/${date}`;
-      console.log('%c[GET] Obtener Asistencia Detallada', 'color: #0066cc; font-weight: bold;');
       console.table({ endpoint: url });
 
       const response = await api.get<{ success: boolean; data: any[]; message?: string }>(url);
 
-      console.log('[attendanceRecordService] getAttendanceByDate response:', response.data);
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Error al cargar asistencia');
@@ -29,7 +27,6 @@ export const attendanceRecordService = {
 
       return response.data.data || [];
     } catch (error) {
-      console.error('[attendanceRecordService] Error getting attendance:', error);
       throw error;
     }
   },
@@ -52,12 +49,10 @@ export const attendanceRecordService = {
         changeReason: reason,
       };
 
-      console.log('%c[PATCH] Actualizar Estado de Asistencia', 'color: #ff9900; font-weight: bold;');
       console.table({ endpoint: url, payload });
 
       const response = await api.patch<{ success: boolean; data: any; message?: string }>(url, payload);
 
-      console.log('[attendanceRecordService] updateAttendanceStatus response:', response.data);
 
       if (!response.data?.success) {
         const errorMessage = response.data?.message || 'Error al actualizar asistencia';
@@ -68,7 +63,6 @@ export const attendanceRecordService = {
 
       return response.data.data;
     } catch (error: any) {
-      console.error('[attendanceRecordService] Error updating attendance:', error);
       
       // Propagar el error con toda la información
       if (error?.response?.data) {
@@ -101,12 +95,10 @@ export const attendanceRecordService = {
         arrivalTime: arrivalTime || null,
       };
 
-      console.log('%c[POST] Crear Registro Individual de Asistencia', 'color: #00cc66; font-weight: bold;');
       console.table({ endpoint: url, payload });
 
       const response = await api.post<{ success: boolean; data: any; message?: string }>(url, payload);
 
-      console.log('[attendanceRecordService] createSingleAttendance response:', response.data);
 
       if (!response.data?.success) {
         const errorMessage = response.data?.message || 'Error al crear asistencia';
@@ -117,7 +109,6 @@ export const attendanceRecordService = {
 
       return response.data.data;
     } catch (error: any) {
-      console.error('[attendanceRecordService] Error creating single attendance:', error);
       
       if (error?.response?.data) {
         throw error;
@@ -152,12 +143,10 @@ export const attendanceRecordService = {
         notes,
       };
 
-      console.log('%c[POST] Crear Registros de Asistencia', 'color: #00cc66; font-weight: bold;');
       console.table({ endpoint: url, payload });
 
       const response = await api.post<{ success: boolean; data: any; message?: string }>(url, payload);
 
-      console.log('[attendanceRecordService] bulkCreateAttendance response:', response.data);
 
       if (!response.data?.success) {
         const errorMessage = response.data?.message || 'Error al crear asistencia';
@@ -168,7 +157,6 @@ export const attendanceRecordService = {
 
       return response.data.data;
     } catch (error: any) {
-      console.error('[attendanceRecordService] Error creating attendance:', error);
       
       // Propagar el error con toda la información
       if (error?.response?.data) {

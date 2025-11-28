@@ -28,7 +28,6 @@ export function useHolidayCycles() {
       } catch (err: any) {
         const errorMessage = err.message || 'Error al cargar ciclos escolares';
         setError(errorMessage);
-        console.error('Error loading cycles:', err);
         setCycles([]);
       } finally {
         setIsLoading(false);

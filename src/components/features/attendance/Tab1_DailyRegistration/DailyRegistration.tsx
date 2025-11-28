@@ -82,22 +82,18 @@ export function DailyRegistration() {
           return;
         }
 
-        console.log('Loading allowed statuses for roleId:', roleId);
         
         const statuses = await getAllowedAttendanceStatusesByRole(roleId);
-        console.log('Loaded statuses:', statuses);
         
         setAllowedStatuses(statuses || []);
         
         // Validar que tenga al menos un estado permitido
         if (!statuses || statuses.length === 0) {
-          console.warn('No allowed statuses for this role');
           setHasPermission(false);
         } else {
           setHasPermission(true);
         }
       } catch (error) {
-        console.error('Error loading permissions:', error);
         setHasPermission(false);
         setAllowedStatuses([]);
       } finally {
@@ -144,9 +140,7 @@ export function DailyRegistration() {
       });
       
       setExistingAttendance(attendanceMap);
-      console.log('Loaded existing attendance:', attendanceMap);
     } catch (error) {
-      console.error('Error loading existing attendance:', error);
       setExistingAttendance(new Map());
       setConsolidatedData(null);
     } finally {

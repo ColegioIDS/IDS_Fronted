@@ -342,7 +342,6 @@ export function useSchedules(options: UseSchedulesOptions = {}): UseSchedulesRet
         return newSchedule;
       } catch (err) {
         handleError(err, 'Error al crear horario');
-        console.error('Error details:', err);
         return null;
       } finally {
         setIsSubmitting(false);

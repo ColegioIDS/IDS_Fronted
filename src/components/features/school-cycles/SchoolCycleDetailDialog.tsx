@@ -59,7 +59,6 @@ export function SchoolCycleDetailDialog({
         setStats(data);
       } catch (err: any) {
         setError(err.message || 'Error al cargar estadísticas');
-        console.error('Error loading stats:', err);
       } finally {
         setIsLoading(false);
       }

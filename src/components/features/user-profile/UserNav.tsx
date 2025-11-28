@@ -32,7 +32,6 @@ export function UserNav({ className }: UserNavProps) {
       await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' });
       router.push('/login');
     } catch (error) {
-      console.error('Error logging out:', error);
     }
   };
 

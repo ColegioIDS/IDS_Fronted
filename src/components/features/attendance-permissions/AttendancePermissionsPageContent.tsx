@@ -73,35 +73,27 @@ export const AttendancePermissionsPageContent: React.FC<
       if (propsRoles.length === 0 || propsStatuses.length === 0) {
         setLoadingData(true);
         try {
-          console.log('🔄 Cargando roles y estados de asistencia...');
           
           // Cargar roles desde API centralizada
           try {
             const rolesData = await getRoles();
-            console.log('✅ Roles cargados:', rolesData);
             if (rolesData && Array.isArray(rolesData) && rolesData.length > 0) {
               setRoles(rolesData);
             } else {
-              console.warn('⚠️ getRoles retornó un array vacío o inválido:', rolesData);
             }
           } catch (rolesError) {
-            console.error('❌ Error cargando roles:', rolesError);
           }
 
           // Cargar estados desde API centralizada
           try {
             const statusesData = await getAttendanceStatuses();
-            console.log('✅ Estados cargados:', statusesData);
             if (statusesData && Array.isArray(statusesData) && statusesData.length > 0) {
               setStatuses(statusesData);
             } else {
-              console.warn('⚠️ getAttendanceStatuses retornó un array vacío o inválido:', statusesData);
             }
           } catch (statusesError) {
-            console.error('❌ Error cargando estados:', statusesError);
           }
         } catch (error) {
-          console.error('❌ Error general cargando roles y estados:', error);
         } finally {
           setLoadingData(false);
         }
@@ -164,7 +156,6 @@ export const AttendancePermissionsPageContent: React.FC<
           },
         });
       } else {
-        console.error('Error submitting form:', error);
         toast.error(errorMessage);
       }
     } finally {
@@ -356,7 +347,6 @@ export const AttendancePermissionsPageContent: React.FC<
                         toast.warning('No se encontraron estados de asistencia disponibles');
                       }
                     } catch (error) {
-                      console.error('Error al cargar datos:', error);
                       toast.error('Error al conectar con el servidor');
                     } finally {
                       setLoadingData(false);

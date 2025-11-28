@@ -68,7 +68,6 @@ export function BimesterFilters({
     if (currentCycleId) {
       payload.schoolCycleId = currentCycleId;
     } else {
-      console.warn('⚠️ No hay cycleId, no se aplicarán filtros');
       return;
     }
 
@@ -87,7 +86,6 @@ export function BimesterFilters({
       payload.number = parseInt(currentNumber);
     }
 
-    console.log('🔍 Aplicando filtros:', payload);
     onFilterChange(payload);
   };
 
@@ -108,7 +106,6 @@ export function BimesterFilters({
     
     // Aplicar después de 500ms
     debounceTimer.current = setTimeout(() => {
-      console.log('🔍 Búsqueda (debounced):', value);
       applyFilters({ search: value });
     }, 500);
   };
@@ -117,7 +114,6 @@ export function BimesterFilters({
    * Cambio de ciclo escolar (inmediato)
    */
   const handleCycleChange = (id: number) => {
-    console.log('🔍 Cambio de ciclo:', id);
     setCycleId(id);
     applyFilters({ cycleId: id });
   };
@@ -126,7 +122,6 @@ export function BimesterFilters({
    * Cambio de estado (inmediato)
    */
   const handleStatusChange = (value: string) => {
-    console.log('🔍 Cambio de estado:', value);
     setIsActive(value);
     applyFilters({ isActive: value });
   };
@@ -135,7 +130,6 @@ export function BimesterFilters({
    * Cambio de número (inmediato)
    */
   const handleNumberChange = (value: string) => {
-    console.log('🔍 Cambio de número:', value);
     setNumber(value);
     applyFilters({ number: value });
   };
@@ -144,7 +138,6 @@ export function BimesterFilters({
    * Limpiar todos los filtros
    */
   const handleClearFilters = () => {
-    console.log('🔍 Limpiando filtros');
     
     // Limpiar debounce
     if (debounceTimer.current) {

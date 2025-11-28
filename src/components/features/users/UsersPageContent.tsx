@@ -127,7 +127,6 @@ export function UsersPageContent() {
         try {
           await uploadPicture(editingUserId, file, 'profile');
         } catch (error) {
-          console.error('Error uploading picture:', error);
           // Continuar aunque falle la foto
         }
       }
@@ -142,7 +141,6 @@ export function UsersPageContent() {
           const newUser = data.data[0];
           await uploadPicture(newUser.id, file, 'profile');
         } catch (error) {
-          console.error('Error uploading picture:', error);
           // Nota: En este caso no eliminamos el usuario si falla la foto
           // ya que refresh() es async y el usuario ya existe
         }
@@ -436,7 +434,6 @@ function EditingUserFormWrapper({
         const userData = await getUserById(userId);
         setUser(userData);
       } catch (error) {
-        console.error('Error fetching user:', error);
       } finally {
         setLoading(false);
       }

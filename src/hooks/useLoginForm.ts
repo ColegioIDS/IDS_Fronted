@@ -28,9 +28,7 @@ export const useLoginForm = () => {
       const user = await signin(dataForm);
       // ✅ El método login() en AuthContext ya maneja la redirección a /dashboard
       login(user);
-      console.log("Usuario autenticado:", user);
     } catch (error: any) {
-      console.error('Login error:', error);
       
       // ✨ Manejar errores estructurados
       if (error.details && Array.isArray(error.details)) {

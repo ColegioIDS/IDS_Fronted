@@ -36,7 +36,6 @@ export const attendanceTeacherCoursesService = {
 
       return response.data;
     } catch (error: any) {
-      console.error('Error fetching teacher courses:', error);
       throw new Error(
         error.response?.data?.message || 'Error al obtener cursos del maestro'
       );
@@ -81,7 +80,6 @@ export const attendanceTeacherCoursesService = {
 
       return response.data;
     } catch (error: any) {
-      console.error('Error registering attendance by courses:', error);
       throw new Error(
         error.response?.data?.message || 'Error al registrar asistencia'
       );

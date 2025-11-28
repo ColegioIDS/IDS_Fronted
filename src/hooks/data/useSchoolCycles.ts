@@ -29,7 +29,6 @@ export function useSchoolCycles(initialQuery: QuerySchoolCyclesDto = {}) {
       setMeta(result.meta);
     } catch (err: any) {
       setError(err.message || 'Error al cargar ciclos escolares');
-      console.error('Error loading school cycles:', err);
       setData([]);
     } finally {
       setIsLoading(false);

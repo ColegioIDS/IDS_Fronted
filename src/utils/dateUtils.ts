@@ -64,7 +64,6 @@ export function getIsoDayOfWeek(dateString: string): DayOfWeek {
       throw new Error(`No se pudo determinar el día de la semana: ${dayName}`);
     }
 
-    console.log(
       '📅 Date parsing with timezone:',
       {
         timezone: TIMEZONE,
@@ -76,7 +75,6 @@ export function getIsoDayOfWeek(dateString: string): DayOfWeek {
 
     return isoDay;
   } catch (error) {
-    console.error('❌ Error parsing date:', error);
     throw error;
   }
 }
@@ -178,7 +176,6 @@ export function formatISODateWithTimezone(
     const month = parseInt(monthStr, 10);
     const day = parseInt(dayStr, 10);
 
-    console.log('🔍 formatISODateWithTimezone DEBUG:', {
       isoDateString,
       formatPattern,
       TIMEZONE,
@@ -240,7 +237,6 @@ export function formatISODateWithTimezone(
 
     return `${day} ${shortMonth} ${year}`;
   } catch (error) {
-    console.error('❌ Error formatting ISO date:', error, { isoDateString, formatPattern });
     return isoDateString;
   }
 }
@@ -329,7 +325,6 @@ export function formatDateWithTimezone(
 
     return `${day} ${shortMonth} ${year}`;
   } catch (error) {
-    console.error('❌ Error formatting Date:', error);
     return '';
   }
 }
@@ -366,7 +361,6 @@ export function parseISODateForTimezone(isoDateString: string): Date {
     // el getDate() seguirá devolviendo el día correcto
     const date = new Date(year, month, day, 12, 0, 0);
     
-    console.log('🔍 parseISODateForTimezone DEBUG:', {
       isoDateString,
       datePart,
       year,
@@ -377,7 +371,6 @@ export function parseISODateForTimezone(isoDateString: string): Date {
     
     return date;
   } catch (error) {
-    console.error('❌ Error parsing ISO date for timezone:', error);
     return new Date();
   }
 }

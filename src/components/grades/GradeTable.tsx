@@ -100,7 +100,6 @@ export default function GradeTable({
       await onDelete(deleteGradeId);
       setDeleteGradeId(null);
     } catch (error) {
-      console.error('Error al eliminar:', error);
     } finally {
       setIsDeleting(false);
     }

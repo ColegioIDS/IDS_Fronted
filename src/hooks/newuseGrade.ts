@@ -71,7 +71,6 @@ export function useGrade(
           form.reset(formData);
           updateForm.reset(formData);
         } catch (error) {
-          console.error('Error loading grade data:', error);
           toast.error('Error al cargar los datos del grado');
         }
       };
@@ -103,7 +102,6 @@ export function useGrade(
       }
     } catch (error) {
       setGradesError('Error al cargar los grados');
-      console.error(error);
       toast.error('Error al cargar los grados');
     } finally {
       setIsLoadingGrades(false);
@@ -119,7 +117,6 @@ export function useGrade(
       setGrades(response.data);
     } catch (error) {
       setGradesError('Error al cargar los grados del nivel');
-      console.error(error);
       toast.error('Error al cargar los grados del nivel');
     } finally {
       setIsLoadingGrades(false);
@@ -135,7 +132,6 @@ export function useGrade(
       setGrades(response.data);
     } catch (error) {
       setGradesError('Error al cargar los grados activos');
-      console.error(error);
       toast.error('Error al cargar los grados activos');
     } finally {
       setIsLoadingGrades(false);
@@ -148,7 +144,6 @@ export function useGrade(
       const statsData = await getGradeStats();
       setStats(statsData);
     } catch (error) {
-      console.error(error);
       toast.error('Error al cargar las estadísticas de grados');
     } finally {
       setIsLoadingStats(false);
@@ -171,8 +166,6 @@ export function useGrade(
       form.reset();
       return { success: true };
     } catch (error: any) {
-      console.log("Error completo:", error);
-      console.log("Datos de respuesta:", error.response?.data);
       
       if (error.response?.data) {
         return { 
@@ -214,7 +207,6 @@ export function useGrade(
         return error.response.data; 
       }
       toast.error("Error al actualizar el grado");
-      console.error(error);
       return { success: false, message: "Error desconocido" };
     } finally {
       setIsSubmitting(false);
@@ -229,7 +221,6 @@ export function useGrade(
       return { success: true };
     } catch (error: any) {
       toast.error("Error al eliminar el grado");
-      console.error(error);
       return { success: false, message: error.message || "Error desconocido" };
     }
   };

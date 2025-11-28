@@ -62,7 +62,3 @@ fs.writeFileSync("project-structure.json", JSON.stringify(tree, null, 2));
 // 📝 Guardar Markdown
 const markdownTree = jsonToMarkdown(tree);
 fs.writeFileSync("project-structure.md", markdownTree);
-
-console.log("✅ Archivos generados correctamente:");
-console.log("   - project-structure.json");
-console.log("   - project-structure.md");

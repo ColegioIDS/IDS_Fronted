@@ -64,7 +64,6 @@ export const AttendanceStatusesPageContent = () => {
       setViewMode('list');
       refresh();
     } catch (error) {
-      console.error('Error creating status:', error);
     } finally {
       setIsOperating(false);
     }
@@ -82,7 +81,6 @@ export const AttendanceStatusesPageContent = () => {
       setViewMode('list');
       refresh();
     } catch (error) {
-      console.error('Error updating status:', error);
     } finally {
       setIsOperating(false);
     }
@@ -105,7 +103,6 @@ export const AttendanceStatusesPageContent = () => {
       setDeleteTarget(null);
       refresh();
     } catch (error) {
-      console.error('Error deleting status:', error);
     } finally {
       setIsOperating(false);
     }
@@ -124,7 +121,6 @@ export const AttendanceStatusesPageContent = () => {
       }
       refresh();
     } catch (error) {
-      console.error('Error toggling status:', error);
     } finally {
       setIsOperating(false);
     }

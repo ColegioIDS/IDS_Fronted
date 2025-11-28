@@ -269,10 +269,4 @@ export function generateMultipleStudents(count: number): StudentFormValues[] {
 // Log de ejemplo
 export function logExampleData(): void {
   const example = generateStudentMockData();
-  console.log('=== EJEMPLO DE DATOS GENERADOS ===');
-  console.log(JSON.stringify(example, null, 2));
-  console.log('⚠️ IMPORTANTE: Cambiar manualmente:');
-  console.log('- enrollment.cycleId: Usar el ciclo activo');
-  console.log('- enrollment.gradeId: Usar un grado válido');
-  console.log('- enrollment.sectionId: Usar una sección válida');
 }

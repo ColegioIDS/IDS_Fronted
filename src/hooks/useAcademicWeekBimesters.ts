@@ -46,7 +46,6 @@ export function useAcademicWeekBimesters({
         setActiveBimester(active);
       }
     } catch (err: any) {
-      console.error('Error al cargar bimestres:', err);
       setError(err.message || 'Error al cargar los bimestres');
       setBimesters([]);
       setActiveBimester(null);

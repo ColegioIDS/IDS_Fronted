@@ -64,7 +64,6 @@ export const studentsService = {
       // Obtener el ciclo activo (si existe)
       const activeCycle = cycles.find(c => c.isActive) || cycles[0];
       
-      console.log('Enrollment form data (array):', { cycles, activeCycle });
       
       return {
         cycles,
@@ -74,12 +73,10 @@ export const studentsService = {
     
     // Si viene un objeto con cycles
     if (data.cycles) {
-      console.log('Enrollment form data (object):', data);
       return data;
     }
     
     // Fallback: si viene un object directo con activeCycle
-    console.log('Enrollment form data (legacy):', data);
     return data;
   },
 
@@ -137,7 +134,6 @@ export const studentsService = {
    */
   async createStudentWithEnrollment(data: CreateStudentPayload): Promise<Student> {
     // ✅ ACTUALIZADO: Enviar como JSON en lugar de FormData
-    console.log('📤 Enviando estudiante al backend...');
 
     const response = await api.post('/api/students/complete', data, {
       headers: {
@@ -148,7 +144,6 @@ export const studentsService = {
     if (!response.data?.success) {
       throw new Error(response.data?.message || 'Error al crear estudiante');
     }
-    console.log('✅ Estudiante creado:', response.data.data);
 
     return response.data.data;
   },
@@ -209,7 +204,6 @@ export const studentsService = {
     id: number,
     data: Partial<CreateStudentPayload>
   ): Promise<Student> {
-    console.log('📤 Actualizando estudiante al backend...');
 
     const response = await api.patch(`/api/students/${id}`, data, {
       headers: {

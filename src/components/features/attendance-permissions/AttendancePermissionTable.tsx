@@ -87,7 +87,6 @@ export const AttendancePermissionTable: React.FC<
       toast.success('Permiso eliminado correctamente');
     } catch (error) {
       toast.error('Error al eliminar el permiso');
-      console.error('Error deleting permission:', error);
     }
   };
 

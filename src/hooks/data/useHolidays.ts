@@ -48,7 +48,6 @@ export function useHolidays(initialQuery: QueryHolidaysDto = {}) {
     } catch (err: any) {
       const errorMessage = err.message || 'Error al cargar días festivos';
       setError(errorMessage);
-      console.error('Error loading holidays:', err);
       setData([]);
     } finally {
       setIsLoading(false);

@@ -132,9 +132,6 @@ export const StudentEditForm: React.FC<StudentEditFormProps> = ({
           studentsService.getEnrollmentFormData(),
         ]);
 
-        console.log('📊 Datos completos del estudiante desde backend:', student);
-        console.log('📚 Academic Records del backend:', student.academicRecords);
-        console.log('🖼️ Pictures del backend:', student.pictures);
 
         setStudentData(student);
         setEnrollmentData(enrollmentFormData);
@@ -263,7 +260,6 @@ export const StudentEditForm: React.FC<StudentEditFormProps> = ({
         form.reset(formData as any);
       } catch (err: any) {
         setError('Error al cargar los datos del estudiante');
-        console.error('Error loading student data:', err);
       } finally {
         setLoadingData(false);
       }
@@ -310,8 +306,6 @@ export const StudentEditForm: React.FC<StudentEditFormProps> = ({
       // ✅ Limpiar datos antes de enviar
       processedData = cleanDataForSubmission(processedData);
 
-      console.log('📊 Datos listos para actualizar');
-      console.log('📊 Payload final:', processedData);
 
       // Actualizar estudiante
       await studentsService.updateStudent(studentId, processedData);

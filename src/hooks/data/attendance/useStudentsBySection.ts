@@ -73,7 +73,6 @@ export const useStudentsBySection = (
             identificationNumber: String(student?.codeSIRE ?? student?.identificationNumber ?? e.identificationNumber ?? ''),
           };
         });
-        console.log('[useStudentsBySection] Estudiantes procesados:', studentsList.length, studentsList);
         setStudents(studentsList);
       } else {
         setStudents([]);
@@ -83,7 +82,6 @@ export const useStudentsBySection = (
         ? String((err as Record<string, unknown>).message)
         : 'Error al obtener estudiantes';
       setError(errorMessage);
-      console.error('[useStudentsBySection] Error:', errorMessage);
       setStudents([]);
     } finally {
       setLoading(false);

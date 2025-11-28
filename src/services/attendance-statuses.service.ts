@@ -116,7 +116,6 @@ export const attendanceStatusesService = {
 
       return { data, meta };
     } catch (error) {
-      console.error('Error en getStatuses:', error);
       throw error;
     }
   },
@@ -141,7 +140,6 @@ export const attendanceStatusesService = {
 
       return Array.isArray(response.data.data) ? response.data.data : [];
     } catch (error) {
-      console.error('Error en getActiveStatuses:', error);
       throw error;
     }
   },
@@ -166,7 +164,6 @@ export const attendanceStatusesService = {
 
       return Array.isArray(response.data.data) ? response.data.data : [];
     } catch (error) {
-      console.error('Error en getNegativeStatuses:', error);
       throw error;
     }
   },
@@ -203,7 +200,6 @@ export const attendanceStatusesService = {
 
       return response.data.data;
     } catch (error) {
-      console.error(`Error en getStatusById(${id}):`, error);
       throw error;
     }
   },
@@ -234,7 +230,6 @@ export const attendanceStatusesService = {
 
       return response.data.data;
     } catch (error) {
-      console.error(`Error en getStatusByCode(${code}):`, error);
       throw error;
     }
   },
@@ -261,7 +256,6 @@ export const attendanceStatusesService = {
 
       return response.data.data;
     } catch (error) {
-      console.error(`Error en getStatusStats(${id}):`, error);
       throw error;
     }
   },
@@ -309,7 +303,6 @@ export const attendanceStatusesService = {
 
       return response.data.data;
     } catch (error) {
-      console.error('Error en createStatus:', error);
       throw error;
     }
   },
@@ -351,7 +344,6 @@ export const attendanceStatusesService = {
 
       return response.data.data;
     } catch (error) {
-      console.error(`Error en updateStatus(${id}):`, error);
       throw error;
     }
   },
@@ -388,7 +380,6 @@ export const attendanceStatusesService = {
 
       return response.data.data;
     } catch (error) {
-      console.error(`Error en activateStatus(${id}):`, error);
       throw error;
     }
   },
@@ -419,7 +410,6 @@ export const attendanceStatusesService = {
 
       return response.data.data;
     } catch (error) {
-      console.error(`Error en deactivateStatus(${id}):`, error);
       throw error;
     }
   },
@@ -449,7 +439,6 @@ export const attendanceStatusesService = {
         throw new Error(response.data?.message || 'Error al eliminar el estado');
       }
     } catch (error) {
-      console.error(`Error en deleteStatus(${id}):`, error);
       throw error;
     }
   },

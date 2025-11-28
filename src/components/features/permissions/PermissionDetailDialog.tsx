@@ -65,7 +65,6 @@ export function PermissionDetailDialog({
       setDependents(depsData);
     } catch (err: any) {
       setError(err.message || 'Error al cargar el permiso');
-      console.error('Error loading permission details:', err);
     } finally {
       setIsLoading(false);
     }

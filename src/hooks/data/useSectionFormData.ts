@@ -39,7 +39,6 @@ export function useSectionFormData(): FormDataReturn {
         setTeachers(teachersData);
       } catch (err: any) {
         setError(err.message || 'Error al cargar datos del formulario');
-        console.error('Error loading form data:', err);
       } finally {
         setIsLoading(false);
       }

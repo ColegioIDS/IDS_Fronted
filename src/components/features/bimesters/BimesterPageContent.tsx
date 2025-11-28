@@ -86,7 +86,6 @@ export function BimesterPageContent() {
 
   // Handlers
   const handleFilterChange = useCallback((filters: any) => {
-    console.log('📥 BimesterPageContent recibió filtros:', filters);
     updateQuery(filters);
   }, [updateQuery]);
 
@@ -96,14 +95,12 @@ export function BimesterPageContent() {
 
   const handleCreateClick = useCallback(() => {
   // eslint-disable-next-line no-console
-  console.log('[BimesterPageContent] handleCreateClick');
     setEditingBimester(null);
     setFormDialogOpen(true);
   }, []);
 
   const handleEditClick = useCallback((bimester: Bimester) => {
   // eslint-disable-next-line no-console
-  console.log('[BimesterPageContent] handleEditClick bimester:', bimester);
     setEditingBimester(bimester);
     setFormDialogOpen(true);
   }, []);

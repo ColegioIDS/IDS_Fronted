@@ -32,7 +32,6 @@ class AttendanceReportsService {
 
       return response.data.data;
     } catch (error) {
-      console.error('Error en getActiveCycle:', error);
       throw error;
     }
   }
@@ -52,7 +51,6 @@ class AttendanceReportsService {
 
       return response.data.data;
     } catch (error) {
-      console.error('Error en getGradesByCycle:', error);
       throw error;
     }
   }
@@ -72,7 +70,6 @@ class AttendanceReportsService {
 
       return response.data.data;
     } catch (error) {
-      console.error('Error en getSectionsByGrade:', error);
       throw error;
     }
   }
@@ -92,7 +89,6 @@ class AttendanceReportsService {
 
       return response.data.data;
     } catch (error) {
-      console.error('Error en getBimestersByCycle:', error);
       throw error;
     }
   }
@@ -112,7 +108,6 @@ class AttendanceReportsService {
 
       return response.data.data;
     } catch (error) {
-      console.error('Error en getAcademicWeeksByBimester:', error);
       throw error;
     }
   }
@@ -132,7 +127,6 @@ class AttendanceReportsService {
 
       return response.data.data;
     } catch (error) {
-      console.error('Error en getCoursesBySection:', error);
       throw error;
     }
   }
@@ -171,7 +165,6 @@ class AttendanceReportsService {
 
       return response.data.data;
     } catch (error) {
-      console.error('Error en getAttendanceSummary:', error);
       throw error;
     }
   }
@@ -210,7 +203,6 @@ class AttendanceReportsService {
 
       return response.data.data;
     } catch (error) {
-      console.error('Error en getStudentsAttendance:', error);
       throw error;
     }
   }
@@ -251,7 +243,6 @@ class AttendanceReportsService {
 
       return response.data;
     } catch (error) {
-      console.error('Error en exportStudentReport:', error);
       throw error;
     }
   }
@@ -291,7 +282,6 @@ class AttendanceReportsService {
 
       return response.data;
     } catch (error) {
-      console.error('Error en exportSectionReport:', error);
       throw error;
     }
   }

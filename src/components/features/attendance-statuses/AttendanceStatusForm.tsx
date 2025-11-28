@@ -74,7 +74,6 @@ export const AttendanceStatusForm = ({
       await onSubmit(formData);
       toast.success(initialData ? 'Estado actualizado correctamente' : 'Estado creado correctamente');
     } catch (error) {
-      console.error('Error submitting form:', error);
       toast.error('Error al guardar el estado. Intenta de nuevo.');
     }
   };

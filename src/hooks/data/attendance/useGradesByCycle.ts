@@ -55,7 +55,6 @@ export const useGradesByCycle = (): UseGradesByCycleReturn => {
         ? String((err as Record<string, unknown>).message)
         : 'Error al obtener grados';
       setError(errorMessage);
-      console.error('[useGradesByCycle] Error:', errorMessage);
       setGrades([]);
     } finally {
       setLoading(false);

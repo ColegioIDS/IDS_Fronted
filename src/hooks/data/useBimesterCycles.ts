@@ -38,7 +38,6 @@ export function useBimesterCycles(initialQuery: QueryAvailableCyclesDto = {}) {
 
   // Debug: log loaded cycles
   // eslint-disable-next-line no-console
-  console.log('[useBimesterCycles] loaded cycles ids:', result.data.map((c) => c.id));
 
       // Auto-seleccionar el ciclo activo si existe
       const active = result.data.find((cycle) => cycle.isActive);
@@ -47,7 +46,6 @@ export function useBimesterCycles(initialQuery: QueryAvailableCyclesDto = {}) {
       }
     } catch (err: any) {
       setError(err.message || 'Error al cargar ciclos disponibles');
-      console.error('Error loading available cycles:', err);
       setCycles([]);
     } finally {
       setIsLoading(false);
@@ -64,7 +62,6 @@ export function useBimesterCycles(initialQuery: QueryAvailableCyclesDto = {}) {
       setCycles([cycle]); // Opcional: guardar en la lista también
     } catch (err: any) {
       setError(err.message || 'Error al cargar ciclo activo');
-      console.error('Error loading active cycle:', err);
       setActiveCycle(null);
     } finally {
       setIsLoading(false);
@@ -80,7 +77,6 @@ export function useBimesterCycles(initialQuery: QueryAvailableCyclesDto = {}) {
       return cycle;
     } catch (err: any) {
       setError(err.message || 'Error al obtener detalles del ciclo');
-      console.error('Error getting cycle details:', err);
       throw err;
     } finally {
       setIsLoading(false);

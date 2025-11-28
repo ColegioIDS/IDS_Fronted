@@ -51,7 +51,6 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
         setStudent(data);
       } catch (err: any) {
         setError('Error al cargar los datos del estudiante');
-        console.error('Error loading student:', err);
       } finally {
         setLoading(false);
       }

@@ -128,9 +128,6 @@ function StudentRow({
     if (!course) return;
     
     if (!course.classAttendanceId) {
-      console.error('❌ classAttendanceId es undefined o null');
-      console.error('⚠️ El backend NO está devolviendo classAttendanceId');
-      console.error('📝 Datos disponibles:', JSON.stringify(course, null, 2));
       throw new Error('El backend no devuelve el ID de asistencia (classAttendanceId). Contacta al administrador.');
     }
     
@@ -139,7 +136,6 @@ function StudentRow({
       await onStatusUpdate(course.classAttendanceId, editingCourse.newStatusId, editingCourse.reason);
       setEditingCourse(null);
     } catch (error: any) {
-      console.error('Error updating status:', error);
       
       // Re-lanzar con mejor mensaje
       let errorMessage = 'Error al actualizar el estado.';
@@ -306,7 +302,6 @@ function StudentRow({
                           await handleSaveStatus();
                         } catch (err: any) {
                           // El error se propagará al componente padre a través de onStatusUpdate
-                          console.error('Error from handleSaveStatus:', err);
                         }
                       }}
                       disabled={editingCourse.isSaving || !editingCourse.newStatusId}

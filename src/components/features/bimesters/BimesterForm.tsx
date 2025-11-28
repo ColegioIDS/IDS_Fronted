@@ -133,14 +133,12 @@ export function BimesterForm({
   React.useEffect(() => {
   // Debug
   // eslint-disable-next-line no-console
-  console.log('[BimesterForm] editingBimester changed:', editingBimester);
 
     if (editingBimester) {
       setStartDate(editingBimester.startDate ? parseISODateForTimezone(editingBimester.startDate) : undefined);
       setEndDate(editingBimester.endDate ? parseISODateForTimezone(editingBimester.endDate) : undefined);
 
       // eslint-disable-next-line no-console
-      console.log('[BimesterForm] resetting form with cycleId:', editingCycleId);
 
       reset({
         cycleId: editingCycleId ?? undefined,
@@ -154,7 +152,6 @@ export function BimesterForm({
     } else {
       // If not editing (creating new) reset to defaults
   // eslint-disable-next-line no-console
-  console.log('[BimesterForm] resetting to create defaults');
       reset({
         cycleId: undefined,
         number: 1,
@@ -173,7 +170,6 @@ export function BimesterForm({
   React.useEffect(() => {
     if (open) {
       // eslint-disable-next-line no-console
-      console.log('[BimesterForm] dialog opened. editingBimester:', editingBimester, 'form cycleId:', watch('cycleId'));
     }
   }, [open, editingBimester, watch]);
 
@@ -191,7 +187,6 @@ export function BimesterForm({
         const defaultId = activeCycle?.id ?? cycles[0]?.id;
         if (defaultId != null) {
           // eslint-disable-next-line no-console
-          console.log('[BimesterForm] setting default cycleId for create:', defaultId);
           setValue('cycleId', defaultId);
         }
       }

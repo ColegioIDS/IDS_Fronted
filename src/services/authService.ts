@@ -48,7 +48,6 @@ export const verifySession = async () => {
     
     // ✅ Verificar que la respuesta fue exitosa
     if (!response.data.success || !response.data.data) {
-      console.warn('❌ Respuesta no exitosa:', response.data);
       throw new Error('Sesión inválida');
     }
     
@@ -58,7 +57,6 @@ export const verifySession = async () => {
       throw new Error('Respuesta de sesión inválida: sin ID de usuario');
     }
     
-    console.log("✅ Session verified:", user);
     
     return {
       id: user.id.toString(),
@@ -67,7 +65,6 @@ export const verifySession = async () => {
       email: user.email || '',
     };
   } catch (error) {
-    console.error("❌ verifySession error:", error);
     throw new Error('Sesión inválida');
   }
 };
@@ -78,7 +75,6 @@ export const getMyPermissions = async (): Promise<UserPermissionsResponse> => {
     
     return response.data.data;
   } catch (error) {
-    console.error('Error fetching permissions:', error);
     return {
       permissions: [],
       role: null,

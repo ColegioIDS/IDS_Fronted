@@ -129,7 +129,6 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
       setRoleTypes(types);
     } catch (err: any) {
       handleApiError(err, 'Error al cargar tipos de rol');
-      console.error(err);
     }
   };
 
@@ -142,7 +141,6 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
       setAvailablePermissions(response.data);
     } catch (err: any) {
       handleApiError(err, 'Error al cargar permisos disponibles');
-      console.error(err);
     }
   };
 

@@ -807,7 +807,6 @@ export const updateAttendanceStatus = async (
 
     return response.data;
   } catch (error: any) {
-    console.error('Error updating attendance status:', error);
     
     // Mantener el objeto error completo para que el componente pueda acceder a response.data
     if (error.response?.data) {

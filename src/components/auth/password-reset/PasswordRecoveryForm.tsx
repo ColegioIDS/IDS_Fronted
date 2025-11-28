@@ -93,7 +93,7 @@ export default function PasswordRecoveryForm({
               </p>
             </div>
 
-            <Link href="/auth/signin">
+            <Link href="/signin">
               <button className="w-full px-5 py-3.5 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600 rounded-lg transition-colors">
                 Volver al Inicio de Sesión
               </button>
@@ -111,7 +111,7 @@ export default function PasswordRecoveryForm({
         <div className="mb-8">
           <div className="flex items-center mb-6">
             <Link
-              href="/auth/signin"
+              href="/signin"
               className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
               <ChevronLeftIcon className="w-5 h-5" />
@@ -178,7 +178,7 @@ export default function PasswordRecoveryForm({
           <p className="text-sm text-center text-gray-500 dark:text-gray-400">
             ¿Recordaste tu contraseña?{" "}
             <Link
-              href="/auth/signin"
+              href="/signin"
               className="text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition-colors"
             >
               Inicia sesión

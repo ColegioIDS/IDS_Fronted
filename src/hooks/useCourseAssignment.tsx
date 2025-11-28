@@ -132,7 +132,6 @@ export function useCourseAssignment(
   const loadFormData = useCallback(async () => {
     // Prevenir llamadas duplicadas
     if (isLoadingFormDataRef.current) {
-      console.log('loadFormData ya en progreso, saltando...');
       return;
     }
 
@@ -152,7 +151,6 @@ export function useCourseAssignment(
     } catch (err: any) {
       const errorMessage = err.message || 'Error al cargar datos del formulario';
       handleError(errorMessage);
-      console.error('Error en loadFormData:', err);
     } finally {
       setIsLoadingFormData(false);
       isLoadingFormDataRef.current = false;
@@ -164,7 +162,6 @@ export function useCourseAssignment(
   const loadCycleGrades = useCallback(async (cycleId: number) => {
     // Prevenir llamadas duplicadas
     if (isLoadingCycleGradesRef.current) {
-      console.log('loadCycleGrades ya en progreso, saltando...');
       return;
     }
 
@@ -178,13 +175,11 @@ export function useCourseAssignment(
       
       // Validar datos críticos
       if (!data.grades || data.grades.length === 0) {
-        console.warn('No hay grados disponibles para este ciclo');
       }
       
     } catch (err: any) {
       const errorMessage = err.message || 'Error al cargar grados del ciclo';
       handleError(errorMessage);
-      console.error('Error en loadCycleGrades:', err);
     } finally {
       setIsLoadingCycleGrades(false);
       isLoadingCycleGradesRef.current = false;
@@ -196,7 +191,6 @@ export function useCourseAssignment(
   const loadSectionData = useCallback(async (id: number) => {
     // Prevenir llamadas duplicadas
     if (isLoadingSectionDataRef.current) {
-      console.log('loadSectionData ya en progreso, saltando...');
       return;
     }
 
@@ -216,7 +210,6 @@ export function useCourseAssignment(
     } catch (err: any) {
       const errorMessage = err.message || 'Error al cargar datos de la sección';
       handleError(errorMessage);
-      console.error('Error en loadSectionData:', err);
     } finally {
       setIsLoadingSectionData(false);
       isLoadingSectionDataRef.current = false;
@@ -237,7 +230,6 @@ export function useCourseAssignment(
     } catch (err: any) {
       const errorMessage = err.message || 'Error al cargar asignaciones';
       handleError(errorMessage);
-      console.error('Error en fetchAssignments:', err);
     } finally {
       setIsLoading(false);
     }
@@ -263,7 +255,6 @@ export function useCourseAssignment(
     } catch (err: any) {
       const errorMessage = err.message || 'Error al crear asignación';
       handleError(errorMessage);
-      console.error('Error en createAssignment:', err);
       return null;
     } finally {
       setIsSubmitting(false);
@@ -293,7 +284,6 @@ export function useCourseAssignment(
     } catch (err: any) {
       const errorMessage = err.message || 'Error al actualizar asignación';
       handleError(errorMessage);
-      console.error('Error en updateAssignment:', err);
       return null;
     } finally {
       setIsSubmitting(false);
@@ -318,7 +308,6 @@ export function useCourseAssignment(
     } catch (err: any) {
       const errorMessage = err.message || 'Error al eliminar asignación';
       handleError(errorMessage);
-      console.error('Error en deleteAssignment:', err);
       return false;
     } finally {
       setIsSubmitting(false);
@@ -347,7 +336,6 @@ export function useCourseAssignment(
     } catch (err: any) {
       const errorMessage = err.message || 'Error en actualización masiva';
       handleError(errorMessage);
-      console.error('Error en bulkUpdate:', err);
       return false;
     } finally {
       setIsSubmitting(false);

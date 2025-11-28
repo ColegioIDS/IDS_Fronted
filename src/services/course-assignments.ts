@@ -150,7 +150,6 @@ export const bulkUpdateCourseAssignments = async (
       '/api/course-assignments/bulk-update', 
       bulkData
     );
-    console.log("Resultado de la actualización masiva:", data);
     if (!data.success) throw new Error(data.message || 'Error en actualización masiva');
     return data.data;
   } catch (error) {

@@ -41,7 +41,6 @@ export function useAcademicWeekCycles(initialQuery: QueryCyclesDto = {}) {
       }
     } catch (err: any) {
       setError(err.message || 'Error al cargar ciclos disponibles');
-      console.error('Error loading available cycles:', err);
       setCycles([]);
     } finally {
       setIsLoading(false);

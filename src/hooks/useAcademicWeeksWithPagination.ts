@@ -53,7 +53,6 @@ export function useAcademicWeeksWithPagination(): UseAcademicWeeksWithPagination
         totalPages: response.meta.totalPages,
       });
     } catch (err: any) {
-      console.error('Error al cargar semanas académicas:', err);
       setError(err.message || 'Error al cargar las semanas académicas');
       setData([]);
       setMeta(DEFAULT_META);

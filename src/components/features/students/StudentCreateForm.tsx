@@ -55,7 +55,6 @@ export const StudentCreateForm: React.FC = () => {
         }
       } catch (err: any) {
         setError(err.message || 'Error al cargar datos de enrollment');
-        console.error('Error loading enrollment data:', err);
       } finally {
         setLoadingEnrollmentData(false);
       }
@@ -68,7 +67,6 @@ export const StudentCreateForm: React.FC = () => {
   const handleGradeChange = React.useCallback(async (gradeId: number) => {
     // Las secciones ya vienen en el ciclo, no necesitamos hacer otra llamada API
     // Este callback ahora solo es un placeholder para futuras extensiones
-    console.log('Grade changed to:', gradeId);
   }, []);
 
   // ✅ NUEVO: Función para limpiar datos null/undefined de forma inteligente
@@ -194,11 +192,8 @@ export const StudentCreateForm: React.FC = () => {
         return;
       }
 
-      console.log('📊 Datos listos para enviar al servidor');
-      console.log('📊 Payload final:', processedData);
 
       const response = await studentsService.createStudentWithEnrollment(processedData);
-      console.log('✅ Estudiante creado exitosamente:', response);
 
       // Mostrar éxito y resetear
       toast.success('✅ Estudiante creado exitosamente');
@@ -343,24 +338,18 @@ export const StudentCreateForm: React.FC = () => {
                   if (!result) {
                     // ✅ NUEVO: Console log detallado de errores
                     const errors = form.formState.errors;
-                    console.error('❌ ERRORES DE VALIDACIÓN:');
-                    console.error('Total de errores:', Object.keys(errors).length);
                     console.table(errors);
                     
                     // Detalles específicos
                     Object.entries(errors).forEach(([field, error]: any) => {
                       if (error?.message) {
-                        console.warn(`⚠️ ${field}: ${error.message}`);
                       }
                       if (error?.type) {
-                        console.warn(`   Tipo de error: ${error.type}`);
                       }
                     });
                     
                     setError('Por favor completa todos los campos requeridos marcados en rojo');
                   } else {
-                    console.log('✅ VALIDACIÓN EXITOSA - Formulario completado correctamente');
-                    console.log('Datos válidos:', form.getValues());
                     setError(null);
                     alert('✅ Formulario válido. Ahora puedes hacer clic en Crear Estudiante');
                   }

@@ -39,7 +39,6 @@ export function AcademicWeekTimeline({
   const timelineSections = useMemo(() => {
     const sections = new Map<number | null, TimelineSection>();
 
-console.log(weeks);
     weeks.forEach((week) => {
       const bimesterId = (week as any).bimesterId || null;
       const bimesterName = (week as any).bimester?.name || 'Sin bimestre';

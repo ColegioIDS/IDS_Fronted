@@ -9,13 +9,11 @@ export async function uploadImageToCloudinary(
   file: File,
   folder: string = 'ids_usuarios'
 ): Promise<{ url: string; publicId: string }> {
-  console.log('🔄 Iniciando upload a Cloudinary...');
   
   // Validar variables de entorno
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
-  console.log('🔍 Variables de entorno:', {
     cloudName: cloudName ? '✅ Configurado' : '❌ Falta',
     uploadPreset: uploadPreset ? '✅ Configurado' : '❌ Falta',
   });
@@ -23,7 +21,6 @@ export async function uploadImageToCloudinary(
   if (!cloudName || !uploadPreset) {
     const errorMsg = 'Variables de entorno Cloudinary no configuradas. ' +
       'Asegúrate de tener NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME y NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET';
-    console.error('❌', errorMsg);
     throw new Error(errorMsg);
   }
 
@@ -32,7 +29,6 @@ export async function uploadImageToCloudinary(
     throw new Error('No se proporcionó archivo');
   }
 
-  console.log('📄 Archivo:', {
     nombre: file.name,
     tipo: file.type,
     tamaño: (file.size / 1024 / 1024).toFixed(2) + ' MB',
@@ -40,7 +36,6 @@ export async function uploadImageToCloudinary(
 
   if (!file.type.startsWith('image/')) {
     const errorMsg = `El archivo debe ser una imagen. Tipo recibido: ${file.type}`;
-    console.error('❌', errorMsg);
     throw new Error(errorMsg);
   }
 
@@ -48,7 +43,6 @@ export async function uploadImageToCloudinary(
   const maxSize = 5 * 1024 * 1024;
   if (file.size > maxSize) {
     const errorMsg = `La imagen no debe exceder 5MB. Tamaño recibido: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
-    console.error('❌', errorMsg);
     throw new Error(errorMsg);
   }
 
@@ -59,7 +53,6 @@ export async function uploadImageToCloudinary(
   formData.append('folder', folder);
 
   try {
-    console.log('📤 Enviando a Cloudinary...');
     const res = await fetch(
       `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
       {
@@ -68,19 +61,15 @@ export async function uploadImageToCloudinary(
       }
     );
 
-    console.log('📊 Respuesta HTTP:', res.status, res.statusText);
 
     if (!res.ok) {
       const error = await res.json();
       const errorMsg = error.error?.message || `Error HTTP ${res.status}`;
-      console.error('❌ Error de Cloudinary:', error);
       throw new Error(`Error al subir a Cloudinary: ${errorMsg}`);
     }
 
     const data = await res.json();
 
-    console.log('✅ Upload exitoso');
-    console.log('✅ Respuesta de Cloudinary:', {
       url: data.secure_url,
       publicId: data.public_id,
     });
@@ -90,7 +79,6 @@ export async function uploadImageToCloudinary(
       publicId: data.public_id,
     };
   } catch (error) {
-    console.error('❌ Error en fetch:', error);
     if (error instanceof Error) {
       throw error;
     }

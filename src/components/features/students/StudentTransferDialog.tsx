@@ -82,7 +82,6 @@ export const StudentTransferDialog: React.FC<StudentTransferDialogProps> = ({
       }
     } catch (err: any) {
       setError('Error al cargar datos de transferencia');
-      console.error('Error loading transfer data:', err);
     } finally {
       setLoading(false);
     }

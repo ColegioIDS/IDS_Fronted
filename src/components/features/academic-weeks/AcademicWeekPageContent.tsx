@@ -116,7 +116,6 @@ export function AcademicWeekPageContent({
           const range = await academicWeekService.getBimesterDateRange(selectedBimesterId);
           setBimesterDateRange(range);
         } catch (error) {
-          console.error('Error al cargar rango de bimestre:', error);
           setBimesterDateRange(null);
         }
       } else {
@@ -195,7 +194,6 @@ export function AcademicWeekPageContent({
       setSelectedWeek(weekWithCycle);
       setIsFormDialogOpen(true);
     } catch (error) {
-      console.error('Error al preparar edición:', error);
       toast.error('Error al cargar los datos de la semana académica');
     }
   };
@@ -237,7 +235,6 @@ export function AcademicWeekPageContent({
       setSelectedWeek(null);
       await refreshWeeks();
     } catch (error: any) {
-      console.error('Error al guardar semana académica:', error);
       toast.error(error.message || 'Error al guardar la semana académica');
     } finally {
       setIsSubmitting(false);
@@ -255,7 +252,6 @@ export function AcademicWeekPageContent({
       setSelectedWeek(null);
       await refreshWeeks();
     } catch (error: any) {
-      console.error('Error al eliminar semana académica:', error);
       toast.error(error.message || 'Error al eliminar la semana académica');
     } finally {
       setIsDeleting(false);

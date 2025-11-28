@@ -454,7 +454,6 @@ export function SchoolCycleForm({
       
       // Toast de error
       toast.error(handled.message);
-      console.error('Form submission error:', err);
     } finally {
       setIsLoading(false);
     }

@@ -126,7 +126,6 @@ export function AcademicWeekForm({
     setIsInitialized(false);
     setDynamicBimesters([]);
     setDynamicBimesterDateRange(null);
-    console.log('🔄 Initializing form with new initialData:', initialData);
   }, [(initialData as any)?.id]); // Solo cambiar cuando cambia el ID (es decir, se selecciona otra semana)
 
   // Reset form cuando cambia initialData (especialmente importante para modo edición)
@@ -146,9 +145,7 @@ export function AcademicWeekForm({
           }));
           setDynamicBimesters(bimestersData);
           
-          console.log('✅ Bimesters loaded:', bimestersData);
         } catch (error) {
-          console.error('❌ Error al cargar bimesters:', error);
           setDynamicBimesters([]);
         } finally {
           setIsLoadingBimesters(false);
@@ -160,9 +157,7 @@ export function AcademicWeekForm({
           try {
             const range = await academicWeekService.getBimesterDateRange(initialData.bimesterId);
             setDynamicBimesterDateRange(range);
-            console.log('✅ Date range loaded:', range);
           } catch (error) {
-            console.error('❌ Error al cargar rango de fechas:', error);
             setDynamicBimesterDateRange(null);
           } finally {
             setIsLoadingDateRange(false);
@@ -173,7 +168,6 @@ export function AcademicWeekForm({
         // Usar un pequeño delay más robusto para asegurar que el estado se actualizó
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        console.log('🔄 Resetting form with initialData:', initialData);
         
         form.reset({
           cycleId: initialData.cycleId,
@@ -204,7 +198,6 @@ export function AcademicWeekForm({
               number: b.number,
             })));
           } catch (error) {
-            console.error('Error al cargar bimesters:', error);
           } finally {
             setIsLoadingBimesters(false);
           }
@@ -268,7 +261,6 @@ export function AcademicWeekForm({
           number: b.number,
         })));
       } catch (error) {
-        console.error('Error al cargar bimesters:', error);
         setDynamicBimesters([]);
       } finally {
         setIsLoadingBimesters(false);
@@ -296,7 +288,6 @@ export function AcademicWeekForm({
         const range = await academicWeekService.getBimesterDateRange(selectedBimesterId);
         setDynamicBimesterDateRange(range);
       } catch (error) {
-        console.error('Error al cargar rango de fechas:', error);
         setDynamicBimesterDateRange(null);
       } finally {
         setIsLoadingDateRange(false);
@@ -350,11 +341,9 @@ export function AcademicWeekForm({
   };
 
   const handleSubmit = async (data: AcademicWeekFormValues) => {
-    console.log('Submitting form data:', data);
     try {
       await onSubmit(data);
     } catch (error) {
-      console.error('Error al enviar formulario:', error);
     }
   };
 

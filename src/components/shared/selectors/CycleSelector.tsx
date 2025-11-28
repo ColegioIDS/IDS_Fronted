@@ -73,7 +73,6 @@ export function CycleSelector({
   React.useEffect(() => {
     try {
       // eslint-disable-next-line no-console
-      console.debug('[CycleSelector] value:', value, 'localCycles ids:', localCycles.map((c) => c.id));
     } catch (e) {
       /* ignore */
     }
@@ -99,7 +98,6 @@ export function CycleSelector({
         } catch (err) {
           // ignore: if cycle can't be loaded, selector will simply not show it
           // eslint-disable-next-line no-console
-          console.error('Failed to fetch selected cycle details', err);
         }
       })();
     }

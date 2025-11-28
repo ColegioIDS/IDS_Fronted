@@ -36,7 +36,6 @@ export const enrollmentsService = {
 
       return response.data.data || [];
     } catch (error) {
-      console.error('Error al obtener ciclos disponibles:', error);
       return [];
     }
   },
@@ -116,7 +115,6 @@ export const enrollmentsService = {
       return response.data.data as EnrollmentStatistics;
     } catch (error: any) {
       // Fallback: calcular estadísticas a partir de enrollments
-      console.warn('Estadísticas endpoint no disponible, calculando desde enrollments...');
       
       try {
         const enrollmentsResponse = await this.getEnrollments({ 
@@ -199,7 +197,6 @@ export const enrollmentsService = {
           utilizationPercentage,
         };
       } catch (fallbackError) {
-        console.error('Error en fallback de estadísticas:', fallbackError);
         throw new Error('Error al cargar estadísticas y calcular fallback');
       }
     }
@@ -333,7 +330,6 @@ export const enrollmentsService = {
 
       return response.data.data || [];
     } catch (error: any) {
-      console.error('Error al obtener grados:', error);
       return [];
     }
   },
@@ -379,7 +375,6 @@ export const enrollmentsService = {
 
       return response.data.data || [];
     } catch (error: any) {
-      console.error('Error al obtener secciones:', error);
       return [];
     }
   },

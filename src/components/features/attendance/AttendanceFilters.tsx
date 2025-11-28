@@ -62,7 +62,6 @@ export function AttendanceFilters() {
   // Efecto para cargar ciclo activo por defecto
   useEffect(() => {
     if (activeCycle?.id && !attendanceState.selectedCycleId && !cycleLoadedRef.current) {
-      console.log('[AttendanceFilters] Cargando ciclo activo:', activeCycle.id);
       cycleLoadedRef.current = true;
       attendanceActions.selectCycle(activeCycle.id);
     }
@@ -70,7 +69,6 @@ export function AttendanceFilters() {
 
   // Efecto para cargar bimestre activo después del ciclo
   useEffect(() => {
-    console.log('[AttendanceFilters] Efecto bimestre - Verificando:', {
       bimestresLength: bimestresData.bimesters?.length,
       selectedCycleId: attendanceState.selectedCycleId,
       selectedBimesterId: attendanceState.selectedBimesterId,
@@ -84,7 +82,6 @@ export function AttendanceFilters() {
       !bimesterLoadedRef.current
     ) {
       const activeBimData = bimestresData.bimesters[0];
-      console.log('[AttendanceFilters] Cargando bimestre activo:', activeBimData.id);
       bimesterLoadedRef.current = true;
       attendanceActions.selectBimester(activeBimData.id);
     }
@@ -100,7 +97,6 @@ export function AttendanceFilters() {
       !gradesLoadedRef.current
     ) {
       const firstGrade = gradesData.grades[0];
-      console.log('[AttendanceFilters] Auto-seleccionando grado:', firstGrade.id, firstGrade.name);
       gradesLoadedRef.current = true;
       setSelectedGradeId(firstGrade.id);
     }
@@ -116,7 +112,6 @@ export function AttendanceFilters() {
       !sectionsLoadedRef.current
     ) {
       const firstSection = sectionsData.sections[0];
-      console.log('[AttendanceFilters] Auto-seleccionando sección:', firstSection.id, firstSection.name);
       sectionsLoadedRef.current = true;
       attendanceActions.selectSection(firstSection.id);
     }
@@ -124,7 +119,6 @@ export function AttendanceFilters() {
 
   // Efecto para cargar estudiantes cuando se selecciona una sección
   useEffect(() => {
-    console.log('[AttendanceFilters] Efecto estudiantes - Verificando:', {
       selectedSectionId: attendanceState.selectedSectionId,
       studentsLength: studentsData.students?.length,
       studentsLoadedRef: studentsLoadedRef.current,
@@ -132,7 +126,6 @@ export function AttendanceFilters() {
     });
     
     if (attendanceState.selectedSectionId && studentsData.students?.length && !studentsLoadedRef.current) {
-      console.log('[AttendanceFilters] Estudiantes cargados:', studentsData.students.length);
       // Convertir StudentData a estructura básica compatible con AttendanceRecord
       const convertedStudents = studentsData.students.map(student => ({
         id: student.id,

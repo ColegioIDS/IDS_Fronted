@@ -307,7 +307,6 @@ export const batchSaveSchedules = async (
       { schedules }
     );
 
-    console.log('✅ Batch response received:', data);
     
     // The response from the API is wrapped as { success, message, data: {...} }
     // The complete BatchSaveResult should be: { success, message, data: { stats, items } }
@@ -320,10 +319,8 @@ export const batchSaveSchedules = async (
       }) as any
     };
     
-    console.log('✅ Returning BatchSaveResult:', batchResult);
     return batchResult;
   } catch (error: any) {
-    console.log('❌ Batch error caught:', {
       isAxiosError: axios.isAxiosError(error),
       status: error.response?.status,
       errorData: error.response?.data,
@@ -334,13 +331,11 @@ export const batchSaveSchedules = async (
     if (axios.isAxiosError(error)) {
       // Case 1: Backend returned wrapped response { success, message, data: {...} }
       if (error.response?.data?.data && error.response.data.data.stats) {
-        console.log('✅ Case 1: Found error.response.data.data with proper structure');
         return error.response.data.data;
       }
       
       // Case 2: Backend returned flat structure { success, message, stats, items }
       if (error.response?.data?.stats && error.response?.data?.items) {
-        console.log('✅ Case 2: Found flat structure in error.response.data');
         return {
           success: error.response.data.success ?? false,
           message: error.response.data.message || 'Error en batch',
@@ -353,7 +348,6 @@ export const batchSaveSchedules = async (
       
       // Case 3: Backend might have nested differently
       if (error.response?.data?.items?.errors && error.response?.data?.stats) {
-        console.log('✅ Case 3: Found items and stats separately');
         return {
           success: error.response.data.success ?? false,
           message: error.response.data.message || 'Operación completada con errores',
@@ -366,7 +360,6 @@ export const batchSaveSchedules = async (
       
       // Case 4: Only have items, construct stats from it
       if (error.response?.data?.items?.errors) {
-        console.log('✅ Case 4: Found only items.errors, constructing minimal response');
         return {
           success: false,
           message: error.response.data.message || 'Operación completada con errores',
@@ -386,7 +379,6 @@ export const batchSaveSchedules = async (
       const message = error.response?.data?.message || error.message || 'Error al guardar horarios';
       const details = error.response?.data?.details || [];
       
-      console.log('⚠️ Case 5: Generic error, creating minimal result');
       
       return {
         success: false,

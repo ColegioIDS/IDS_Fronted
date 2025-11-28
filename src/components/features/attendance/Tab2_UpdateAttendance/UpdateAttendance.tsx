@@ -35,7 +35,6 @@ export function UpdateAttendance() {
         const statuses = await getAllowedAttendanceStatusesByRole(roleId);
         setAllowedStatuses(statuses || []);
       } catch (err) {
-        console.error('Error loading statuses:', err);
       }
     };
 

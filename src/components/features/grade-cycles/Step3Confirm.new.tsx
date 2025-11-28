@@ -58,7 +58,6 @@ export function Step3Confirm({
       setError(null);
       await onConfirm();
     } catch (err: any) {
-      console.error('Error confirming:', err);
       setError(err.message || 'Error al guardar la configuración');
       setIsSaving(false);
     }

@@ -116,7 +116,6 @@ export function AcademicWeekFilters({
       payload.weekNumber = parseInt(currentWeekNumber);
     }
 
-    console.log('🔍 Aplicando filtros de Academic Weeks:', payload);
     onFilterChange(payload);
   };
 

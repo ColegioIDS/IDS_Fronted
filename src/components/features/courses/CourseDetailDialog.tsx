@@ -56,7 +56,6 @@ export function CourseDetailDialog({
       setCourse(courseData);
     } catch (err: any) {
       setError(err.message || 'Error al cargar el curso');
-      console.error('Error loading course details:', err);
     } finally {
       setIsLoading(false);
     }

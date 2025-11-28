@@ -55,12 +55,10 @@ export function DroppableTimeSlot({
   }, [day, timeSlot, isHovered, isRecreation, onDrop, getDragState]);
 
   const handleScheduleDelete = useCallback((scheduleId: string | number) => {
-    console.log('Eliminando schedule:', scheduleId, 'del slot:', day, timeSlot.label);
     onScheduleDelete(scheduleId);
   }, [onScheduleDelete, day, timeSlot.label]);
 
   const handleScheduleEdit = useCallback((schedule: Schedule | TempSchedule) => {
-    console.log('Editando schedule:', schedule.id, 'del slot:', day, timeSlot.label);
     onScheduleEdit(schedule);
   }, [onScheduleEdit, day, timeSlot.label]);
 

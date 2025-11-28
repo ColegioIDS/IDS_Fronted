@@ -29,7 +29,6 @@ export function usePermissions(initialQuery: PermissionsQuery = {}) {
       setGroupedData(grouped);
     } catch (err: any) {
       setError(err.message || 'Error al cargar permisos');
-      console.error('Error loading permissions:', err);
     } finally {
       setIsLoading(false);
     }
@@ -41,7 +40,6 @@ export function usePermissions(initialQuery: PermissionsQuery = {}) {
       const modulesList = await permissionsService.getModules();
       setModules(modulesList);
     } catch (err) {
-      console.error('Error loading modules:', err);
     }
   }, []);
 

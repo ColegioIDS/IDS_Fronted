@@ -22,7 +22,6 @@ export default function AdminLayout({
   useEffect(() => {
     // Solo redirigir cuando ya haya terminado de cargar
     if (!isLoading && !isAuthenticated) {
-      console.log("❌ No autenticado, redirigiendo a /signin");
       router.replace("/signin");
     }
   }, [isLoading, isAuthenticated, router]);

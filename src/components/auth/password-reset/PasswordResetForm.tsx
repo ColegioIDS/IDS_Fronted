@@ -210,7 +210,7 @@ export default function PasswordResetForm({
           <p className="text-sm text-center text-gray-500 dark:text-gray-400">
             ¿Recordaste tu contraseña?{" "}
             <Link
-              href="/auth/signin"
+              href="/signin"
               className="text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition-colors"
             >
               Inicia sesión

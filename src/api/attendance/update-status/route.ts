@@ -41,7 +41,6 @@ export async function PATCH(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error updating attendance status:', error);
     return NextResponse.json(
       { error: 'Error al actualizar el estado de asistencia' },
       { status: 500 }

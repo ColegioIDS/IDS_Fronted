@@ -78,7 +78,6 @@ export const EnrollmentSection = memo(function EnrollmentSection({
     
     if (onGradeChange) {
       onGradeChange(gradeId).catch((error) => {
-        console.error('Error en callback de grado:', error);
       });
     }
   }, [setValue, onGradeChange]);

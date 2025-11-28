@@ -287,7 +287,6 @@ export function ImportCoursesDialog({
       setStep('review');
     } catch (error: any) {
       toast.error(error.message || 'Error al leer el archivo');
-      console.error('Import error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -373,7 +372,6 @@ export function ImportCoursesDialog({
         toast.error(errorMessage);
       }
       
-      console.error('Import error:', error);
     } finally {
       setIsLoading(false);
     }

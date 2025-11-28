@@ -89,8 +89,6 @@ export const academicWeekService = {
    * @requires academic-week:create
    */
  async create(bimesterId: number, data: CreateAcademicWeekDto): Promise<AcademicWeek> {
-  console.log('Creating academic week with data:', data);
-  console.log('For bimester ID:', bimesterId);
   const response = await api.post(`/api/bimesters/${bimesterId}/academic-weeks`, data);
 
   if (!response.data?.success) {

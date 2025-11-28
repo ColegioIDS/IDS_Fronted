@@ -33,7 +33,6 @@ export function useHolidayBimesters(cycleId: number | undefined) {
       } catch (err: any) {
         const errorMessage = err.message || 'Error al cargar bimestres';
         setError(errorMessage);
-        console.error('Error loading bimesters:', err);
         setBimesters([]);
       } finally {
         setIsLoading(false);

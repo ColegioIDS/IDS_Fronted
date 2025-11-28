@@ -51,7 +51,6 @@ export const useCycles = (): UseCyclesReturn => {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error desconocido';
       setError(message);
-      console.error('Error al cargar ciclos:', err);
     } finally {
       setLoading(false);
     }

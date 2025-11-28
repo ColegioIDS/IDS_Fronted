@@ -90,7 +90,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   setRole(roleWithPermissions);
 }
     } catch (error) {
-      console.error('Error loading permissions:', error);
       setPermissions([]);
       setRole(null);
     }
@@ -107,14 +106,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
 
     try {
-      console.log('🔐 Verificando autenticación...');
       const userData = await verifySession();
-      console.log("✅ Usuario verificado:", userData);
       setUser(userData);
       setLastCheck(Date.now());
       await loadPermissions();
     } catch (error) {
-      console.error("❌ Verificación fallida:", error);
       setUser(null);
       setPermissions([]);
       setRole(null);
@@ -141,7 +137,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         await loadPermissions();
       } catch (error) {
-        console.error("Error loading permissions:", error);
       }
       // ✅ Redireccionar al dashboard después de cargar permisos
       router.replace('/dashboard');
@@ -158,7 +153,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLastCheck(0);
       router.replace('/signin');
     } catch (error) {
-      console.error('Logout failed:', error);
     }
   }, [router]);
 

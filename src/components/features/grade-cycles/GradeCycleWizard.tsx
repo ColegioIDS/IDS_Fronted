@@ -138,7 +138,6 @@ export function GradeCycleWizard({ onSuccess, onCancel }: GradeCycleWizardProps)
         onSuccess?.();
       }, 1000);
     } catch (err) {
-      console.error('Error saving grade-cycles:', err);
       const errorMessage = err instanceof Error ? err.message : 'Error al guardar la configuración';
       setError(errorMessage);
       setIsSubmitting(false);

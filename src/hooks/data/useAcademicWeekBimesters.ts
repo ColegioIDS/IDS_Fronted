@@ -51,7 +51,6 @@ export function useAcademicWeekBimesters(initialQuery: QueryBimestersDto = {}) {
       }
     } catch (err: any) {
       setError(err.message || 'Error al cargar bimestres disponibles');
-      console.error('Error loading available bimesters:', err);
       setBimesters([]);
     } finally {
       setIsLoading(false);

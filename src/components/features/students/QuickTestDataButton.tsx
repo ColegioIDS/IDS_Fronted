@@ -42,14 +42,9 @@ export const QuickTestDataButton: React.FC = () => {
         setValue(key, value);
       });
 
-      console.log('📋 Datos mock cargados. Debes seleccionar manualmente:');
-      console.log('- Ciclo Escolar');
-      console.log('- Grado');
-      console.log('- Sección');
 
       setOpen(false);
     } catch (error) {
-      console.error('Error al generar datos mock:', error);
       alert('Error al generar datos');
     }
   };

@@ -538,31 +538,24 @@ export const attendancePermissionsService = {
     search?: string
   ): Promise<RoleWithPermissionCount[]> {
     try {
-      console.log('📋 Obteniendo matriz de permisos para extraer roles...');
       // Primero intentamos obtener la matriz completa que tiene todos los roles
       const matrix = await this.getPermissionsMatrix();
       
       if (matrix?.roles && Array.isArray(matrix.roles) && matrix.roles.length > 0) {
-        console.log(`✅ Se obtuvieron ${matrix.roles.length} roles de la matriz`);
         return matrix.roles;
       }
 
-      console.log('⚠️ La matriz no retornó roles, intentando getRolesByType...');
       // Si la matriz no tiene roles, intenta con los roles de tipo TEACHER como fallback
       const result = await this.getTeacherRoles(page, limit, search);
       const rolesData = result.data || [];
-      console.log(`✅ Se obtuvieron ${rolesData.length} roles de tipo TEACHER`);
       return rolesData;
     } catch (error) {
-      console.error('❌ Error obteniendo roles:', error);
       // Fallback final: intentar obtener cualquier rol
       try {
         const result = await this.getTeacherRoles(page, limit, search);
         const rolesData = result.data || [];
-        console.log(`✅ Fallback: Se obtuvieron ${rolesData.length} roles`);
         return rolesData;
       } catch (fallbackError) {
-        console.error('❌ Error en fallback:', fallbackError);
         return [];
       }
     }
@@ -574,25 +567,19 @@ export const attendancePermissionsService = {
    */
   async getAttendanceStatuses(): Promise<AttendanceStatusResponse[]> {
     try {
-      console.log('📋 Obteniendo estados activos de asistencia...');
       const statuses = await this.getActiveAttendanceStatuses();
-      console.log(`✅ Se obtuvieron ${statuses.length} estados activos`);
       return statuses;
     } catch (error) {
-      console.error('❌ Error obteniendo estados activos:', error);
       // Si falla, intenta obtener la lista paginada como fallback
       try {
-        console.log('⚠️ Intentando fallback con lista paginada...');
         const result = await this.getAttendanceStatusesList({ 
           page: 1, 
           limit: 100,
           isActive: true 
         });
         const statuses = Array.isArray(result.data) ? result.data : [];
-        console.log(`✅ Fallback: Se obtuvieron ${statuses.length} estados`);
         return statuses;
       } catch (fallbackError) {
-        console.error('❌ Error en fallback de estados:', fallbackError);
         return [];
       }
     }

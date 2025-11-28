@@ -59,7 +59,6 @@ export function handleApiError(
 
   // Log para debugging (solo en development)
   if (process.env.NODE_ENV === 'development') {
-    console.error('API Error:', {
       message,
       details,
       originalError: error,
@@ -89,7 +88,6 @@ export function handleApiSuccess(message: string, details?: string[]) {
 
   // Log para debugging (solo en development)
   if (process.env.NODE_ENV === 'development') {
-    console.log('API Success:', { message, details });
   }
 }
 

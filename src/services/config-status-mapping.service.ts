@@ -227,8 +227,6 @@ class ConfigStatusMappingService {
     // Handle wrapper format: { success, message, data: { config, statusMappings, summary } }
     const unwrappedData = response.data.data || response.data;
     
-    console.log('getSetupConfig raw response:', response.data);
-    console.log('getSetupConfig unwrapped data:', unwrappedData);
     
     return unwrappedData;
   }

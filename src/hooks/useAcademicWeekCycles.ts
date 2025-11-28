@@ -32,7 +32,6 @@ export function useAcademicWeekCycles(): UseAcademicWeekCyclesReturn {
         setActiveCycle(active);
       }
     } catch (err: any) {
-      console.error('Error al cargar ciclos:', err);
       setError(err.message || 'Error al cargar los ciclos');
       setCycles([]);
       setActiveCycle(null);

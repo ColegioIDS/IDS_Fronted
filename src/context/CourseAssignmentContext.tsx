@@ -473,44 +473,28 @@ export function CourseAssignmentProvider({ children }: CourseAssignmentProviderP
 
 const bulkUpdateAssignmentsAction = useCallback(async (data: BulkUpdateRequest) => {
   try {
-    console.log('1. Iniciando bulk update con data:', data);
     dispatch({ type: 'SET_SUBMITTING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: null });
     
-    console.log('2. Llamando bulkUpdateCourseAssignments...');
     const result = await bulkUpdateCourseAssignments(data);
-    console.log('3. Resultado recibido:', result);
-    console.log('3a. Tipo de resultado:', typeof result);
-    console.log('3b. result.message:', result?.message);
     
-    console.log('4. Refrescando asignaciones...');
     await fetchAssignments(state.filters);
-    console.log('5. Asignaciones refrescadas');
     
     // Manejo seguro del mensaje
     const successMessage = (result && result.message) 
       ? result.message 
       : "Actualización masiva completada correctamente";
     
-    console.log('6. Mostrando toast con mensaje:', successMessage);
     toast.success(successMessage);
     
-    console.log('7. Retornando resultado exitoso');
     return { success: true, message: successMessage };
     
   } catch (error: any) {
-    console.log('ERROR CAPTURADO en bulkUpdateAssignmentsAction:');
-    console.log('Error completo:', error);
-    console.log('Error tipo:', typeof error);
-    console.log('Error.message:', error?.message);
-    console.log('Error.stack:', error?.stack);
     
     const message = handleError(error, 'Error en la actualización masiva');
-    console.log('Mensaje final del error:', message);
     
     return { success: false, message };
   } finally {
-    console.log('8. Finalizando - SET_SUBMITTING false');
     dispatch({ type: 'SET_SUBMITTING', payload: false });
   }
 }, [handleError, fetchAssignments, state.filters]);
