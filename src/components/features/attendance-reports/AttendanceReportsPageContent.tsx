@@ -3,15 +3,21 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { attendanceReportsService } from '@/services/attendance-reports.service';
-import { useAttendanceSummary } from '@/hooks/data/attendance-reports/useAttendanceSummary';
+import { useAttendanceSummary, useStudentsAttendance } from '@/hooks/data/attendance-reports';
 import { AttendanceSummaryCharts } from './AttendanceSummaryCharts';
-import { GradesSelector, SectionsSelector, CoursesSelector, BimestersSelector, AcademicWeeksSelector } from './shared';
+import { ExportStudentsTab } from './ExportStudentsTab';
+import { GradesSelector, SectionsSelector, CoursesSelector, BimestersSelector, AcademicWeeksSelector, StudentsTable } from './shared';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Calendar, BookOpen, TrendingUp, AlertTriangle, Clock, Layers, ChevronDown, ChevronUp } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Calendar, BookOpen, TrendingUp, AlertTriangle, Clock, Layers, ChevronDown, ChevronUp, Users, BarChart3, FileText, Download, X } from 'lucide-react';
 
 export function AttendanceReportsPageContent() {
   const [selectedGradeId, setSelectedGradeId] = useState<number | undefined>();
@@ -20,6 +26,9 @@ export function AttendanceReportsPageContent() {
   const [selectedBimesterId, setSelectedBimesterId] = useState<number | undefined>();
   const [selectedWeekId, setSelectedWeekId] = useState<number | undefined>();
   const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState('summary');
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
 
   // Contraer automáticamente cuando los 3 primeros selectores se completen
   useEffect(() => {
@@ -41,6 +50,20 @@ export function AttendanceReportsPageContent() {
     error: summaryError,
     isError: summaryIsError,
   } = useAttendanceSummary({
+    gradeId: selectedGradeId,
+    sectionId: selectedSectionId,
+    courseId: selectedCourseId,
+    bimesterId: selectedBimesterId,
+    academicWeekId: selectedWeekId,
+  });
+
+  // Hook para obtener los detalles de asistencia de estudiantes
+  const {
+    data: studentsAttendance,
+    isLoading: isStudentsLoading,
+    error: studentsError,
+    isError: studentsIsError,
+  } = useStudentsAttendance({
     gradeId: selectedGradeId,
     sectionId: selectedSectionId,
     courseId: selectedCourseId,
@@ -549,19 +572,95 @@ export function AttendanceReportsPageContent() {
         </Alert>
       )}
 
-      {/* Attendance Summary Charts */}
+      {/* Students Attendance Details Error */}
+      {studentsIsError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {studentsError?.message || 'Error al cargar el detalle de estudiantes'}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Tabs for Reports */}
       {selectedGradeId && selectedSectionId && selectedCourseId && (
-        <div className="space-y-6">
-          {isSummaryLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-64 rounded-lg" />
-              <Skeleton className="h-96 rounded-lg" />
-              <Skeleton className="h-72 rounded-lg" />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          {/* Tabs Header */}
+          <div className="flex items-center gap-2 mb-6">
+            <div className="bg-indigo-100 dark:bg-indigo-900 p-2 rounded-lg">
+              <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             </div>
-          ) : attendanceSummary ? (
-            <AttendanceSummaryCharts data={attendanceSummary} isLoading={isSummaryLoading} />
-          ) : null}
-        </div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mr-auto">Análisis de Asistencia</h2>
+          </div>
+
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="summary" className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              <span>Resumen</span>
+            </TabsTrigger>
+            <TabsTrigger value="detailed" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              <span>Estudiantes</span>
+            </TabsTrigger>
+            <TabsTrigger value="export" className="flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              <span>Descargar</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Summary Tab */}
+          <TabsContent value="summary" className="space-y-6">
+            {isSummaryLoading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-64 rounded-lg" />
+                <Skeleton className="h-96 rounded-lg" />
+                <Skeleton className="h-72 rounded-lg" />
+              </div>
+            ) : attendanceSummary ? (
+              <AttendanceSummaryCharts data={attendanceSummary} isLoading={isSummaryLoading} />
+            ) : null}
+          </TabsContent>
+
+          {/* Detailed Tab */}
+          <TabsContent value="detailed" className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center gap-2">
+              <div className="bg-purple-100 dark:bg-purple-900 p-2 rounded-lg">
+                <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Asistencia Detallada por Estudiante</h3>
+            </div>
+
+            {isStudentsLoading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-12 rounded-lg" />
+                {[...Array(8)].map((_, i) => (
+                  <Skeleton key={i} className="h-16 rounded-lg" />
+                ))}
+              </div>
+            ) : studentsAttendance ? (
+              <StudentsTable
+                students={studentsAttendance.students}
+                totalClasses={studentsAttendance.summary.totalClasses}
+                averageAttendance={studentsAttendance.summary.averageAttendance}
+                isLoading={isStudentsLoading}
+              />
+            ) : null}
+          </TabsContent>
+          {/* Export Tab */}
+          <TabsContent value="export" className="space-y-6">
+            <ExportStudentsTab
+              students={studentsAttendance?.students || []}
+              isLoading={isStudentsLoading}
+              gradeId={selectedGradeId}
+              sectionId={selectedSectionId}
+              courseId={selectedCourseId}
+              bimesterId={selectedBimesterId}
+              academicWeekId={selectedWeekId}
+              cycleId={cycle?.id}
+            />
+          </TabsContent>
+        </Tabs>
       )}
 
       {/* Placeholder for future content */}

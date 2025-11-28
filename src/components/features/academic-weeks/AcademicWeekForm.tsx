@@ -337,17 +337,16 @@ export function AcademicWeekForm({
   const isDateInBimesterRange = (date: Date | undefined): boolean => {
     if (!date || !dynamicBimesterDateRange) return true;
 
-    // Convertir date a string YYYY-MM-DD usando métodos locales
-    const dateStr = date.getFullYear() + '-' + 
+    // Extraer solo la fecha YYYY-MM-DD (ignorar la hora y timezone)
+    const checkDateStr = date.getFullYear() + '-' + 
       String(date.getMonth() + 1).padStart(2, '0') + '-' + 
       String(date.getDate()).padStart(2, '0');
     
-    // Extraer la parte YYYY-MM-DD de las fechas ISO del backend
     const startDateStr = dynamicBimesterDateRange.startDate.split('T')[0];
     const endDateStr = dynamicBimesterDateRange.endDate.split('T')[0];
-    
-    // Comparar como strings evita problemas de timezone
-    return dateStr >= startDateStr && dateStr <= endDateStr;
+
+    // Comparar solo las fechas como strings (YYYY-MM-DD)
+    return checkDateStr >= startDateStr && checkDateStr <= endDateStr;
   };
 
   const handleSubmit = async (data: AcademicWeekFormValues) => {

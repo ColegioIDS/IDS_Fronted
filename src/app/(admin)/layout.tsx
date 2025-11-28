@@ -15,7 +15,7 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const { isExpanded, isHovered, isMobileOpen, sidebarMode } = useSidebar();
   const { isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
 
@@ -27,11 +27,17 @@ export default function AdminLayout({
     }
   }, [isLoading, isAuthenticated, router]);
 
-  const mainContentMargin = isMobileOpen
+  // Calculate effective expanded state based on sidebarMode
+  const effectiveIsExpanded = sidebarMode === "extended" ? true : (sidebarMode === "minimal" ? false : isExpanded);
+  const effectiveIsHovered = sidebarMode === "minimal" ? false : isHovered;
+
+  const mainContentMargin = sidebarMode === "hidden" 
     ? "ml-0"
-    : isExpanded || isHovered
-      ? "lg:ml-[290px]"
-      : "lg:ml-[90px]";
+    : isMobileOpen
+      ? "ml-0"
+      : effectiveIsExpanded || effectiveIsHovered
+        ? "lg:ml-[290px]"
+        : "lg:ml-[90px]";
 
   // ⚠️ IMPORTANTE: Mostrar loading mientras se verifica
   if (isLoading) {

@@ -10,6 +10,8 @@ import {
   AcademicWeek,
   Course,
   AttendanceSummary,
+  StudentsAttendanceResponse,
+  ExportParams,
 } from '@/types/attendance-reports.types';
 
 const BASE_URL = '/api/attendance-reports';
@@ -170,6 +172,126 @@ class AttendanceReportsService {
       return response.data.data;
     } catch (error) {
       console.error('Error en getAttendanceSummary:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get students attendance with optional filters
+   */
+  async getStudentsAttendance(
+    gradeId: number,
+    sectionId: number,
+    courseId: number,
+    bimesterId?: number | null,
+    academicWeekId?: number | null
+  ): Promise<StudentsAttendanceResponse> {
+    try {
+      const params = new URLSearchParams({
+        gradeId: gradeId.toString(),
+        courseId: courseId.toString(),
+      });
+
+      if (bimesterId !== null && bimesterId !== undefined) {
+        params.append('bimesterId', bimesterId.toString());
+      }
+
+      if (academicWeekId !== null && academicWeekId !== undefined) {
+        params.append('academicWeekId', academicWeekId.toString());
+      }
+
+      const response = await api.get<ApiResponse<StudentsAttendanceResponse>>(
+        `${BASE_URL}/sections/${sectionId}/students-attendance?${params.toString()}`
+      );
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Error al obtener asistencia de estudiantes');
+      }
+
+      return response.data.data;
+    } catch (error) {
+      console.error('Error en getStudentsAttendance:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Export student attendance report (Excel, PDF, CSV)
+   */
+  async exportStudentReport(
+    studentId: number,
+    params: ExportParams
+  ): Promise<Blob> {
+    try {
+      const queryParams = new URLSearchParams({
+        gradeId: params.gradeId.toString(),
+        sectionId: params.sectionId.toString(),
+        courseId: params.courseId.toString(),
+        format: params.format || 'excel',
+      });
+
+      if (params.bimesterId !== null && params.bimesterId !== undefined) {
+        queryParams.append('bimesterId', params.bimesterId.toString());
+      }
+
+      if (params.startDate) {
+        queryParams.append('startDate', params.startDate);
+      }
+
+      if (params.endDate) {
+        queryParams.append('endDate', params.endDate);
+      }
+
+      const response = await api.get<Blob>(
+        `${BASE_URL}/export/student/${studentId}?${queryParams.toString()}`,
+        {
+          responseType: 'blob',
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error en exportStudentReport:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Export section attendance report (Excel, PDF, CSV)
+   */
+  async exportSectionReport(
+    sectionId: number,
+    params: Omit<ExportParams, 'sectionId'>
+  ): Promise<Blob> {
+    try {
+      const queryParams = new URLSearchParams({
+        gradeId: params.gradeId.toString(),
+        courseId: params.courseId.toString(),
+        format: params.format || 'excel',
+      });
+
+      if (params.bimesterId !== null && params.bimesterId !== undefined) {
+        queryParams.append('bimesterId', params.bimesterId.toString());
+      }
+
+      if (params.startDate) {
+        queryParams.append('startDate', params.startDate);
+      }
+
+      if (params.endDate) {
+        queryParams.append('endDate', params.endDate);
+      }
+
+      const response = await api.get<Blob>(
+        `${BASE_URL}/export/section/${sectionId}?${queryParams.toString()}`,
+        {
+          responseType: 'blob',
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error en exportSectionReport:', error);
       throw error;
     }
   }

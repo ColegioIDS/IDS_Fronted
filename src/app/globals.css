@@ -1040,3 +1040,41 @@ span.flatpickr-weekday,
   background-color: #1e40af;
 }
 
+/* ============================================
+   🎨 SCROLLBAR SUTIL PARA SIDEBAR
+   ============================================ */
+.scrollbar-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: #e0e7ff transparent;
+}
+
+.dark .scrollbar-sidebar {
+  scrollbar-color: #374151 transparent;
+}
+
+.scrollbar-sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.scrollbar-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-sidebar::-webkit-scrollbar-thumb {
+  background-color: #e0e7ff;
+  border-radius: 2.5px;
+}
+
+.scrollbar-sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: #c7d2fe;
+}
+
+.dark .scrollbar-sidebar::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 2.5px;
+}
+
+.dark .scrollbar-sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+}
+

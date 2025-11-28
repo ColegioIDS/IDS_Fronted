@@ -4,3 +4,6 @@ export { useBimestersByCycle } from './useBimestersByCycle';
 export { useAcademicWeeksByBimester } from './useAcademicWeeksByBimester';
 export { useCoursesBySection } from './useCoursesBySection';
 export { useAttendanceSummary } from './useAttendanceSummary';
+export { useStudentsAttendance } from './useStudentsAttendance';
+export { useExportStudentReport } from './useExportStudentReport';
+export { useExportSectionReport } from './useExportSectionReport';

@@ -1,1 +1,0 @@
-// Summary tab component

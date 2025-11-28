@@ -1,1 +1,2 @@
-// Tabs exports
+export { DetailedTab } from './DetailedTab';
+
