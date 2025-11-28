@@ -170,7 +170,8 @@ export function AcademicWeekPageContent({
       const completeWeek = await academicWeekService.getById(week.id);
       
       // STEP 2: Extraer el cycleId del bimestre relacionado
-      const cycleId = completeWeek.bimester?.schoolCycleId;
+      // El ciclo puede estar en bimester.cycle.id o bimester.schoolCycleId
+      const cycleId = completeWeek.bimester?.cycle?.id || completeWeek.bimester?.schoolCycleId;
       
       if (!cycleId) {
         throw new Error('No se pudo obtener el ciclo escolar de la semana académica');
