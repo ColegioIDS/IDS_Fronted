@@ -81,6 +81,11 @@ export interface BimesterForAcademicWeek {
   startDate: string;
   endDate: string;
   isActive: boolean;
+  cycle?: {
+    id: number;
+    name: string;
+    isArchived: boolean;
+  };
   academicWeeks?: AcademicWeek[];
   _count?: {
     academicWeeks: number;
