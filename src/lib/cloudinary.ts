@@ -9,17 +9,13 @@ export async function uploadImageToCloudinary(
   file: File,
   folder: string = 'ids_usuarios'
 ): Promise<{ url: string; publicId: string }> {
-  
   // Validar variables de entorno
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
-    cloudName: cloudName ? '✅ Configurado' : '❌ Falta',
-    uploadPreset: uploadPreset ? '✅ Configurado' : '❌ Falta',
-  });
-
   if (!cloudName || !uploadPreset) {
-    const errorMsg = 'Variables de entorno Cloudinary no configuradas. ' +
+    const errorMsg =
+      'Variables de entorno Cloudinary no configuradas. ' +
       'Asegúrate de tener NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME y NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET';
     throw new Error(errorMsg);
   }
@@ -29,11 +25,6 @@ export async function uploadImageToCloudinary(
     throw new Error('No se proporcionó archivo');
   }
 
-    nombre: file.name,
-    tipo: file.type,
-    tamaño: (file.size / 1024 / 1024).toFixed(2) + ' MB',
-  });
-
   if (!file.type.startsWith('image/')) {
     const errorMsg = `El archivo debe ser una imagen. Tipo recibido: ${file.type}`;
     throw new Error(errorMsg);
@@ -42,7 +33,11 @@ export async function uploadImageToCloudinary(
   // Validar tamaño (5MB máximo)
   const maxSize = 5 * 1024 * 1024;
   if (file.size > maxSize) {
-    const errorMsg = `La imagen no debe exceder 5MB. Tamaño recibido: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+    const errorMsg = `La imagen no debe exceder 5MB. Tamaño recibido: ${(
+      file.size /
+      1024 /
+      1024
+    ).toFixed(2)} MB`;
     throw new Error(errorMsg);
   }
 
@@ -61,7 +56,6 @@ export async function uploadImageToCloudinary(
       }
     );
 
-
     if (!res.ok) {
       const error = await res.json();
       const errorMsg = error.error?.message || `Error HTTP ${res.status}`;
@@ -69,10 +63,6 @@ export async function uploadImageToCloudinary(
     }
 
     const data = await res.json();
-
-      url: data.secure_url,
-      publicId: data.public_id,
-    });
 
     return {
       url: data.secure_url,

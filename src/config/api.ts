@@ -55,3 +55,21 @@ api.interceptors.response.use(
 );
 
 export { api };
+
+/**
+ * Cliente API sin autenticación para rutas públicas
+ * Se usa para endpoints que NO requieren token/cookies
+ * 
+ * Ejemplo: POST /verify-email/verify (verificación pública)
+ */
+const publicApi: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 30000,
+  withCredentials: false,  // ❌ NO enviar cookies
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  validateStatus: () => true, // Retorna TODAS las respuestas
+});
+
+export { publicApi };

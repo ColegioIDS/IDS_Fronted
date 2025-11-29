@@ -126,8 +126,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   },
   [user, lastCheck, loadPermissions]
 );  useEffect(() => {
-    // ✅ IMPORTANTE: Ejecutar verificación al montar
-    checkAuth(true); // force = true para verificar siempre al inicio
+    // 🔍 Detectar rutas públicas donde no necesitamos autenticación
+    const publicRoutes = ['/verify-email', '/signin', '/password-reset'];
+    const isPublicRoute = publicRoutes.some(route => pathname?.startsWith(route));
+
+    // ✅ Solo ejecutar verificación de autenticación si NO estamos en ruta pública
+    if (!isPublicRoute) {
+      checkAuth(true); // force = true para verificar siempre al inicio
+    }
   }, []); // Ejecutar solo una vez
 
   const login = useCallback(
