@@ -132,18 +132,49 @@ export const StudentEditForm: React.FC<StudentEditFormProps> = ({
           studentsService.getEnrollmentFormData(),
         ]);
 
+        // Asegurar que el ciclo actual del estudiante esté en la lista
+        let updatedEnrollmentData = { ...enrollmentFormData };
+        const studentCycleId = student.enrollments?.[0]?.cycleId;
+        
+        if (studentCycleId && student.enrollments && student.enrollments[0] && !updatedEnrollmentData.cycles?.find(c => c.id === studentCycleId)) {
+          // Si el ciclo del estudiante no está en la lista, agregarlo
+          const studentCycle = student.enrollments[0].cycle;
+          if (studentCycle) {
+            updatedEnrollmentData.cycles = [
+              { 
+                id: studentCycle.id, 
+                name: studentCycle.name,
+                startDate: '',
+                endDate: '',
+                isActive: false,
+                academicYear: new Date().getFullYear(),
+                canEnroll: false,
+                isArchived: false,
+                grades: [],
+              },
+              ...(updatedEnrollmentData.cycles || [])
+            ];
+          }
+        }
 
         setStudentData(student);
-        setEnrollmentData(enrollmentFormData);
+        setEnrollmentData(updatedEnrollmentData);
 
         // Preparar datos para el formulario
         const formData = {
+          codeSIRE: student.codeSIRE || undefined,
           givenNames: student.givenNames,
           lastNames: student.lastNames,
           birthDate: student.birthDate,
           birthPlace: student.birthPlace,
+          birthTown: student.birthTown || undefined,
           nationality: student.nationality,
           gender: student.gender,
+          nativeLanguage: student.nativeLanguage || undefined,
+          secondLanguage: student.secondLanguage || undefined,
+          ethnicity: student.ethnicity || undefined,
+          hasLibrary: student.hasLibrary || false,
+          hasLunches: student.hasLunches || false,
           livesWithText: student.livesWithText,
           financialResponsibleText: student.financialResponsibleText,
           siblingsCount: student.siblingsCount,
@@ -314,8 +345,6 @@ export const StudentEditForm: React.FC<StudentEditFormProps> = ({
 
       if (onSuccess) {
         onSuccess();
-      } else {
-        router.push('/(admin)/students/list');
       }
     } catch (err: any) {
       let errorMessage = 'Error desconocido al actualizar estudiante';
@@ -428,7 +457,7 @@ export const StudentEditForm: React.FC<StudentEditFormProps> = ({
                 <CardTitle>Datos Personales</CardTitle>
               </CardHeader>
               <CardContent>
-                <PersonalDataSection />
+                <PersonalDataSection isEditMode={true} />
               </CardContent>
             </Card>
 
@@ -439,7 +468,10 @@ export const StudentEditForm: React.FC<StudentEditFormProps> = ({
                   <CardTitle>Inscripción Académica</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <EnrollmentSection activeCycle={enrollmentData.cycles?.[0]} />
+                  <EnrollmentSection 
+                    activeCycle={enrollmentData.activeCycle} 
+                    allCycles={enrollmentData.cycles}
+                  />
                 </CardContent>
               </Card>
             )}

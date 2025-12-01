@@ -158,6 +158,7 @@ export function TeacherDetailsForm({
                   <FormControl>
                     <Input
                       {...field}
+                      value={field.value ?? ''}
                       placeholder="ej: Licenciatura, Maestría"
                       disabled={isLoading || isSubmitting}
                       className="dark:bg-slate-900/80 dark:border-slate-700/60 dark:text-white dark:placeholder-slate-400 transition-all duration-300"

@@ -264,7 +264,7 @@ export const StudentCreateForm: React.FC = () => {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Crear Nuevo Estudiante</CardTitle>
             {/* Botón para llenar datos rápidamente - Oculto para producción */}
-            <QuickTestDataButton />
+            {/* <QuickTestDataButton /> */}
           </CardHeader>
           <CardContent className="space-y-8">
             {error && (

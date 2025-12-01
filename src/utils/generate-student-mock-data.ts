@@ -107,6 +107,8 @@ export function generateStudentMockData(): StudentFormValues {
     siblingsCount,
     brothersCount,
     sistersCount,
+    hasLibrary: Math.random() > 0.3,
+    hasLunches: Math.random() > 0.4,
     favoriteColor: getRandomItem(colors),
     hobby: getRandomItem(hobbies),
     favoriteFood: getRandomItem(foods),

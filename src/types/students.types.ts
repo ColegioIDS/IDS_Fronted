@@ -203,8 +203,14 @@ export interface Student {
   lastNames: string;
   birthDate: Date | string;
   birthPlace?: string | null;
+  birthTown?: string | null;
   nationality?: string | null;
   gender?: Gender;
+  nativeLanguage?: string | null;
+  secondLanguage?: string | null;
+  ethnicity?: string | null;
+  hasLibrary?: boolean;
+  hasLunches?: boolean;
   livesWithText?: string | null;
   financialResponsibleText?: string | null;
   siblingsCount?: number;

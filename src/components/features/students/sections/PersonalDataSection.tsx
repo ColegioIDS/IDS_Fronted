@@ -2,6 +2,7 @@
 import { useFormContext } from "react-hook-form";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -26,7 +27,11 @@ import {
   Users as UsersIcon
 } from "lucide-react";
 
-export const PersonalDataSection = () => {
+interface PersonalDataSectionProps {
+  isEditMode?: boolean;
+}
+
+export const PersonalDataSection = ({ isEditMode = false }: PersonalDataSectionProps) => {
   const { control, register, watch, setValue } = useFormContext();
   const [departments, setDepartments] = useState<any[]>([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
@@ -72,6 +77,41 @@ export const PersonalDataSection = () => {
             Información básica e identificación del estudiante
           </p>
         </div>
+      </div>
+
+      {/* Sección 0: Código SIRE */}
+      <div className="space-y-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <UserIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          Identificación del Estudiante
+        </h3>
+
+        {/* Código SIRE */}
+        <FormField
+          control={control}
+          name="codeSIRE"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Código SIRE {isEditMode && <span className="text-gray-500 text-xs font-normal">(Solo lectura)</span>}
+              </FormLabel>
+              <FormControl>
+                <Input
+                  placeholder={isEditMode ? "Código SIRE (No se puede editar)" : "Ingrese el código SIRE del estudiante"}
+                  {...field}
+                  value={field.value || ""}
+                  disabled={isEditMode}
+                  className={`h-9 text-sm ${
+                    isEditMode 
+                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 cursor-not-allowed' 
+                      : 'bg-white dark:bg-gray-800'
+                  }`}
+                />
+              </FormControl>
+              <FormMessage className="text-xs" />
+            </FormItem>
+          )}
+        />
       </div>
 
       {/* Foto de Perfil - OPCIONAL */}
@@ -269,6 +309,142 @@ export const PersonalDataSection = () => {
                   />
                 </FormControl>
                 <FormMessage className="text-xs" />
+              </FormItem>
+            )}
+          />
+
+          {/* Pueblo de Nacimiento */}
+          <FormField
+            control={control}
+            name="birthTown"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Pueblo de Nacimiento
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Ciudad de Guatemala"
+                    {...field}
+                    value={field.value || ""}
+                    className="h-9 text-sm"
+                  />
+                </FormControl>
+                <FormMessage className="text-xs" />
+              </FormItem>
+            )}
+          />
+
+          {/* Idioma Materno */}
+          <FormField
+            control={control}
+            name="nativeLanguage"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Idioma Materno
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Español"
+                    {...field}
+                    value={field.value || ""}
+                    className="h-9 text-sm"
+                  />
+                </FormControl>
+                <FormMessage className="text-xs" />
+              </FormItem>
+            )}
+          />
+
+          {/* Segundo Idioma */}
+          <FormField
+            control={control}
+            name="secondLanguage"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Segundo Idioma
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Inglés"
+                    {...field}
+                    value={field.value || ""}
+                    className="h-9 text-sm"
+                  />
+                </FormControl>
+                <FormMessage className="text-xs" />
+              </FormItem>
+            )}
+          />
+
+          {/* Etnicidad */}
+          <FormField
+            control={control}
+            name="ethnicity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Etnicidad
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Ladino, Maya, Garifuna, etc."
+                    {...field}
+                    value={field.value || ""}
+                    className="h-9 text-sm"
+                  />
+                </FormControl>
+                <FormMessage className="text-xs" />
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
+
+      {/* Sección 2.5: Servicios y Accesos */}
+      <div className="space-y-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <GlobeIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          Servicios y Accesos
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Acceso a Biblioteca */}
+          <FormField
+            control={control}
+            name="hasLibrary"
+            render={({ field }) => (
+              <FormItem className="flex items-center justify-between p-3 border border-blue-200 dark:border-blue-700 rounded-lg bg-white dark:bg-blue-900/10">
+                <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                  ¿Acceso a Biblioteca?
+                </FormLabel>
+                <FormControl>
+                  <Checkbox
+                    checked={field.value || false}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          {/* Servicio de Almuerzos */}
+          <FormField
+            control={control}
+            name="hasLunches"
+            render={({ field }) => (
+              <FormItem className="flex items-center justify-between p-3 border border-blue-200 dark:border-blue-700 rounded-lg bg-white dark:bg-blue-900/10">
+                <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                  ¿Servicio de Almuerzos?
+                </FormLabel>
+                <FormControl>
+                  <Checkbox
+                    checked={field.value || false}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
               </FormItem>
             )}
           />

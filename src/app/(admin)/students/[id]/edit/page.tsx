@@ -2,7 +2,6 @@
 'use client';
 
 import { StudentEditForm } from '@/components/features/students';
-import { useRouter } from 'next/navigation';
 import { use } from 'react';
 
 interface StudentEditPageProps {
@@ -12,7 +11,6 @@ interface StudentEditPageProps {
 }
 
 export default function StudentEditPage({ params }: StudentEditPageProps) {
-  const router = useRouter();
   const unwrappedParams = use(params);
   const studentId = parseInt(unwrappedParams.id);
 
@@ -24,7 +22,7 @@ export default function StudentEditPage({ params }: StudentEditPageProps) {
             ID de estudiante inválido
           </p>
           <button
-            onClick={() => router.back()}
+            onClick={() => window.history.back()}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Volver
@@ -37,7 +35,6 @@ export default function StudentEditPage({ params }: StudentEditPageProps) {
   return (
     <StudentEditForm
       studentId={studentId}
-      onSuccess={() => router.push('/(admin)/students/list')}
     />
   );
 }

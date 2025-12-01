@@ -181,7 +181,10 @@ export const createBaseStudentSchema = () => z.object({
       { message: "El estudiante debe tener al menos 3 años" }
     ),
   birthPlace: z.string().max(100).nullish(),
+  birthTown: z.string().max(100).nullish(),
   nationality: z.string().max(50).nullish(),
+  nativeLanguage: z.string().max(50).nullish(),
+  secondLanguage: z.string().max(50).nullish(),
   livesWithText: z.string().max(100).nullish(),
   financialResponsibleText: z.string().max(100).nullish(),
   gender: GenderSchema,
@@ -194,6 +197,9 @@ export const createBaseStudentSchema = () => z.object({
   favoriteSubject: z.string().max(50).optional(),
   favoriteToy: z.string().max(50).optional(),
   favoriteCake: z.string().max(50).optional(),
+  ethnicity: z.string().max(50).nullish(),
+  hasLibrary: z.boolean().default(false),
+  hasLunches: z.boolean().default(false),
   // ✅ ACTUALIZADO: profileImage puede ser File (durante edición) o objeto {url, publicId} (después de upload)
   profileImage: z.union([
     z.instanceof(File),
@@ -259,7 +265,10 @@ export const defaultValues: StudentFormValues = {
   lastNames: "",
   birthDate: new Date(),
   birthPlace: undefined,
+  birthTown: undefined,
   nationality: undefined,
+  nativeLanguage: undefined,
+  secondLanguage: undefined,
   livesWithText: undefined,
   financialResponsibleText: undefined,
   gender: undefined,
@@ -272,6 +281,9 @@ export const defaultValues: StudentFormValues = {
   favoriteSubject: undefined,
   favoriteToy: undefined,
   favoriteCake: undefined,
+  ethnicity: undefined,
+  hasLibrary: false,
+  hasLunches: false,
   
   // ✅ NUEVO: Enrollment con valores por defecto (null inicialmente, se setean cuando cargan datos)
   enrollment: {

@@ -68,7 +68,10 @@ export const EnrollmentSection = memo(function EnrollmentSection({
 
   const availableCycles = allCycles || (activeCycle ? [activeCycle] : []);
   
-  const selectedCycle = availableCycles.find(c => c.id === selectedCycleId) || activeCycle;
+  // Asegurar que selectedCycleId sea un número para comparación correcta
+  const cycleIdAsNumber = typeof selectedCycleId === 'string' ? Number(selectedCycleId) : selectedCycleId;
+  
+  const selectedCycle = availableCycles.find(c => c.id === cycleIdAsNumber) || activeCycle;
   const availableGrades = selectedCycle?.grades || [];
 
   const handleGradeChange = useCallback((value: string) => {
