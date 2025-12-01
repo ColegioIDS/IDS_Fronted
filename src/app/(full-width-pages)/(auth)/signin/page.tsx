@@ -11,15 +11,18 @@ export default function SignIn() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
 
-
-
   useEffect(() => {
     setIsMounted(true);
-    if (!isLoading && isAuthenticated) {
+  }, []);
+
+  useEffect(() => {
+    // Si está autenticado y ya cargó, redirigir al dashboard
+    if (isMounted && isAuthenticated && !isLoading) {
       router.replace('/dashboard');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isMounted, isLoading, router]);
 
+  // Mostrar skeleton mientras se verifica autenticación o si ya está autenticado
   if (!isMounted || isLoading || isAuthenticated) {
     return (
       <div className="flex justify-center items-center h-full">

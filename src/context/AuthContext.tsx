@@ -64,6 +64,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [role, setRole] = useState<Role | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastCheck, setLastCheck] = useState(0);
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -125,16 +126,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   },
   [user, lastCheck, loadPermissions]
-);  useEffect(() => {
-    // 🔍 Detectar rutas públicas donde no necesitamos autenticación
-    const publicRoutes = ['/verify-email', '/signin', '/password-reset'];
-    const isPublicRoute = publicRoutes.some(route => pathname?.startsWith(route));
+);
 
-    // ✅ Solo ejecutar verificación de autenticación si NO estamos en ruta pública
-    if (!isPublicRoute) {
-      checkAuth(true); // force = true para verificar siempre al inicio
+  useEffect(() => {
+    // Solo ejecutar la verificación una vez al montar
+    if (!hasCheckedAuth && pathname) {
+      checkAuth(true);
+      setHasCheckedAuth(true);
     }
-  }, []); // Ejecutar solo una vez
+  }, []); // Dependencias vacías - solo ejecutar una vez
 
   const login = useCallback(
     async (userData: User) => {

@@ -3,6 +3,7 @@ import { userProfileService } from '@/services/user-profile.service';
 import { UpdateUserProfileDto } from '@/schemas/user-profile.schema';
 import { UserProfile } from '@/components/features/user-profile';
 import { useAuth } from '@/context/AuthContext';
+import { uploadImageToCloudinary } from '@/lib/cloudinary';
 
 interface UseUserProfileReturn {
   profile: UserProfile | null;
@@ -40,7 +41,29 @@ export function useUserProfile(): UseUserProfileReturn {
       try {
         setIsUpdating(true);
         setError(null);
-        const updatedProfile = await userProfileService.updateProfile(updateData);
+
+        let processedData = { ...updateData };
+
+        // 📸 Si hay profilePicture (File), subirlo a Cloudinary
+        if (updateData.profilePicture instanceof File) {
+          try {
+            const cloudinaryResponse = await uploadImageToCloudinary(
+              updateData.profilePicture,
+              'user-profiles'
+            );
+
+            // ✅ Reemplazar el File con el objeto de Cloudinary
+            processedData.profilePicture = {
+              url: cloudinaryResponse.url,
+              publicId: cloudinaryResponse.publicId,
+              description: 'Foto de perfil',
+            } as any;
+          } catch (err: any) {
+            throw new Error(`Error al subir imagen: ${err.message}`);
+          }
+        }
+
+        const updatedProfile = await userProfileService.updateProfile(processedData);
         setProfile(updatedProfile);
       } catch (err: any) {
         const errorMessage = err.message || 'Error al actualizar el perfil';

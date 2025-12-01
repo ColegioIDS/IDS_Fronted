@@ -6,8 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ProfileEditModal } from './ProfileEditModal';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
 import {
   User,
   Mail,
@@ -25,18 +23,23 @@ import {
   TrendingUp,
   CreditCard,
   Home,
-  Navigation,
   CalendarCheck,
   History,
   Sparkles,
 } from 'lucide-react';
-import { useUserProfile } from '@/hooks/user-profile';
 
-export function UserProfilePageContent() {
+interface UserProfilePageProps {
+  profile: any;
+  isLoading?: boolean;
+}
+
+export const UserProfilePage: React.FC<UserProfilePageProps> = ({
+  profile,
+  isLoading = false,
+}) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const { profile, isLoading, error, refetch } = useUserProfile();
 
-  const formatDate = (dateString: string | undefined) => {
+  const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('es-GT', {
       year: 'numeric',
@@ -45,11 +48,11 @@ export function UserProfilePageContent() {
     });
   };
 
-  const getInitials = (givenNames: string | undefined, lastNames: string | undefined) => {
+  const getInitials = (givenNames: string, lastNames: string) => {
     return `${givenNames?.charAt(0) || ''}${lastNames?.charAt(0) || ''}`.toUpperCase();
   };
 
-  const calculateYearsOfService = (hiredDate: string | undefined) => {
+  const calculateYearsOfService = (hiredDate: string) => {
     if (!hiredDate) return 0;
     const hired = new Date(hiredDate);
     const now = new Date();
@@ -67,41 +70,17 @@ export function UserProfilePageContent() {
     );
   }
 
-  if (error) {
-    return (
-      <Alert className="bg-red-50 dark:bg-red-950/30 border-2 border-red-200 dark:border-red-800 m-4">
-        <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-        <AlertDescription className="text-red-600 dark:text-red-400 font-medium">{error}</AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <Alert className="border-2 m-4">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription className="font-medium">No se encontró información del perfil</AlertDescription>
-      </Alert>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 dark:from-slate-950 dark:via-blue-950/20 dark:to-slate-950">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Hero Header Section */}
       <div className="relative">
-        {/* Gradient Background with Animation */}
-        <div className="absolute inset-0 h-80 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 dark:from-blue-800 dark:via-blue-700 dark:to-indigo-800 overflow-hidden">
-          {/* Animated Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
-          {/* Decorative Circles */}
-          <div className="absolute -top-10 -right-10 w-72 h-72 bg-blue-400/30 dark:bg-blue-600/30 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute top-20 -left-20 w-96 h-96 bg-indigo-400/20 dark:bg-indigo-600/20 rounded-full blur-3xl animate-pulse delay-1000" />
-        </div>
+        {/* Solid Color Background */}
+        <div className="absolute inset-0 h-80 bg-blue-500 dark:bg-blue-700" />
 
         {/* Decorative Wave */}
         <div className="absolute inset-0 h-80 overflow-hidden">
           <svg
-            className="absolute bottom-0 left-0 w-full drop-shadow-lg"
+            className="absolute bottom-0 left-0 w-full"
             viewBox="0 0 1440 120"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -109,50 +88,50 @@ export function UserProfilePageContent() {
           >
             <path
               d="M0 120L48 110C96 100 192 80 288 75C384 70 480 80 576 85C672 90 768 90 864 85C960 80 1056 70 1152 70C1248 70 1344 80 1392 85L1440 90V120H1392C1344 120 1248 120 1152 120C1056 120 960 120 864 120C768 120 672 120 576 120C480 120 384 120 288 120C192 120 96 120 48 120H0Z"
-              className="fill-slate-50 dark:fill-slate-950"
-              fillOpacity="0.8"
+              fill="rgb(248 250 252)"
+              fillOpacity="0.5"
             />
             <path
               d="M0 120L48 115C96 110 192 100 288 95C384 90 480 90 576 92C672 94 768 98 864 98C960 98 1056 94 1152 90C1248 86 1344 82 1392 80L1440 78V120H1392C1344 120 1248 120 1152 120C1056 120 960 120 864 120C768 120 672 120 576 120C480 120 384 120 288 120C192 120 96 120 48 120H0Z"
-              className="fill-slate-50 dark:fill-slate-950"
+              fill="rgb(248 250 252)"
             />
           </svg>
         </div>
 
-        <div className="relative pt-8 px-6 z-20">
+        <div className="container relative mx-auto max-w-6xl px-4 pt-8">
           {/* Top Actions */}
-          <div className="flex justify-end pb-6 relative z-30">
+          <div className="flex justify-end pb-6">
             <Button
               onClick={() => setIsEditModalOpen(true)}
-              className="bg-white dark:bg-slate-900 border-2 border-white dark:border-slate-800 text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 shadow-lg hover:shadow-xl rounded-xl font-semibold transition-all duration-300 group cursor-pointer relative z-40"
+              className="bg-white dark:bg-slate-900 border-2 border-white dark:border-slate-800 text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-lg rounded-lg font-semibold transition-all"
             >
-              <Pencil className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform duration-300" />
+              <Pencil className="mr-2 h-4 w-4" />
               Editar Perfil
             </Button>
           </div>
 
           {/* Profile Card */}
-          <Card className="relative overflow-visible border-0 shadow-2xl hover:shadow-3xl bg-white dark:bg-slate-900 rounded-3xl transition-all duration-500 backdrop-blur-sm">
+          <Card className="relative overflow-visible border-0 shadow-2xl bg-white dark:bg-slate-900 rounded-2xl">
             <CardContent className="relative pt-0">
               {/* Avatar flotante que sobresale */}
               <div className="flex flex-col items-center -mt-20 gap-6 lg:flex-row lg:items-start lg:gap-8 lg:-mt-16 lg:pl-8">
-                <div className="relative z-10 flex-shrink-0 group">
-                  <div className="rounded-full p-1 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 dark:from-blue-600 dark:via-blue-700 dark:to-indigo-700 shadow-2xl group-hover:shadow-blue-500/50 dark:group-hover:shadow-blue-700/50 transition-all duration-300 group-hover:scale-105">
+                <div className="relative z-10 flex-shrink-0">
+                  <div className="rounded-full p-1 bg-blue-500 dark:bg-blue-600 shadow-2xl">
                     <div className="rounded-full bg-white dark:bg-slate-900 p-1">
-                      <Avatar className="h-40 w-40 border-4 border-white dark:border-slate-900 shadow-inner transition-transform duration-300 group-hover:scale-105">
+                      <Avatar className="h-40 w-40 border-4 border-white dark:border-slate-900 shadow-inner">
                         <AvatarImage
                           src={profile?.profilePicture?.url}
                           alt={`${profile?.givenNames} ${profile?.lastNames}`}
                           className="object-cover"
                         />
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 text-white text-4xl font-bold">
+                        <AvatarFallback className="bg-blue-500 dark:bg-blue-600 text-white text-4xl font-bold">
                           {getInitials(profile?.givenNames, profile?.lastNames)}
                         </AvatarFallback>
                       </Avatar>
                     </div>
                   </div>
                   {profile?.accountVerified && (
-                    <div className="absolute -bottom-2 -right-2 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 p-2.5 shadow-lg ring-4 ring-white dark:ring-slate-900 animate-pulse">
+                    <div className="absolute -bottom-2 -right-2 rounded-full bg-emerald-500 dark:bg-emerald-600 p-2.5 shadow-lg ring-4 ring-white dark:ring-slate-900">
                       <CheckCircle className="h-5 w-5 text-white" />
                     </div>
                   )}
@@ -211,20 +190,15 @@ export function UserProfilePageContent() {
       </div>
 
       {/* Content Section */}
-      <div className="w-full mx-auto px-0 py-10">
-        <div className="grid gap-8 lg:grid-cols-3 px-6">
+      <div className="container mx-auto max-w-6xl px-4 py-10">
+        <div className="grid gap-8 lg:grid-cols-3">
           {/* Left Column */}
           <div className="space-y-8 lg:col-span-2">
             {/* Contact Info Card */}
-            <Card className="overflow-hidden border-2 border-blue-200/50 dark:border-blue-800/50 shadow-lg hover:shadow-2xl hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 rounded-2xl group hover:scale-[1.01] relative">
-              {/* Liquid gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-blue-400/5 to-cyan-400/10 dark:from-blue-600/20 dark:via-blue-500/10 dark:to-cyan-600/20"></div>
-              <div className="absolute top-0 right-0 w-72 h-72 bg-blue-400/10 dark:bg-blue-500/15 rounded-full blur-3xl -mr-32 -mt-32"></div>
-              <div className="absolute bottom-0 left-0 w-72 h-72 bg-cyan-400/10 dark:bg-cyan-500/15 rounded-full blur-3xl -ml-32 -mb-32"></div>
-              
-              <div className="relative z-10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-b-2 border-blue-200/30 dark:border-blue-800/30 px-6 py-5">
+            <Card className="overflow-hidden border-2 border-slate-200 dark:border-slate-700 shadow-lg hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-600 transition-all rounded-2xl">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border-b-2 border-blue-200 dark:border-blue-800 px-6 py-5">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-500 dark:bg-blue-600 shadow-lg">
                     <Mail className="h-5 w-5 text-white" />
                   </div>
                   <div>
@@ -233,11 +207,11 @@ export function UserProfilePageContent() {
                   </div>
                 </div>
               </div>
-              <CardContent className="p-0 relative z-10">
+              <CardContent className="p-0">
                 <div className="grid sm:grid-cols-2">
-                  <div className="p-8 border-b sm:border-b-0 sm:border-r border-slate-200/30 dark:border-slate-700/30 hover:bg-white/20 dark:hover:bg-slate-800/30 transition-colors">
+                  <div className="p-6 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <div className="flex items-start gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100/50 dark:bg-blue-900/30 backdrop-blur-sm flex-shrink-0">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30 flex-shrink-0">
                         <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -251,9 +225,9 @@ export function UserProfilePageContent() {
                       </div>
                     </div>
                   </div>
-                  <div className="p-8 hover:bg-white/20 dark:hover:bg-slate-800/30 transition-colors">
+                  <div className="p-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <div className="flex items-start gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-teal-100/50 dark:bg-teal-900/30 backdrop-blur-sm flex-shrink-0">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-teal-100 dark:bg-teal-900/30 flex-shrink-0">
                         <Phone className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -270,15 +244,10 @@ export function UserProfilePageContent() {
             </Card>
 
             {/* Personal Info Card */}
-            <Card className="overflow-hidden border-2 border-teal-200/50 dark:border-teal-800/50 shadow-lg hover:shadow-2xl hover:border-teal-300 dark:hover:border-teal-700 transition-all duration-300 rounded-2xl group hover:scale-[1.01] relative">
-              {/* Liquid gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 via-teal-400/5 to-green-400/10 dark:from-teal-600/20 dark:via-teal-500/10 dark:to-green-600/20"></div>
-              <div className="absolute top-0 right-0 w-72 h-72 bg-teal-400/10 dark:bg-teal-500/15 rounded-full blur-3xl -mr-32 -mt-32"></div>
-              <div className="absolute bottom-0 left-0 w-72 h-72 bg-green-400/10 dark:bg-green-500/15 rounded-full blur-3xl -ml-32 -mb-32"></div>
-              
-              <div className="relative z-10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-b-2 border-teal-200/30 dark:border-teal-800/30 px-6 py-5">
+            <Card className="overflow-hidden border-2 border-slate-200 dark:border-slate-700 shadow-lg hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-600 transition-all rounded-2xl">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border-b-2 border-blue-200 dark:border-blue-800 px-6 py-5">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 dark:from-teal-600 dark:to-teal-700 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600 dark:bg-blue-500 shadow-lg">
                     <User className="h-5 w-5 text-white" />
                   </div>
                   <div>
@@ -287,10 +256,10 @@ export function UserProfilePageContent() {
                   </div>
                 </div>
               </div>
-              <CardContent className="p-8 relative z-10">
+              <CardContent className="p-6">
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="overflow-hidden rounded-xl border-2 border-teal-200/30 dark:border-teal-800/30 bg-white/30 dark:bg-slate-800/20 backdrop-blur-sm p-5 transition-all hover:shadow-md hover:border-blue-300/50 dark:hover:border-blue-700/50 hover:bg-white/50 dark:hover:bg-slate-800/40">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 shadow-lg mb-4">
+                  <div className="overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-5 transition-all hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500 dark:bg-blue-600 shadow-lg mb-4">
                       <Calendar className="h-5 w-5 text-white" />
                     </div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
@@ -299,8 +268,8 @@ export function UserProfilePageContent() {
                     <p className="font-bold text-slate-900 dark:text-slate-100">{formatDate(profile?.birthDate)}</p>
                   </div>
 
-                  <div className="overflow-hidden rounded-xl border-2 border-teal-200/30 dark:border-teal-800/30 bg-white/30 dark:bg-slate-800/20 backdrop-blur-sm p-5 transition-all hover:shadow-md hover:border-teal-300/50 dark:hover:border-teal-700/50 hover:bg-white/50 dark:hover:bg-slate-800/40">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 dark:from-teal-600 dark:to-teal-700 shadow-lg mb-4">
+                  <div className="overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-5 transition-all hover:shadow-md hover:border-teal-300 dark:hover:border-teal-700">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-500 dark:bg-teal-600 shadow-lg mb-4">
                       <User className="h-5 w-5 text-white" />
                     </div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
@@ -309,8 +278,8 @@ export function UserProfilePageContent() {
                     <p className="font-bold text-slate-900 dark:text-slate-100">{profile?.gender}</p>
                   </div>
 
-                  <div className="overflow-hidden rounded-xl border-2 border-teal-200/30 dark:border-teal-800/30 bg-white/30 dark:bg-slate-800/20 backdrop-blur-sm p-5 transition-all hover:shadow-md hover:border-amber-300/50 dark:hover:border-amber-700/50 hover:bg-white/50 dark:hover:bg-slate-800/40">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 shadow-lg mb-4">
+                  <div className="overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-5 transition-all hover:shadow-md hover:border-amber-300 dark:hover:border-amber-700">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500 dark:bg-amber-600 shadow-lg mb-4">
                       <CreditCard className="h-5 w-5 text-white" />
                     </div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">DPI</p>
@@ -322,13 +291,8 @@ export function UserProfilePageContent() {
 
             {/* Teacher Info Card */}
             {profile?.teacherDetails && (
-              <Card className="overflow-hidden border-2 border-amber-200/50 dark:border-amber-800/50 shadow-lg hover:shadow-xl hover:border-amber-300 dark:hover:border-amber-700 transition-all rounded-2xl relative">
-                {/* Liquid gradient background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-orange-400/10 dark:from-amber-600/20 dark:via-amber-500/10 dark:to-orange-600/20"></div>
-                <div className="absolute top-0 right-0 w-72 h-72 bg-amber-400/10 dark:bg-amber-500/15 rounded-full blur-3xl -mr-32 -mt-32"></div>
-                <div className="absolute bottom-0 left-0 w-72 h-72 bg-orange-400/10 dark:bg-orange-500/15 rounded-full blur-3xl -ml-32 -mb-32"></div>
-                
-                <div className="relative z-10 bg-amber-50/40 dark:bg-amber-900/20 backdrop-blur-md border-b-2 border-amber-200/30 dark:border-amber-800/30 px-6 py-5">
+              <Card className="overflow-hidden border-2 border-slate-200 dark:border-slate-700 shadow-lg hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-600 transition-all rounded-2xl">
+                <div className="bg-amber-50 dark:bg-amber-900/20 border-b-2 border-amber-200 dark:border-amber-800 px-6 py-5">
                   <div className="flex items-center gap-3">
                     <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-amber-600 dark:bg-amber-500 shadow-lg">
                       <Briefcase className="h-5 w-5 text-white" />
@@ -339,10 +303,10 @@ export function UserProfilePageContent() {
                     </div>
                   </div>
                 </div>
-                <CardContent className="p-6 relative z-10">
+                <CardContent className="p-6">
                   <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="overflow-hidden rounded-xl border-2 border-amber-200/30 dark:border-amber-800/30 bg-white/30 dark:bg-slate-800/20 backdrop-blur-sm p-5 transition-all hover:shadow-md hover:border-blue-300/50 dark:hover:border-blue-700/50 hover:bg-white/50 dark:hover:bg-slate-800/40">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 shadow-lg mb-4">
+                    <div className="overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-5 transition-all hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500 dark:bg-blue-600 shadow-lg mb-4">
                         <CalendarCheck className="h-5 w-5 text-white" />
                       </div>
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
@@ -351,8 +315,8 @@ export function UserProfilePageContent() {
                       <p className="font-bold text-slate-900 dark:text-slate-100">{formatDate(profile?.teacherDetails?.hiredDate)}</p>
                     </div>
 
-                    <div className="overflow-hidden rounded-xl border-2 border-amber-200/30 dark:border-amber-800/30 bg-white/30 dark:bg-slate-800/20 backdrop-blur-sm p-5 transition-all hover:shadow-md hover:border-teal-300/50 dark:hover:border-teal-700/50 hover:bg-white/50 dark:hover:bg-slate-800/40">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 dark:from-teal-600 dark:to-teal-700 shadow-lg mb-4">
+                    <div className="overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-5 transition-all hover:shadow-md hover:border-teal-300 dark:hover:border-teal-700">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-500 dark:bg-teal-600 shadow-lg mb-4">
                         <Users className="h-5 w-5 text-white" />
                       </div>
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
@@ -370,8 +334,8 @@ export function UserProfilePageContent() {
                       </div>
                     </div>
 
-                    <div className="overflow-hidden rounded-xl border-2 border-amber-200/30 dark:border-amber-800/30 bg-white/30 dark:bg-slate-800/20 backdrop-blur-sm p-5 transition-all hover:shadow-md hover:border-amber-300/50 dark:hover:border-amber-700/50 hover:bg-white/50 dark:hover:bg-slate-800/40">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 shadow-lg mb-4">
+                    <div className="overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-5 transition-all hover:shadow-md hover:border-amber-300 dark:hover:border-amber-700">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500 dark:bg-amber-600 shadow-lg mb-4">
                         <GraduationCap className="h-5 w-5 text-white" />
                       </div>
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
@@ -388,13 +352,8 @@ export function UserProfilePageContent() {
 
             {/* Parent Info Card */}
             {profile?.parentDetails && (
-              <Card className="overflow-hidden border-2 border-purple-200/50 dark:border-purple-800/50 shadow-lg hover:shadow-xl hover:border-purple-300 dark:hover:border-purple-700 transition-all rounded-2xl relative">
-                {/* Liquid gradient background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-purple-400/5 to-pink-400/10 dark:from-purple-600/20 dark:via-purple-500/10 dark:to-pink-600/20"></div>
-                <div className="absolute top-0 right-0 w-72 h-72 bg-purple-400/10 dark:bg-purple-500/15 rounded-full blur-3xl -mr-32 -mt-32"></div>
-                <div className="absolute bottom-0 left-0 w-72 h-72 bg-pink-400/10 dark:bg-pink-500/15 rounded-full blur-3xl -ml-32 -mb-32"></div>
-                
-                <div className="relative z-10 bg-purple-50/40 dark:bg-purple-900/20 backdrop-blur-md border-b-2 border-purple-200/30 dark:border-purple-800/30 px-6 py-5">
+              <Card className="overflow-hidden border-2 border-slate-200 dark:border-slate-700 shadow-lg hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-600 transition-all rounded-2xl">
+                <div className="bg-purple-50 dark:bg-purple-900/20 border-b-2 border-purple-200 dark:border-purple-800 px-6 py-5">
                   <div className="flex items-center gap-3">
                     <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-purple-600 dark:bg-purple-500 shadow-lg">
                       <Users className="h-5 w-5 text-white" />
@@ -405,10 +364,10 @@ export function UserProfilePageContent() {
                     </div>
                   </div>
                 </div>
-                <CardContent className="p-6 relative z-10">
+                <CardContent className="p-6">
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="overflow-hidden rounded-xl border-2 border-purple-200/30 dark:border-purple-800/30 bg-white/30 dark:bg-slate-800/20 backdrop-blur-sm p-5 transition-all hover:shadow-md hover:border-teal-300/50 dark:hover:border-teal-700/50 hover:bg-white/50 dark:hover:bg-slate-800/40">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 dark:from-teal-600 dark:to-teal-700 shadow-lg mb-4">
+                    <div className="overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-5 transition-all hover:shadow-md hover:border-teal-300 dark:hover:border-teal-700">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-500 dark:bg-teal-600 shadow-lg mb-4">
                         <Briefcase className="h-5 w-5 text-white" />
                       </div>
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
@@ -417,8 +376,8 @@ export function UserProfilePageContent() {
                       <p className="font-bold text-slate-900 dark:text-slate-100">{profile?.parentDetails?.occupation}</p>
                     </div>
 
-                    <div className="overflow-hidden rounded-xl border-2 border-purple-200/30 dark:border-purple-800/30 bg-white/30 dark:bg-slate-800/20 backdrop-blur-sm p-5 transition-all hover:shadow-md hover:border-emerald-300/50 dark:hover:border-emerald-700/50 hover:bg-white/50 dark:hover:bg-slate-800/40">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 shadow-lg mb-4">
+                    <div className="overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-5 transition-all hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-700">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500 dark:bg-emerald-600 shadow-lg mb-4">
                         <Building2 className="h-5 w-5 text-white" />
                       </div>
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
@@ -435,13 +394,8 @@ export function UserProfilePageContent() {
           {/* Right Column */}
           <div className="space-y-8">
             {/* Address Card */}
-            <Card className="overflow-hidden border-2 border-blue-200/50 dark:border-blue-800/50 shadow-lg hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-700 transition-all rounded-2xl relative">
-              {/* Liquid gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-blue-400/5 to-cyan-400/10 dark:from-blue-600/20 dark:via-blue-500/10 dark:to-cyan-600/20"></div>
-              <div className="absolute top-0 right-0 w-72 h-72 bg-blue-400/10 dark:bg-blue-500/15 rounded-full blur-3xl -mr-32 -mt-32"></div>
-              <div className="absolute bottom-0 left-0 w-72 h-72 bg-cyan-400/10 dark:bg-cyan-500/15 rounded-full blur-3xl -ml-32 -mb-32"></div>
-              
-              <div className="relative z-10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-b-2 border-blue-200/30 dark:border-blue-800/30 px-6 py-5">
+            <Card className="overflow-hidden border-2 border-slate-200 dark:border-slate-700 shadow-lg hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-600 transition-all rounded-2xl">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border-b-2 border-blue-200 dark:border-blue-800 px-6 py-5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-500 dark:bg-blue-600 shadow-lg">
                     <MapPin className="h-5 w-5 text-white" />
@@ -452,10 +406,10 @@ export function UserProfilePageContent() {
                   </div>
                 </div>
               </div>
-              <CardContent className="p-8 relative z-10">
+              <CardContent className="p-6">
                 <div className="space-y-4">
-                  <div className="flex items-start gap-4 p-4 rounded-lg bg-white/20 dark:bg-slate-800/20 backdrop-blur-sm border border-blue-200/30 dark:border-blue-800/30 hover:bg-white/30 dark:hover:bg-slate-800/30 transition-colors">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100/50 dark:bg-blue-900/30 flex-shrink-0">
+                  <div className="flex items-start gap-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30 flex-shrink-0">
                       <Home className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -466,9 +420,9 @@ export function UserProfilePageContent() {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-4 p-4 rounded-lg bg-white/20 dark:bg-slate-800/20 backdrop-blur-sm border border-teal-200/30 dark:border-teal-800/30 hover:bg-white/30 dark:hover:bg-slate-800/30 transition-colors">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-100/50 dark:bg-teal-900/30 flex-shrink-0">
-                      <Navigation className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                  <div className="flex items-start gap-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-100 dark:bg-teal-900/30 flex-shrink-0">
+                      <MapPin className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Zona</p>
@@ -476,9 +430,9 @@ export function UserProfilePageContent() {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-4 p-4 rounded-lg bg-white/20 dark:bg-slate-800/20 backdrop-blur-sm border border-emerald-200/30 dark:border-emerald-800/30 hover:bg-white/30 dark:hover:bg-slate-800/30 transition-colors">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100/50 dark:bg-emerald-900/30 flex-shrink-0">
-                      <Building2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  <div className="flex items-start gap-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30 flex-shrink-0">
+                      <Building2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Municipio</p>
@@ -486,7 +440,7 @@ export function UserProfilePageContent() {
                         {profile?.address?.municipality?.name || 'N/A'}
                       </p>
                       <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                        {profile?.address?.municipality?.department?.name}
+                        {profile?.address?.municipality?.department?.name || 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -495,13 +449,8 @@ export function UserProfilePageContent() {
             </Card>
 
             {/* Account Card */}
-            <Card className="overflow-hidden border-2 border-blue-200/50 dark:border-blue-800/50 shadow-lg hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-700 transition-all rounded-2xl relative">
-              {/* Liquid gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-blue-400/5 to-cyan-400/10 dark:from-blue-600/20 dark:via-blue-500/10 dark:to-cyan-600/20"></div>
-              <div className="absolute top-0 right-0 w-72 h-72 bg-blue-400/10 dark:bg-blue-500/15 rounded-full blur-3xl -mr-32 -mt-32"></div>
-              <div className="absolute bottom-0 left-0 w-72 h-72 bg-cyan-400/10 dark:bg-cyan-500/15 rounded-full blur-3xl -ml-32 -mb-32"></div>
-              
-              <div className="relative z-10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-b-2 border-blue-200/30 dark:border-blue-800/30 px-6 py-5">
+            <Card className="overflow-hidden border-2 border-slate-200 dark:border-slate-700 shadow-lg hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-600 transition-all rounded-2xl">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border-b-2 border-blue-200 dark:border-blue-800 px-6 py-5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600 dark:bg-blue-500 shadow-lg">
                     <Shield className="h-5 w-5 text-white" />
@@ -512,10 +461,10 @@ export function UserProfilePageContent() {
                   </div>
                 </div>
               </div>
-              <CardContent className="p-8 relative z-10">
+              <CardContent className="p-6">
                 <div className="space-y-5">
-                  {/* Estado de verificación destacado */}
-                  <div className="overflow-hidden rounded-xl bg-emerald-50/40 dark:bg-emerald-900/20 backdrop-blur-sm border-2 border-emerald-200/50 dark:border-emerald-800/50 p-5">
+                  {/* Estado de verificación */}
+                  <div className="overflow-hidden rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800 p-5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500 dark:bg-emerald-600 shadow-lg">
@@ -542,9 +491,9 @@ export function UserProfilePageContent() {
 
                   {/* Fechas de cuenta */}
                   <div className="space-y-4">
-                    <div className="flex items-center gap-4 p-4 rounded-lg bg-white/20 dark:bg-slate-800/20 backdrop-blur-sm border border-blue-200/30 dark:border-blue-800/30 hover:bg-white/30 dark:hover:bg-slate-800/30 transition-colors">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100/50 dark:bg-blue-900/30">
-                        <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <div className="flex items-center gap-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                        <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div className="flex-1">
                         <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
@@ -554,9 +503,9 @@ export function UserProfilePageContent() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 p-4 rounded-lg bg-white/20 dark:bg-slate-800/20 backdrop-blur-sm border border-teal-200/30 dark:border-teal-800/30 hover:bg-white/30 dark:hover:bg-slate-800/30 transition-colors">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-100/50 dark:bg-teal-900/30">
-                        <History className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                    <div className="flex items-center gap-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-100 dark:bg-teal-900/30">
+                        <History className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                       </div>
                       <div className="flex-1">
                         <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
@@ -575,12 +524,9 @@ export function UserProfilePageContent() {
 
       <ProfileEditModal
         isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          refetch();
-        }}
+        onClose={() => setIsEditModalOpen(false)}
         profile={profile}
       />
     </div>
   );
-}
+};
