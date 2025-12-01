@@ -7,7 +7,7 @@ import { ConsolidatedAttendanceViewComponent } from './ConsolidatedAttendanceVie
 import { ConsolidatedAttendanceView, AttendanceStatus } from '@/types/attendance.types';
 import attendanceService from '@/services/attendance.service';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle, RefreshCw, Info, FileText } from 'lucide-react';
+import { AlertCircle, CheckCircle, RefreshCw, Info, FileText, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -70,7 +70,7 @@ export function UpdateAttendanceTabSmartEdit() {
         setError(null);
 
         if (!attendanceState.selectedSectionId || !attendanceState.selectedDate) {
-          setError('Debes seleccionar una sección y una fecha');
+          // No mostrar error si no hay selección, solo detener carga
           setLoading(false);
           return;
         }
@@ -156,11 +156,31 @@ export function UpdateAttendanceTabSmartEdit() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center rounded-xl border-2 border-blue-200 bg-blue-50 p-12 dark:border-blue-800 dark:bg-blue-950/20">
+      <div className="flex min-h-[400px] items-center justify-center rounded-xl border-2 border-blue-200 bg-blue-50 p-12 shadow-lg dark:border-blue-800 dark:bg-blue-950/30">
         <div className="space-y-4 text-center">
-          <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
-          <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
+          <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600 dark:border-blue-700 dark:border-t-blue-400" />
+          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Cargando datos de asistencia...
+          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Esto puede tomar unos segundos</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar mensaje informativo si no hay selección de sección/fecha
+  if (!attendanceState.selectedSectionId || !attendanceState.selectedDate) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center rounded-xl border-2 border-blue-200 bg-blue-50 p-12 shadow-lg dark:border-blue-800 dark:bg-blue-950/30">
+        <div className="mx-auto flex max-w-md flex-col items-center space-y-4 text-center">
+          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl dark:bg-blue-500">
+            <Info className="h-12 w-12" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            Selecciona Sección y Fecha
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400">
+            Para gestionar la asistencia por curso, primero selecciona una sección y una fecha en los filtros superiores
           </p>
         </div>
       </div>
@@ -171,44 +191,52 @@ export function UpdateAttendanceTabSmartEdit() {
     <div className="space-y-6">
       {/* Alertas */}
       {error && (
-        <Alert className="animate-in fade-in-50 slide-in-from-top-5 border-l-4 border-red-500 bg-red-50 dark:bg-red-950/20">
+        <Alert className="animate-in fade-in-50 slide-in-from-top-5 border-2 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
           <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
           <AlertDescription className="font-medium text-red-900 dark:text-red-100 whitespace-pre-line">{error}</AlertDescription>
         </Alert>
       )}
 
       {successMessage && (
-        <Alert className="animate-in fade-in-50 slide-in-from-top-5 border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20">
+        <Alert className="animate-in fade-in-50 slide-in-from-top-5 border-2 border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30">
           <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
           <AlertDescription className="font-medium text-emerald-900 dark:text-emerald-100">{successMessage}</AlertDescription>
         </Alert>
       )}
 
-      {/* Instrucciones + Botón Reload */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex-1 rounded-xl border-2 border-cyan-200 bg-cyan-50 p-4 dark:border-cyan-800 dark:bg-cyan-950/20">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-600 text-white shadow-md dark:bg-cyan-500">
-              <Info className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="font-medium text-cyan-900 dark:text-cyan-100">
-                Edición Rápida Activada
-              </p>
-              <p className="text-sm text-cyan-700 dark:text-cyan-300">
-                Haz clic en <strong>Editar</strong> para cambiar el estado de asistencia
-              </p>
-            </div>
-          </div>
+      {/* Header con Título */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Gestión por Curso</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Visualiza y edita la asistencia de todos los estudiantes por curso
+          </p>
         </div>
         <Button
           onClick={() => reloadData()}
           disabled={isReloading || loading}
-          className="gap-2 whitespace-nowrap bg-blue-600 shadow-md hover:bg-blue-700"
+          className="gap-2 whitespace-nowrap bg-blue-600 shadow-md hover:bg-blue-700 hover:shadow-lg transition-all"
         >
           <RefreshCw className={`h-4 w-4 ${isReloading ? 'animate-spin' : ''}`} />
           {isReloading ? 'Recargando...' : 'Recargar'}
         </Button>
+      </div>
+
+      {/* Instrucciones */}
+      <div className="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-5 shadow-md dark:border-indigo-800 dark:bg-indigo-950/30">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-md dark:bg-indigo-500">
+            <Info className="h-6 w-6" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-indigo-900 dark:text-indigo-100">
+              Edición Rápida Activada
+            </p>
+            <p className="text-sm text-indigo-700 dark:text-indigo-300 mt-1">
+              Haz clic en el botón <span className="inline-flex items-center gap-1 rounded bg-blue-100 dark:bg-blue-900 px-2 py-0.5 font-medium"><Edit2 className="h-3 w-3" />Editar</span> para modificar el estado de asistencia de cualquier estudiante
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Componente principal */}
@@ -219,16 +247,19 @@ export function UpdateAttendanceTabSmartEdit() {
           onStatusUpdate={handleStatusUpdate}
         />
       ) : (
-        <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-12 text-center dark:border-blue-800 dark:bg-blue-950/20">
+        <div className="rounded-xl border-2 border-gray-200 bg-white p-12 text-center shadow-lg dark:border-gray-700 dark:bg-gray-900">
           <div className="mx-auto flex max-w-md flex-col items-center space-y-4">
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-indigo-600 text-white shadow-xl dark:bg-indigo-500">
               <FileText className="h-12 w-12" />
             </div>
-            <h3 className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               Sin Datos de Asistencia
             </h3>
-            <p className="text-blue-700 dark:text-blue-300">
-              No hay registros de asistencia para esta fecha
+            <p className="text-gray-600 dark:text-gray-400">
+              No hay registros de asistencia para la fecha seleccionada
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-500">
+              Primero registra asistencia en la pestaña "Registro Diario"
             </p>
           </div>
         </div>

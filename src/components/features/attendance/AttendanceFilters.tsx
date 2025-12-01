@@ -65,16 +65,10 @@ export function AttendanceFilters() {
       cycleLoadedRef.current = true;
       attendanceActions.selectCycle(activeCycle.id);
     }
-  }, [activeCycle?.id, attendanceState.selectedCycleId, attendanceActions]);
+  }, [activeCycle?.id, attendanceState.selectedCycleId]);
 
   // Efecto para cargar bimestre activo después del ciclo
   useEffect(() => {
-      bimestresLength: bimestresData.bimesters?.length,
-      selectedCycleId: attendanceState.selectedCycleId,
-      selectedBimesterId: attendanceState.selectedBimesterId,
-      bimesterLoadedRef: bimesterLoadedRef.current,
-    });
-    
     if (
       bimestresData.bimesters?.length &&
       attendanceState.selectedCycleId &&
@@ -85,55 +79,33 @@ export function AttendanceFilters() {
       bimesterLoadedRef.current = true;
       attendanceActions.selectBimester(activeBimData.id);
     }
-  }, [bimestresData.bimesters, attendanceState.selectedCycleId, attendanceState.selectedBimesterId, attendanceActions]);
+  }, [bimestresData.bimesters?.length, attendanceState.selectedCycleId, attendanceState.selectedBimesterId]);
 
-  // Efecto para cargar grado activo después del bimestre
-  const gradesLoadedRef = useRef(false);
+  // Efecto para resetear el ref cuando cambia la sección
   useEffect(() => {
-    if (
-      gradesData.grades?.length &&
-      attendanceState.selectedBimesterId &&
-      !selectedGradeId &&
-      !gradesLoadedRef.current
-    ) {
-      const firstGrade = gradesData.grades[0];
-      gradesLoadedRef.current = true;
-      setSelectedGradeId(firstGrade.id);
-    }
-  }, [gradesData.grades, attendanceState.selectedBimesterId, selectedGradeId]);
-
-  // Efecto para cargar sección después de seleccionar grado
-  const sectionsLoadedRef = useRef(false);
-  useEffect(() => {
-    if (
-      sectionsData.sections?.length &&
-      selectedGradeId &&
-      !attendanceState.selectedSectionId &&
-      !sectionsLoadedRef.current
-    ) {
-      const firstSection = sectionsData.sections[0];
-      sectionsLoadedRef.current = true;
-      attendanceActions.selectSection(firstSection.id);
-    }
-  }, [sectionsData.sections, selectedGradeId, attendanceState.selectedSectionId, attendanceActions]);
+    // Cuando selectedSectionId cambia, resetear el ref para forzar recarga de estudiantes
+    studentsLoadedRef.current = false;
+  }, [attendanceState.selectedSectionId]);
 
   // Efecto para cargar estudiantes cuando se selecciona una sección
   useEffect(() => {
-      selectedSectionId: attendanceState.selectedSectionId,
-      studentsLength: studentsData.students?.length,
-      studentsLoadedRef: studentsLoadedRef.current,
-      students: studentsData.students,
-    });
-    
-    if (attendanceState.selectedSectionId && studentsData.students?.length && !studentsLoadedRef.current) {
-      // Convertir StudentData a estructura básica compatible con AttendanceRecord
+    if (!attendanceState.selectedSectionId) {
+      attendanceActions.setStudents([]);
+      return;
+    }
+
+    if (studentsData.loading) {
+      return;
+    }
+
+    if (studentsData.students?.length && !studentsLoadedRef.current) {
       const convertedStudents = studentsData.students.map(student => ({
         id: student.id,
         enrollmentId: student.id,
-        name: student.name, // ✅ AGREGAR NOMBRE
-        enrollmentNumber: student.enrollmentNumber, // ✅ AGREGAR NÚMERO DE MATRÍCULA
-        email: student.email, // ✅ AGREGAR EMAIL
-        identificationNumber: student.identificationNumber, // ✅ AGREGAR CÉDULA/SIRE
+        name: student.name,
+        enrollmentNumber: student.enrollmentNumber,
+        email: student.email,
+        identificationNumber: student.identificationNumber,
         date: attendanceState.selectedDate,
         scheduleId: 0,
         originalStatus: '',
@@ -145,38 +117,41 @@ export function AttendanceFilters() {
       }));
       studentsLoadedRef.current = true;
       attendanceActions.setStudents(convertedStudents);
+    } else if (!studentsData.students?.length && !studentsData.loading && studentsLoadedRef.current) {
+      studentsLoadedRef.current = false;
+      attendanceActions.setStudents([]);
     }
-  }, [studentsData.students, attendanceState.selectedSectionId, attendanceState.selectedDate, attendanceActions]);
+  }, [studentsData.students, studentsData.loading, attendanceState.selectedSectionId, attendanceState.selectedDate]);
 
   const handleCycleChange = (cycleId: string) => {
     const id = parseInt(cycleId, 10);
     attendanceActions.selectCycle(id);
+    attendanceActions.setStudents([]);
     setSelectedGradeId(null);
     cycleLoadedRef.current = false;
     bimesterLoadedRef.current = false;
-    gradesLoadedRef.current = false;
-    sectionsLoadedRef.current = false;
     studentsLoadedRef.current = false;
   };
 
   const handleBimesterChange = (bimesterId: string) => {
     const id = parseInt(bimesterId, 10);
     attendanceActions.selectBimester(id);
+    attendanceActions.setStudents([]);
     setSelectedGradeId(null);
-    gradesLoadedRef.current = false;
-    sectionsLoadedRef.current = false;
     studentsLoadedRef.current = false;
   };
 
   const handleGradeChange = (gradeId: string) => {
     const id = parseInt(gradeId, 10);
     setSelectedGradeId(id);
-    sectionsLoadedRef.current = false;
+    attendanceActions.setStudents([]);
     studentsLoadedRef.current = false;
   };
 
   const handleSectionChange = (sectionId: string) => {
     const id = parseInt(sectionId, 10);
+    // Limpiar estudiantes viejos ANTES de cambiar la sección
+    attendanceActions.setStudents([]);
     attendanceActions.selectSection(id);
     studentsLoadedRef.current = false;
   };

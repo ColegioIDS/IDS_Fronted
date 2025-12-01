@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import { PiStudentBold } from "react-icons/pi";
-import { CalendarPlus, GraduationCap, CalendarCheck, ClipboardList, CalendarCheck2 } from 'lucide-react';
+import { CalendarPlus, GraduationCap, CalendarCheck, ClipboardList, CalendarCheck2, FileSignature } from 'lucide-react';
 import { ProtectedNavItem } from '@/components/navigation/ProtectedNavItem';
 
 import {
@@ -238,7 +238,12 @@ const navItems: NavItem[] = [
     name: "Asistencia",
     path: "/attendance",
     color: "text-red-300 dark:text-red-300",
-
+  },
+  {
+    icon: <FileSignature className="w-5 h-5" />,
+    name: "Firmas",
+    path: "/signatures",
+    color: "text-violet-300 dark:text-violet-300",
   }
 
 ];

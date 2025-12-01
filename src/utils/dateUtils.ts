@@ -64,15 +64,6 @@ export function getIsoDayOfWeek(dateString: string): DayOfWeek {
       throw new Error(`No se pudo determinar el día de la semana: ${dayName}`);
     }
 
-      '📅 Date parsing with timezone:',
-      {
-        timezone: TIMEZONE,
-        dateString,
-        dayName,
-        isoDay,
-      }
-    );
-
     return isoDay;
   } catch (error) {
     throw error;
@@ -175,15 +166,6 @@ export function formatISODateWithTimezone(
     const year = parseInt(yearStr, 10);
     const month = parseInt(monthStr, 10);
     const day = parseInt(dayStr, 10);
-
-      isoDateString,
-      formatPattern,
-      TIMEZONE,
-      datePart,
-      year,
-      month,
-      day,
-    });
 
     // Map de meses (formato numérico a abreviado)
     const monthMap: Record<number, string> = {
@@ -360,14 +342,6 @@ export function parseISODateForTimezone(isoDateString: string): Date {
     // Al usar la hora del mediodía, aunque el navegador esté en una zona horaria diferente,
     // el getDate() seguirá devolviendo el día correcto
     const date = new Date(year, month, day, 12, 0, 0);
-    
-      isoDateString,
-      datePart,
-      year,
-      month,
-      day,
-      resultDate: date,
-    });
     
     return date;
   } catch (error) {

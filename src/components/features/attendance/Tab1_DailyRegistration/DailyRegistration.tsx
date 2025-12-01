@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle2, Loader2, Save, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExpandableStudentAttendanceTable } from './ExpandableStudentAttendanceTable';
+import { ImprovedStudentAttendanceTable } from './ImprovedStudentAttendanceTable';
 import { RegistrationSummary } from './RegistrationSummary';
 import { ExistingAttendanceSummary } from './ExistingAttendanceSummary';
 import type { DailyRegistrationPayload, AttendanceStatus, ConsolidatedAttendanceView } from '@/types/attendance.types';
@@ -235,6 +236,32 @@ export function DailyRegistration() {
     []
   );
 
+  // Actualización masiva de estado
+  const handleBulkStatusChange = useCallback(
+    (enrollmentIds: number[], statusId: string) => {
+      setStudentAttendance(prev => {
+        const updated = new Map(prev);
+        enrollmentIds.forEach(enrollmentId => {
+          const current = updated.get(enrollmentId);
+          if (current) {
+            updated.set(enrollmentId, { ...current, status: statusId });
+          }
+        });
+        return updated;
+      });
+      
+      // Mostrar feedback
+      setRegistrationResult({
+        success: true,
+        message: `✅ Estado actualizado para ${enrollmentIds.length} estudiante(s)`,
+      });
+      
+      // Limpiar mensaje después de 3 segundos
+      setTimeout(() => setRegistrationResult(null), 3000);
+    },
+    []
+  );
+
   // Registrar asistencia
   const handleRegisterAttendance = async () => {
     if (!attendanceState.selectedSectionId || !attendanceState.selectedDate) {
@@ -286,11 +313,6 @@ export function DailyRegistration() {
 
       // Recargar datos consolidados después del registro exitoso
       await reloadExistingAttendance();
-
-      // Limpiar form después de 2 segundos
-      setTimeout(() => {
-        setStudentAttendance(new Map());
-      }, 2000);
     } catch (error) {
       setRegistrationResult({
         success: false,
@@ -333,8 +355,8 @@ export function DailyRegistration() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-gray-900">Registro Diario de Asistencia</h3>
-          <p className="text-sm text-gray-600">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Registro Diario de Asistencia</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Selecciona el estado de asistencia para cada estudiante y guarda los cambios
           </p>
         </div>
@@ -355,19 +377,19 @@ export function DailyRegistration() {
         <>
           {/* Alert de éxito si todas pasaron */}
           {validationState.results.every(r => r.passed) && (
-            <Alert className="border-green-200 bg-green-50">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-900">
-                ✅ Todas las validaciones previas pasaron. Listo para registrar.
+            <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30">
+              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <AlertDescription className="text-green-900 dark:text-green-100">
+                Todas las validaciones previas pasaron. Listo para registrar.
               </AlertDescription>
             </Alert>
           )}
 
           {/* Alertas de validaciones fallidas */}
           {validationState.results.filter(r => !r.passed).map(result => (
-            <Alert key={result.id} className="border-red-200 bg-red-50">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-900">
+            <Alert key={result.id} className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
+              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <AlertDescription className="text-red-900 dark:text-red-100">
                 <span className="font-medium">{result.name}:</span> {result.message || 'Validación fallida'}
               </AlertDescription>
             </Alert>
@@ -377,10 +399,11 @@ export function DailyRegistration() {
 
       {/* Alerta si hay asistencias ya registradas */}
       {existingAttendance.size > 0 && (
-        <Alert className="border-blue-200 bg-blue-50">
-          <CheckCircle2 className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-900">
-            ✅ <span className="font-medium">{existingAttendance.size} estudiante(s)</span> ya tienen asistencia registrada para esta fecha. Estos registros aparecen pre-cargados en la tabla.
+        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
+          <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="text-blue-900 dark:text-blue-100">
+            <CheckCircle2 className="h-4 w-4 inline mr-1" />
+            <span className="font-medium">{existingAttendance.size} estudiante(s)</span> ya tienen asistencia registrada para esta fecha. Estos registros aparecen pre-cargados en la tabla.
           </AlertDescription>
         </Alert>
       )}
@@ -390,17 +413,17 @@ export function DailyRegistration() {
         <Alert
           className={
             registrationResult.success
-              ? 'border-green-200 bg-green-50'
-              : 'border-red-200 bg-red-50'
+              ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30'
+              : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30'
           }
         >
           {registrationResult.success ? (
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
           ) : (
-            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
           )}
           <AlertDescription
-            className={registrationResult.success ? 'text-green-900' : 'text-red-900'}
+            className={registrationResult.success ? 'text-green-900 dark:text-green-100' : 'text-red-900 dark:text-red-100'}
           >
             {registrationResult.message}
           </AlertDescription>
@@ -408,15 +431,15 @@ export function DailyRegistration() {
       )}
 
       {/* Tabla de estudiantes con vista expandible */}
-      <ExpandableStudentAttendanceTable
+      <ImprovedStudentAttendanceTable
         students={students}
         studentAttendance={studentAttendance}
         onStatusChange={handleStatusChange}
         onEarlyExitToggle={handleEarlyExitToggle}
+        onBulkStatusChange={handleBulkStatusChange}
         allowedStatuses={allowedStatuses}
         isLoading={isRegistering}
         existingAttendance={existingAttendance}
-        consolidatedData={consolidatedData || undefined}
       />
 
       {/* Resumen de asistencias ya registradas */}
@@ -427,7 +450,7 @@ export function DailyRegistration() {
       />
 
       {/* Resumen y botón de guardar */}
-      <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6">
+      <div className="space-y-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 shadow-lg">
         <RegistrationSummary
           totalStudents={students.length}
           registeredStudents={Array.from(studentAttendance.values()).filter(
@@ -435,13 +458,21 @@ export function DailyRegistration() {
           ).length}
           statuses={Array.from(studentAttendance.values())
             .filter(att => att.status)
-            .map(att => att.status)}
+            .map(att => {
+              const statusId = parseInt(att.status);
+              return allowedStatuses.find(s => s.id === statusId)!;
+            })
+            .filter(Boolean)}
+          existingCount={existingAttendance.size}
+          existingStatuses={Array.from(existingAttendance.values())
+            .map(att => allowedStatuses.find(s => s.id === att.statusId)!)
+            .filter(Boolean)}
         />
 
         <button
           onClick={handleRegisterAttendance}
           disabled={isRegistering || Array.from(studentAttendance.values()).every(att => !att.status)}
-          className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors shadow-md hover:shadow-lg"
         >
           {isRegistering ? (
             <>

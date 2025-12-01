@@ -585,6 +585,9 @@ export interface ConsolidatedCourseAttendance {
   courseId: number;
   courseName: string;
   courseCode?: string;
+  courseColor?: string; // Color del curso en formato hex
+  scheduleId?: number;
+  courseAssignmentId?: number;
   originalStatus: string; // Código dinámico (A, I, R, etc.)
   originalStatusName: string; // Nombre para mostrar
   currentStatus: string;
@@ -595,6 +598,7 @@ export interface ConsolidatedCourseAttendance {
   recordedAt: string;
   arrivalTime?: string;
   minutesLate?: number | null;
+  notes?: string | null;
 }
 
 /**

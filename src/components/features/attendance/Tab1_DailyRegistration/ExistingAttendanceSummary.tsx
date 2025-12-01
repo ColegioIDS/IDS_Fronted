@@ -57,9 +57,9 @@ export function ExistingAttendanceSummary({
   });
 
   return (
-    <div className="animate-in fade-in-50 slide-in-from-top-5 rounded-xl border-2 border-emerald-500 bg-emerald-50 p-6 shadow-lg dark:border-emerald-600 dark:bg-emerald-950/30">
+    <div className="animate-in fade-in-50 slide-in-from-top-5 rounded-xl border-2 border-emerald-500 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 p-6 shadow-lg">
       <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-md dark:bg-emerald-500">
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white shadow-md">
           <CheckCircle className="h-6 w-6" />
         </div>
         <div>
@@ -67,6 +67,7 @@ export function ExistingAttendanceSummary({
             Asistencias Ya Registradas
           </h4>
           <p className="text-sm text-emerald-600 dark:text-emerald-400">
+            <CheckCircle className="h-3.5 w-3.5 inline mr-1" />
             {existingAttendance.size} estudiante{existingAttendance.size !== 1 ? 's' : ''} con registro previo
           </p>
         </div>
@@ -81,7 +82,7 @@ export function ExistingAttendanceSummary({
           return (
             <div
               key={statusId}
-              className="group rounded-xl border-2 bg-white p-4 shadow-md transition-all hover:shadow-lg dark:bg-slate-800"
+              className="group rounded-xl border-2 bg-white dark:bg-slate-800 p-4 shadow-md transition-all hover:shadow-lg dark:border-opacity-70"
               style={{ borderColor: statusColor }}
             >
               <div className="flex items-center gap-3">
@@ -89,7 +90,7 @@ export function ExistingAttendanceSummary({
                   className="flex h-10 w-10 items-center justify-center rounded-lg shadow-md"
                   style={{ backgroundColor: statusColor }}
                 >
-                  <AlertCircle className="h-5 w-5 text-white" />
+                  <CheckCircle className="h-5 w-5 text-white" />
                 </div>
                 <div>
                   <p className="text-2xl font-extrabold text-gray-900 dark:text-gray-100">{records.length}</p>

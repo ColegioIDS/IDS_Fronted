@@ -12,7 +12,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, AlertCircle, CheckCircle2, Edit2, Save, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, AlertCircle, CheckCircle2, Edit2, Save, X, Info } from 'lucide-react';
 import { ConsolidatedAttendanceView, ConsolidatedStudentAttendance, AttendanceStatus } from '@/types/attendance.types';
 import {
   Table,
@@ -23,6 +23,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface ConsolidatedAttendanceViewProps {
   data: ConsolidatedAttendanceView;
@@ -156,40 +164,51 @@ function StudentRow({
     <>
       {/* Fila principal del estudiante */}
       <TableRow
-        className={`cursor-pointer hover:bg-gray-50 ${
-          hasModifications ? 'bg-amber-50' : ''
+        className={`cursor-pointer transition-all hover:bg-indigo-50 dark:hover:bg-indigo-950/30 ${
+          hasModifications ? 'bg-amber-50 dark:bg-amber-950/20 border-l-4 border-amber-500' : 'hover:shadow-md'
+        } ${
+          isExpanded ? 'bg-blue-50 dark:bg-blue-950/30' : ''
         }`}
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <TableCell className="w-8">
-          <button className="p-1">
+          <button className="rounded p-1 transition-colors hover:bg-blue-100 dark:hover:bg-blue-900">
             {isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-gray-600" />
+              <ChevronDown className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-gray-600" />
+              <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             )}
           </button>
         </TableCell>
-        <TableCell className="font-medium text-gray-900">
+        <TableCell className="font-semibold text-gray-900 dark:text-gray-100">
           {student.studentName}
-          <div className="text-xs text-gray-500">
-            #{student.studentId} • Matrícula: {student.enrollmentId}
+          <div className="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <span className="rounded bg-violet-100 px-2 py-0.5 font-medium text-violet-700 dark:bg-violet-900 dark:text-violet-300">
+              #{student.studentId}
+            </span>
+            <span className="rounded bg-sky-100 px-2 py-0.5 font-medium text-sky-700 dark:bg-sky-900 dark:text-sky-300">
+              Matrícula: {student.enrollmentId}
+            </span>
           </div>
         </TableCell>
         <TableCell>
           <div className="flex items-center gap-2">
             {overallStatus.icon}
             <span
-              className={`text-sm font-medium ${
-                overallStatus.type === 'mixed' ? 'text-amber-700' : 'text-green-700'
+              className={`font-semibold ${
+                overallStatus.type === 'mixed' 
+                  ? 'text-amber-700 dark:text-amber-400' 
+                  : 'text-emerald-700 dark:text-emerald-400'
               }`}
             >
               {overallStatus.label}
             </span>
           </div>
         </TableCell>
-        <TableCell className="text-right text-sm text-gray-600">
-          {student.courses.length} cursos
+        <TableCell className="text-right">
+          <span className="rounded-full bg-indigo-100 px-3 py-1 text-sm font-medium text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
+            {student.courses.length} curso{student.courses.length !== 1 ? 's' : ''}
+          </span>
         </TableCell>
       </TableRow>
 
@@ -207,44 +226,82 @@ function StudentRow({
           return (
             <TableRow
               key={`${student.enrollmentId}-${course.courseId}-${idx}`}
-              className={`bg-gray-50 ${
-                course.hasModifications ? 'border-l-4 border-amber-500' : ''
-              } ${isEditing ? 'bg-blue-50' : ''}`}
+              className={`transition-all ${
+                course.hasModifications 
+                  ? 'border-l-4 border-amber-500 bg-amber-50/50 dark:bg-amber-950/20' 
+                  : 'bg-gray-50/50 dark:bg-gray-800/50'
+              } ${
+                isEditing ? 'bg-blue-50 dark:bg-blue-950/30 shadow-inner' : ''
+              }`}
             >
               <TableCell />
-              <TableCell className="pl-12 text-sm">
-                <span className="font-medium text-gray-900">
-                  {course.courseName}
-                </span>
+              <TableCell className="pl-12">
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="h-2.5 w-2.5 rounded-full border border-gray-300 dark:border-gray-600" 
+                    style={{ backgroundColor: course.courseColor || '#6366f1' }}
+                  />
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {course.courseName}
+                  </span>
+                </div>
               </TableCell>
-              <TableCell className="text-sm">
+              <TableCell>
                 {isEditing ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <label className="text-xs text-gray-600">Nuevo estado:</label>
-                      <select
-                        className="rounded border border-blue-300 bg-white px-2 py-1 text-sm"
-                        value={editingCourse.newStatusId}
-                        onChange={(e) =>
-                          setEditingCourse({
-                            ...editingCourse,
-                            newStatusId: parseInt(e.target.value),
-                          })
-                        }
-                      >
-                        <option value="">Seleccionar...</option>
-                        {allowedStatuses?.map((status) => (
-                          <option key={status.id} value={status.id}>
-                            {status.name}
-                          </option>
-                        ))}
-                      </select>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Nuevo estado:</label>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-lg">
+                          <Badge 
+                            variant="outline" 
+                            className={cn(
+                              "cursor-pointer px-4 py-2 text-sm font-semibold transition-all hover:opacity-80 flex items-center gap-2 border-2 shadow-sm",
+                              !editingCourse.newStatusId && "border-gray-300 bg-gray-50 text-gray-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                            )}
+                            style={
+                              editingCourse.newStatusId > 0
+                                ? {
+                                    borderColor: allowedStatuses?.find(s => s.id === editingCourse.newStatusId)?.colorCode || '#808080',
+                                    backgroundColor: `${allowedStatuses?.find(s => s.id === editingCourse.newStatusId)?.colorCode || '#808080'}20`,
+                                    color: allowedStatuses?.find(s => s.id === editingCourse.newStatusId)?.colorCode || '#808080',
+                                  }
+                                : undefined
+                            }
+                          >
+                            {editingCourse.newStatusId > 0 
+                              ? allowedStatuses?.find(s => s.id === editingCourse.newStatusId)?.name || 'Seleccionar...'
+                              : 'Seleccionar estado...'}
+                            <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                          </Badge>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-[200px]">
+                          {allowedStatuses?.map((status) => (
+                            <DropdownMenuItem
+                              key={status.id}
+                              onClick={() =>
+                                setEditingCourse({
+                                  ...editingCourse,
+                                  newStatusId: status.id,
+                                })
+                              }
+                              className="cursor-pointer font-medium"
+                            >
+                              <div 
+                                className="mr-2 h-2.5 w-2.5 rounded-full" 
+                                style={{ backgroundColor: status.colorCode }}
+                              />
+                              {status.name}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <label className="text-xs text-gray-600">Motivo:</label>
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Motivo:</label>
                       <input
                         type="text"
-                        className="rounded border border-blue-300 bg-white px-2 py-1 text-sm flex-1"
+                        className="flex-1 rounded-lg border-2 border-blue-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:border-blue-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-500 dark:focus:ring-blue-800"
                         placeholder="Ej: Cambio de estado..."
                         value={editingCourse.reason}
                         onChange={(e) =>
@@ -257,35 +314,35 @@ function StudentRow({
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500">Original:</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Original:</span>
                       <div className="flex items-center gap-2">
                         {originalStatus?.colorCode && (
                           <div
-                            className="h-3 w-3 rounded-full"
+                            className="h-4 w-4 rounded-full border-2 border-gray-300 shadow-sm dark:border-gray-600"
                             style={{
                               backgroundColor: getStatusColor(originalStatus.colorCode),
                             }}
                           />
                         )}
-                        <span className="text-gray-700">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">
                           {course.originalStatusName}
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500">Actual:</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Actual:</span>
                       <div className="flex items-center gap-2">
                         {currentStatus?.colorCode && (
                           <div
-                            className="h-3 w-3 rounded-full"
+                            className="h-4 w-4 rounded-full border-2 border-gray-300 shadow-sm dark:border-gray-600"
                             style={{
                               backgroundColor: getStatusColor(currentStatus.colorCode),
                             }}
                           />
                         )}
-                        <span className="text-gray-700 font-medium">
+                        <span className="font-bold text-gray-900 dark:text-gray-100">
                           {course.currentStatusName}
                         </span>
                       </div>
@@ -305,48 +362,48 @@ function StudentRow({
                         }
                       }}
                       disabled={editingCourse.isSaving || !editingCourse.newStatusId}
-                      className="p-1 rounded hover:bg-green-100 disabled:opacity-50 transition"
+                      className="rounded-lg bg-emerald-600 p-2 text-white shadow-md transition-all hover:bg-emerald-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed dark:bg-emerald-500 dark:hover:bg-emerald-600"
                       title="Guardar cambios"
                     >
-                      <Save className="h-4 w-4 text-green-600" />
+                      <Save className="h-5 w-5" />
                     </button>
                     <button
                       onClick={() => setEditingCourse(null)}
                       disabled={editingCourse.isSaving}
-                      className="p-1 rounded hover:bg-red-100 transition"
+                      className="rounded-lg bg-red-600 p-2 text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
                       title="Cancelar"
                     >
-                      <X className="h-4 w-4 text-red-600" />
+                      <X className="h-5 w-5" />
                     </button>
                   </div>
                 ) : (
                   <div className="flex flex-col items-end gap-2">
                     <div className="flex items-center gap-2">
                       {course.hasModifications ? (
-                        <div className="flex items-center gap-1 rounded bg-amber-100 px-2 py-1 text-xs text-amber-800">
-                          <AlertCircle className="h-3 w-3" />
+                        <div className="flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-1.5 text-sm font-medium text-amber-800 shadow-sm dark:bg-amber-900 dark:text-amber-100">
+                          <AlertCircle className="h-4 w-4" />
                           <span>Modificado</span>
                         </div>
                       ) : (
-                        <span className="text-xs text-gray-500">Original</span>
+                        <span className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">Original</span>
                       )}
                       {onStatusUpdate && (
                         <button
                           onClick={() => handleEditClick(course.courseId, currentStatus?.id || 0)}
-                          className="p-1 rounded hover:bg-blue-100 transition"
+                          className="rounded-lg bg-blue-600 p-2 text-white shadow-md transition-all hover:bg-blue-700 hover:shadow-lg dark:bg-blue-500 dark:hover:bg-blue-600"
                           title="Editar estado"
                         >
-                          <Edit2 className="h-4 w-4 text-blue-600" />
+                          <Edit2 className="h-4 w-4" />
                         </button>
                       )}
                     </div>
                     {course.modificationDetails && (
-                      <div className="text-xs text-gray-500">
-                        <div>Modificado por: {course.modificationDetails.modifiedBy}</div>
-                        <div>{course.modificationDetails.reason}</div>
+                      <div className="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                        <div className="font-medium">Modificado por: {course.modificationDetails.modifiedBy}</div>
+                        <div className="mt-1">{course.modificationDetails.reason}</div>
                       </div>
                     )}
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-500 dark:text-gray-500">
                       Registrado por: {course.recordedBy}
                     </div>
                   </div>
@@ -381,34 +438,34 @@ export function ConsolidatedAttendanceViewComponent({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header con información general */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div>
-            <div className="text-sm text-gray-600">Fecha</div>
-            <div className="font-semibold text-gray-900">{data.date}</div>
+      <div className="rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 shadow-lg dark:border-blue-800 dark:from-blue-950/30 dark:to-indigo-950/30">
+        <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+          <div className="group rounded-lg border border-blue-200 bg-white p-4 shadow-md transition-all hover:shadow-lg dark:border-blue-700 dark:bg-slate-800">
+            <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Fecha</div>
+            <div className="mt-1 text-xl font-bold text-blue-600 dark:text-blue-400">{data.date}</div>
           </div>
-          <div>
-            <div className="text-sm text-gray-600">Día</div>
-            <div className="font-semibold text-gray-900">{data.dayName}</div>
+          <div className="group rounded-lg border border-indigo-200 bg-white p-4 shadow-md transition-all hover:shadow-lg dark:border-indigo-700 dark:bg-slate-800">
+            <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Día</div>
+            <div className="mt-1 text-xl font-bold text-indigo-600 dark:text-indigo-400">{data.dayName}</div>
           </div>
-          <div>
-            <div className="text-sm text-gray-600">Total Estudiantes</div>
-            <div className="font-semibold text-gray-900">{data.totalStudents}</div>
+          <div className="group rounded-lg border border-emerald-200 bg-white p-4 shadow-md transition-all hover:shadow-lg dark:border-emerald-700 dark:bg-slate-800">
+            <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Estudiantes</div>
+            <div className="mt-1 text-xl font-bold text-emerald-600 dark:text-emerald-400">{data.totalStudents}</div>
           </div>
-          <div>
-            <div className="text-sm text-gray-600">Total Registros</div>
-            <div className="font-semibold text-gray-900">{data.totalRecords}</div>
+          <div className="group rounded-lg border border-violet-200 bg-white p-4 shadow-md transition-all hover:shadow-lg dark:border-violet-700 dark:bg-slate-800">
+            <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Registros</div>
+            <div className="mt-1 text-xl font-bold text-violet-600 dark:text-violet-400">{data.totalRecords}</div>
           </div>
         </div>
 
         {/* Alerta si hay modificaciones */}
         {studentsWithModifications.length > 0 && (
-          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <span className="text-sm font-medium text-amber-800">
+          <div className="mt-4 rounded-lg border-2 border-amber-200 bg-amber-50 p-4 shadow-md dark:border-amber-800 dark:bg-amber-950/30">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <span className="font-semibold text-amber-900 dark:text-amber-100">
                 {studentsWithModifications.length} estudiante(s) tienen registros modificados
               </span>
             </div>
@@ -417,21 +474,24 @@ export function ConsolidatedAttendanceViewComponent({
       </div>
 
       {/* Tabla de estudiantes y cursos */}
-      <div className="rounded-lg border border-gray-200 overflow-hidden">
+      <div className="overflow-hidden rounded-xl border-2 border-gray-200 shadow-lg dark:border-gray-700">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50">
-              <TableHead className="w-8" />
-              <TableHead>Estudiante</TableHead>
-              <TableHead>Estado General</TableHead>
-              <TableHead className="text-right">Detalles</TableHead>
+            <TableRow className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+              <TableHead className="w-8 text-white" />
+              <TableHead className="font-semibold text-white">Estudiante</TableHead>
+              <TableHead className="font-semibold text-white">Estado General</TableHead>
+              <TableHead className="text-right font-semibold text-white">Detalles</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="bg-white dark:bg-gray-900">
             {data.students.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                  No hay registros de asistencia para esta fecha
+                <TableCell colSpan={4} className="py-12 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <AlertCircle className="h-12 w-12 text-gray-400 dark:text-gray-600" />
+                    <p className="text-gray-500 dark:text-gray-400">No hay registros de asistencia para esta fecha</p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -448,9 +508,12 @@ export function ConsolidatedAttendanceViewComponent({
         </Table>
       </div>
 
-      {/* Resumen */}
-      <div className="text-xs text-gray-500 text-center">
-        Haz clic en un estudiante para ver detalles de cada curso
+      {/* Pie de página con ayuda */}
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center dark:border-gray-700 dark:bg-gray-800">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          <Info className="inline h-4 w-4 mr-1" />
+          Haz clic en un estudiante para ver detalles de cada curso
+        </p>
       </div>
     </div>
   );
