@@ -1,7 +1,7 @@
 // src/app/auth/reset-password/page.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import PasswordResetForm from "@/components/auth/password-reset/PasswordResetForm";
 import PasswordResetBranding, {
@@ -12,7 +12,7 @@ import PasswordResetBranding, {
 } from "@/components/auth/password-reset/PasswordResetBranding";
 import { usePasswordReset } from "@/hooks/usePasswordReset";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
@@ -136,5 +136,26 @@ export default function ResetPasswordPage() {
       {/* Right Side - Form */}
       <PasswordResetForm token={token || undefined} />
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center bg-white dark:bg-gray-950">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-100 dark:bg-brand-900/20 mb-4">
+              <div className="w-6 h-6 border-3 border-brand-200 dark:border-brand-800 border-t-brand-600 dark:border-t-brand-400 rounded-full animate-spin"></div>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400">
+              Cargando...
+            </p>
+          </div>
+        </div>
+      }
+    >
+      <ResetPasswordContent />
+    </Suspense>
   );
 }

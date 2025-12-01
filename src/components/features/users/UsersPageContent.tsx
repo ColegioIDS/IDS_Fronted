@@ -28,6 +28,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
 
 interface ViewMode {
   type: 'grid' | 'table';
@@ -66,6 +67,10 @@ export function UsersPageContent() {
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
+
+  // Get roles for filtering
+  const { data: rolesData } = useRoles({ limit: 100 });
+  const roles = rolesData?.data || [];
 
   // Fetch editing user data
   const fetchEditingUser = async (userId: number) => {
@@ -119,34 +124,108 @@ export function UsersPageContent() {
     formData: CreateUserFormData | UpdateUserFormData,
     file?: File
   ) => {
-    if (editingUserId) {
-      // Update mode
-      await updateUser(editingUserId, formData);
-      // Upload picture if provided
-      if (file) {
-        try {
-          await uploadPicture(editingUserId, file, 'profile');
-        } catch (error) {
-          // Continuar aunque falle la foto
+    try {
+      // Helper function to convert Date objects to ISO strings
+      const convertDatesToISO = (data: any) => {
+        const converted = { ...data };
+        if (converted.teacherDetails?.hiredDate instanceof Date) {
+          converted.teacherDetails = {
+            ...converted.teacherDetails,
+            hiredDate: converted.teacherDetails.hiredDate.toISOString(),
+          };
+        }
+        if (converted.parentDetails?.dpiIssuedAt instanceof Date) {
+          converted.parentDetails = {
+            ...converted.parentDetails,
+            dpiIssuedAt: converted.parentDetails.dpiIssuedAt.toISOString(),
+          };
+        }
+        return converted;
+      };
+
+      // Helper function to filter details based on role
+      const filterDetailsByRole = (data: any, roleId: string) => {
+        const filtered = { ...data };
+        
+        if (!roleId || !roles || roles.length === 0) {
+          // If no roles available, return data as is
+          return filtered;
+        }
+        
+        // Find the role name to determine type
+        const roleObj = roles.find((r) => r.id.toString() === roleId);
+        const roleName = roleObj?.name?.toLowerCase() || '';
+        
+        // More precise role detection - match exact role names or clear keywords
+        const isParentRole = 
+          roleName === 'padre' || 
+          roleName === 'madre' || 
+          roleName === 'tutor' ||
+          roleName === 'parent' || 
+          roleName === 'apoderado' ||
+          (roleName.includes('padre') && !roleName.includes('padrenot'));
+        
+        const isTeacherRole = 
+          roleName === 'maestro' || 
+          roleName === 'profesor' || 
+          roleName === 'docente' ||
+          roleName === 'teacher' ||
+          roleName === 'instructor' ||
+          (roleName.includes('maestro') || roleName.includes('profesor') || roleName.includes('docente'));
+        
+        // Remove teacher details if not a teacher
+        if (!isTeacherRole) {
+          delete filtered.teacherDetails;
+        }
+        
+        // Remove parent details if not a parent
+        if (!isParentRole) {
+          delete filtered.parentDetails;
+        }
+        
+        return filtered;
+      };
+
+      const processedData = convertDatesToISO(formData);
+      const roleId = processedData.roleId || '';
+      const filteredData = filterDetailsByRole(processedData, roleId);
+
+      if (editingUserId) {
+        // Update mode
+        await updateUser(editingUserId, filteredData);
+        // Upload picture if provided
+        if (file) {
+          try {
+            await uploadPicture(editingUserId, file, 'profile');
+          } catch (error) {
+            // Continuar aunque falle la foto
+          }
+        }
+      } else {
+        // Create mode
+        const createData = filteredData as CreateUserFormData;
+        await createUser(createData);
+        
+        // Get the latest user (should be the one just created)
+        const latestUsers = await refresh();
+        
+        // Upload picture if provided - use the first user from the latest list
+        if (file && data?.data && data.data.length > 0) {
+          try {
+            const newUser = data.data[0];
+            await uploadPicture(newUser.id, file, 'profile');
+          } catch (error) {
+            // Nota: En este caso no eliminamos el usuario si falla la foto
+            // ya que refresh() es async y el usuario ya existe
+          }
         }
       }
-    } else {
-      // Create mode
-      await createUser(formData);
-      // Get the latest user (should be the one just created)
-      const latestUsers = await refresh();
-      // Upload picture if provided - use the first user from the latest list
-      if (file && data?.data && data.data.length > 0) {
-        try {
-          const newUser = data.data[0];
-          await uploadPicture(newUser.id, file, 'profile');
-        } catch (error) {
-          // Nota: En este caso no eliminamos el usuario si falla la foto
-          // ya que refresh() es async y el usuario ya existe
-        }
-      }
+      handleFormSuccess();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error desconocido al procesar el formulario';
+      console.error('Form submission error:', error);
+      toast.error(`Error: ${message}`);
     }
-    handleFormSuccess();
   };
 
   const handleDeleteUser = (user: User) => {

@@ -6,3 +6,6 @@ export { useEnrollmentSections } from './useEnrollmentSections';
 export { useStudentsBySection } from './useStudentsBySection';
 export { useAttendanceStatuses } from './useAttendanceStatuses';
 export { useAttendanceStatusPermissions } from './useAttendanceStatusPermissions';
+export { useParentDetails } from './useParentDetails';
+export { useTeacherDetails } from './useTeacherDetails';
+export { useParentStudentLinks } from './useParentStudentLinks';

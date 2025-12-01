@@ -85,6 +85,7 @@ export const attendanceConfigurationService = {
         throw new Error(response.data?.message || 'Error al cargar estudiantes');
       }
 
+      console.log(
         `[AttendanceConfig] 📊 Estudiantes cargados para sección ${sectionId}:`,
         response.data.data?.length || 0,
         'estudiantes'

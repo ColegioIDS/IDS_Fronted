@@ -9,6 +9,7 @@ import { User, UserWithRelations } from '@/types/users.types';
 import { useRoles } from '@/hooks/data/useRoles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Form,
   FormControl,
@@ -49,6 +50,9 @@ import {
   Camera,
   Check,
   Circle,
+  GraduationCap,
+  Calendar,
+  MapPin,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -87,6 +91,33 @@ export function UserForm({
           roleId: user && 'role' in user ? user.role?.id.toString() : user?.roleId?.toString() || '',
           isActive: user?.isActive ?? true,
           canAccessPlatform: user?.canAccessPlatform ?? false,
+          // Include parent/teacher details if available
+          parentDetails: user && 'parentDetails' in user ? {
+            dpiIssuedAt: user.parentDetails?.dpiIssuedAt || '',
+            email: user.parentDetails?.email || '',
+            workPhone: user.parentDetails?.workPhone || '',
+            occupation: user.parentDetails?.occupation || '',
+            workplace: user.parentDetails?.workplace || '',
+            isSponsor: user.parentDetails?.isSponsor ?? false,
+            sponsorInfo: user.parentDetails?.sponsorInfo || '',
+          } : {
+            dpiIssuedAt: '',
+            email: '',
+            workPhone: '',
+            occupation: '',
+            workplace: '',
+            isSponsor: false,
+            sponsorInfo: '',
+          },
+          teacherDetails: user && 'teacherDetails' in user ? {
+            hiredDate: user.teacherDetails?.hiredDate ? new Date(user.teacherDetails.hiredDate) : undefined,
+            academicDegree: user.teacherDetails?.academicDegree || '',
+            isHomeroomTeacher: user.teacherDetails?.isHomeroomTeacher ?? false,
+          } : {
+            hiredDate: undefined,
+            academicDegree: '',
+            isHomeroomTeacher: false,
+          },
         }
       : {
           email: '',
@@ -101,6 +132,20 @@ export function UserForm({
           roleId: '',
           isActive: true,
           canAccessPlatform: false,
+          parentDetails: {
+            dpiIssuedAt: '',
+            email: '',
+            workPhone: '',
+            occupation: '',
+            workplace: '',
+            isSponsor: false,
+            sponsorInfo: '',
+          },
+          teacherDetails: {
+            hiredDate: '',
+            academicDegree: '',
+            isHomeroomTeacher: false,
+          },
         },
   });
 
@@ -163,6 +208,28 @@ export function UserForm({
   };
 
   const currentPictureUrl = preview || getExistingProfilePicture();
+
+  // Get the selected role to show parent/teacher fields
+  const selectedRoleId = form.watch('roleId');
+  const selectedRole = roles.find((r) => r.id.toString() === selectedRoleId);
+  const roleName = selectedRole?.name?.toLowerCase() || '';
+  
+  // More precise role detection - match exact role names or clear keywords
+  const isParentRole = 
+    roleName === 'padre' || 
+    roleName === 'madre' || 
+    roleName === 'tutor' ||
+    roleName === 'parent' || 
+    roleName === 'apoderado' ||
+    (roleName.includes('padre') && !roleName.includes('padrenot'));
+  
+  const isTeacherRole = 
+    roleName === 'maestro' || 
+    roleName === 'profesor' || 
+    roleName === 'docente' ||
+    roleName === 'teacher' ||
+    roleName === 'instructor' ||
+    (roleName.includes('maestro') || roleName.includes('profesor') || roleName.includes('docente'));
 
   return (
     <Form {...form}>
@@ -676,6 +743,278 @@ export function UserForm({
                 )}
               />
             </div>
+
+            {/* Parent Details Section - Shows when parent role is selected */}
+            {isParentRole && (
+              <div className="
+                p-6 rounded-lg
+                bg-gradient-to-br from-emerald-50/50 to-emerald-50/30
+                dark:from-emerald-950/20 dark:to-emerald-950/10
+                border border-emerald-200/50 dark:border-emerald-800/50
+                space-y-4
+              ">
+                <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-300 mb-4 flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Detalles del Padre/Tutor (Opcional)
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* DPI Issued At */}
+                  <FormField
+                    control={form.control}
+                    name="parentDetails.dpiIssuedAt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-700 dark:text-slate-300">Lugar de Emisión DPI</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="ej: Guatemala"
+                            className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Email */}
+                  <FormField
+                    control={form.control}
+                    name="parentDetails.email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                          <Mail className="w-4 h-4" />
+                          Email Alterno
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="email"
+                            placeholder="email@ejemplo.com"
+                            className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Work Phone */}
+                  <FormField
+                    control={form.control}
+                    name="parentDetails.workPhone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                          <Phone className="w-4 h-4" />
+                          Teléfono de Trabajo
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="12345678"
+                            className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Occupation */}
+                  <FormField
+                    control={form.control}
+                    name="parentDetails.occupation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-700 dark:text-slate-300">Ocupación</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="ej: Ingeniero, Médico"
+                            className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Workplace */}
+                  <FormField
+                    control={form.control}
+                    name="parentDetails.workplace"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          Lugar de Trabajo
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="ej: Empresa ABC"
+                            className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Is Sponsor */}
+                  <FormField
+                    control={form.control}
+                    name="parentDetails.isSponsor"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border border-emerald-200/30 dark:border-emerald-800/30 p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base text-emerald-700 dark:text-emerald-300">¿Es Encargado?</FormLabel>
+                          <FormDescription className="text-xs">
+                            Marcar si es responsable legal del estudiante
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <input
+                            {...field}
+                            type="checkbox"
+                            checked={field.value === true || field.value === 'true'}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                            className="
+                              w-6 h-6 rounded
+                              dark:bg-slate-800 dark:border-slate-600
+                              cursor-pointer
+                              transition-all duration-300
+                            "
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Sponsor Info */}
+                <FormField
+                  control={form.control}
+                  name="parentDetails.sponsorInfo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-slate-700 dark:text-slate-300">Información del Encargado</FormLabel>
+                      <FormControl>
+                        <textarea
+                          {...field}
+                          placeholder="Información adicional sobre el encargado..."
+                          rows={3}
+                          className="
+                            flex min-h-[80px] w-full rounded-md border border-slate-200/50 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2
+                            text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2
+                            dark:focus-visible:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-50
+                          "
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* Teacher Details Section - Shows when teacher role is selected */}
+            {isTeacherRole && (
+              <div className="
+                p-6 rounded-lg
+                bg-gradient-to-br from-purple-50/50 to-purple-50/30
+                dark:from-purple-950/20 dark:to-purple-950/10
+                border border-purple-200/50 dark:border-purple-800/50
+                space-y-4
+              ">
+                <h3 className="text-sm font-bold text-purple-700 dark:text-purple-300 mb-4 flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4" />
+                  Detalles del Docente (Opcional)
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Hired Date */}
+                  <FormField
+                    control={form.control}
+                    name="teacherDetails.hiredDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          Fecha de Contratación
+                        </FormLabel>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            disabled={isSubmitting}
+                            placeholder="Seleccionar fecha de contratación"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Academic Degree */}
+                  <FormField
+                    control={form.control}
+                    name="teacherDetails.academicDegree"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                          <GraduationCap className="w-4 h-4" />
+                          Grado Académico
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="ej: Licenciatura, Maestría"
+                            disabled={isSubmitting}
+                            className="dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Is Homeroom Teacher */}
+                <FormField
+                  control={form.control}
+                  name="teacherDetails.isHomeroomTeacher"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border border-purple-200/30 dark:border-purple-800/30 p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base text-purple-700 dark:text-purple-300">¿Es Maestro Guía?</FormLabel>
+                        <FormDescription className="text-xs">
+                          Marcar si es director/a de grado o maestro/a guía
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <input
+                          {...field}
+                          type="checkbox"
+                          checked={field.value === true || field.value === 'true'}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                          className="
+                            w-6 h-6 rounded
+                            dark:bg-slate-800 dark:border-slate-600
+                            cursor-pointer
+                            transition-all duration-300
+                          "
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
           </TabsContent>
 
           {/* Foto Tab */}

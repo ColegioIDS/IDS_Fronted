@@ -321,6 +321,7 @@ export const batchSaveSchedules = async (
     
     return batchResult;
   } catch (error: any) {
+    console.log('❌ Batch Error in schedules.service:', {
       isAxiosError: axios.isAxiosError(error),
       status: error.response?.status,
       errorData: error.response?.data,

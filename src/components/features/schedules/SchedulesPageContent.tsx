@@ -298,6 +298,7 @@ export default function SchedulesPageContent({
       setTempSchedules([]);
       setPendingChanges([]);
       
+      console.log('🔍 Batch Save Debug:', {
         hasErrors,
         'batchResult?.success': batchResult?.success,
         'batchResult?.data?.stats': batchResult?.data?.stats,
@@ -311,6 +312,7 @@ export default function SchedulesPageContent({
         let errors = batchResult?.data?.items?.errors || [];
         const batchStats = batchResult?.data?.stats ?? { created: 0, updated: 0, deleted: 0, errors: 0 };
         
+        console.log('❌ Error path taken:', {
           batchResult,
           errors,
           batchError,

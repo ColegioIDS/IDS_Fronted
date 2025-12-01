@@ -10,3 +10,6 @@ export { DeleteUserDialog } from './DeleteUserDialog';
 export { ChangePasswordDialog } from './ChangePasswordDialog';
 export { UserDetailDialog } from './UserDetailDialog';
 export { UsersPageContent } from './UsersPageContent';
+export { ParentDetailsForm } from './ParentDetailsForm';
+export { TeacherDetailsForm } from './TeacherDetailsForm';
+export { ParentStudentLinksDialog } from './ParentStudentLinksDialog';

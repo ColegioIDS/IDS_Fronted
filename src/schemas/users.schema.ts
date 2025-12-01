@@ -35,7 +35,10 @@ export const createUserSchema = z
       .regex(/^\d{13}$/, 'DPI debe tener exactamente 13 dígitos'),
     phone: z
       .string()
-      .regex(/^\+\d{1,3}\d{7,14}$/, 'Teléfono inválido')
+      .refine(
+        (val) => val === '' || /^\+?\d{7,14}$/.test(val),
+        'Teléfono debe tener entre 7 y 14 dígitos, con o sin +'
+      )
       .optional()
       .or(z.literal('')),
     gender: z.enum(['M', 'F', 'O'], {
@@ -54,6 +57,22 @@ export const createUserSchema = z
       .transform((val) => (val === true || val === 'true' ? '1' : '0'))
       .default('0')
       .optional(),
+    // ✅ Optional Parent Details
+    parentDetails: z.object({
+      dpiIssuedAt: z.string().optional().or(z.literal('')).default(''),
+      email: z.string().email('Email inválido').optional().or(z.literal('')).default(''),
+      workPhone: z.string().optional().or(z.literal('')).default(''),
+      occupation: z.string().optional().or(z.literal('')).default(''),
+      workplace: z.string().optional().or(z.literal('')).default(''),
+      isSponsor: z.union([z.boolean(), z.string()]).transform((val) => val === true || val === 'true').optional().default(false),
+      sponsorInfo: z.string().optional().or(z.literal('')).default(''),
+    }).optional().default({}),
+    // ✅ Optional Teacher Details
+    teacherDetails: z.object({
+      hiredDate: z.union([z.date(), z.string()]).optional().default(''),
+      academicDegree: z.string().optional().or(z.literal('')).default(''),
+      isHomeroomTeacher: z.union([z.boolean(), z.string()]).transform((val) => val === true || val === 'true').optional().default(false),
+    }).optional().default({}),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Las contraseñas no coinciden',
@@ -76,7 +95,10 @@ export const updateUserSchema = z.object({
     .optional(),
   phone: z
     .string()
-    .regex(/^\+\d{1,3}\d{7,14}$/, 'Teléfono inválido')
+    .refine(
+      (val) => val === '' || /^\+?\d{7,14}$/.test(val),
+      'Teléfono debe tener entre 7 y 14 dígitos, con o sin +'
+    )
     .optional()
     .or(z.literal('')),
   gender: z
@@ -96,6 +118,22 @@ export const updateUserSchema = z.object({
     .union([z.boolean(), z.string()])
     .transform((val) => (val === true || val === 'true' ? '1' : '0'))
     .optional(),
+  // ✅ Optional Parent Details
+  parentDetails: z.object({
+    dpiIssuedAt: z.string().optional().or(z.literal('')).default(''),
+    email: z.string().email('Email inválido').optional().or(z.literal('')).default(''),
+    workPhone: z.string().optional().or(z.literal('')).default(''),
+    occupation: z.string().optional().or(z.literal('')).default(''),
+    workplace: z.string().optional().or(z.literal('')).default(''),
+    isSponsor: z.union([z.boolean(), z.string()]).transform((val) => val === true || val === 'true').optional().default(false),
+    sponsorInfo: z.string().optional().or(z.literal('')).default(''),
+  }).optional().default({}),
+  // ✅ Optional Teacher Details
+  teacherDetails: z.object({
+    hiredDate: z.union([z.date(), z.string()]).optional().default(''),
+    academicDegree: z.string().optional().or(z.literal('')).default(''),
+    isHomeroomTeacher: z.union([z.boolean(), z.string()]).transform((val) => val === true || val === 'true').optional().default(false),
+  }).optional().default({}),
 });
 
 export type UpdateUserFormData = z.infer<typeof updateUserSchema>;

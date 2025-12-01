@@ -1,8 +1,8 @@
 // src/components/features/users/UserDetailDialog.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
-import { User, UserWithRelations } from '@/types/users.types';
+import { useState } from 'react';
+import { User, UserWithRelations, ParentDetails, TeacherDetails } from '@/types/users.types';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ParentDetailsForm, TeacherDetailsForm, ParentStudentLinksDialog } from './';
 import {
   Mail,
   Phone,
@@ -31,6 +32,11 @@ import {
   Circle,
   Check as CheckIcon,
   X,
+  Briefcase,
+  Building2,
+  MapPin,
+  GraduationCap,
+  Users,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -51,6 +57,10 @@ export function UserDetailDialog({
   const isUserWithRelations = (u: any): u is UserWithRelations => 'role' in u;
   const roleName = user && isUserWithRelations(user) ? user.role.name : 'N/A';
   const pictures = user && isUserWithRelations(user) ? user.pictures || [] : [];
+
+  // Get parent and teacher details from the user object (already included in GET /api/users/:id)
+  const parentDetails = user && isUserWithRelations(user) ? user.parentDetails : null;
+  const teacherDetails = user && isUserWithRelations(user) ? user.teacherDetails : null;
 
   const getInitials = () => {
     if (!user) return '';
@@ -190,7 +200,7 @@ export function UserDetailDialog({
           {/* Tabs */}
           <Tabs defaultValue="info" className="w-full">
             <TabsList className="
-              grid w-full grid-cols-2 gap-2
+              grid w-full grid-cols-3 md:grid-cols-4 gap-2
               bg-slate-100/50 dark:bg-slate-800/50
               border border-slate-200/30 dark:border-slate-700/30
               rounded-lg p-1
@@ -203,11 +213,11 @@ export function UserDetailDialog({
                   data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400
                   data-[state=active]:border data-[state=active]:border-blue-200/50 dark:data-[state=active]:border-blue-700/50
                   transition-all duration-300
-                  rounded-md
+                  rounded-md text-xs md:text-sm
                 "
               >
-                <UserIcon className="w-4 h-4 mr-2" />
-                Información
+                <UserIcon className="w-4 h-4 mr-1" />
+                Info
               </TabsTrigger>
               <TabsTrigger
                 value="pictures"
@@ -216,12 +226,44 @@ export function UserDetailDialog({
                   data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400
                   data-[state=active]:border data-[state=active]:border-blue-200/50 dark:data-[state=active]:border-blue-700/50
                   transition-all duration-300
-                  rounded-md
+                  rounded-md text-xs md:text-sm
                 "
               >
-                <FileText className="w-4 h-4 mr-2" />
+                <FileText className="w-4 h-4 mr-1" />
                 Fotos
               </TabsTrigger>
+              
+              {/* Demo: Show parent/teacher tabs conditionally or always for demo */}
+              {(parentDetails || roleName?.toLowerCase().includes('padre') || roleName?.toLowerCase().includes('parent')) && (
+                <TabsTrigger
+                  value="parent"
+                  className="
+                    data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500/20 data-[state=active]:to-teal-500/20
+                    data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400
+                    data-[state=active]:border data-[state=active]:border-emerald-200/50 dark:data-[state=active]:border-emerald-700/50
+                    transition-all duration-300
+                    rounded-md text-xs md:text-sm
+                  "
+                >
+                  <Users className="w-4 h-4 mr-1" />
+                  Padre
+                </TabsTrigger>
+              )}
+              {(teacherDetails || roleName?.toLowerCase().includes('maestro') || roleName?.toLowerCase().includes('docente') || roleName?.toLowerCase().includes('teacher')) && (
+                <TabsTrigger
+                  value="teacher"
+                  className="
+                    data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-pink-500/20
+                    data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400
+                    data-[state=active]:border data-[state=active]:border-purple-200/50 dark:data-[state=active]:border-purple-700/50
+                    transition-all duration-300
+                    rounded-md text-xs md:text-sm
+                  "
+                >
+                  <GraduationCap className="w-4 h-4 mr-1" />
+                  Docente
+                </TabsTrigger>
+              )}
             </TabsList>
 
             {/* Información Tab */}
@@ -519,6 +561,170 @@ export function UserDetailDialog({
                 </div>
               )}
             </TabsContent>
+
+            {/* ParentDetails Tab */}
+            {(parentDetails || roleName?.toLowerCase().includes('padre') || roleName?.toLowerCase().includes('parent')) && (
+              <TabsContent value="parent" className="space-y-4 mt-4">
+                <ParentDetailsForm userId={user.id} onSuccess={() => {}} />
+                
+                {/* Display existing parent details */}
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Contact Section */}
+                  <Card className="border border-slate-200/50 dark:border-slate-700/50 bg-gradient-to-br from-white/50 to-slate-50/50 dark:from-slate-800/40 dark:to-slate-900/30">
+                    <CardHeader>
+                      <CardTitle className="text-sm font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-emerald-500" />
+                        Información de Contacto
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="p-3 rounded-lg bg-emerald-50/30 dark:bg-emerald-950/20 border border-emerald-200/30 dark:border-emerald-800/30">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Email Alternativo</p>
+                        <p className="font-semibold text-slate-900 dark:text-white">{parentDetails?.email || 'No disponible'}</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-teal-50/30 dark:bg-teal-950/20 border border-teal-200/30 dark:border-teal-800/30">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Teléfono de Trabajo</p>
+                        <p className="font-semibold text-slate-900 dark:text-white">{parentDetails?.workPhone || 'No disponible'}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Professional Section */}
+                  <Card className="border border-slate-200/50 dark:border-slate-700/50 bg-gradient-to-br from-white/50 to-slate-50/50 dark:from-slate-800/40 dark:to-slate-900/30">
+                    <CardHeader>
+                      <CardTitle className="text-sm font-bold bg-gradient-to-r from-purple-600 to-violet-600 dark:from-purple-400 dark:to-violet-400 bg-clip-text text-transparent flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 text-purple-500" />
+                        Información Profesional
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="p-3 rounded-lg bg-purple-50/30 dark:bg-purple-950/20 border border-purple-200/30 dark:border-purple-800/30">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Ocupación</p>
+                        <p className="font-semibold text-slate-900 dark:text-white">{parentDetails?.occupation || 'No disponible'}</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-violet-50/30 dark:bg-violet-950/20 border border-violet-200/30 dark:border-violet-800/30">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Lugar de Trabajo</p>
+                        <p className="font-semibold text-slate-900 dark:text-white">{parentDetails?.workplace || 'No disponible'}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Sponsor Section */}
+                  <Card className="border border-slate-200/50 dark:border-slate-700/50 bg-gradient-to-br from-white/50 to-slate-50/50 dark:from-slate-800/40 dark:to-slate-900/30">
+                    <CardHeader>
+                      <CardTitle className="text-sm font-bold bg-gradient-to-r from-red-600 to-orange-600 dark:from-red-400 dark:to-orange-400 bg-clip-text text-transparent flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-red-500" />
+                        Estado de Encargado
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <Badge className={`
+                        ${parentDetails?.isSponsor
+                          ? 'bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
+                          : 'bg-slate-100/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400'
+                        }
+                        border ${parentDetails?.isSponsor
+                          ? 'border-emerald-200/50 dark:border-emerald-700/50'
+                          : 'border-slate-200/50 dark:border-slate-700/50'
+                        }
+                        font-bold
+                      `}>
+                        {parentDetails?.isSponsor ? 'Sí, es encargado' : 'No es encargado'}
+                      </Badge>
+                      {parentDetails?.sponsorInfo && (
+                        <div className="p-3 rounded-lg bg-orange-50/30 dark:bg-orange-950/20 border border-orange-200/30 dark:border-orange-800/30">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Información Adicional</p>
+                          <p className="text-sm text-slate-900 dark:text-white">{parentDetails?.sponsorInfo}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Parent-Student Links Section */}
+                  <Card className="border border-slate-200/50 dark:border-slate-700/50 bg-gradient-to-br from-white/50 to-slate-50/50 dark:from-slate-800/40 dark:to-slate-900/30">
+                    <CardHeader>
+                      <CardTitle className="text-sm font-bold bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-400 dark:to-blue-400 bg-clip-text text-transparent flex items-center gap-2">
+                        <Users className="w-4 h-4 text-sky-500" />
+                        Estudiantes a Cargo
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ParentStudentLinksDialog parentId={user.id} onSuccess={() => {}} />
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            )}
+
+            {/* TeacherDetails Tab */}
+            {(teacherDetails || roleName?.toLowerCase().includes('maestro') || roleName?.toLowerCase().includes('docente') || roleName?.toLowerCase().includes('teacher')) && (
+              <TabsContent value="teacher" className="space-y-4 mt-4">
+                <TeacherDetailsForm userId={user.id} onSuccess={() => {}} />
+                
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Employment Section */}
+                  <Card className="border border-slate-200/50 dark:border-slate-700/50 bg-gradient-to-br from-white/50 to-slate-50/50 dark:from-slate-800/40 dark:to-slate-900/30">
+                    <CardHeader>
+                      <CardTitle className="text-sm font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-blue-500" />
+                        Información de Empleo
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="p-3 rounded-lg bg-blue-50/30 dark:bg-blue-950/20 border border-blue-200/30 dark:border-blue-800/30">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Fecha de Contratación</p>
+                        <p className="font-semibold text-slate-900 dark:text-white">
+                          {teacherDetails?.hiredDate
+                            ? new Date(teacherDetails.hiredDate).toLocaleDateString('es-ES')
+                            : 'No disponible'}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Academic Section */}
+                  <Card className="border border-slate-200/50 dark:border-slate-700/50 bg-gradient-to-br from-white/50 to-slate-50/50 dark:from-slate-800/40 dark:to-slate-900/30">
+                    <CardHeader>
+                      <CardTitle className="text-sm font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-purple-500" />
+                        Información Académica
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="p-3 rounded-lg bg-purple-50/30 dark:bg-purple-950/20 border border-purple-200/30 dark:border-purple-800/30">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Grado Académico</p>
+                        <p className="font-semibold text-slate-900 dark:text-white">{teacherDetails?.academicDegree || 'No disponible'}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Classroom Role Section */}
+                  <Card className="border border-slate-200/50 dark:border-slate-700/50 bg-gradient-to-br from-white/50 to-slate-50/50 dark:from-slate-800/40 dark:to-slate-900/30">
+                    <CardHeader>
+                      <CardTitle className="text-sm font-bold bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent flex items-center gap-2">
+                        <Users className="w-4 h-4 text-indigo-500" />
+                        Rol en el Aula
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Badge className={`
+                        ${teacherDetails?.isHomeroomTeacher
+                          ? 'bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
+                          : 'bg-slate-100/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400'
+                        }
+                        border ${teacherDetails?.isHomeroomTeacher
+                          ? 'border-emerald-200/50 dark:border-emerald-700/50'
+                          : 'border-slate-200/50 dark:border-slate-700/50'
+                        }
+                        font-bold
+                      `}>
+                        {teacherDetails?.isHomeroomTeacher ? 'Maestro Guía' : 'No es Maestro Guía'}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </DialogContent>

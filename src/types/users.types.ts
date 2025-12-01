@@ -45,6 +45,8 @@ export interface User {
 export interface UserWithRelations extends User {
   role: RoleBasic;
   pictures?: Picture[];
+  parentDetails?: ParentDetails;
+  teacherDetails?: TeacherDetails;
   createdBy?: {
     id: number;
     givenNames: string;
@@ -165,4 +167,114 @@ export interface UserErrorResponse {
   statusCode: number;
   message: string;
   error?: string;
+}
+
+// ✅ ParentDetails type
+export interface ParentDetails {
+  id: number;
+  userId: number;
+  dpiIssuedAt?: string | null;
+  email?: string | null;
+  workPhone?: string | null;
+  occupation?: string | null;
+  workplace?: string | null;
+  isSponsor: boolean;
+  sponsorInfo?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ✅ Update ParentDetails DTO
+export interface UpdateParentDetailsDto {
+  dpiIssuedAt?: string;
+  email?: string;
+  workPhone?: string;
+  occupation?: string;
+  workplace?: string;
+  isSponsor?: boolean;
+  sponsorInfo?: string;
+}
+
+// ✅ TeacherDetails type
+export interface TeacherDetails {
+  id: number;
+  userId: number;
+  hiredDate: string;
+  isHomeroomTeacher: boolean;
+  academicDegree?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ✅ Update TeacherDetails DTO
+export interface UpdateTeacherDetailsDto {
+  hiredDate?: string;
+  isHomeroomTeacher?: boolean;
+  academicDegree?: string;
+}
+
+// ✅ StudentBasic type (for parent-student links)
+export interface StudentBasic {
+  id: number;
+  codeSIRE: string;
+  givenNames: string;
+  lastNames: string;
+  birthDate?: string;
+  gender?: 'M' | 'F' | 'O';
+}
+
+// ✅ ParentStudentLink type
+export interface ParentStudentLink {
+  id: number;
+  parentId: number;
+  studentId: number;
+  relationshipType: string;
+  isPrimaryContact: boolean;
+  hasLegalCustody: boolean;
+  canAccessInfo: boolean;
+  livesWithStudent: boolean;
+  financialResponsible: boolean;
+  emergencyContactPriority: number;
+  receivesSchoolNotices: boolean;
+  createdAt: string;
+  updatedAt: string;
+  parent?: UserWithRelations;
+  student?: StudentBasic;
+}
+
+// ✅ Create ParentStudentLink DTO
+export interface CreateParentStudentLinkDto {
+  parentId: number;
+  studentId: number;
+  relationshipType: string;
+  isPrimaryContact?: boolean;
+  hasLegalCustody?: boolean;
+  canAccessInfo?: boolean;
+  livesWithStudent?: boolean;
+  financialResponsible?: boolean;
+  emergencyContactPriority?: number;
+  receivesSchoolNotices?: boolean;
+}
+
+// ✅ Update ParentStudentLink DTO
+export interface UpdateParentStudentLinkDto {
+  relationshipType?: string;
+  isPrimaryContact?: boolean;
+  hasLegalCustody?: boolean;
+  canAccessInfo?: boolean;
+  livesWithStudent?: boolean;
+  financialResponsible?: boolean;
+  emergencyContactPriority?: number;
+  receivesSchoolNotices?: boolean;
+}
+
+// ✅ ParentStudentLink Query Response
+export interface PaginatedParentStudentLinks {
+  data: ParentStudentLink[];
+  meta?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
