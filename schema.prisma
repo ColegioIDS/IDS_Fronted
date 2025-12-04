@@ -9,6 +9,10 @@
     url      = env("DATABASE_URL")
   }
 
+  // ⭐ CONFIGURACIÓN PARA RAILWAY - Seed automático
+  // Este generator ejecutará el seed cuando uses "prisma db seed"
+  // Requiere que definas PRISMA_SEED_SCRIPT en tu package.json
+
   /**
   * ============================================
   * SECCIÓN 1: AUTENTICACIÓN Y ROLES
@@ -116,6 +120,11 @@
     lastLogin     DateTime?
     loginAttempts Int       @default(0)
 
+    // ⭐ PASSWORD RESET FIELDS
+    resetToken       String?   @unique
+    resetTokenExpires DateTime?
+    resetRequestedAt DateTime?
+
     accountVerified   Boolean @default(false)
     isActive          Boolean @default(true)
     canAccessPlatform Boolean @default(false)
@@ -174,6 +183,9 @@
     // ✨ RELACIONES DE MATRÍCULAS (Auditoría)
     createdEnrollments  Enrollment[] @relation("EnrollmentsCreated")
     modifiedEnrollments Enrollment[] @relation("EnrollmentsModified")
+
+    // ⭐ RELACIONES DE FIRMAS PARA CARTAS DE NOTAS
+    signatures Signature[] @relation("UserSignatures")
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -310,6 +322,11 @@
     favoriteSubject          String?
     favoriteToy              String?
     favoriteCake             String?
+    
+    // ==================== INFORMACIÓN ADICIONAL ====================
+    ethnicity    String?  // Ladino, Maya, Garifuna, etc.
+    hasLibrary   Boolean? @default(false)
+    hasLunches   Boolean? @default(false)
 
     address   Address? @relation(fields: [addressId], references: [id])
     addressId Int?
@@ -503,6 +520,9 @@
     grades      GradeCycle[]
     enrollments Enrollment[]
 
+    // ⭐ RELACIONES DE FIRMAS PARA CARTAS DE NOTAS
+    signatures Signature[] @relation("SignaturesCycle")
+
     // ⭐ ÍNDICES PARA ASISTENCIA
     @@index([isActive, isArchived, startDate, endDate], name: "idx_school_cycles_active_dates")
     @@map("school_cycles")
@@ -579,7 +599,350 @@
 
   /**
   * ============================================
-  * SECCIÓN 5: ESTRUCTURA ACADÉMICA
+  * SECCIÓN 5: SISTEMA ERICA (EVALUACIONES)
+  * ============================================
+  */
+
+  /**
+  * ⭐ ENUMS PARA SISTEMA ERICA
+  */
+  enum EricaDimension {
+    EJECUTA   // E = Ejecuta
+    RETIENE   // R = Retiene
+    INTERPRETA // I = Interpreta
+    CONOCE    // C = Conoce
+    AMPLIA    // A = Amplía
+  }
+
+  enum EricaState {
+    E  // Excelente = 1 pto
+    B  // Bien = 0.75 ptos
+    P  // Poco = 0.50 ptos
+    C  // Casi nada = 0.25 ptos
+    N  // Nada = 0 ptos
+  }
+
+  /**
+  * ⭐ MAPEO DE DIMENSIONES ERICA POR DÍA DE LA SEMANA
+  * Relaciona cada día (L-M-M-J-V) con una dimensión (E-R-I-C-A)
+  * 
+  * Ejemplo:
+  * - Lunes (1) → EJECUTA
+  * - Martes (2) → RETIENE
+  * - Miércoles (3) → INTERPRETA
+  * - Jueves (4) → CONOCE
+  * - Viernes (5) → AMPLIA
+  */
+  model EricaDimensionDay {
+    id        Int            @id @default(autoincrement())
+    dayOfWeek Int            // 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes
+    dimension EricaDimension // EJECUTA, RETIENE, INTERPRETA, CONOCE, AMPLIA
+    order     Int            // 1, 2, 3, 4, 5
+    
+    isActive Boolean @default(true)
+    
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([dayOfWeek, dimension])
+    @@index([dayOfWeek])
+    @@index([dimension])
+    @@map("erica_dimension_days")
+  }
+
+  /**
+  * ⭐ TABLA DE COLORES PARA DIMENSIONES ERICA
+  * Mapea colores a cada dimensión (E, R, I, C, A)
+  * Permite cambiar colores sin modificar código
+  * 
+  * Ejemplo:
+  * - EJECUTA → Verde (#00AA00)
+  * - RETIENE → Azul (#0000FF)
+  * - INTERPRETA → Morado (#800080)
+  * - CONOCE → Naranja (#FFA500)
+  * - AMPLIA → Rojo (#FF0000)
+  */
+  model EricaDimensionColor {
+    id        Int            @id @default(autoincrement())
+    dimension EricaDimension @unique // EJECUTA, RETIENE, INTERPRETA, CONOCE, AMPLIA
+    
+    colorCode String @db.VarChar(7) // Ej: #00AA00
+    colorName String                // Ej: "Verde Oscuro"
+    hexCode   String @db.VarChar(7) // Alternativo a colorCode
+    
+    isActive Boolean @default(true)
+    
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    
+    @@index([dimension])
+    @@map("erica_dimension_colors")
+  }
+
+  /**
+  * ⭐ TABLA DE COLORES PARA ESTADOS ERICA
+  * Mapea colores a cada estado (E, B, P, C, N)
+  * Permite cambiar colores sin modificar código
+  * 
+  * Ejemplo:
+  * - E (Excelente) → Verde Claro (#90EE90)
+  * - B (Bien) → Verde Oscuro (#006400)
+  * - P (Poco) → Amarillo (#FFFF00)
+  * - C (Casi nada) → Naranja (#FFA500)
+  * - N (Nada) → Rojo (#FF0000)
+  */
+  model EricaStateColor {
+    id    Int @id @default(autoincrement())
+    state EricaState @unique // E, B, P, C, N
+    
+    colorCode String @db.VarChar(7) // Ej: #90EE90
+    colorName String                // Ej: "Verde Claro"
+    hexCode   String @db.VarChar(7) // Alternativo a colorCode
+    
+    isActive Boolean @default(true)
+    
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    
+    @@index([state])
+    @@map("erica_state_colors")
+  }
+
+  /**
+  * ⭐ TEMAS POR SEMANA ACADÉMICA
+  * Define el tema principal de cada semana académica
+  * Por curso y sección
+  * 
+  * Ejemplo:
+  * - Semana 1: "Sumas"
+  * - Semana 2: "Restas"
+  * - Semana 3: "Multiplicación"
+  */
+  model EricaTopic {
+    id             Int @id @default(autoincrement())
+    courseId       Int
+    academicWeekId Int
+    sectionId      Int
+    teacherId      Int
+
+    // ⭐ NUEVO: Tema de la semana (ej: "Sumas", "Análisis de Textos")
+    weekTheme       String
+    
+    title           String?
+    description     String?
+    objectives      String?
+    materials       String?
+
+    isActive        Boolean @default(true)
+    isCompleted     Boolean @default(false)
+
+    course          Course       @relation("TopicCourse", fields: [courseId], references: [id])
+    academicWeek    AcademicWeek @relation("TopicWeek", fields: [academicWeekId], references: [id])
+    section         Section      @relation("TopicSection", fields: [sectionId], references: [id])
+    teacher         User         @relation("TopicTeacher", fields: [teacherId], references: [id])
+
+    evaluations EricaEvaluation[] @relation("EvaluationTopic")
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([courseId, academicWeekId, sectionId], name: "unique_course_week_section_topic")
+    @@index([courseId])
+    @@index([academicWeekId])
+    @@map("erica_topics")
+  }
+
+  /**
+  * ⭐ EVALUACIONES ERICA POR DIMENSIÓN
+  * 
+  * Estructura:
+  * - Un estudiante (enrollment) tiene UNA evaluación por cada dimensión ERICA (E, R, I, C, A) por semana
+  * - Cada dimensión se califica con un estado (E, B, P, C, N) que tiene puntos asociados
+  * - El día de la semana mapea automáticamente a la dimensión según EricaDimensionDay
+  * 
+  * Flujo:
+  * - Lunes (1) → EJECUTA → Estado EBPCN → Puntos
+  * - Martes (2) → RETIENE → Estado EBPCN → Puntos
+  * - Miércoles (3) → INTERPRETA → Estado EBPCN → Puntos
+  * - Jueves (4) → CONOCE → Estado EBPCN → Puntos
+  * - Viernes (5) → AMPLIA → Estado EBPCN → Puntos
+  */
+  model EricaEvaluation {
+    id             Int @id @default(autoincrement())
+    
+    // 🔑 Identificadores principales
+    enrollmentId   Int
+    courseId       Int
+    bimesterId     Int
+    academicWeekId Int
+    topicId        Int
+    teacherId      Int
+
+    // ⭐ Dimensión ERICA (EJECUTA, RETIENE, INTERPRETA, CONOCE, AMPLIA)
+    dimension      EricaDimension
+    
+    // ⭐ Estado (E, B, P, C, N) - reemplaza categoryId + scaleId
+    state          EricaState
+    
+    // ⭐ Puntos calculados automáticamente según estado
+    // E=1.0, B=0.75, P=0.50, C=0.25, N=0.0
+    points         Float
+    
+    // ⭐ Día de la semana (1-5)
+    dayOfWeek      Int?
+    
+    notes          String?
+    evaluatedAt    DateTime @default(now())
+
+    // Relaciones
+    enrollment     Enrollment    @relation("EricaEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
+    course         Course        @relation("EricaCourse", fields: [courseId], references: [id])
+    bimester       Bimester      @relation("EricaBimester", fields: [bimesterId], references: [id])
+    academicWeek   AcademicWeek  @relation("EricaAcademicWeek", fields: [academicWeekId], references: [id])
+    topic          EricaTopic    @relation("EvaluationTopic", fields: [topicId], references: [id], onDelete: Cascade)
+    teacher        User          @relation("EricaTeacher", fields: [teacherId], references: [id])
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // ⭐ CAMBIO: Unique por estudiante, semana, dimensión (cada estudiante tiene UNA evaluación por dimensión por semana)
+    @@unique([enrollmentId, academicWeekId, dimension], name: "unique_student_week_dimension")
+    @@index([enrollmentId])
+    @@index([courseId])
+    @@index([dimension])
+    @@index([state])
+    @@index([academicWeekId])
+    @@map("erica_evaluations")
+  }
+
+  /**
+  * ⭐ PROMEDIOS POR DIMENSIÓN ERICA
+  * 
+  * Almacena:
+  * - Promedio de cada dimensión (E, R, I, C, A)
+  * - Promedio general
+  * - Estadísticas de estados (E, B, P, C, N)
+  * - Indicador de si está actualizado
+  */
+  model EricaAverage {
+    id           Int @id @default(autoincrement())
+    enrollmentId Int
+    courseId     Int
+    bimesterId   Int
+
+    // ⭐ Promedios por dimensión ERICA
+    executeAverage    Float? // Promedio de EJECUTA (E)
+    retainAverage     Float? // Promedio de RETIENE (R)
+    interpretAverage  Float? // Promedio de INTERPRETA (I)
+    knowAverage       Float? // Promedio de CONOCE (C)
+    applyAverage      Float? // Promedio de AMPLÍA (A)
+
+    // ⭐ Promedio general (promedio de los 5 promedios)
+    generalAverage    Float?
+
+    // Estadísticas de evaluaciones
+    totalEvaluations  Int @default(0)  // Total de evaluaciones registradas
+    
+    // Conteo por estado (E, B, P, C, N)
+    excellentCount    Int @default(0)  // E = Excelente (1 pto)
+    goodCount         Int @default(0)  // B = Bien (0.75 ptos)
+    regularCount      Int @default(0)  // P = Poco (0.50 ptos)
+    poorCount         Int @default(0)  // C = Casi nada (0.25 ptos)
+    nothingCount      Int @default(0)  // N = Nada (0 ptos)
+
+    lastCalculated    DateTime @default(now())
+    isUpToDate        Boolean  @default(false)
+
+    enrollment        Enrollment @relation("AverageEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
+    course            Course     @relation("AverageCourse", fields: [courseId], references: [id])
+    bimester          Bimester   @relation("AverageBimester", fields: [bimesterId], references: [id])
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([enrollmentId, courseId, bimesterId], name: "unique_student_course_bimester")
+    @@index([enrollmentId])
+    @@index([isUpToDate])
+    @@map("erica_averages")
+  }
+
+  /**
+  * ⭐ CONFIGURACIÓN DEL SISTEMA ERICA
+  * 
+  * Almacena configuraciones dinámicas:
+  * - Puntajes por estado
+  * - Colores por dimensión
+  * - Pesos de cálculos
+  */
+  model EricaConfig {
+    id          Int     @id @default(autoincrement())
+    configType  String
+    configKey   String
+    configValue String
+    description String?
+    isActive    Boolean @default(true)
+    category    String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([configType, configKey])
+    @@map("erica_configs")
+  }
+
+  /**
+  * ⭐ RESULTADOS FINALES DE ERICA
+  * 
+  * Almacena los resultados finales agregados por estudiante, bimestre y curso
+  * Incluye colores para visualización en reportes
+  * 
+  * Ejemplo:
+  * - resultExecute: 0.85 (promedio de EJECUTA)
+  * - resultRetain: 0.75
+  * - colorExecute: #00AA00
+  */
+  model EricaCalculatedResult {
+    id Int @id @default(autoincrement())
+
+    enrollmentId      Int
+    bimesterId        Int
+    courseId          Int
+
+    // ⭐ Resultados finales por dimensión (promedios ponderados o por semana)
+    resultExecute     Float @default(0.0)  // E = Ejecuta
+    resultRetain      Float @default(0.0)  // R = Retiene
+    resultInterpret   Float @default(0.0)  // I = Interpreta
+    resultKnow        Float @default(0.0)  // C = Conoce
+    resultApply       Float @default(0.0)  // A = Amplía
+
+    // ⭐ Colores correspondientes para reportes/gráficos
+    colorExecute      String?
+    colorRetain       String?
+    colorInterpret    String?
+    colorKnow         String?
+    colorApply        String?
+
+    // Metadata
+    totalWeeksEvaluated Int       @default(0)
+    calculationDate     DateTime  @default(now())
+    sourceWeeks         String?   // JSON con semanas incluidas en el cálculo
+
+    enrollment        Enrollment @relation("CalculatedEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
+    bimester          Bimester   @relation("CalculatedBimester", fields: [bimesterId], references: [id])
+    course            Course     @relation("CalculatedCourse", fields: [courseId], references: [id])
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([enrollmentId, bimesterId, courseId])
+    @@index([enrollmentId])
+    @@index([bimesterId])
+    @@map("erica_calculated_results")
+  }
+
+  /**
+  * ============================================
+  * SECCIÓN 6: ESTRUCTURA ACADÉMICA
   * ============================================
   */
   model Grade {
@@ -905,11 +1268,9 @@
     name        String
     description String?
 
-    requiresJustification Boolean @default(false)
-    canHaveNotes          Boolean @default(true)
-    isNegative            Boolean @default(false)
-    isExcused             Boolean @default(false)
-    isTemporal            Boolean @default(false)
+    isNegative  Boolean @default(false)
+    isExcused   Boolean @default(false)
+    isTemporal  Boolean @default(false)
 
     colorCode String? @db.VarChar(7)
     order     Int     @default(0)
@@ -921,9 +1282,7 @@
 
     rolePermissions       RoleAttendancePermission[]
     configMappings        ConfigStatusMapping[]         @relation("ConfigStatusMapping")
-    // 🔑 NUEVO: Status actual en StudentClassAttendance
     currentClassAttendances StudentClassAttendance[]   @relation("CurrentStatus")
-    // 🔑 NUEVO: Status original en StudentClassAttendance (para auditoría)
     originalClassAttendances StudentClassAttendance[]  @relation("OriginalStatus")
 
     @@index([code])
@@ -962,6 +1321,7 @@
     canDelete           Boolean @default(false)
     canApprove          Boolean @default(false)
     canAddJustification Boolean @default(false)
+    justificationRequired Boolean @default(false)
 
     requiresNotes  Boolean @default(false)
     minNotesLength Int?
@@ -1066,6 +1426,8 @@
     
     recordedByUser    User?             @relation("RecordedByClassAttendance", fields: [recordedBy], references: [id])
     modifiedByUser    User?             @relation("ModifiedByClassAttendance", fields: [lastModifiedBy], references: [id])
+    
+    justification     StudentJustification? @relation("ClassAttendanceJustification")
 
     // ✅ Índices actualizados
     @@unique([enrollmentId, scheduleId, date], name: "unique_class_attendance")
@@ -1082,8 +1444,9 @@
   }
 
   model StudentJustification {
-    id           Int @id @default(autoincrement())
-    enrollmentId Int
+    id                 Int @id @default(autoincrement())
+    classAttendanceId  Int @unique
+    enrollmentId       Int
 
     startDate DateTime
     endDate   DateTime
@@ -1110,10 +1473,12 @@
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    enrollment      Enrollment @relation("JustificationEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
-    approvedByUser  User?      @relation("JustificationApprovedBy", fields: [approvedBy], references: [id])
-    submittedByUser User       @relation("JustificationSubmittedBy", fields: [submittedBy], references: [id])
+    classAttendance StudentClassAttendance @relation("ClassAttendanceJustification", fields: [classAttendanceId], references: [id], onDelete: Cascade)
+    enrollment      Enrollment            @relation("JustificationEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
+    approvedByUser  User?                 @relation("JustificationApprovedBy", fields: [approvedBy], references: [id])
+    submittedByUser User                  @relation("JustificationSubmittedBy", fields: [submittedBy], references: [id])
 
+    @@index([classAttendanceId])
     @@index([enrollmentId])
     @@index([status])
     @@index([startDate, endDate])
@@ -1284,181 +1649,74 @@
     @@map("assignment_submissions")
   }
 
-  model EricaCategory {
-    id          Int     @id @default(autoincrement())
-    code        String  @unique
-    name        String
-    description String?
-    isActive    Boolean @default(true)
-    order       Int
+  /**
+  * ============================================
+  * SECCIÓN 7: FIRMAS PARA CARTAS DE NOTAS
+  * ============================================
+  */
 
-    evaluations EricaEvaluation[]
-
-    @@map("erica_categories")
+  /**
+  * Tipos de firmas para cartas de notas
+  * Define quién firma (docente, director, coordinador, etc)
+  */
+  enum SignatureType {
+    TEACHER // Docente/Maestro de curso
+    DIRECTOR // Director/Directora de escuela
+    COORDINATOR // Coordinador académico
+    PRINCIPAL // Principalía
+    CUSTOM // Otros firmantes personalizados
   }
 
-  model EricaScale {
-    id           Int     @id @default(autoincrement())
-    code         String  @unique
-    name         String
-    description  String?
-    numericValue Float
-    colorCode    String
-    isActive     Boolean @default(true)
-    order        Int
-
-    evaluations EricaEvaluation[]
-
-    @@map("erica_scales")
-  }
-
-  model EricaTopic {
-    id             Int @id @default(autoincrement())
-    courseId       Int
-    academicWeekId Int
-    sectionId      Int
-    teacherId      Int
-
-    title       String
-    description String?
-    objectives  String?
-    materials   String?
-
-    isActive    Boolean @default(true)
-    isCompleted Boolean @default(false)
-
-    course       Course       @relation("TopicCourse", fields: [courseId], references: [id])
-    academicWeek AcademicWeek @relation("TopicWeek", fields: [academicWeekId], references: [id])
-    section      Section      @relation("TopicSection", fields: [sectionId], references: [id])
-    teacher      User         @relation("TopicTeacher", fields: [teacherId], references: [id])
-
-    evaluations EricaEvaluation[] @relation("EvaluationTopic")
-
+  /**
+  * Modelo para gestionar firmas digitales en cartas de notas
+  * 
+  * Permite:
+  * - Firma del docente (obtenida de User + rol TEACHER)
+  * - Firma del director (obtenida de User + rol DIRECTOR u otro designado)
+  * - Múltiples firmas por ciclo escolar
+  * - Flexibilidad para diferentes ciclos/grados
+  */
+  model Signature {
+    id          Int           @id @default(autoincrement())
+    type        SignatureType // Tipo de firmante (docente, director, etc)
+    
+    // Usuario que firma
+    userId      Int
+    user        User          @relation("UserSignatures", fields: [userId], references: [id], onDelete: Cascade)
+    
+    // Para director: especificar el ciclo escolar o deixar NULL para todos
+    schoolCycleId Int?
+    schoolCycle SchoolCycle? @relation("SignaturesCycle", fields: [schoolCycleId], references: [id], onDelete: SetNull)
+    
+    // URL de la firma (imagen/PDF de Cloudinary)
+    signatureUrl  String?
+    publicId      String? // ID de Cloudinary para poder eliminar después
+    
+    // Metadatos
+    signatureName String? // Nombre legible de quién firma (para cuando no coincida con User.fullName)
+    title         String? // Título del firmante (Ej: "Directora General", "Coordinadora Académica")
+    
+    // Estado
+    isActive      Boolean @default(true)
+    isDefault     Boolean @default(false) // Si es la firma por defecto para ese tipo
+    
+    // Validez
+    validFrom     DateTime? // Desde cuándo es válida la firma
+    validUntil    DateTime? // Hasta cuándo es válida la firma
+    
+    // Auditoría
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    @@unique([courseId, academicWeekId, sectionId], name: "unique_course_week_section_topic")
-    @@map("erica_topics")
+    // Índices
+    @@unique([userId, type, schoolCycleId], name: "unique_user_signature_type_cycle")
+    @@index([type])
+    @@index([userId])
+    @@index([schoolCycleId])
+    @@index([isActive, isDefault])
+    @@map("signatures")
   }
 
-  model EricaEvaluation {
-    id             Int @id @default(autoincrement())
-    enrollmentId   Int
-    courseId       Int
-    bimesterId     Int
-    academicWeekId Int
-    topicId        Int
-    teacherId      Int
 
-    categoryId Int
-    scaleId    Int
-    points     Float
-
-    notes       String?
-    evaluatedAt DateTime?
-
-    enrollment   Enrollment    @relation("EricaEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
-    course       Course        @relation("EricaCourse", fields: [courseId], references: [id])
-    bimester     Bimester      @relation("EricaBimester", fields: [bimesterId], references: [id])
-    academicWeek AcademicWeek  @relation("EricaAcademicWeek", fields: [academicWeekId], references: [id])
-    topic        EricaTopic    @relation("EvaluationTopic", fields: [topicId], references: [id])
-    teacher      User          @relation("EricaTeacher", fields: [teacherId], references: [id])
-    category     EricaCategory @relation(fields: [categoryId], references: [id])
-    scale        EricaScale    @relation(fields: [scaleId], references: [id])
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@unique([enrollmentId, topicId, categoryId], name: "unique_student_topic_category")
-    @@map("erica_evaluations")
-  }
-
-  model EricaAverage {
-    id           Int @id @default(autoincrement())
-    enrollmentId Int
-    courseId     Int
-    bimesterId   Int
-
-    omaOneAverage  Float?
-    omaTwoAverage  Float?
-    monthlyAverage Float?
-    finalAverage   Float?
-
-    executeAverage   Float?
-    retainAverage    Float?
-    interpretAverage Float?
-    knowAverage      Float?
-    applyAverage     Float?
-
-    totalEvaluations Int @default(0)
-    excellentCount   Int @default(0)
-    goodCount        Int @default(0)
-    regularCount     Int @default(0)
-    poorCount        Int @default(0)
-    nothingCount     Int @default(0)
-
-    lastCalculated DateTime @default(now())
-    isUpToDate     Boolean  @default(false)
-
-    enrollment Enrollment @relation("AverageEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
-    course     Course     @relation("AverageCourse", fields: [courseId], references: [id])
-    bimester   Bimester   @relation("AverageBimester", fields: [bimesterId], references: [id])
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@unique([enrollmentId, courseId, bimesterId], name: "unique_student_course_bimester")
-    @@map("erica_averages")
-  }
-
-  model EricaConfig {
-    id          Int     @id @default(autoincrement())
-    configType  String
-    configKey   String
-    configValue String
-    description String?
-    isActive    Boolean @default(true)
-    category    String?
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@unique([configType, configKey])
-    @@map("erica_configs")
-  }
-
-  model EricaCalculatedResult {
-    id Int @id @default(autoincrement())
-
-    enrollmentId    Int
-    bimesterId      Int
-    courseId        Int
-    calculationType String
-
-    resultE Float @default(0.0)
-    resultR Float @default(0.0)
-    resultI Float @default(0.0)
-    resultC Float @default(0.0)
-    resultA Float @default(0.0)
-
-    colorE String?
-    colorR String?
-    colorI String?
-    colorC String?
-    colorA String?
-
-    calculationDate DateTime @default(now())
-    sourceWeeks     String?
-
-    enrollment Enrollment @relation("CalculatedEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
-    bimester   Bimester   @relation("CalculatedBimester", fields: [bimesterId], references: [id])
-    course     Course     @relation("CalculatedCourse", fields: [courseId], references: [id])
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@unique([enrollmentId, bimesterId, courseId, calculationType])
-    @@map("erica_calculated_results")
-  }
 
 

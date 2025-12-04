@@ -5,20 +5,20 @@ import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
-  StudentDetailDialog,
-  StudentTransferDialog,
+  StudentDetailView,
 } from '@/components/features/students';
 import { studentsService } from '@/services/students.service';
+import { studentReportService } from '@/services/student-report.service';
 import { Student } from '@/types/students.types';
 import {
   ArrowLeft,
   Edit2,
-  ArrowRight,
+  Download,
+  FileText,
   Loader2,
   AlertCircle,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card } from '@/components/ui/card';
 
 interface StudentDetailPageProps {
   params: Promise<{
@@ -33,8 +33,8 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(true);
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   useEffect(() => {
     if (isNaN(studentId)) {
@@ -59,12 +59,44 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
     loadStudent();
   }, [studentId]);
 
+  const handleDownloadExcel = async () => {
+    try {
+      setDownloadingExcel(true);
+      await studentReportService.downloadStudentExcel(studentId, {
+        includeParents: true,
+        includeMedical: true,
+        includeAcademic: true,
+      });
+    } catch (err) {
+      console.error('Error descargando Excel:', err);
+      alert('Error al descargar el reporte en Excel');
+    } finally {
+      setDownloadingExcel(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      setDownloadingPdf(true);
+      await studentReportService.downloadStudentPdf(studentId, {
+        includeParents: true,
+        includeMedical: true,
+        includeAcademic: true,
+      });
+    } catch (err) {
+      console.error('Error descargando PDF:', err);
+      alert('Error al descargar el reporte en PDF');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400 mx-auto mb-3" />
-          <p className="text-gray-600 dark:text-gray-400">
+          <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-400 mx-auto mb-4" />
+          <p className="text-slate-600 dark:text-slate-400 font-medium">
             Cargando información del estudiante...
           </p>
         </div>
@@ -74,12 +106,12 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
 
   if (error || !student) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-8">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8">
         <div className="max-w-2xl mx-auto">
           <Button
             variant="outline"
             onClick={() => router.back()}
-            className="mb-6 border-gray-300 dark:border-gray-700"
+            className="mb-6 border-slate-300 dark:border-slate-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Volver
@@ -97,41 +129,56 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
               size="icon"
               onClick={() => router.back()}
-              className="border-gray-300 dark:border-gray-700"
+              className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+              <p className="text-sm text-slate-500 dark:text-slate-400">Detalle del Estudiante</p>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
                 {student.givenNames} {student.lastNames}
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                SIRE: {student.codeSIRE || 'N/A'}
-              </p>
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
-              onClick={() => setIsTransferDialogOpen(true)}
-              className="bg-amber-600 hover:bg-amber-700 text-white gap-2"
+              variant="outline"
+              onClick={handleDownloadExcel}
+              disabled={downloadingExcel}
+              className="border-green-300 dark:border-green-700 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30 gap-2"
             >
-              <ArrowRight className="w-4 h-4" />
-              Transferir
+              {downloadingExcel ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              Excel
             </Button>
             <Button
-              onClick={() =>
-                router.push(`/(admin)/students/${studentId}/edit`)
-              }
+              variant="outline"
+              onClick={handleDownloadPdf}
+              disabled={downloadingPdf}
+              className="border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 gap-2"
+            >
+              {downloadingPdf ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
+              PDF
+            </Button>
+            <Button
+              onClick={() => router.push(`/students/${studentId}/edit`)}
               className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
             >
               <Edit2 className="w-4 h-4" />
@@ -140,30 +187,8 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
           </div>
         </div>
 
-        {/* Detail Card */}
-        <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 p-6">
-          <StudentDetailDialog
-            student={student}
-            isOpen={isDetailDialogOpen}
-            onClose={() => {
-              setIsDetailDialogOpen(false);
-              router.back();
-            }}
-            isEditing={false}
-          />
-        </Card>
-
-        {/* Transfer Dialog */}
-        <StudentTransferDialog
-          student={student}
-          isOpen={isTransferDialogOpen}
-          onClose={() => setIsTransferDialogOpen(false)}
-          onSuccess={() => {
-            setIsTransferDialogOpen(false);
-            // Recargar datos
-            window.location.reload();
-          }}
-        />
+        {/* Student Detail View */}
+        <StudentDetailView student={student} />
       </div>
     </div>
   );

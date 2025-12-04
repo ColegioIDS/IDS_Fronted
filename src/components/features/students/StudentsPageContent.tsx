@@ -178,14 +178,12 @@ export const StudentsPageContent: React.FC = () => {
         </div>
 
         {/* Students List */}
-        <Card className="bg-white dark:bg-slate-800/50 border-slate-200/50 dark:border-slate-700/50 overflow-hidden shadow-xl">
           <StudentsList 
             onViewStudent={handleViewStudent} 
             onStatsUpdate={handleStatsUpdate}
             searchFilter={searchFilter}
             enrollmentFilter={enrollmentFilter}
           />
-        </Card>
 
         {/* Student Detail Dialog */}
         <StudentDetailDialog
