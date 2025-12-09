@@ -189,13 +189,13 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
         <div className="overflow-x-auto">
           <Table className="relative">
             <TableHeader>
-              {/* Fila 1: Nombre estudiante y encabezados de semanas + ERICA cada 2 */}
+              {/* Fila 1: Nombre estudiante y encabezados de semanas + PROMEDIO QNA cada 2 */}
               <TableRow className="bg-gray-100">
                 <TableHead rowSpan={2} className="sticky left-0 z-20 font-semibold text-gray-800 min-w-[250px] py-2 text-center align-middle bg-gray-100 border-r-2 border-gray-400">
                   Nombre del estudiante
                 </TableHead>
                 
-                {/* Encabezados de semanas y ERICA cada 2 semanas */}
+                {/* Encabezados de semanas y PROMEDIO QNA cada 2 semanas */}
                 {weekPairs.map((pair, pairIndex) => (
                   <React.Fragment key={`pair-${pair.pairIndex}`}>
                     {/* Semanas del par */}
@@ -217,12 +217,19 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                         </div>
                       </TableHead>
                     ))}
-                    {/* ERICA después del par */}
+                    {/* PROMEDIO QNA después del par (Bloque) */}
                     <TableHead 
                       colSpan={5}
                       className="text-center font-bold text-blue-700 bg-blue-50 py-2 border-r-2 border-gray-400"
                     >
-                      ERICA
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-sm">PROMEDIO QNA {pair.pairIndex + 1}</span>
+                        {pair.weeks.length > 0 && pair.weeks[0].academicWeek.startDate && pair.weeks[pair.weeks.length - 1].academicWeek.endDate && (
+                          <span className="text-xs text-blue-600">
+                            {new Date(pair.weeks[0].academicWeek.startDate).toLocaleDateString()} - {new Date(pair.weeks[pair.weeks.length - 1].academicWeek.endDate).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
                     </TableHead>
                   </React.Fragment>
                 ))}
@@ -291,10 +298,10 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                     </div>
                   </TableCell>
 
-                  {/* Dimensiones por par de semanas + ERICA */}
+                  {/* Dimensiones por par de semanas + PROMEDIO QNA */}
                   {weekPairs.map((pair) => {
-                    // Calcular totales ERICA (promedio de las 2 semanas del par)
-                    const ericaTotals: Record<string, number> = {};
+                    // Calcular totales PROMEDIO QNA (promedio de las 2 semanas del par)
+                    const promedioQnaTotals: Record<string, number> = {};
                     const dimensionCounts: Record<string, number> = {};
                     (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).forEach((dimension) => {
                       let total = 0;
@@ -307,7 +314,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                           count++;
                         }
                       });
-                      ericaTotals[dimension] = count > 0 ? total / count : 0;
+                      promedioQnaTotals[dimension] = count > 0 ? total / count : 0;
                       dimensionCounts[dimension] = count;
                     });
 
@@ -352,13 +359,13 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                           );
                         })}
 
-                        {/* Columnas ERICA (promedio del par) */}
+                        {/* Columnas PROMEDIO QNA (promedio del par) */}
                         {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => (
                           <TableCell 
-                            key={`erica-${pair.pairIndex}-${dimension}-${row.studentId}`}
+                            key={`promedioqna-${pair.pairIndex}-${dimension}-${row.studentId}`}
                             className="text-center text-xs p-1 bg-blue-50 font-semibold"
                           >
-                            {dimensionCounts[dimension] > 0 ? `${ericaTotals[dimension].toFixed(2)}` : '—'}
+                            {dimensionCounts[dimension] > 0 ? `${promedioQnaTotals[dimension].toFixed(2)}` : '—'}
                           </TableCell>
                         ))}
                       </React.Fragment>
