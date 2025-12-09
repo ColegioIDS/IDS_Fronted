@@ -6,8 +6,11 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import { PiStudentBold } from "react-icons/pi";
-import { CalendarPlus, GraduationCap, CalendarCheck, ClipboardList, CalendarCheck2, FileSignature } from 'lucide-react';
+import { CalendarPlus, GraduationCap, CalendarCheck, ClipboardList, CalendarCheck2, FileSignature, BookOpenCheck } from 'lucide-react';
 import { ProtectedNavItem } from '@/components/navigation/ProtectedNavItem';
+import { ERICA_TOPICS_PERMISSIONS } from '@/constants/erica-topics.permissions';
+import { ERICA_COLORS_PERMISSIONS } from '@/constants/erica-colors.permissions';
+import { Palette } from 'lucide-react';
 
 import {
   BoxCubeIcon,
@@ -244,6 +247,27 @@ const navItems: NavItem[] = [
     name: "Firmas",
     path: "/signatures",
     color: "text-violet-300 dark:text-violet-300",
+  },
+  {
+    icon: <BookOpenCheck className="w-5 h-5" />,
+    name: "ERICA",
+    color: "text-teal-300 dark:text-teal-300",
+    requiredAnyPermissions: [
+      ERICA_TOPICS_PERMISSIONS.READ,
+      ERICA_COLORS_PERMISSIONS.READ,
+    ],
+    subItems: [
+      {
+        name: "Temas ERICA",
+        path: "/erica-topics",
+        requiredPermission: ERICA_TOPICS_PERMISSIONS.READ
+      },
+      {
+        name: "Colores ERICA",
+        path: "/erica-colors",
+        requiredPermission: ERICA_COLORS_PERMISSIONS.READ
+      },
+    ]
   }
 
 ];

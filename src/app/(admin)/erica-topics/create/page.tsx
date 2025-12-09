@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { EricaTopicForm } from '@/components/features/erica-topics';
 import { ericaTopicsService } from '@/services/erica-topics.service';
@@ -34,11 +35,16 @@ export default function CreateEricaTopicPage() {
       };
 
       const newTopic = await ericaTopicsService.createEricaTopic(createData);
-      alert('Tema ERICA creado exitosamente');
+      toast.success('Tema ERICA creado exitosamente', {
+        description: `"${createData.title}" ha sido creado correctamente.`,
+      });
       router.push('/erica-topics');
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error al crear tema';
       setError(errorMsg);
+      toast.error('Error al crear tema', {
+        description: errorMsg,
+      });
       console.error('Error creating topic:', err);
     } finally {
       setLoading(false);

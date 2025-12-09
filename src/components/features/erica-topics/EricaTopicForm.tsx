@@ -6,10 +6,26 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Loader2 } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import {
+  Loader2,
+  GraduationCap,
+  Users,
+  BookOpen,
+  Calendar,
+  Type,
+  FileText,
+  Target,
+  Package,
+  Power,
+  CheckCircle2,
+  Save,
+  User,
+  Lock,
+} from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -26,16 +42,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { cascadeDataService } from '@/services/cascade-data.service';
-import { CascadeDataResponse, Section, CourseAssignment } from '@/types/cascade-data.types';
-import { CascadeDataError, CascadeErrorCode } from '@/utils/cascade-data-error';
+import { ericaTopicsService, EricaCascadeError } from '@/services/erica-topics.service';
+import { 
+  EricaCascadeDataResponse, 
+  EricaSection, 
+  EricaCourseAssignment,
+  EricaCascadeErrorCode 
+} from '@/types/erica-topics.types';
 import { EmptyState } from '@/components/shared/EmptyState';
 
 const ericaTopicSchema = z.object({
-  courseId: z.string().pipe(z.coerce.number().positive('Debe seleccionar un curso')),
-  academicWeekId: z.string().pipe(z.coerce.number().positive('Debe seleccionar una semana')),
-  sectionId: z.string().pipe(z.coerce.number().positive('Debe seleccionar una sección')),
-  teacherId: z.string().pipe(z.coerce.number().positive('Debe seleccionar un docente')),
+  courseId: z.string().min(1, 'Debe seleccionar un curso'),
+  academicWeekId: z.string().min(1, 'Debe seleccionar una semana'),
+  sectionId: z.string().min(1, 'Debe seleccionar una sección'),
+  teacherId: z.string().min(1, 'Debe seleccionar un docente'),
   title: z.string().min(1, 'Título es requerido').max(255, 'Máximo 255 caracteres'),
   weekTheme: z.string().min(1, 'Tema de la semana es requerido').max(255, 'Máximo 255 caracteres'),
   description: z.string().optional(),
@@ -45,13 +65,23 @@ const ericaTopicSchema = z.object({
   isCompleted: z.boolean().default(false),
 });
 
-type EricaTopicFormValues = z.infer<typeof ericaTopicSchema>;
-
 interface EricaTopicFormProps {
   onSubmit: (values: any) => Promise<void>;
   loading?: boolean;
   isEdit?: boolean;
-  defaultValues?: Partial<EricaTopicFormValues>;
+  defaultValues?: {
+    courseId?: number | string;
+    academicWeekId?: number | string;
+    sectionId?: number | string;
+    teacherId?: number | string;
+    title?: string;
+    weekTheme?: string;
+    description?: string;
+    objectives?: string;
+    materials?: string;
+    isActive?: boolean;
+    isCompleted?: boolean;
+  };
 }
 
 export function EricaTopicForm({
@@ -60,36 +90,45 @@ export function EricaTopicForm({
   isEdit = false,
   defaultValues,
 }: EricaTopicFormProps) {
-  const [cascadeData, setCascadeData] = useState<CascadeDataResponse | null>(null);
+  const [cascadeData, setCascadeData] = useState<EricaCascadeDataResponse | null>(null);
   const [loadingData, setLoadingData] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
-  const [errorCode, setErrorCode] = useState<CascadeErrorCode | null>(null);
+  const [errorCode, setErrorCode] = useState<EricaCascadeErrorCode | null>(null);
   
-  // Estados para selección en cascada
   const [selectedGrade, setSelectedGrade] = useState<number | null>(null);
   const [selectedSection, setSelectedSection] = useState<number | null>(null);
-  const [selectedCourseAssignment, setSelectedCourseAssignment] = useState<CourseAssignment | null>(null);
+  const [selectedCourseAssignment, setSelectedCourseAssignment] = useState<EricaCourseAssignment | null>(null);
+  const [initialized, setInitialized] = useState(false);
+
+  const formDefaultValues = useMemo(() => ({
+    courseId: defaultValues?.courseId?.toString() || '',
+    academicWeekId: defaultValues?.academicWeekId?.toString() || '',
+    sectionId: defaultValues?.sectionId?.toString() || '',
+    teacherId: defaultValues?.teacherId?.toString() || '',
+    title: defaultValues?.title || '',
+    weekTheme: defaultValues?.weekTheme || '',
+    description: defaultValues?.description || '',
+    objectives: defaultValues?.objectives || '',
+    materials: defaultValues?.materials || '',
+    isActive: defaultValues?.isActive ?? true,
+    isCompleted: defaultValues?.isCompleted ?? false,
+  }), [defaultValues]);
 
   const form = useForm<any>({
     resolver: zodResolver(ericaTopicSchema),
-    defaultValues: {
-      isActive: true,
-      isCompleted: false,
-      ...defaultValues,
-    },
+    defaultValues: formDefaultValues,
   });
 
-  // Cargar datos en cascada
   useEffect(() => {
     const loadCascadeData = async () => {
       try {
         setLoadingData(true);
         setDataError(null);
         setErrorCode(null);
-        const data = await cascadeDataService.getAllCascadeData();
+        const data = await ericaTopicsService.getCascadeData();
         setCascadeData(data);
       } catch (error) {
-        if (error instanceof CascadeDataError) {
+        if (error instanceof EricaCascadeError) {
           setDataError(error.message);
           setErrorCode(error.code);
         } else if (error instanceof Error) {
@@ -99,47 +138,74 @@ export function EricaTopicForm({
           setDataError('Error al cargar datos académicos');
           setErrorCode('UNKNOWN');
         }
-        console.error('[EricaTopicForm] Error loading cascade data:', error);
       } finally {
         setLoadingData(false);
       }
     };
-
     loadCascadeData();
   }, []);
 
-  // Obtener secciones del grado seleccionado
+  useEffect(() => {
+    if (!cascadeData || !isEdit || !defaultValues || initialized) return;
+
+    const sectionId = defaultValues.sectionId;
+    const courseId = defaultValues.courseId;
+
+    if (sectionId) {
+      for (const [gradeId, sectionsArray] of Object.entries(cascadeData.gradesSections)) {
+        const section = sectionsArray.find((s: EricaSection) => s.id === Number(sectionId));
+        if (section) {
+          setSelectedGrade(Number(gradeId));
+          setSelectedSection(Number(sectionId));
+          
+          if (section.courseAssignments && courseId) {
+            const assignment = section.courseAssignments.find(
+              (ca: EricaCourseAssignment) => ca.course.id === Number(courseId)
+            );
+            if (assignment) {
+              setSelectedCourseAssignment(assignment);
+            }
+          }
+          break;
+        }
+      }
+    }
+    setInitialized(true);
+  }, [cascadeData, isEdit, defaultValues, initialized]);
+
   const sections = useMemo(() => {
     if (!selectedGrade || !cascadeData) return [];
     return cascadeData.gradesSections[selectedGrade.toString()] || [];
   }, [selectedGrade, cascadeData]);
 
-  // Obtener la sección seleccionada
   const currentSection = useMemo(() => {
     if (!selectedSection) return null;
     return sections.find(s => s.id === selectedSection) || null;
   }, [selectedSection, sections]);
 
-  // Obtener cursos de la sección seleccionada
   const courseAssignments = useMemo(() => {
     if (!currentSection) return [];
     return currentSection.courseAssignments || [];
   }, [currentSection]);
 
-  // Handlers para cambios en cascada
   const handleGradeChange = (gradeId: string) => {
+    if (!gradeId || gradeId === '') return;
     const gradeIdNum = parseInt(gradeId);
+    if (isNaN(gradeIdNum)) return;
+    
     setSelectedGrade(gradeIdNum);
     setSelectedSection(null);
     setSelectedCourseAssignment(null);
-    // Reset form values
     form.setValue('sectionId', '');
     form.setValue('courseId', '');
     form.setValue('teacherId', '');
   };
 
   const handleSectionChange = (sectionId: string) => {
+    if (!sectionId || sectionId === '') return;
     const sectionIdNum = parseInt(sectionId);
+    if (isNaN(sectionIdNum)) return;
+    
     setSelectedSection(sectionIdNum);
     setSelectedCourseAssignment(null);
     form.setValue('sectionId', sectionId);
@@ -158,7 +224,14 @@ export function EricaTopicForm({
 
   const handleSubmit = async (values: any) => {
     try {
-      await onSubmit(values);
+      const submitData = {
+        ...values,
+        courseId: parseInt(values.courseId),
+        academicWeekId: parseInt(values.academicWeekId),
+        sectionId: parseInt(values.sectionId),
+        teacherId: parseInt(values.teacherId),
+      };
+      await onSubmit(submitData);
     } catch (error) {
       console.error('Error submitting form:', error);
     }
@@ -166,93 +239,198 @@ export function EricaTopicForm({
 
   if (loadingData) {
     return (
-      <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
-          <span className="ml-2 text-slate-600 dark:text-slate-400">
-            Cargando datos académicos...
-          </span>
-        </div>
+      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+        <CardContent className="flex flex-col items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400 mb-4" />
+          <p className="text-slate-600 dark:text-slate-400">Cargando datos académicos...</p>
+        </CardContent>
       </Card>
     );
   }
 
   if (dataError) {
-    // ✅ Detectar tipo de error usando errorCode directamente
-    if (errorCode === 'NO_ACTIVE_CYCLE') {
-      return (
-        <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-          <EmptyState type="no-active-cycle" />
-        </Card>
-      );
-    }
-    if (errorCode === 'NO_ACTIVE_BIMESTER') {
-      return (
-        <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-          <EmptyState type="no-active-bimester" />
-        </Card>
-      );
-    }
-    if (errorCode === 'NO_WEEKS') {
-      return (
-        <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-          <EmptyState type="no-weeks" />
-        </Card>
-      );
-    }
-    if (errorCode === 'NO_GRADES') {
-      return (
-        <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-          <EmptyState type="no-grades" />
-        </Card>
-      );
-    }
-    if (errorCode === 'NO_COURSES') {
-      return (
-        <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-          <EmptyState type="no-courses" />
-        </Card>
-      );
-    }
-
+    const errorMap: Record<string, 'no-active-cycle' | 'no-active-bimester' | 'no-weeks' | 'no-grades' | 'no-courses'> = {
+      'NO_ACTIVE_CYCLE': 'no-active-cycle',
+      'NO_ACTIVE_BIMESTER': 'no-active-bimester',
+      'NO_WEEKS': 'no-weeks',
+      'NO_GRADES': 'no-grades',
+      'NO_COURSES': 'no-courses',
+    };
+    const emptyStateType = errorCode ? errorMap[errorCode] : undefined;
+    
     return (
-      <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-        <EmptyState type="error" message={dataError} />
+      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+        <CardContent className="p-6">
+          {emptyStateType ? <EmptyState type={emptyStateType} /> : <EmptyState type="error" message={dataError} />}
+        </CardContent>
       </Card>
     );
   }
 
   if (!cascadeData) {
     return (
-      <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-        <EmptyState type="no-data" />
+      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+        <CardContent className="p-6">
+          <EmptyState type="no-data" />
+        </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          {/* Selección en cascada: Grado → Sección → Curso (con Docente) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Grado */}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        {/* Sección: Información Académica */}
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-white">
+              <GraduationCap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              Información Académica
+              {isEdit && (
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  <Lock className="w-3 h-3 mr-1" />
+                  Solo lectura
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Grado, Sección, Curso */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Grado */}
+              <FormItem>
+                <FormLabel className="text-slate-700 dark:text-slate-300">
+                  Grado
+                </FormLabel>
+                <Select 
+                  value={selectedGrade?.toString() || ''} 
+                  onValueChange={handleGradeChange}
+                  disabled={isEdit}
+                >
+                  <SelectTrigger className="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600">
+                    <SelectValue placeholder="Seleccionar grado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cascadeData.grades.map((grade) => (
+                      <SelectItem key={grade.id} value={grade.id.toString()}>
+                        {grade.name} ({grade.level})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormItem>
+
+              {/* Sección */}
+              <FormField
+                control={form.control}
+                name="sectionId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-slate-700 dark:text-slate-300">
+                      Sección
+                    </FormLabel>
+                    <Select 
+                      value={field.value?.toString() || ''} 
+                      onValueChange={handleSectionChange}
+                      disabled={isEdit || !selectedGrade}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600">
+                          <SelectValue placeholder={!selectedGrade ? "Seleccione grado" : "Seleccionar sección"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {sections.map((section) => (
+                          <SelectItem key={section.id} value={section.id.toString()}>
+                            Sección {section.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Curso */}
+              <FormItem>
+                <FormLabel className="text-slate-700 dark:text-slate-300">
+                  Curso
+                </FormLabel>
+                <Select 
+                  value={selectedCourseAssignment?.id.toString() || ''} 
+                  onValueChange={handleCourseAssignmentChange}
+                  disabled={isEdit || !selectedSection}
+                >
+                  <SelectTrigger className="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600">
+                    <SelectValue placeholder={!selectedSection ? "Seleccione sección" : "Seleccionar curso"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courseAssignments.map((ca) => (
+                      <SelectItem key={ca.id} value={ca.id.toString()}>
+                        {ca.course.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!isEdit && form.formState.errors.courseId && (
+                  <p className="text-sm text-red-500 mt-1">Debe seleccionar un curso</p>
+                )}
+              </FormItem>
+            </div>
+
+            {/* Info del docente asignado */}
+            {selectedCourseAssignment && (
+              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 overflow-hidden">
+                <div className="flex items-center gap-2 text-sm min-w-0">
+                  <User className="w-4 h-4 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                  <span className="font-medium text-blue-900 dark:text-blue-100 flex-shrink-0">Docente:</span>
+                  <span className="text-blue-800 dark:text-blue-200 truncate">
+                    {selectedCourseAssignment.teacher.givenNames} {selectedCourseAssignment.teacher.lastNames}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm min-w-0 mt-1.5">
+                  <BookOpen className="w-4 h-4 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                  <span className="font-medium text-blue-900 dark:text-blue-100 flex-shrink-0">Curso:</span>
+                  <span className="text-blue-800 dark:text-blue-200 truncate">
+                    {selectedCourseAssignment.course.name}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Hidden fields */}
+            <input type="hidden" {...form.register('courseId')} />
+            <input type="hidden" {...form.register('teacherId')} />
+
+            {/* Semana Académica */}
             <FormField
               control={form.control}
-              name="gradeId"
+              name="academicWeekId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Grado</FormLabel>
-                  <Select value={selectedGrade?.toString() || ''} onValueChange={handleGradeChange}>
+                  <FormLabel className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <Calendar className="w-4 h-4" />
+                    Semana Académica
+                    {isEdit && <Lock className="w-3 h-3 text-slate-400" />}
+                  </FormLabel>
+                  {cascadeData.activeBimester && (
+                    <FormDescription>{cascadeData.activeBimester.name}</FormDescription>
+                  )}
+                  <Select 
+                    value={field.value?.toString() || ''} 
+                    onValueChange={(val) => field.onChange(val)}
+                    disabled={isEdit}
+                  >
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar grado" />
+                      <SelectTrigger className="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600">
+                        <SelectValue placeholder="Seleccionar semana" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {cascadeData.grades.map((grade) => (
-                        <SelectItem key={grade.id} value={grade.id.toString()}>
-                          {grade.name} ({grade.level})
+                      {cascadeData.weeks.map((week) => (
+                        <SelectItem key={week.id} value={week.id.toString()}>
+                          Semana {week.number} ({new Date(week.startDate).toLocaleDateString('es-ES')} - {new Date(week.endDate).toLocaleDateString('es-ES')})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -261,292 +439,234 @@ export function EricaTopicForm({
                 </FormItem>
               )}
             />
+          </CardContent>
+        </Card>
 
-            {/* Sección */}
+        {/* Sección: Contenido del Tema */}
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-white">
+              <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              Contenido del Tema
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Título */}
             <FormField
               control={form.control}
-              name="sectionId"
+              name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Sección</FormLabel>
-                  <Select 
-                    value={field.value?.toString() || ''} 
-                    onValueChange={handleSectionChange}
-                    disabled={!selectedGrade}
-                  >
-                    <FormControl>
-                      <SelectTrigger disabled={!selectedGrade || sections.length === 0}>
-                        <SelectValue placeholder={
-                          !selectedGrade 
-                            ? "Seleccione un grado" 
-                            : sections.length === 0 
-                              ? "Sin secciones" 
-                              : "Seleccionar sección"
-                        } />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {sections.length > 0 ? (
-                        sections.map((section) => (
-                          <SelectItem key={section.id} value={section.id.toString()}>
-                            Sección {section.name} {section.teacher ? `(${section.teacher.givenNames} ${section.teacher.lastNames})` : ''}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="empty" disabled>
-                          {selectedGrade ? 'Sin secciones para este grado' : 'Seleccione un grado'}
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {selectedGrade && sections.length === 0 && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                      Sin secciones para este grado.
-                    </p>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Curso y Docente (viene de courseAssignments) */}
-            <FormItem>
-              <FormLabel>Curso y Docente</FormLabel>
-              <Select 
-                value={selectedCourseAssignment?.id.toString() || ''} 
-                onValueChange={handleCourseAssignmentChange}
-                disabled={!selectedSection}
-              >
-                <SelectTrigger disabled={!selectedSection || courseAssignments.length === 0}>
-                  <SelectValue placeholder={
-                    !selectedSection 
-                      ? "Seleccione una sección" 
-                      : courseAssignments.length === 0 
-                        ? "Sin cursos asignados" 
-                        : "Seleccionar curso"
-                  } />
-                </SelectTrigger>
-                <SelectContent>
-                  {courseAssignments.length > 0 ? (
-                    courseAssignments.map((ca) => (
-                      <SelectItem key={ca.id} value={ca.id.toString()}>
-                        {ca.course.name} - {ca.teacher.givenNames} {ca.teacher.lastNames}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="empty" disabled>
-                      {selectedSection ? 'Sin cursos asignados a esta sección' : 'Seleccione una sección'}
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-              {selectedSection && courseAssignments.length === 0 && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                  Esta sección no tiene cursos asignados.
-                </p>
-              )}
-            </FormItem>
-          </div>
-
-          {/* Información seleccionada (readonly) */}
-          {selectedCourseAssignment && (
-            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>Curso:</strong> {selectedCourseAssignment.course.name} ({selectedCourseAssignment.course.code})
-                <br />
-                <strong>Docente:</strong> {selectedCourseAssignment.teacher.givenNames} {selectedCourseAssignment.teacher.lastNames}
-                {selectedCourseAssignment.teacher.email && (
-                  <> - {selectedCourseAssignment.teacher.email}</>
-                )}
-              </p>
-            </div>
-          )}
-
-          {/* Hidden fields for courseId and teacherId */}
-          <input type="hidden" {...form.register('courseId')} />
-          <input type="hidden" {...form.register('teacherId')} />
-
-          {/* Semana Académica */}
-          <FormField
-            control={form.control}
-            name="academicWeekId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Semana Académica</FormLabel>
-                <FormDescription>
-                  {cascadeData.activeBimester?.name || 'Sin bimestre activo'}
-                </FormDescription>
-                <Select value={field.value?.toString() || ''} onValueChange={(val) => field.onChange(val)}>
+                  <FormLabel className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <Type className="w-4 h-4" />
+                    Título del Tema
+                  </FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar semana" />
-                    </SelectTrigger>
+                    <Input 
+                      placeholder="Ej: Introducción a las Fracciones" 
+                      className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                      {...field} 
+                      value={field.value || ''} 
+                    />
                   </FormControl>
-                  <SelectContent>
-                    {cascadeData.weeks.length > 0 ? (
-                      cascadeData.weeks.map((week) => (
-                        <SelectItem key={week.id} value={week.id.toString()}>
-                          Semana {week.number} ({new Date(week.startDate).toLocaleDateString('es-ES')} - {new Date(week.endDate).toLocaleDateString('es-ES')})
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="empty" disabled>
-                        Sin semanas disponibles
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Contenido Principal */}
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Título</FormLabel>
-                <FormControl>
-                  <Input placeholder="Título del Tema" {...field} />
-                </FormControl>
-                <FormMessage />
-
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="weekTheme"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tema de la Semana</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ej: Sumas y Restas" {...field} />
-                </FormControl>
-                <FormDescription>
-                  Describe el contexto temático principal de evaluación ERICA
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Contenido Opcional */}
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Descripción</FormLabel>
-                <FormControl>
-                  <textarea
-                    placeholder="Descripción detallada del tema..."
-                    className="flex min-h-[80px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:placeholder:text-slate-600"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="objectives"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Objetivos de Aprendizaje</FormLabel>
-                <FormControl>
-                  <textarea
-                    placeholder="Objetivos que deben alcanzar los estudiantes..."
-                    className="flex min-h-[80px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:placeholder:text-slate-600"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="materials"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Materiales y Recursos</FormLabel>
-                <FormControl>
-                  <textarea
-                    placeholder="Libros, capítulos, enlaces, etc..."
-                    className="flex min-h-[80px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:placeholder:text-slate-600"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Estados */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="isActive"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estado</FormLabel>
-                  <Select value={field.value ? 'true' : 'false'} onValueChange={(v: string) => field.onChange(v === 'true')}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="true">Activo</SelectItem>
-                      <SelectItem value="false">Inactivo</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {isEdit && (
+            {/* Tema de la Semana */}
+            <FormField
+              control={form.control}
+              name="weekTheme"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <BookOpen className="w-4 h-4" />
+                    Tema de la Semana
+                  </FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Ej: Operaciones con Fracciones" 
+                      className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                      {...field} 
+                      value={field.value || ''} 
+                    />
+                  </FormControl>
+                  <FormDescription>Contexto temático para la evaluación ERICA</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Descripción */}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <FileText className="w-4 h-4" />
+                    Descripción
+                    <span className="text-slate-400 text-xs font-normal">(opcional)</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Descripción detallada del tema..."
+                      className="min-h-[100px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 resize-none"
+                      {...field}
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Objetivos */}
+            <FormField
+              control={form.control}
+              name="objectives"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <Target className="w-4 h-4" />
+                    Objetivos de Aprendizaje
+                    <span className="text-slate-400 text-xs font-normal">(opcional)</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="• Objetivo 1&#10;• Objetivo 2&#10;• Objetivo 3"
+                      className="min-h-[100px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 resize-none"
+                      {...field}
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Materiales */}
+            <FormField
+              control={form.control}
+              name="materials"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <Package className="w-4 h-4" />
+                    Materiales y Recursos
+                    <span className="text-slate-400 text-xs font-normal">(opcional)</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Libros, capítulos, enlaces, materiales didácticos..."
+                      className="min-h-[100px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 resize-none"
+                      {...field}
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Sección: Estado */}
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-white">
+              <Power className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              Estado del Tema
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Estado Activo */}
               <FormField
                 control={form.control}
-                name="isCompleted"
+                name="isActive"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Completado</FormLabel>
-                    <Select value={field.value ? 'true' : 'false'} onValueChange={(v: string) => field.onChange(v === 'true')}>
+                    <FormLabel className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                      <Power className="w-4 h-4" />
+                      Estado
+                    </FormLabel>
+                    <Select 
+                      value={field.value ? 'true' : 'false'} 
+                      onValueChange={(v) => field.onChange(v === 'true')}
+                    >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="true">Sí</SelectItem>
-                        <SelectItem value="false">No</SelectItem>
+                        <SelectItem value="true">Activo</SelectItem>
+                        <SelectItem value="false">Inactivo</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            )}
-          </div>
 
-          {/* Submit */}
-          <div className="flex justify-end">
-            <Button type="submit" disabled={loading} className="gap-2">
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isEdit ? 'Actualizar Tema' : 'Crear Tema'}
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </Card>
+              {/* Completado (solo en edición) */}
+              {isEdit && (
+                <FormField
+                  control={form.control}
+                  name="isCompleted"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Completado
+                      </FormLabel>
+                      <Select 
+                        value={field.value ? 'true' : 'false'} 
+                        onValueChange={(v) => field.onChange(v === 'true')}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="true">Sí</SelectItem>
+                          <SelectItem value="false">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Botón Submit */}
+        <div className="flex justify-end">
+          <Button 
+            type="submit" 
+            disabled={loading}
+            size="lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {isEdit ? 'Guardando...' : 'Creando...'}
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                {isEdit ? 'Guardar Cambios' : 'Crear Tema'}
+              </>
+            )}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }

@@ -254,28 +254,10 @@ export interface SectionCoursePlanning {
 
 // ==================== ESTADÍSTICAS ====================
 
-export interface EricaTopicStats {
-  totalTopics: number;
-  activeTopics: number;
-  completedTopics: number;
-  pendingTopics: number;
-  topicsByStatus: {
-    status: 'active' | 'completed' | 'inactive';
-    count: number;
-  }[];
-  topicsByCourse: {
-    courseId: number;
-    courseName: string;
-    count: number;
-  }[];
-  topicsByWeek: {
-    week: number;
-    count: number;
-  }[];
-  averageEvaluationsPerTopic: number;
-  completionRate: number;
-}
+// Re-export de erica-topics.types.ts para compatibilidad
+export type { EricaTopicStats } from './erica-topics.types';
 
+// Tipos adicionales de estadísticas si se necesitan en el futuro
 export interface TeacherTopicStats {
   teacher: {
     id: number;

@@ -106,23 +106,148 @@ export interface PaginatedEricaTopics {
  * Estadísticas de temas ERICA
  */
 export interface EricaTopicStats {
-  totalTopics: number;
-  activeTopics: number;
-  completedTopics: number;
+  total: number;
+  completed: number;
+  pending: number;
+  withEvaluations: number;
   completionRate: number;
-  averageStudentsPerTopic: number;
+  evaluationRate: number;
+  // Propiedades alias para compatibilidad con el componente de UI
+  totalTopics?: number;
+  completedTopics?: number;
+  activeTopics?: number;
+  pendingTopics?: number;
+  averageStudentsPerTopic?: number;
 }
 
 /**
  * DTO para duplicar tema
  */
 export interface DuplicateEricaTopicDto {
-  newWeekId: number;
+  targetWeekId: number;
 }
 
 /**
  * DTO para marcar como completado
  */
 export interface CompleteEricaTopicDto {
-  completed: boolean;
+  isCompleted?: boolean;
 }
+
+// ============================================
+// TIPOS PARA CASCADE DATA DE ERICA TOPICS
+// ============================================
+
+/**
+ * Ciclo escolar
+ */
+export interface EricaSchoolCycle {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+}
+
+/**
+ * Bimestre
+ */
+export interface EricaBimester {
+  id: number;
+  cycleId: number;
+  number: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+}
+
+/**
+ * Semana académica
+ */
+export interface EricaAcademicWeek {
+  id: number;
+  bimesterId: number;
+  number: number;
+  startDate: string;
+  endDate: string;
+}
+
+/**
+ * Grado
+ */
+export interface EricaGrade {
+  id: number;
+  name: string;
+  level: string;
+  order: number;
+  isActive: boolean;
+}
+
+/**
+ * Curso básico
+ */
+export interface EricaCourse {
+  id: number;
+  code: string;
+  name: string;
+  area: string | null;
+  color: string | null;
+  isActive: boolean;
+}
+
+/**
+ * Docente básico
+ */
+export interface EricaTeacher {
+  id: number;
+  givenNames: string;
+  lastNames: string;
+  email: string | null;
+}
+
+/**
+ * Asignación de curso con docente
+ */
+export interface EricaCourseAssignment {
+  id: number;
+  course: EricaCourse;
+  teacher: EricaTeacher;
+}
+
+/**
+ * Sección con cursos asignados
+ */
+export interface EricaSection {
+  id: number;
+  name: string;
+  capacity: number;
+  gradeId: number;
+  teacher: EricaTeacher | null;
+  courseAssignments: EricaCourseAssignment[];
+}
+
+/**
+ * Respuesta del endpoint /api/erica-topics/cascade
+ */
+export interface EricaCascadeDataResponse {
+  cycle: EricaSchoolCycle;
+  activeBimester: EricaBimester | null;
+  weeks: EricaAcademicWeek[];
+  grades: EricaGrade[];
+  gradesSections: {
+    [gradeId: string]: EricaSection[];
+  };
+}
+
+/**
+ * Códigos de error para cascade data
+ */
+export type EricaCascadeErrorCode =
+  | 'NO_ACTIVE_CYCLE'
+  | 'NO_ACTIVE_BIMESTER'
+  | 'NO_WEEKS'
+  | 'NO_GRADES'
+  | 'NO_COURSES'
+  | 'API_ERROR'
+  | 'UNKNOWN';

@@ -3,12 +3,15 @@
 
 import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { EricaTopicForm } from '@/components/features/erica-topics';
 import { ericaTopicsService } from '@/services/erica-topics.service';
 import { EricaTopicWithRelations, UpdateEricaTopicDto } from '@/types/erica-topics.types';
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { NoPermissionCard } from '@/components/shared/permissions/NoPermissionCard';
+import { ERICA_TOPICS_PERMISSIONS } from '@/constants/erica-topics.permissions';
 
 interface EditEricaTopicPageProps {
   params: Promise<{
@@ -23,6 +26,7 @@ export default function EditEricaTopicPage({ params }: EditEricaTopicPageProps) 
   const [topic, setTopic] = useState<EricaTopicWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPermissionError, setIsPermissionError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -39,7 +43,12 @@ export default function EditEricaTopicPage({ params }: EditEricaTopicPageProps) 
         const data = await ericaTopicsService.getEricaTopicById(topicId);
         setTopic(data);
       } catch (err: any) {
-        setError('Error al cargar los datos del tema');
+        const errorMsg = err instanceof Error ? err.message : 'Error al cargar los datos del tema';
+        setError(errorMsg);
+        // Detectar si es un error de permisos
+        if (errorMsg.includes('No tiene permiso') || errorMsg.includes('Permisos insuficientes')) {
+          setIsPermissionError(true);
+        }
       } finally {
         setLoading(false);
       }
@@ -64,11 +73,16 @@ export default function EditEricaTopicPage({ params }: EditEricaTopicPageProps) 
       };
 
       await ericaTopicsService.updateEricaTopic(topicId, updateData);
-      alert('Tema ERICA actualizado exitosamente');
+      toast.success('Tema ERICA actualizado exitosamente', {
+        description: `"${updateData.title}" ha sido actualizado correctamente.`,
+      });
       router.push(`/erica-topics/${topicId}`);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error al actualizar tema';
       setError(errorMsg);
+      toast.error('Error al actualizar tema', {
+        description: errorMsg,
+      });
       console.error('Error updating topic:', err);
     } finally {
       setSubmitting(false);
@@ -89,6 +103,30 @@ export default function EditEricaTopicPage({ params }: EditEricaTopicPageProps) 
   }
 
   if (error || !topic) {
+    // Mostrar componente de permisos si es error de permisos
+    if (isPermissionError) {
+      return (
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8">
+          <div className="max-w-3xl mx-auto">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/erica-topics')}
+              className="mb-6 border-slate-300 dark:border-slate-700"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Volver a la lista
+            </Button>
+            <NoPermissionCard
+              {...ERICA_TOPICS_PERMISSIONS.READ_ONE}
+              title="Sin permisos para editar"
+              description={error || 'No tienes permisos para editar este tema ERICA.'}
+              variant="page"
+            />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8">
         <div className="max-w-3xl mx-auto">

@@ -30,7 +30,7 @@ interface EricaTopicsContextType {
   fetchTopicsByTeacher: (teacherId: number) => Promise<void>;
   fetchTopicsBySection: (sectionId: number) => Promise<void>;
   fetchTopicsByWeek: (weekId: number) => Promise<void>;
-  duplicateTopic: (id: number, newWeekId: number) => Promise<EricaTopic>;
+  duplicateTopic: (id: number, targetWeekId: number) => Promise<EricaTopic>;
   completeTopic: (id: number, completed: boolean) => Promise<EricaTopic>;
 }
 

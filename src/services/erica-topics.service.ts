@@ -10,7 +10,36 @@ import {
   EricaTopicStats,
   DuplicateEricaTopicDto,
   CompleteEricaTopicDto,
+  EricaCascadeDataResponse,
+  EricaCascadeErrorCode,
 } from '@/types/erica-topics.types';
+
+/**
+ * Error personalizado para cascade data de ERICA
+ */
+export class EricaCascadeError extends Error {
+  code: EricaCascadeErrorCode;
+  
+  constructor(message: string, code: EricaCascadeErrorCode) {
+    super(message);
+    this.name = 'EricaCascadeError';
+    this.code = code;
+  }
+}
+
+/**
+ * Helper para extraer mensaje de error, especialmente para errores de permisos
+ */
+function extractErrorMessage(responseData: any, defaultMessage: string): string {
+  if (responseData?.reason === 'INSUFFICIENT_PERMISSIONS') {
+    // Si hay detalles, usarlos (ej: "No tiene permiso para: erica-topic.mark-complete")
+    if (responseData?.details?.length > 0) {
+      return responseData.details.join(', ');
+    }
+    return responseData?.message || 'No tiene permisos para realizar esta acción';
+  }
+  return responseData?.message || defaultMessage;
+}
 
 export const ericaTopicsService = {
   /**
@@ -37,14 +66,22 @@ export const ericaTopicsService = {
       throw new Error('Tema de la semana es requerido');
     }
 
-    const response = await api.post('/api/erica-topics', data);
+    try {
+      const response = await api.post('/api/erica-topics', data);
 
-    // ✅ VALIDACIÓN
-    if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Error al crear tema ERICA');
+      // ✅ VALIDACIÓN
+      if (!response.data?.success) {
+        throw new Error(extractErrorMessage(response.data, 'Error al crear tema ERICA'));
+      }
+
+      return response.data.data;
+    } catch (error: any) {
+      // Capturar errores de axios (403, 401, etc.)
+      if (error.response?.data) {
+        throw new Error(extractErrorMessage(error.response.data, 'Error al crear tema ERICA'));
+      }
+      throw error;
     }
-
-    return response.data.data;
   },
 
   /**
@@ -65,25 +102,40 @@ export const ericaTopicsService = {
     if (query.sortBy) params.append('sortBy', query.sortBy);
     if (query.sortOrder) params.append('sortOrder', query.sortOrder);
 
-    const response = await api.get(`/api/erica-topics?${params.toString()}`);
+    try {
+      const response = await api.get(`/api/erica-topics?${params.toString()}`);
 
-    // ✅ VALIDACIÓN
-    if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Error al obtener temas ERICA');
+      // ✅ VALIDACIÓN
+      if (!response.data?.success) {
+        throw new Error(extractErrorMessage(response.data, 'Error al obtener temas ERICA'));
+      }
+
+      // ✅ VALIDACIÓN: data puede ser array vacío
+      const data = Array.isArray(response.data.data) ? response.data.data : [];
+
+      // ✅ VALIDACIÓN: meta con valores por defecto
+      // El backend puede devolver meta en diferentes estructuras, así que normalizamos
+      const backendMeta = response.data.meta || {};
+      const page = backendMeta.page || query.page || 1;
+      const limit = backendMeta.limit || query.limit || 10;
+      const total = backendMeta.total !== undefined ? backendMeta.total : data.length;
+      const totalPages = Math.ceil(total / limit);
+
+      const meta = {
+        page,
+        limit,
+        total,
+        totalPages,
+      };
+
+      return { data, meta };
+    } catch (error: any) {
+      // Capturar errores de axios (403, 401, etc.)
+      if (error.response?.data) {
+        throw new Error(extractErrorMessage(error.response.data, 'Error al obtener temas ERICA'));
+      }
+      throw error;
     }
-
-    // ✅ VALIDACIÓN: data puede ser array vacío
-    const data = Array.isArray(response.data.data) ? response.data.data : [];
-
-    // ✅ VALIDACIÓN: meta con valores por defecto
-    const meta = response.data.meta || {
-      page: query.page || 1,
-      limit: query.limit || 10,
-      total: 0,
-      totalPages: 0,
-    };
-
-    return { data, meta };
   },
 
   /**
@@ -95,14 +147,22 @@ export const ericaTopicsService = {
       throw new Error('ID de tema inválido');
     }
 
-    const response = await api.get(`/api/erica-topics/${id}`);
+    try {
+      const response = await api.get(`/api/erica-topics/${id}`);
 
-    // ✅ VALIDACIÓN
-    if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Tema ERICA no encontrado');
+      // ✅ VALIDACIÓN
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Tema ERICA no encontrado');
+      }
+
+      return response.data.data;
+    } catch (error: any) {
+      // Capturar errores de axios (403, 401, etc.)
+      if (error.response?.data) {
+        throw new Error(extractErrorMessage(error.response.data, 'Error al obtener tema ERICA'));
+      }
+      throw error;
     }
-
-    return response.data.data;
   },
 
   /**
@@ -117,14 +177,22 @@ export const ericaTopicsService = {
       throw new Error('No hay datos para actualizar');
     }
 
-    const response = await api.put(`/api/erica-topics/${id}`, data);
+    try {
+      const response = await api.patch(`/api/erica-topics/${id}`, data);
 
-    // ✅ VALIDACIÓN
-    if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Error al actualizar tema ERICA');
+      // ✅ VALIDACIÓN
+      if (!response.data?.success) {
+        throw new Error(extractErrorMessage(response.data, 'Error al actualizar tema ERICA'));
+      }
+
+      return response.data.data;
+    } catch (error: any) {
+      // Capturar errores de axios (403, 401, etc.)
+      if (error.response?.data) {
+        throw new Error(extractErrorMessage(error.response.data, 'Error al actualizar tema ERICA'));
+      }
+      throw error;
     }
-
-    return response.data.data;
   },
 
   /**
@@ -136,18 +204,26 @@ export const ericaTopicsService = {
       throw new Error('ID de tema inválido');
     }
 
-    const response = await api.delete(`/api/erica-topics/${id}`);
+    try {
+      const response = await api.delete(`/api/erica-topics/${id}`);
 
-    // ✅ VALIDACIÓN
-    if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Error al eliminar tema ERICA');
+      // ✅ VALIDACIÓN
+      if (!response.data?.success) {
+        throw new Error(extractErrorMessage(response.data, 'Error al eliminar tema ERICA'));
+      }
+
+      return response.data.data;
+    } catch (error: any) {
+      // Capturar errores de axios (403, 401, etc.)
+      if (error.response?.data) {
+        throw new Error(extractErrorMessage(error.response.data, 'Error al eliminar tema ERICA'));
+      }
+      throw error;
     }
-
-    return response.data.data;
   },
 
   /**
-   * Obtener temas por docente
+   * Obtener temas por docente (usa endpoint principal con filtro)
    */
   async getEricaTopicsByTeacher(teacherId: number, query: Omit<EricaTopicsQuery, 'teacherId'> = {}): Promise<EricaTopic[]> {
     // ✅ VALIDACIÓN
@@ -164,18 +240,27 @@ export const ericaTopicsService = {
     if (query.isActive !== undefined) params.append('isActive', query.isActive.toString());
     if (query.isCompleted !== undefined) params.append('isCompleted', query.isCompleted.toString());
 
-    const response = await api.get(`/api/erica-topics/teacher/${teacherId}?${params.toString()}`);
+    try {
+      // Usa el endpoint principal con filtro de teacherId
+      const response = await api.get(`/api/erica-topics?${params.toString()}`);
 
-    // ✅ VALIDACIÓN
-    if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Error al obtener temas del docente');
+      // ✅ VALIDACIÓN
+      if (!response.data?.success) {
+        throw new Error(extractErrorMessage(response.data, 'Error al obtener temas del docente'));
+      }
+
+      return Array.isArray(response.data.data) ? response.data.data : [];
+    } catch (error: any) {
+      // Capturar errores de axios (403, 401, etc.)
+      if (error.response?.data) {
+        throw new Error(extractErrorMessage(error.response.data, 'Error al obtener temas del docente'));
+      }
+      throw error;
     }
-
-    return Array.isArray(response.data.data) ? response.data.data : [];
   },
 
   /**
-   * Obtener temas por sección
+   * Obtener temas por sección (usa endpoint principal con filtro)
    */
   async getEricaTopicsBySection(sectionId: number, query: Omit<EricaTopicsQuery, 'sectionId'> = {}): Promise<EricaTopic[]> {
     // ✅ VALIDACIÓN
@@ -189,18 +274,27 @@ export const ericaTopicsService = {
     if (query.page) params.append('page', query.page.toString());
     if (query.limit) params.append('limit', query.limit.toString());
 
-    const response = await api.get(`/api/erica-topics/section/${sectionId}?${params.toString()}`);
+    try {
+      // Usa el endpoint principal con filtro de sectionId
+      const response = await api.get(`/api/erica-topics?${params.toString()}`);
 
-    // ✅ VALIDACIÓN
-    if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Error al obtener temas de la sección');
+      // ✅ VALIDACIÓN
+      if (!response.data?.success) {
+        throw new Error(extractErrorMessage(response.data, 'Error al obtener temas de la sección'));
+      }
+
+      return Array.isArray(response.data.data) ? response.data.data : [];
+    } catch (error: any) {
+      // Capturar errores de axios (403, 401, etc.)
+      if (error.response?.data) {
+        throw new Error(extractErrorMessage(error.response.data, 'Error al obtener temas de la sección'));
+      }
+      throw error;
     }
-
-    return Array.isArray(response.data.data) ? response.data.data : [];
   },
 
   /**
-   * Obtener temas por semana académica
+   * Obtener temas por semana académica (usa endpoint principal con filtro)
    */
   async getEricaTopicsByWeek(weekId: number, query: Omit<EricaTopicsQuery, 'academicWeekId'> = {}): Promise<EricaTopic[]> {
     // ✅ VALIDACIÓN
@@ -214,14 +308,23 @@ export const ericaTopicsService = {
     if (query.page) params.append('page', query.page.toString());
     if (query.limit) params.append('limit', query.limit.toString());
 
-    const response = await api.get(`/api/erica-topics/week/${weekId}?${params.toString()}`);
+    try {
+      // Usa el endpoint principal con filtro de academicWeekId
+      const response = await api.get(`/api/erica-topics?${params.toString()}`);
 
-    // ✅ VALIDACIÓN
-    if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Error al obtener temas de la semana');
+      // ✅ VALIDACIÓN
+      if (!response.data?.success) {
+        throw new Error(extractErrorMessage(response.data, 'Error al obtener temas de la semana'));
+      }
+
+      return Array.isArray(response.data.data) ? response.data.data : [];
+    } catch (error: any) {
+      // Capturar errores de axios (403, 401, etc.)
+      if (error.response?.data) {
+        throw new Error(extractErrorMessage(error.response.data, 'Error al obtener temas de la semana'));
+      }
+      throw error;
     }
-
-    return Array.isArray(response.data.data) ? response.data.data : [];
   },
 
   /**
@@ -232,18 +335,26 @@ export const ericaTopicsService = {
     if (!id || id <= 0) {
       throw new Error('ID de tema inválido');
     }
-    if (!data.newWeekId || data.newWeekId <= 0) {
+    if (!data.targetWeekId || data.targetWeekId <= 0) {
       throw new Error('ID de nueva semana inválido');
     }
 
-    const response = await api.post(`/api/erica-topics/${id}/duplicate`, data);
+    try {
+      const response = await api.post(`/api/erica-topics/${id}/duplicate`, data);
 
-    // ✅ VALIDACIÓN
-    if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Error al duplicar tema ERICA');
+      // ✅ VALIDACIÓN
+      if (!response.data?.success) {
+        throw new Error(extractErrorMessage(response.data, 'Error al duplicar tema ERICA'));
+      }
+
+      return response.data.data;
+    } catch (error: any) {
+      // Capturar errores de axios (403, 401, etc.)
+      if (error.response?.data) {
+        throw new Error(extractErrorMessage(error.response.data, 'Error al duplicar tema ERICA'));
+      }
+      throw error;
     }
-
-    return response.data.data;
   },
 
   /**
@@ -255,14 +366,22 @@ export const ericaTopicsService = {
       throw new Error('ID de tema inválido');
     }
 
-    const response = await api.patch(`/api/erica-topics/${id}/complete`, data);
+    try {
+      const response = await api.patch(`/api/erica-topics/${id}/complete`, data);
 
-    // ✅ VALIDACIÓN
-    if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Error al marcar tema como completado');
+      // ✅ VALIDACIÓN
+      if (!response.data?.success) {
+        throw new Error(extractErrorMessage(response.data, 'Error al marcar tema como completado'));
+      }
+
+      return response.data.data;
+    } catch (error: any) {
+      // Capturar errores de axios (403, 401, etc.)
+      if (error.response?.data) {
+        throw new Error(extractErrorMessage(error.response.data, 'Error al marcar tema como completado'));
+      }
+      throw error;
     }
-
-    return response.data.data;
   },
 
   /**
@@ -274,13 +393,83 @@ export const ericaTopicsService = {
       throw new Error('ID de docente inválido');
     }
 
-    const response = await api.get(`/api/erica-topics/teacher/${teacherId}/stats`);
+    try {
+      // Endpoint correcto: /erica-topics/stats/teacher/:teacherId
+      const response = await api.get(`/api/erica-topics/stats/teacher/${teacherId}`);
 
-    // ✅ VALIDACIÓN
+      // ✅ VALIDACIÓN
+      if (!response.data?.success) {
+        throw new Error(extractErrorMessage(response.data, 'Error al obtener estadísticas'));
+      }
+
+      return response.data.data;
+    } catch (error: any) {
+      // Capturar errores de axios (403, 401, etc.)
+      if (error.response?.data) {
+        throw new Error(extractErrorMessage(error.response.data, 'Error al obtener estadísticas'));
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener datos en cascada para ERICA Topics
+   * Incluye: ciclo activo, bimestre activo, semanas, grados y secciones con cursos/docentes
+   */
+  async getCascadeData(): Promise<EricaCascadeDataResponse> {
+    const response = await api.get('/api/erica-topics/cascade');
+
+    // ✅ VALIDACIÓN: success debe ser true
     if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Error al obtener estadísticas');
+      // Detectar códigos de error específicos del backend
+      const errorCode = response.data?.errorCode || response.data?.reason;
+      
+      if (errorCode === 'NO_ACTIVE_CYCLE') {
+        throw new EricaCascadeError(
+          response.data?.message || 'No hay un ciclo escolar activo en el sistema',
+          'NO_ACTIVE_CYCLE'
+        );
+      }
+      if (errorCode === 'NO_ACTIVE_BIMESTER') {
+        throw new EricaCascadeError(
+          response.data?.message || 'No hay un bimestre activo para el ciclo escolar actual',
+          'NO_ACTIVE_BIMESTER'
+        );
+      }
+      if (errorCode === 'NO_WEEKS') {
+        throw new EricaCascadeError(
+          response.data?.message || 'No hay semanas académicas registradas para este bimestre',
+          'NO_WEEKS'
+        );
+      }
+      if (errorCode === 'NO_GRADES') {
+        throw new EricaCascadeError(
+          response.data?.message || 'No hay grados registrados para este ciclo escolar',
+          'NO_GRADES'
+        );
+      }
+
+      throw new EricaCascadeError(
+        response.data?.message || 'Error al obtener datos en cascada',
+        'API_ERROR'
+      );
     }
 
-    return response.data.data;
+    // ✅ VALIDACIÓN: data debe existir
+    if (!response.data?.data) {
+      throw new EricaCascadeError(
+        'No hay datos disponibles en el sistema',
+        'API_ERROR'
+      );
+    }
+
+    const data = response.data.data;
+
+    // ✅ Asegurar que gradesSections siempre exista como objeto
+    if (!data.gradesSections || typeof data.gradesSections !== 'object') {
+      data.gradesSections = {};
+    }
+
+    return data;
   },
 };

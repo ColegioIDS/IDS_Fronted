@@ -18,6 +18,7 @@ interface EmptyStateProps {
     | 'no-active-bimester'
     | 'no-weeks'
     | 'no-grades'
+    | 'no-sections'
     | 'no-courses'
     | 'no-data'
     | 'error';
@@ -58,6 +59,13 @@ const emptyStates = {
     description: 'No hay grados registrados para este ciclo escolar. Contacta al administrador.',
     iconColor: 'text-purple-500 dark:text-purple-400',
     bgColor: 'bg-purple-100 dark:bg-purple-900/30',
+  },
+  'no-sections': {
+    icon: Users,
+    title: 'Sin secciones disponibles',
+    description: 'Este grado no tiene secciones asignadas. Contacta al administrador para agregar secciones.',
+    iconColor: 'text-indigo-500 dark:text-indigo-400',
+    bgColor: 'bg-indigo-100 dark:bg-indigo-900/30',
   },
   'no-courses': {
     icon: BookOpen,

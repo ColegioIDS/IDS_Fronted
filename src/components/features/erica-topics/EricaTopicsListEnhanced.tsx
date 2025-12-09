@@ -2,8 +2,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { EricaTopic } from '@/types/erica-topics.types';
-import { Card } from '@/components/ui/card';
+import { EricaTopic, EricaAcademicWeek, EricaCascadeDataResponse } from '@/types/erica-topics.types';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -14,6 +14,13 @@ import {
   CheckCircle,
   Circle,
   Loader2,
+  BookOpen,
+  Calendar,
+  Users,
+  User,
+  ChevronRight,
+  MoreHorizontal,
+  Eye,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -24,31 +31,47 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useCascadeData } from '@/hooks/useCascadeData';
-import { Course, AcademicWeek } from '@/types/cascade-data.types';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { ProtectedContent } from '@/components/shared/permissions/ProtectedContent';
+import { ERICA_TOPICS_PERMISSIONS } from '@/constants/erica-topics.permissions';
+import { cn } from '@/lib/utils';
 
 interface EricaTopicsListEnhancedProps {
   topics: EricaTopic[];
   loading?: boolean;
+  cascadeData: EricaCascadeDataResponse | null;
+  cascadeLoading?: boolean;
   onEdit?: (topic: EricaTopic) => void;
   onDelete?: (id: number) => Promise<void>;
   onDuplicate?: (id: number) => void;
-  onComplete?: (id: number, completed: boolean) => Promise<void>;
+  onComplete?: (id: number, currentlyCompleted: boolean) => void;
 }
 
 export function EricaTopicsListEnhanced({
   topics,
   loading = false,
+  cascadeData,
+  cascadeLoading = false,
   onEdit,
   onDelete,
   onDuplicate,
   onComplete,
 }: EricaTopicsListEnhancedProps) {
-  const { data: cascadeData, loading: loadingCascade, error, errorCode } = useCascadeData();
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [completingId, setCompletingId] = useState<number | null>(null);
 
   // Crear mapas para buscar nombres por ID
   const courseMap = useMemo(() => {
@@ -108,7 +131,7 @@ export function EricaTopicsListEnhanced({
   const weekMap = useMemo(() => {
     if (!cascadeData) return {};
     const map: Record<number, string> = {};
-    cascadeData.weeks.forEach((week: AcademicWeek) => {
+    cascadeData.weeks.forEach((week: EricaAcademicWeek) => {
       map[week.id] = `Semana ${week.number}`;
     });
     return map;
@@ -125,17 +148,13 @@ export function EricaTopicsListEnhanced({
     }
   };
 
-  const handleComplete = async (topic: EricaTopic) => {
+  const handleComplete = (topic: EricaTopic) => {
     if (!onComplete) return;
-    try {
-      setCompletingId(topic.id);
-      await onComplete(topic.id, !topic.isCompleted);
-    } finally {
-      setCompletingId(null);
-    }
+    // Pasa el estado actual al padre, el padre decide qué hacer
+    onComplete(topic.id, topic.isCompleted);
   };
 
-  if (loading || loadingCascade) {
+  if (loading || cascadeLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400" />
@@ -143,47 +162,12 @@ export function EricaTopicsListEnhanced({
     );
   }
 
-  // ✅ Mostrar EmptyState si hay error en cascadeData (usando errorCode)
-  if (error) {
-    if (errorCode === 'NO_ACTIVE_CYCLE') {
-      return (
-        <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-          <EmptyState type="no-active-cycle" />
-        </Card>
-      );
-    }
-    if (errorCode === 'NO_ACTIVE_BIMESTER') {
-      return (
-        <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-          <EmptyState type="no-active-bimester" />
-        </Card>
-      );
-    }
-    if (errorCode === 'NO_WEEKS') {
-      return (
-        <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-          <EmptyState type="no-weeks" />
-        </Card>
-      );
-    }
-    if (errorCode === 'NO_GRADES') {
-      return (
-        <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-          <EmptyState type="no-grades" />
-        </Card>
-      );
-    }
-    if (errorCode === 'NO_COURSES') {
-      return (
-        <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-          <EmptyState type="no-courses" />
-        </Card>
-      );
-    }
+  // Si no hay cascadeData, mostrar loading
+  if (!cascadeData) {
     return (
-      <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-        <EmptyState type="error" message={error} />
-      </Card>
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400" />
+      </div>
     );
   }
 
@@ -279,48 +263,58 @@ export function EricaTopicsListEnhanced({
               {/* Botones de acciones */}
               <Separator className="my-2 bg-slate-200 dark:bg-slate-800" />
               <div className="flex gap-2 justify-end flex-wrap">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleComplete(topic)}
-                  disabled={completingId === topic.id}
-                  className="border-slate-300 dark:border-slate-600"
-                >
-                  {completingId === topic.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : topic.isCompleted ? (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <Circle className="w-4 h-4" />
-                  )}
-                </Button>
+                {/* Botón Completar - requiere permiso mark-complete */}
+                <ProtectedContent {...ERICA_TOPICS_PERMISSIONS.MARK_COMPLETE} hideOnNoPermission>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleComplete(topic)}
+                    className="border-slate-300 dark:border-slate-600"
+                    title={topic.isCompleted ? 'Marcar como en progreso' : 'Marcar como completado'}
+                  >
+                    {topic.isCompleted ? (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <Circle className="w-4 h-4" />
+                    )}
+                  </Button>
+                </ProtectedContent>
 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onDuplicate?.(topic.id)}
-                  className="border-slate-300 dark:border-slate-600"
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
+                {/* Botón Duplicar - requiere permiso duplicate */}
+                <ProtectedContent {...ERICA_TOPICS_PERMISSIONS.DUPLICATE} hideOnNoPermission>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onDuplicate?.(topic.id)}
+                    className="border-slate-300 dark:border-slate-600"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </ProtectedContent>
 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onEdit?.(topic)}
-                  className="border-slate-300 dark:border-slate-600"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
+                {/* Botón Editar - requiere permiso update */}
+                <ProtectedContent {...ERICA_TOPICS_PERMISSIONS.UPDATE} hideOnNoPermission>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onEdit?.(topic)}
+                    className="border-slate-300 dark:border-slate-600"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                </ProtectedContent>
 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setDeleteId(topic.id)}
-                  className="border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                {/* Botón Eliminar - requiere permiso delete */}
+                <ProtectedContent {...ERICA_TOPICS_PERMISSIONS.DELETE} hideOnNoPermission>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setDeleteId(topic.id)}
+                    className="border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </ProtectedContent>
               </div>
             </div>
           </Card>

@@ -5,6 +5,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useSidebar } from "@/context/SidebarContext";
+import { StateSelectorProvider } from "@/context/StateSelectorContext";
+import { ActiveSelectorProvider } from "@/context/ActiveSelectorContext";
+import { EricaColorsProvider } from "@/context/EricaColorsContext";
 import AppHeader from "@/layout/AppHeader";
 import AppSidebar from "@/layout/AppSidebar";
 import Backdrop from "@/layout/Backdrop";
@@ -57,37 +60,45 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen xl:flex">
-      <AppSidebar />
-      <Backdrop />
+    <StateSelectorProvider>
+      <ActiveSelectorProvider>
+        <EricaColorsProvider>
+          <div className="min-h-screen xl:flex">
+            <AppSidebar />
+            <Backdrop />
 
-      <div
-        className={`flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}
-      >
-        <AppHeader />
+            <div
+              className={`flex-1 transition-all duration-300 ease-in-out ${mainContentMargin} w-full overflow-hidden`}
+            >
+              <AppHeader />
 
-        <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6">
-          {children}
-        </div>
-      </div>
+              <div className="w-full overflow-x-hidden px-3 sm:px-4 md:px-6 py-4 md:py-6">
+                <div className="w-full max-w-7xl mx-auto">
+                  {children}
+                </div>
+              </div>
+            </div>
 
-      <Toaster
-        position="top-right"
-        richColors={true}
-        expand={true}
-        closeButton={true}
-        toastOptions={{
-          style: {
-            backgroundColor: "rgb(24, 24, 27)", // fondo sólido dark
-            color: "#fff",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-          },
-          className: "shadow-xl rounded-lg",
-          duration: 4000,
-        }}
+            <Toaster
+              position="top-right"
+              richColors={true}
+              expand={true}
+              closeButton={true}
+              toastOptions={{
+                style: {
+                  backgroundColor: "rgb(24, 24, 27)", // fondo sólido dark
+                  color: "#fff",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                },
+                className: "shadow-xl rounded-lg",
+                duration: 4000,
+              }}
 
-        style={{ zIndex: 9999 }}
-      />
-    </div>
+              style={{ zIndex: 9999 }}
+            />
+          </div>
+        </EricaColorsProvider>
+      </ActiveSelectorProvider>
+    </StateSelectorProvider>
   );
 }

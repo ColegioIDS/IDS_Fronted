@@ -1,5 +1,144 @@
 // types/erica-evaluations.ts
 
+// =====================================================
+// TIPOS DE DIMENSIONES Y ESTADOS ERICA
+// =====================================================
+
+/** Estados de desempeño ERICA con puntuación automática */
+export type EricaState = 'E' | 'B' | 'P' | 'C' | 'N';
+
+/** Dimensiones ERICA */
+export type EricaDimension = 'EJECUTA' | 'RETIENE' | 'INTERPRETA' | 'CONOCE' | 'AMPLIA';
+
+/** Mapeo de estados a puntos */
+export const STATE_POINTS: Record<EricaState, number> = {
+  E: 1.0,   // Excelente
+  B: 0.75,  // Bueno
+  P: 0.5,   // Proficiente
+  C: 0.25,  // En Construcción
+  N: 0.0,   // No Logrado
+};
+
+/** Etiquetas de estados */
+export const STATE_LABELS: Record<EricaState, string> = {
+  E: 'Excelente',
+  B: 'Bueno',
+  P: 'Proficiente',
+  C: 'En Construcción',
+  N: 'No Logrado',
+};
+
+/** Etiquetas de dimensiones */
+export const DIMENSION_LABELS: Record<EricaDimension, string> = {
+  EJECUTA: 'Ejecuta - Capacidad de aplicar conocimientos en práctica',
+  RETIENE: 'Retiene - Retención de información y conceptos',
+  INTERPRETA: 'Interpreta - Interpretación y análisis crítico',
+  CONOCE: 'Conoce - Comprensión de conceptos fundamentales',
+  AMPLIA: 'Amplía - Ampliación y extensión de aprendizaje',
+};
+
+// =====================================================
+// TIPOS DE CASCADE (Jerarquía de navegación)
+// =====================================================
+
+/** Curso en la jerarquía */
+export interface CascadeCourse {
+  id: number;
+  name: string;
+  code?: string;
+  area?: string;
+  color?: string;
+  isActive?: boolean;
+}
+
+/** Asignación de curso en la jerarquía */
+export interface CascadeCourseAssignment {
+  id: number;
+  sectionId: number;
+  courseId: number;
+  teacherId: number;
+  assignmentType: string;
+  isActive: boolean;
+  course: CascadeCourse;
+  teacher?: {
+    id: number;
+    givenNames: string;
+    lastNames: string;
+    email: string;
+  };
+}
+
+/** Sección en la jerarquía */
+export interface CascadeSection {
+  id: number;
+  name: string;
+  capacity?: number;
+  gradeId?: number;
+  teacherId?: number;
+  teacher?: {
+    id: number;
+    givenNames: string;
+    lastNames: string;
+    email: string;
+  };
+  courseAssignments?: CascadeCourseAssignment[];
+}
+
+/** Grado en la jerarquía (estructura plana del backend) */
+export interface CascadeGrade {
+  id: number;
+  name: string;
+  level?: string;
+  order: number;
+  isActive?: boolean;
+}
+
+/** Semana académica en la jerarquía (estructura plana del backend) */
+export interface CascadeWeek {
+  id: number;
+  bimesterId: number;
+  number: number;
+  startDate: string;
+  endDate: string;
+  objectives?: string;
+  weekType?: string;
+}
+
+/** Bimestre en la jerarquía (estructura plana del backend) */
+export interface CascadeBimester {
+  id: number;
+  cycleId: number;
+  name: string;
+  number: number;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  weeksCount?: number;
+}
+
+/** Ciclo escolar en la jerarquía */
+export interface CascadeCycle {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+}
+
+/** Respuesta completa del endpoint cascade */
+export interface CascadeResponse {
+  cycle: CascadeCycle;
+  bimesters?: CascadeBimester[];
+  activeBimester: CascadeBimester | null;
+  weeks: CascadeWeek[];
+  grades: CascadeGrade[];
+  gradesSections: Record<number, CascadeSection[]>;
+}
+
+// =====================================================
+// TIPOS BASE DE EVALUACIÓN
+// =====================================================
+
 // Base types
 export interface EricaEvaluation {
   id: number;
@@ -9,11 +148,10 @@ export interface EricaEvaluation {
   academicWeekId: number;
   topicId: number;
   teacherId: number;
-  categoryId: number;
-  scaleId: number;
+  dimension: EricaDimension;
+  state: EricaState;
   points: number;
   notes?: string | null;
-  evaluatedAt: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,15 +188,6 @@ export interface EricaEvaluationWithRelations extends EricaEvaluation {
     title: string;
     description?: string;
   };
-  category: {
-    code: string;
-    name: string;
-  };
-  scale: {
-    code: string;
-    name: string;
-    numericValue: number;
-  };
   teacher: {
     givenNames: string;
     lastNames: string;
@@ -66,80 +195,100 @@ export interface EricaEvaluationWithRelations extends EricaEvaluation {
 }
 
 // Grid related types
+
+/** Evaluación por dimensión en el grid */
+export interface DimensionEvaluation {
+  id?: number;
+  state: EricaState;
+  points: number;
+  notes?: string | null;
+}
+
+/** Grid de evaluación semanal por estudiante */
 export interface EvaluationGridData {
-  enrollment: {
+  enrollmentId: number;
+  studentName: string;
+  EJECUTA: DimensionEvaluation | null;
+  RETIENE: DimensionEvaluation | null;
+  INTERPRETA: DimensionEvaluation | null;
+  CONOCE: DimensionEvaluation | null;
+  AMPLIA: DimensionEvaluation | null;
+}
+
+/** Respuesta del grid por enrollment/week */
+export interface EvaluationGridByWeekResponse {
+  enrollmentId: number;
+  academicWeekId: number;
+  evaluations: Record<EricaDimension, DimensionEvaluation | null>;
+  weekData: {
+    number: number;
+    startDate: string;
+    endDate: string;
+  };
+}
+
+/** Respuesta del grid por topic */
+export interface EvaluationGridResponse {
+  topic: {
     id: number;
-    student: {
-      id: number;
+    courseId: number;
+    academicWeekId: number;
+    sectionId: number;
+    teacherId: number;
+    weekTheme: string;
+    title: string;
+    description?: string;
+    objectives?: string;
+    materials?: string;
+    isActive: boolean;
+    isCompleted: boolean;
+    course: {
+      name: string;
+      code?: string;
+    };
+    section: {
+      name: string;
+      grade?: {
+        name: string;
+      };
+    };
+    academicWeek: {
+      number: number;
+      startDate: string;
+      endDate: string;
+    };
+    teacher: {
       givenNames: string;
       lastNames: string;
     };
   };
-  evaluations: Array<{
-    categoryId: number;
-    categoryCode: string;
-    categoryName: string;
-    evaluation: {
-      id: number;
-      scaleCode: string;
-      scaleName: string;
-      points: number;
-      notes?: string;
-      evaluatedAt: Date;
-      createdAt: Date;
-    } | null;
+  dimensions: Array<{
+    code: string;
+    name: EricaDimension;
+    fullName?: string;
+    description?: string;
+    hexColor?: string;
   }>;
-  summary: {
-    totalPoints: number;
-    maxPoints: number;
-    completedEvaluations: number;
-    totalCategories: number;
-    isComplete: boolean;
-    percentage: number;
-  };
-}
-
-export interface EvaluationGridResponse {
-  topic: {
-    id: number;
-    title: string;
-    course: { name: string; code: string };
-    section: { 
-      name: string; 
-      grade: { name: string }; 
-    };
-    academicWeek: { 
-      number: number; 
-      startDate: Date; 
-      endDate: Date; 
-    };
-    teacher: { 
-      givenNames: string; 
-      lastNames: string; 
-    };
-  };
-  categories: Array<{
-    id: number;
+  states: Array<{
     code: string;
     name: string;
-    order: number;
-  }>;
-  scales: Array<{
-    id: number;
-    code: string;
-    name: string;
-    numericValue: number;
-    order: number;
+    fullName?: string;
+    description?: string;
+    points?: number;
+    hexColor?: string;
   }>;
   students: EvaluationGridData[];
-  stats: {
-    totalStudents: number;
-    studentsWithEvaluations: number;
-    fullyEvaluatedStudents: number;
-    averagePoints: number;
-    completionRate: number;
-    evaluationRate: number;
-  };
+  stats: EvaluationGridStats;
+}
+
+/** Estadísticas del grid */
+export interface EvaluationGridStats {
+  totalStudents: number;
+  studentsWithEvaluations: number;
+  fullyEvaluatedStudents: number;
+  averagePoints: number;
+  completionRate: number;
+  evaluationRate: number;
 }
 
 // Request/Response types for CRUD operations
@@ -149,30 +298,38 @@ export interface CreateEricaEvaluationRequest {
   bimesterId: number;
   academicWeekId: number;
   topicId: number;
-  teacherId: number;
-  categoryId: number;
-  scaleId: number;
-  points: number;
+  dimension: EricaDimension;
+  state: EricaState;
   notes?: string;
-  evaluatedAt?: Date;
+  teacherId: number;
 }
 
 export interface UpdateEricaEvaluationRequest {
-  scaleId?: number;
-  points?: number;
+  state?: EricaState;
   notes?: string;
-  evaluatedAt?: Date;
+}
+
+/** Item de evaluación en SaveGridRequest */
+export interface SaveGridEvaluationItem {
+  enrollmentId: number;
+  dimension: EricaDimension;
+  state: EricaState;
+  notes?: string | null;
 }
 
 export interface SaveGridRequest {
   topicId: number;
   teacherId: number;
-  evaluations: Array<{
-    enrollmentId: number;
-    categoryId: number;
-    scaleCode: string;
-    notes?: string;
-  }>;
+  evaluations: SaveGridEvaluationItem[];
+}
+
+export interface SaveGridResult {
+  success: boolean;
+  created?: number;
+  updated?: number;
+  evaluations?: EricaEvaluation[];
+  evaluationsProcessed?: number;
+  message?: string;
 }
 
 export interface BulkCreateEvaluationsRequest {
@@ -189,14 +346,17 @@ export interface EvaluationFilters {
   academicWeekId?: number;
   sectionId?: number;
   teacherId?: number;
-  categoryId?: number;
+  dimension?: EricaDimension;
+  state?: EricaState;
+  startWeek?: number;
+  endWeek?: number;
   dateFrom?: Date;
   dateTo?: Date;
   minPoints?: number;
   maxPoints?: number;
   page?: number;
   limit?: number;
-  orderBy?: 'evaluatedAt' | 'points' | 'student' | 'category';
+  orderBy?: 'createdAt' | 'points' | 'student' | 'dimension';
   orderDirection?: 'asc' | 'desc';
 }
 
@@ -206,24 +366,20 @@ export interface GetGridFilters {
 }
 
 // Statistics and analytics types
-export interface TopicStats {
-  totalEvaluations: number;
+export interface DimensionStats {
+  E: number;
+  B: number;
+  P: number;
+  C: number;
+  N: number;
   averagePoints: number;
-  categoryStats: Array<{
-    category: {
-      id: number;
-      code: string;
-      name: string;
-    };
-    totalEvaluations: number;
-    averagePoints: number;
-    scaleDistribution: Record<string, number>;
-  }>;
-  scaleDistribution: Array<{
-    scaleCode: string;
-    count: number;
-    percentage: number;
-  }>;
+}
+
+export interface TopicStats {
+  topicId: number;
+  totalStudents: number;
+  dimensionStats: Record<EricaDimension, DimensionStats>;
+  overallAverage: number;
 }
 
 export interface TopicSummary {
@@ -248,14 +404,14 @@ export interface TopicSummary {
     };
     enrollmentId: number;
     evaluations: Array<{
-      category: { code: string; name: string; order: number };
-      scale: { code: string; name: string };
+      dimension: EricaDimension;
+      state: EricaState;
       points: number;
       notes?: string;
     }>;
     totalPoints: number;
     averagePoints: number;
-    completedCategories: number;
+    completedDimensions: number;
   }>;
 }
 
@@ -312,30 +468,15 @@ export interface ValidationResult {
   warnings?: string[];
 }
 
-// Utility types
-export type EricaScaleCode = 'E' | 'B' | 'P' | 'C' | 'N';
-
-export type EricaCategoryCode = 'ERICA_1' | 'ERICA_2' | 'ERICA_3' | 'ERICA_4' | 'ERICA_5';
-
-export interface SaveGridResult {
-  success: boolean;
-  evaluationsProcessed: number;
-  evaluations: Array<{
-    id: number;
-    enrollment: {
-      student: { givenNames: string; lastNames: string };
-    };
-    category: { code: string; name: string };
-    scale: { code: string; name: string };
-  }>;
-  message: string;
-}
+// Utility types (for backwards compatibility if needed)
+export type EricaScaleCode = EricaState;
+export type EricaCategoryCode = EricaDimension;
 
 // General statistics interface
 export interface EvaluationGeneralStats {
   totalEvaluations: number;
-  evaluationsByScale: Record<string, number>;
-  evaluationsByCategory: Record<string, number>;
+  evaluationsByState: Record<EricaState, number>;
+  evaluationsByDimension: Record<EricaDimension, number>;
   averagePoints: number;
   evaluationsByBimester: Record<string, number>;
   topTeachers: Array<{ 

@@ -14,6 +14,7 @@ import {
 export const useEricaTopics = () => {
   const [topics, setTopics] = useState<EricaTopic[]>([]);
   const [currentTopic, setCurrentTopic] = useState<EricaTopicWithRelations | null>(null);
+  const [stats, setStats] = useState<EricaTopicStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
@@ -32,7 +33,16 @@ export const useEricaTopics = () => {
       setError(null);
       const result = await ericaTopicsService.getEricaTopics(query);
       setTopics(result.data);
-      setPagination(result.meta);
+      
+      // Asegurar que la paginación tenga valores válidos
+      const validMeta = {
+        page: result.meta?.page || query.page || 1,
+        limit: result.meta?.limit || query.limit || 10,
+        total: result.meta?.total ?? result.data.length,
+        totalPages: result.meta?.totalPages ?? Math.ceil((result.meta?.total ?? result.data.length) / (result.meta?.limit ?? query.limit ?? 10)),
+      };
+      
+      setPagination(validMeta);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error al cargar temas';
       setError(errorMsg);
@@ -178,12 +188,12 @@ export const useEricaTopics = () => {
   /**
    * Duplicar tema
    */
-  const duplicateTopic = useCallback(async (id: number, newWeekId: number) => {
+  const duplicateTopic = useCallback(async (id: number, targetWeekId: number) => {
     try {
       setLoading(true);
       setError(null);
       const duplicated = await ericaTopicsService.duplicateEricaTopic(id, {
-        newWeekId,
+        targetWeekId,
       });
       setTopics((prev) => [duplicated, ...prev]);
       return duplicated;
@@ -203,7 +213,7 @@ export const useEricaTopics = () => {
     try {
       setLoading(true);
       setError(null);
-      const updated = await ericaTopicsService.completeEricaTopic(id, { completed });
+      const updated = await ericaTopicsService.completeEricaTopic(id, { isCompleted: completed });
       setTopics((prev) =>
         prev.map((topic) => (topic.id === id ? updated : topic))
       );
@@ -217,9 +227,29 @@ export const useEricaTopics = () => {
     }
   }, []);
 
+  /**
+   * Obtener estadísticas del docente
+   */
+  const fetchTeacherStats = useCallback(async (teacherId: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await ericaTopicsService.getEricaTopicStats(teacherId);
+      setStats(result);
+      return result;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Error al cargar estadísticas';
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     topics,
     currentTopic,
+    stats,
     loading,
     error,
     pagination,
@@ -233,5 +263,6 @@ export const useEricaTopics = () => {
     fetchTopicsByWeek,
     duplicateTopic,
     completeTopic,
+    fetchTeacherStats,
   };
 };
