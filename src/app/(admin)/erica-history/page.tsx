@@ -1,7 +1,7 @@
 // src/app/(admin)/erica-history/page.tsx
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -76,7 +76,8 @@ export default function EricaHistoryPage() {
     selected.course
   );
 
-  useEffect(() => {
+  // Función para recargar datos de historial
+  const reloadHistoryData = useCallback(async () => {
     if (!isReadyToLoadHistory) {
       setHistoryData(null);
       setBimesterData(null);
@@ -84,31 +85,30 @@ export default function EricaHistoryPage() {
       return;
     }
 
-    const loadHistory = async () => {
-      setHistoryLoading(true);
-      setHistoryError(null);
+    setHistoryLoading(true);
+    setHistoryError(null);
 
-      try {
-        // Siempre cargar evaluaciones filtradas (con o sin semana específica)
-        const result = await ericaHistoryService.getEvaluationsByFilters({
-          bimesterId: selected.bimester?.id,
-          weekId: selected.week?.id, // undefined si skipWeek es true
-          gradeId: selected.grade?.id,
-          sectionId: selected.section?.id,
-          courseId: selected.course?.id,
-        });
-        setHistoryData(result);
-        setBimesterData(null);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Error al cargar historial';
-        setHistoryError(errorMessage);
-      } finally {
-        setHistoryLoading(false);
-      }
-    };
-
-    loadHistory();
+    try {
+      const result = await ericaHistoryService.getEvaluationsByFilters({
+        bimesterId: selected.bimester?.id,
+        weekId: selected.week?.id,
+        gradeId: selected.grade?.id,
+        sectionId: selected.section?.id,
+        courseId: selected.course?.id,
+      });
+      setHistoryData(result);
+      setBimesterData(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al cargar historial';
+      setHistoryError(errorMessage);
+    } finally {
+      setHistoryLoading(false);
+    }
   }, [isReadyToLoadHistory, selected, skipWeek]);
+
+  useEffect(() => {
+    reloadHistoryData();
+  }, [reloadHistoryData]);
 
   // Función para retroceder un paso
   const goBack = () => {
@@ -212,7 +212,7 @@ export default function EricaHistoryPage() {
           </div>
         </div>
         
-        <Button variant="outline" onClick={refreshCascade}>
+        <Button variant="outline" onClick={() => { refreshCascade(); reloadHistoryData(); }}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Actualizar
         </Button>

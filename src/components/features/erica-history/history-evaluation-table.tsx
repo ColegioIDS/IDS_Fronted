@@ -13,6 +13,8 @@ import {
   STATE_LABELS,
   STATE_POINTS,
 } from '@/types/erica-evaluations';
+import { useEricaColors } from '@/hooks/useEricaColors';
+import { getPerformanceLevelColor, getPerformanceLevelLabel } from '@/constants/performance-levels';
 
 interface Week {
   academicWeek: {
@@ -103,6 +105,31 @@ const getDimensionColor = (dimension: string): string => {
 };
 
 export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTableProps) {
+  const { getStateColor: getStateHexColor, getDimensionColor: getDimensionHexColor, getState, colors, loading: colorsLoading } = useEricaColors();
+
+  // Función para obtener estilos dinámicos de estado usando hexColor
+  const getStateStyles = (state?: string): React.CSSProperties => {
+    if (!state) return { backgroundColor: 'rgba(243, 244, 246, 0.2)' };
+    const stateInfo = getState(state as any);
+    if (stateInfo?.hexColor) {
+      // Convertir hex a RGB con opacidad del 20% (0.2)
+      const hex = stateInfo.hexColor.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      return {
+        backgroundColor: `rgba(${r}, ${g}, ${b}, 0.2)`,
+      };
+    }
+    return { backgroundColor: 'rgba(243, 244, 246, 0.2)' };
+  };
+
+  // Función para obtener color de dimensión en hex
+  const getDimensionHexColorValue = (dimension: string): string => {
+    const dimensionCode = dimension.slice(0, 1).toUpperCase();
+    return getDimensionHexColor(dimensionCode as any);
+  };
+
   // Agrupar evaluaciones por estudiante y semana
   const groupedData = useMemo(() => {
     const grouped: Record<number, StudentEvaluationRow> = {};
@@ -178,6 +205,21 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
     return pairs;
   }, [weeks]);
 
+  // Agrupar semanas en grupos de 4 para PROMEDIO MES
+  const monthGroups = useMemo(() => {
+    const groups = [];
+    for (let i = 0; i < weeks.length; i += 4) {
+      const groupWeeks = [weeks[i], weeks[i + 1], weeks[i + 2], weeks[i + 3]].filter(Boolean);
+      if (groupWeeks.length > 0) {
+        groups.push({
+          weeks: groupWeeks,
+          monthIndex: Math.floor(i / 4),
+        });
+      }
+    }
+    return groups;
+  }, [weeks]);
+
   return (
     <Card>
       <CardHeader>
@@ -188,87 +230,238 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
       <CardContent>
         <div className="overflow-x-auto">
           <Table className="relative">
-            <TableHeader>
-              {/* Fila 1: Nombre estudiante y encabezados de semanas + PROMEDIO QNA cada 2 */}
+            <TableHeader className="border-b-4 border-gray-400">
+              {/* Fila 1: Nombre estudiante y encabezados de semanas + PROMEDIO QNA cada 2 + PROMEDIO MENSUAL junto a QNA2 */}
               <TableRow className="bg-gray-100">
                 <TableHead rowSpan={2} className="sticky left-0 z-20 font-semibold text-gray-800 min-w-[250px] py-2 text-center align-middle bg-gray-100 border-r-2 border-gray-400">
                   Nombre del estudiante
                 </TableHead>
                 
-                {/* Encabezados de semanas y PROMEDIO QNA cada 2 semanas */}
-                {weekPairs.map((pair, pairIndex) => (
-                  <React.Fragment key={`pair-${pair.pairIndex}`}>
-                    {/* Semanas del par */}
-                    {pair.weeks.map((week, weekIndex) => (
-                      <TableHead 
-                        key={`week-header-${week.academicWeek.id}`}
-                        colSpan={6} 
-                        className={`text-center font-semibold text-gray-800 py-2 border-r-2 border-gray-400`}
-                      >
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="text-sm">
-                            Semana {week.academicWeek.number} - {week.topic?.title || 'Sin tema'}
-                          </span>
-                          {week.academicWeek.startDate && week.academicWeek.endDate && (
-                            <span className="text-xs text-gray-600">
-                              {new Date(week.academicWeek.startDate).toLocaleDateString()} - {new Date(week.academicWeek.endDate).toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
-                      </TableHead>
-                    ))}
-                    {/* PROMEDIO QNA después del par (Bloque) */}
+                {/* Encabezados por grupos de 4 semanas (mes) */}
+                {monthGroups.map((group, groupIdx) => (
+                  <React.Fragment key={`month-group-header-${group.monthIndex}`}>
+                    {/* Pares de semanas dentro del mes y sus QNA */}
+                    {group.weeks.length >= 2 && (
+                      <>
+                        {/* Par 1: Semanas 1-2 y QNA 1 */}
+                        {group.weeks.slice(0, 2).map((week) => (
+                          <TableHead 
+                            key={`week-header-${week.academicWeek.id}`}
+                            colSpan={6} 
+                            className={`text-center font-semibold text-gray-800 py-2 border-r-2 border-gray-400`}
+                          >
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-sm">
+                                Semana {week.academicWeek.number} - {week.topic?.title || 'Sin tema'}
+                              </span>
+                              {week.academicWeek.startDate && week.academicWeek.endDate && (
+                                <span className="text-xs text-gray-600">
+                                  {new Date(week.academicWeek.startDate).toLocaleDateString()} - {new Date(week.academicWeek.endDate).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          </TableHead>
+                        ))}
+                        
+                        <TableHead 
+                          colSpan={5}
+                          className="text-center font-bold text-blue-700 bg-blue-50 py-2 border-r-2 border-gray-400"
+                        >
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="text-sm">PROMEDIO QNA {group.monthIndex * 2 + 1}</span>
+                            {group.weeks[0].academicWeek.startDate && group.weeks[1].academicWeek.endDate && (
+                              <span className="text-xs text-blue-600">
+                                {new Date(group.weeks[0].academicWeek.startDate || '').toLocaleDateString()} - {new Date(group.weeks[1].academicWeek.endDate || '').toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </TableHead>
+                      </>
+                    )}
+                    
+                    {/* Par 2: Semanas 3-4 y QNA 2 + PROMEDIO MENSUAL */}
+                    {group.weeks.length >= 4 && (
+                      <>
+                        {group.weeks.slice(2, 4).map((week) => (
+                          <TableHead 
+                            key={`week-header-${week.academicWeek.id}`}
+                            colSpan={6} 
+                            className={`text-center font-semibold text-gray-800 py-2 border-r-2 border-gray-400`}
+                          >
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-sm">
+                                Semana {week.academicWeek.number} - {week.topic?.title || 'Sin tema'}
+                              </span>
+                              {week.academicWeek.startDate && week.academicWeek.endDate && (
+                                <span className="text-xs text-gray-600">
+                                  {new Date(week.academicWeek.startDate).toLocaleDateString()} - {new Date(week.academicWeek.endDate).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          </TableHead>
+                        ))}
+                        
+                        <TableHead 
+                          colSpan={5}
+                          className="text-center font-bold text-blue-700 bg-blue-50 py-2 border-r-2 border-gray-400"
+                        >
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="text-sm">PROMEDIO QNA {group.monthIndex * 2 + 2}</span>
+                            {group.weeks[2].academicWeek.startDate && group.weeks[3].academicWeek.endDate && (
+                              <span className="text-xs text-blue-600">
+                                {new Date(group.weeks[2].academicWeek.startDate || '').toLocaleDateString()} - {new Date(group.weeks[3].academicWeek.endDate || '').toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </TableHead>
+                      </>
+                    )}
+                  </React.Fragment>
+                ))}
+                
+                {/* Semanas restantes que no encajan en grupos de 4 */}
+                {weeks.length % 4 !== 0 && (() => {
+                  const remainingStartIndex = Math.floor(weeks.length / 4) * 4;
+                  const remainingWeeks = weeks.slice(remainingStartIndex);
+                  return remainingWeeks.map((week) => (
                     <TableHead 
-                      colSpan={5}
-                      className="text-center font-bold text-blue-700 bg-blue-50 py-2 border-r-2 border-gray-400"
+                      key={`week-header-${week.academicWeek.id}`}
+                      colSpan={6} 
+                      className={`text-center font-semibold text-gray-800 py-2 border-r-2 border-gray-400`}
                     >
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-sm">PROMEDIO QNA {pair.pairIndex + 1}</span>
-                        {pair.weeks.length > 0 && pair.weeks[0].academicWeek.startDate && pair.weeks[pair.weeks.length - 1].academicWeek.endDate && (
-                          <span className="text-xs text-blue-600">
-                            {new Date(pair.weeks[0].academicWeek.startDate || '').toLocaleDateString()} - {new Date(pair.weeks[pair.weeks.length - 1].academicWeek.endDate || '').toLocaleDateString()}
+                        <span className="text-sm">
+                          Semana {week.academicWeek.number} - {week.topic?.title || 'Sin tema'}
+                        </span>
+                        {week.academicWeek.startDate && week.academicWeek.endDate && (
+                          <span className="text-xs text-gray-600">
+                            {new Date(week.academicWeek.startDate).toLocaleDateString()} - {new Date(week.academicWeek.endDate).toLocaleDateString()}
                           </span>
                         )}
                       </div>
                     </TableHead>
-                  </React.Fragment>
-                ))}
+                  ));
+                })()}
+                
+                {/* Header vacío para TOTAL en fila 1 */}
+                <TableHead 
+                  rowSpan={2}
+                  className="text-center font-bold text-green-700 bg-green-50 py-2 px-4 border-l-2 border-r-2 border-gray-400 min-w-[80px]"
+                >
+                  <span className="text-sm">TOTAL</span>
+                </TableHead>
               </TableRow>
 
-              {/* Fila 2: Solo encabezados de dimensiones */}
+              {/* Fila 2: Encabezados de dimensiones */}
               <TableRow className="bg-gray-50">
-                {weekPairs.map((pair, pairIndex) => (
-                  <React.Fragment key={`dims-pair-${pair.pairIndex}`}>
-                    {/* Dimensiones para cada semana del par */}
-                    {pair.weeks.map((week, weekIndex) => (
-                      <React.Fragment key={`dimensions-${week.academicWeek.id}`}>
-                        {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => (
+                {monthGroups.map((group) => (
+                  <React.Fragment key={`dims-month-group-${group.monthIndex}`}>
+                    {/* Dimensiones para semanas 1-2 y QNA 1 */}
+                    {group.weeks.length >= 2 && (
+                      <>
+                        {group.weeks.slice(0, 2).map((week) => (
+                          <React.Fragment key={`dimensions-${week.academicWeek.id}`}>
+                            {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => (
+                              <TableHead 
+                                key={`${week.academicWeek.id}-${dimension}`}
+                                className="font-semibold text-center min-w-[60px] py-2 text-white"
+                                style={{
+                                  backgroundColor: getDimensionHexColorValue(dimension),
+                                  color: '#ffffff',
+                                }}
+                              >
+                                <span className="text-xs font-bold">{getDimensionShortCode(dimension)}</span>
+                              </TableHead>
+                            ))}
+                            <TableHead 
+                              key={`${week.academicWeek.id}-total`}
+                              className={`font-semibold text-gray-700 text-center min-w-[60px] py-2 border-r-2 border-gray-400`}
+                            >
+                              <span className="text-xs font-semibold">Tot</span>
+                            </TableHead>
+                          </React.Fragment>
+                        ))}
+                        
+                        {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension, dimIdx) => (
                           <TableHead 
-                            key={`${week.academicWeek.id}-${dimension}`}
-                            className="font-semibold text-gray-700 text-center min-w-[60px] py-2"
+                            key={`qna1-${group.monthIndex}-${dimension}`}
+                            className={`font-semibold text-blue-700 text-center min-w-[60px] py-2 bg-blue-50 ${dimIdx === 4 ? 'border-r-2 border-gray-400' : ''}`}
                           >
                             <span className="text-xs font-bold">{getDimensionShortCode(dimension)}</span>
                           </TableHead>
                         ))}
-                        <TableHead 
-                          key={`${week.academicWeek.id}-total`}
-                          className={`font-semibold text-gray-700 text-center min-w-[60px] py-2 border-r-2 border-gray-400`}
-                        >
-                          <span className="text-xs font-semibold">Tot</span>
-                        </TableHead>
-                      </React.Fragment>
-                    ))}
-                    {/* Dimensiones ERICA */}
-                    {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => (
-                      <TableHead 
-                        key={`erica-${pair.pairIndex}-${dimension}`}
-                        className="font-semibold text-blue-700 text-center min-w-[60px] py-2 bg-blue-50"
-                      >
-                        <span className="text-xs font-bold">{getDimensionShortCode(dimension)}</span>
-                      </TableHead>
-                    ))}
+                      </>
+                    )}
+                    
+                    {/* Dimensiones para semanas 3-4, QNA 2 y PROMEDIO MENSUAL */}
+                    {group.weeks.length >= 4 && (
+                      <>
+                        {group.weeks.slice(2, 4).map((week) => (
+                          <React.Fragment key={`dimensions-${week.academicWeek.id}`}>
+                            {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => (
+                              <TableHead 
+                                key={`${week.academicWeek.id}-${dimension}`}
+                                className="font-semibold text-center min-w-[60px] py-2 text-white"
+                                style={{
+                                  backgroundColor: getDimensionHexColorValue(dimension),
+                                  color: '#ffffff',
+                                }}
+                              >
+                                <span className="text-xs font-bold">{getDimensionShortCode(dimension)}</span>
+                              </TableHead>
+                            ))}
+                            <TableHead 
+                              key={`${week.academicWeek.id}-total`}
+                              className={`font-semibold text-gray-700 text-center min-w-[60px] py-2 border-r-2 border-gray-400`}
+                            >
+                              <span className="text-xs font-semibold">Tot</span>
+                            </TableHead>
+                          </React.Fragment>
+                        ))}
+                        
+                        {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension, dimIdx) => (
+                          <TableHead 
+                            key={`qna2-${group.monthIndex}-${dimension}`}
+                            className={`font-semibold text-blue-700 text-center min-w-[60px] py-2 bg-blue-50 ${dimIdx === 4 ? 'border-r-2 border-gray-400' : ''}`}
+                          >
+                            <span className="text-xs font-bold">{getDimensionShortCode(dimension)}</span>
+                          </TableHead>
+                        ))}
+                      </>
+                    )}
                   </React.Fragment>
                 ))}
+                
+                {/* Dimensiones para semanas restantes */}
+                {weeks.length % 4 !== 0 && (() => {
+                  const remainingStartIndex = Math.floor(weeks.length / 4) * 4;
+                  const remainingWeeks = weeks.slice(remainingStartIndex);
+                  return remainingWeeks.map((week) => (
+                    <React.Fragment key={`dimensions-${week.academicWeek.id}`}>
+                      {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => (
+                        <TableHead 
+                          key={`${week.academicWeek.id}-${dimension}`}
+                          className="font-semibold text-center min-w-[60px] py-2 text-white"
+                          style={{
+                            backgroundColor: getDimensionHexColorValue(dimension),
+                            color: '#ffffff',
+                          }}
+                        >
+                          <span className="text-xs font-bold">{getDimensionShortCode(dimension)}</span>
+                        </TableHead>
+                      ))}
+                      <TableHead 
+                        key={`${week.academicWeek.id}-total`}
+                        className={`font-semibold text-gray-700 text-center min-w-[60px] py-2 border-r-2 border-gray-400`}
+                      >
+                        <span className="text-xs font-semibold">Tot</span>
+                      </TableHead>
+                    </React.Fragment>
+                  ));
+                })()}
+                
+                {/* Header vacío para TOTAL en fila 2 */}
+                <TableHead className="bg-green-50 border-l-2 border-r-2 border-gray-400"></TableHead>
               </TableRow>
             </TableHeader>
 
@@ -298,79 +491,294 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                     </div>
                   </TableCell>
 
-                  {/* Dimensiones por par de semanas + PROMEDIO QNA */}
-                  {weekPairs.map((pair) => {
-                    // Calcular totales PROMEDIO QNA (promedio de las 2 semanas del par)
-                    const promedioQnaTotals: Record<string, number> = {};
-                    const dimensionCounts: Record<string, number> = {};
-                    (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).forEach((dimension) => {
-                      let total = 0;
-                      let count = 0;
-                      pair.weeks.forEach((week) => {
-                        const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
-                        const eval_ = weekEvals[dimension];
-                        if (eval_) {
-                          total += eval_.points;
-                          count++;
-                        }
-                      });
-                      promedioQnaTotals[dimension] = count > 0 ? total / count : 0;
-                      dimensionCounts[dimension] = count;
-                    });
-
-                    return (
-                      <React.Fragment key={`pair-row-${pair.pairIndex}-${row.studentId}`}>
-                        {/* Datos de las semanas del par */}
-                        {pair.weeks.map((week, weekIndex) => {
-                          const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
-                          return (
-                            <React.Fragment key={`row-week-${week.academicWeek.id}-${row.studentId}`}>
-                              {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => {
-                                const evaluation = weekEvals[dimension];
-                                return (
-                                  <TableCell key={`${week.academicWeek.id}-${dimension}-${row.studentId}`} className="text-center text-xs p-1">
-                                    {evaluation ? (
-                                      <div className={`p-1 rounded ${getStateBgColor(evaluation.state)}`}>
-                                        <Badge className={`text-xs font-bold ${getStateColor(evaluation.state)}`}>
-                                          {evaluation.state}
-                                        </Badge>
-                                        <div className="text-xs text-gray-600 mt-0.5">
-                                          {evaluation.points.toFixed(2)}
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <div className="text-gray-400 text-sm">—</div>
-                                    )}
+                  {/* Datos organizados por grupos de 4 semanas (mes) */}
+                  {monthGroups.map((group) => (
+                    <React.Fragment key={`month-group-row-${group.monthIndex}-${row.studentId}`}>
+                      {/* Par 1: Semanas 1-2 + QNA 1 */}
+                      {group.weeks.length >= 2 && (() => {
+                        const pair1Weeks = group.weeks.slice(0, 2);
+                        const qna1Totals: Record<string, number> = {};
+                        const qna1Counts: Record<string, number> = {};
+                        
+                        (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).forEach((dimension) => {
+                          let total = 0;
+                          let count = 0;
+                          pair1Weeks.forEach((week) => {
+                            const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
+                            const eval_ = weekEvals[dimension];
+                            if (eval_) {
+                              total += eval_.points;
+                              count++;
+                            }
+                          });
+                          qna1Totals[dimension] = count > 0 ? total / count : 0;
+                          qna1Counts[dimension] = count;
+                        });
+                        
+                        return (
+                          <React.Fragment key={`qna1-row-${group.monthIndex}-${row.studentId}`}>
+                            {/* Datos de las semanas 1-2 */}
+                            {pair1Weeks.map((week) => {
+                              const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
+                              return (
+                                <React.Fragment key={`row-week-${week.academicWeek.id}-${row.studentId}`}>
+                                  {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => {
+                                    const evaluation = weekEvals[dimension];
+                                    return (
+                                      <TableCell 
+                                        key={`${week.academicWeek.id}-${dimension}-${row.studentId}`} 
+                                        className="text-center text-xs p-1"
+                                        style={evaluation ? getStateStyles(evaluation.state) : {}}
+                                      >
+                                        {evaluation ? (
+                                          <div>
+                                            <Badge
+                                              style={{
+                                                backgroundColor: getState(evaluation.state as any)?.hexColor || '#CCCCCC',
+                                                color: '#ffffff',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 'bold',
+                                                padding: '0.25rem 0.5rem',
+                                              }}
+                                            >
+                                              {evaluation.state}
+                                            </Badge>
+                                            <div className="text-xs text-gray-700 mt-0.5 font-semibold">
+                                              {evaluation.points.toFixed(2)}
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="text-gray-400 text-sm">—</div>
+                                        )}
+                                      </TableCell>
+                                    );
+                                  })}
+                                  
+                                  {/* Total para esta semana */}
+                                  <TableCell key={`${week.academicWeek.id}-total-${row.studentId}`} className={`text-center font-semibold text-xs p-1 border-r-2 border-gray-400`}>
+                                    {(() => {
+                                      const total = (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).reduce((sum, dimension) => {
+                                        const dimEval = weekEvals[dimension];
+                                        return sum + (dimEval?.points || 0);
+                                      }, 0);
+                                      return total > 0 ? `${total.toFixed(2)}` : '—';
+                                    })()}
                                   </TableCell>
-                                );
-                              })}
-                              
-                              {/* Total para esta semana */}
-                              <TableCell key={`${week.academicWeek.id}-total-${row.studentId}`} className={`text-center font-semibold text-xs p-1 border-r-2 border-gray-400`}>
-                                {(() => {
-                                  const total = (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).reduce((sum, dimension) => {
-                                    const dimEval = weekEvals[dimension];
-                                    return sum + (dimEval?.points || 0);
-                                  }, 0);
-                                  return total > 0 ? `${total.toFixed(2)}` : '—';
-                                })()}
-                              </TableCell>
-                            </React.Fragment>
-                          );
-                        })}
+                                </React.Fragment>
+                              );
+                            })}
 
-                        {/* Columnas PROMEDIO QNA (promedio del par) */}
-                        {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => (
-                          <TableCell 
-                            key={`promedioqna-${pair.pairIndex}-${dimension}-${row.studentId}`}
-                            className="text-center text-xs p-1 bg-blue-50 font-semibold"
-                          >
-                            {dimensionCounts[dimension] > 0 ? `${promedioQnaTotals[dimension].toFixed(2)}` : '—'}
+                            {/* Columnas PROMEDIO QNA 1 */}
+                            {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension, dimIdx) => {
+                              const average = qna1Totals[dimension] || 0;
+                              const performanceColor = getPerformanceLevelColor(average);
+                              const performanceLabel = getPerformanceLevelLabel(average);
+                              
+                              return (
+                                <TableCell 
+                                  key={`qna1-${group.monthIndex}-${dimension}-${row.studentId}`}
+                                  className={`text-center text-xs p-1 font-semibold ${dimIdx === 4 ? 'border-r-2 border-gray-400' : ''}`}
+                                  style={{
+                                    backgroundColor: `rgba(${parseInt(performanceColor.slice(1, 3), 16)}, ${parseInt(performanceColor.slice(3, 5), 16)}, ${parseInt(performanceColor.slice(5, 7), 16)}, 0.2)`,
+                                    color: performanceColor,
+                                  }}
+                                  title={performanceLabel}
+                                >
+                                  {qna1Counts[dimension] > 0 ? `${qna1Totals[dimension].toFixed(2)}` : '—'}
+                                </TableCell>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      })()}
+
+                      {/* Par 2: Semanas 3-4 + QNA 2 */}
+                      {group.weeks.length >= 4 && (() => {
+                        const pair1Weeks = group.weeks.slice(0, 2);
+                        const pair2Weeks = group.weeks.slice(2, 4);
+                        const qna1Totals: Record<string, number> = {};
+                        const qna1Counts: Record<string, number> = {};
+                        const qna2Totals: Record<string, number> = {};
+                        const qna2Counts: Record<string, number> = {};
+                        
+                        (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).forEach((dimension) => {
+                          let total1 = 0, count1 = 0;
+                          let total2 = 0, count2 = 0;
+                          
+                          pair1Weeks.forEach((week) => {
+                            const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
+                            const eval_ = weekEvals[dimension];
+                            if (eval_) {
+                              total1 += eval_.points;
+                              count1++;
+                            }
+                          });
+                          
+                          pair2Weeks.forEach((week) => {
+                            const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
+                            const eval_ = weekEvals[dimension];
+                            if (eval_) {
+                              total2 += eval_.points;
+                              count2++;
+                            }
+                          });
+                          
+                          qna1Totals[dimension] = count1 > 0 ? total1 / count1 : 0;
+                          qna1Counts[dimension] = count1;
+                          qna2Totals[dimension] = count2 > 0 ? total2 / count2 : 0;
+                          qna2Counts[dimension] = count2;
+                        });
+                        
+                        return (
+                          <React.Fragment key={`qna2-mes-row-${group.monthIndex}-${row.studentId}`}>
+                            {/* Datos de las semanas 3-4 */}
+                            {pair2Weeks.map((week) => {
+                              const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
+                              return (
+                                <React.Fragment key={`row-week-${week.academicWeek.id}-${row.studentId}`}>
+                                  {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => {
+                                    const evaluation = weekEvals[dimension];
+                                    return (
+                                      <TableCell 
+                                        key={`${week.academicWeek.id}-${dimension}-${row.studentId}`} 
+                                        className="text-center text-xs p-1"
+                                        style={evaluation ? getStateStyles(evaluation.state) : {}}
+                                      >
+                                        {evaluation ? (
+                                          <div>
+                                            <Badge
+                                              style={{
+                                                backgroundColor: getState(evaluation.state as any)?.hexColor || '#CCCCCC',
+                                                color: '#ffffff',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 'bold',
+                                                padding: '0.25rem 0.5rem',
+                                              }}
+                                            >
+                                              {evaluation.state}
+                                            </Badge>
+                                            <div className="text-xs text-gray-700 mt-0.5 font-semibold">
+                                              {evaluation.points.toFixed(2)}
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="text-gray-400 text-sm">—</div>
+                                        )}
+                                      </TableCell>
+                                    );
+                                  })}
+                                  
+                                  {/* Total para esta semana */}
+                                  <TableCell key={`${week.academicWeek.id}-total-${row.studentId}`} className={`text-center font-semibold text-xs p-1 border-r-2 border-gray-400`}>
+                                    {(() => {
+                                      const total = (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).reduce((sum, dimension) => {
+                                        const dimEval = weekEvals[dimension];
+                                        return sum + (dimEval?.points || 0);
+                                      }, 0);
+                                      return total > 0 ? `${total.toFixed(2)}` : '—';
+                                    })()}
+                                  </TableCell>
+                                </React.Fragment>
+                              );
+                            })}
+
+                            {/* Columnas PROMEDIO QNA 2 */}
+                            {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension, dimIdx) => {
+                              const average = qna2Totals[dimension] || 0;
+                              const performanceColor = getPerformanceLevelColor(average);
+                              const performanceLabel = getPerformanceLevelLabel(average);
+                              
+                              return (
+                                <TableCell 
+                                  key={`qna2-${group.monthIndex}-${dimension}-${row.studentId}`}
+                                  className={`text-center text-xs p-1 font-semibold ${dimIdx === 4 ? 'border-r-2 border-gray-400' : ''}`}
+                                  style={{
+                                    backgroundColor: `rgba(${parseInt(performanceColor.slice(1, 3), 16)}, ${parseInt(performanceColor.slice(3, 5), 16)}, ${parseInt(performanceColor.slice(5, 7), 16)}, 0.2)`,
+                                    color: performanceColor,
+                                  }}
+                                  title={performanceLabel}
+                                >
+                                  {qna2Counts[dimension] > 0 ? `${qna2Totals[dimension].toFixed(2)}` : '—'}
+                                </TableCell>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      })()}
+                    </React.Fragment>
+                  ))}
+                  
+                  {/* Semanas restantes */}
+                  {weeks.length % 4 !== 0 && (() => {
+                    const remainingStartIndex = Math.floor(weeks.length / 4) * 4;
+                    const remainingWeeks = weeks.slice(remainingStartIndex);
+                    return remainingWeeks.map((week) => {
+                      const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
+                      return (
+                        <React.Fragment key={`row-week-${week.academicWeek.id}-${row.studentId}`}>
+                          {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => {
+                            const evaluation = weekEvals[dimension];
+                            return (
+                              <TableCell 
+                                key={`${week.academicWeek.id}-${dimension}-${row.studentId}`} 
+                                className="text-center text-xs p-1"
+                                style={evaluation ? getStateStyles(evaluation.state) : {}}
+                              >
+                                {evaluation ? (
+                                  <div>
+                                    <Badge
+                                      style={{
+                                        backgroundColor: getState(evaluation.state as any)?.hexColor || '#CCCCCC',
+                                        color: '#ffffff',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 'bold',
+                                        padding: '0.25rem 0.5rem',
+                                      }}
+                                    >
+                                      {evaluation.state}
+                                    </Badge>
+                                    <div className="text-xs text-gray-700 mt-0.5 font-semibold">
+                                      {evaluation.points.toFixed(2)}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-gray-400 text-sm">—</div>
+                                )}
+                              </TableCell>
+                            );
+                          })}
+                          
+                          {/* Total para esta semana */}
+                          <TableCell key={`${week.academicWeek.id}-total-${row.studentId}`} className={`text-center font-semibold text-xs p-1 border-r-2 border-gray-400`}>
+                            {(() => {
+                              const total = (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).reduce((sum, dimension) => {
+                                const dimEval = weekEvals[dimension];
+                                return sum + (dimEval?.points || 0);
+                              }, 0);
+                              return total > 0 ? `${total.toFixed(2)}` : '—';
+                            })()}
                           </TableCell>
-                        ))}
-                      </React.Fragment>
-                    );
-                  })}
+                        </React.Fragment>
+                      );
+                    });
+                  })()}
+                  
+                  {/* TOTAL (suma de todos los puntos) */}
+                  <TableCell className="text-center font-bold text-xs bg-green-50 border-l-2 border-r-2 border-gray-400 py-2">
+                    {(() => {
+                      let totalSum = 0;
+                      weeks.forEach((week) => {
+                        (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).forEach((dimension) => {
+                          const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
+                          const eval_ = weekEvals[dimension];
+                          if (eval_) {
+                            totalSum += eval_.points;
+                          }
+                        });
+                      });
+                      return totalSum > 0 ? `${totalSum.toFixed(2)}` : '—';
+                    })()}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

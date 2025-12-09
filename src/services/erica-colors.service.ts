@@ -30,6 +30,31 @@ function extractErrorMessage(responseData: any, defaultMessage: string): string 
  */
 export const ericaColorsService = {
   /**
+   * Obtener colores de dimensiones desde nuevo endpoint de configuración
+   * GET /api/erica-evaluations/config/dimension-colors
+   */
+  async getEricaDimensionColorsFromConfig(): Promise<EricaDimensionColor[]> {
+    try {
+      const response = await fetch('/api/erica-evaluations/config/dimension-colors');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+      
+      const responseData = await response.json();
+      
+      // Mapear para asegurar que dimension existe
+      return (responseData.data || []).map((d: any) => ({
+        ...d,
+        dimension: d.dimension || d.name,
+      }));
+    } catch (error: any) {
+      console.error('Error fetching dimension colors from config:', error);
+      return DEFAULT_COLORS.dimensions;
+    }
+  },
+
+  /**
    * Obtener todos los colores de dimensiones
    */
   async getEricaDimensionColors(): Promise<EricaDimensionColor[]> {
@@ -55,6 +80,31 @@ export const ericaColorsService = {
       }
       console.error('Error fetching dimension colors:', error);
       return DEFAULT_COLORS.dimensions;
+    }
+  },
+
+  /**
+   * Obtener colores de estados desde nuevo endpoint de configuración
+   * GET /api/erica-evaluations/config/state-colors
+   */
+  async getEricaStateColorsFromConfig(): Promise<EricaStateColor[]> {
+    try {
+      const response = await fetch('/api/erica-evaluations/config/state-colors');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+      
+      const responseData = await response.json();
+      
+      // Mapear para asegurar que state existe
+      return (responseData.data || []).map((s: any) => ({
+        ...s,
+        state: s.state || s.name,
+      }));
+    } catch (error: any) {
+      console.error('Error fetching state colors from config:', error);
+      return DEFAULT_COLORS.states;
     }
   },
 
