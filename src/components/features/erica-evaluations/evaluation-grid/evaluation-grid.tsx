@@ -25,7 +25,7 @@ import {
 import { useEricaEvaluationContext } from '@/context/EricaEvaluationContext';
 
 // Types
-import { User } from '@/types/user';
+import { User } from '@/types/users.types';
 import { Section } from '@/types/student';
 import { Course } from '@/types/courses';
 import { EricaTopic } from '@/types/erica-topics';
@@ -109,11 +109,11 @@ export default function EvaluationGrid({
   // ========== COMPUTED VALUES ==========
   
   const categories = useMemo(() => {
-    return evaluationGrid?.categories || [];
+    return evaluationGrid?.dimensions || [];
   }, [evaluationGrid]);
 
   const scales = useMemo(() => {
-    return evaluationGrid?.scales || [];
+    return evaluationGrid?.states || [];
   }, [evaluationGrid]);
 
   const students = useMemo(() => {
@@ -178,7 +178,7 @@ export default function EvaluationGrid({
     }>
   ) => {
     // Filtrar solo evaluaciones para celdas vacías (respetando campos llenos)
-    const filteredEvaluations = evaluations.filter(evaluation => {
+    const filteredEvaluations = evaluations.filter((evaluation: any) => {
       const key = `${evaluation.enrollmentId}-${evaluation.categoryId}`;
       
       // Verificar si ya hay cambios pendientes
@@ -187,13 +187,18 @@ export default function EvaluationGrid({
       }
       
       // Verificar si ya existe evaluación en el grid
-      const student = students.find(s => s.enrollment.id === evaluation.enrollmentId);
-      const existingEvaluation = student?.evaluations.find(
-        e => e.categoryId === evaluation.categoryId
-      );
+      const student = students.find(s => s.enrollmentId === evaluation.enrollmentId);
       
-      // Solo aplicar si no existe evaluación previa
-      return !existingEvaluation?.evaluation;
+      // Solo aplicar si no existe evaluación previa para esta dimensión
+      if (!student) return true;
+      
+      // Buscar si ya existe evaluación en esa dimensión
+      const dimensionKey = Object.keys(student).find(k => {
+        const val = student[k as keyof typeof student];
+        return val && typeof val === 'object' && 'id' in val && val.id === evaluation.categoryId;
+      });
+      
+      return !dimensionKey;
     });
 
     if (filteredEvaluations.length === 0) {
@@ -203,7 +208,7 @@ export default function EvaluationGrid({
 
     // Agregar evaluaciones filtradas a pendingChanges
     const newPendingChanges: PendingChanges = {};
-    filteredEvaluations.forEach(evaluation => {
+    filteredEvaluations.forEach((evaluation: any) => {
       const key = `${evaluation.enrollmentId}-${evaluation.categoryId}`;
       newPendingChanges[key] = {
         enrollmentId: evaluation.enrollmentId,
@@ -225,7 +230,13 @@ export default function EvaluationGrid({
     if (Object.keys(pendingChanges).length === 0) return;
 
     try {
-      const evaluationsToSave = Object.values(pendingChanges);
+      // Map the evaluations to the required SaveGridEvaluationItem format
+      const evaluationsToSave = Object.values(pendingChanges).map(item => ({
+        enrollmentId: item.enrollmentId,
+        dimension: 'EJECUTA' as const,
+        state: item.scaleCode as any,
+        notes: item.notes
+      }));
       
       const result = await saveGrid({
         topicId: selectedTopic.id,
@@ -268,7 +279,7 @@ export default function EvaluationGrid({
   }>
 ) => {
   // Filtrar solo evaluaciones para celdas vacías
-  const filteredEvaluations = evaluations.filter(evaluation => {
+  const filteredEvaluations = evaluations.filter((evaluation: any) => {
     const key = `${evaluation.enrollmentId}-${evaluation.categoryId}`;
     
     // Verificar si ya hay cambios pendientes
@@ -277,13 +288,18 @@ export default function EvaluationGrid({
     }
     
     // Verificar si ya existe evaluación en el grid
-    const student = students.find(s => s.enrollment.id === evaluation.enrollmentId);
-    const existingEvaluation = student?.evaluations.find(
-      e => e.categoryId === evaluation.categoryId
-    );
+    const student = students.find(s => s.enrollmentId === evaluation.enrollmentId);
     
-    // Solo aplicar si no existe evaluación previa
-    return !existingEvaluation?.evaluation;
+    // Solo aplicar si no existe evaluación previa para esta dimensión
+    if (!student) return true;
+    
+    // Buscar si ya existe evaluación en esa dimensión
+    const dimensionKey = Object.keys(student).find(k => {
+      const val = student[k as keyof typeof student];
+      return val && typeof val === 'object' && 'id' in val && val.id === evaluation.categoryId;
+    });
+    
+    return !dimensionKey;
   });
 
   if (filteredEvaluations.length === 0) {
@@ -292,7 +308,7 @@ export default function EvaluationGrid({
 
   // Agregar evaluaciones filtradas a pendingChanges
   const newPendingChanges: PendingChanges = {};
-  filteredEvaluations.forEach(evaluation => {
+  filteredEvaluations.forEach((evaluation: any) => {
     const key = `${evaluation.enrollmentId}-${evaluation.categoryId}`;
     newPendingChanges[key] = {
       enrollmentId: evaluation.enrollmentId,
@@ -484,22 +500,22 @@ export default function EvaluationGrid({
       {stats && (
         <GridStats 
           stats={stats}
-          categories={categories}
+          categories={categories as any}
           totalStudents={students.length}
         />
       )}
 
       {/* ========== HERRAMIENTAS DE EVALUACIÓN EFICIENTE ========== */}
       <EvaluationPatterns
-        students={students}
-        categories={categories}
-        scales={scales}
+        students={students as any}
+        categories={categories as any}
+        scales={scales as any}
         onApplyPattern={handleApplyPattern}
       />
 
       <EvaluationCopyTool
-        students={students}
-        categories={categories}
+        students={students as any}
+        categories={categories as any}
         pendingChanges={pendingChanges}
         onCopyEvaluations={handleCopyEvaluations}
       />
@@ -514,9 +530,9 @@ export default function EvaluationGrid({
         </CardHeader>
         <CardContent className="p-0">
           <CompactTableView
-            students={students}
-            categories={categories}
-            scales={scales}
+            students={students as any}
+            categories={categories as any}
+            scales={scales as any}
             onEvaluationChange={handleEvaluationChange}
             pendingChanges={pendingChanges}
           />

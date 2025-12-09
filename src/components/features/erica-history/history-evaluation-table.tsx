@@ -226,7 +226,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                         <span className="text-sm">PROMEDIO QNA {pair.pairIndex + 1}</span>
                         {pair.weeks.length > 0 && pair.weeks[0].academicWeek.startDate && pair.weeks[pair.weeks.length - 1].academicWeek.endDate && (
                           <span className="text-xs text-blue-600">
-                            {new Date(pair.weeks[0].academicWeek.startDate).toLocaleDateString()} - {new Date(pair.weeks[pair.weeks.length - 1].academicWeek.endDate).toLocaleDateString()}
+                            {new Date(pair.weeks[0].academicWeek.startDate || '').toLocaleDateString()} - {new Date(pair.weeks[pair.weeks.length - 1].academicWeek.endDate || '').toLocaleDateString()}
                           </span>
                         )}
                       </div>

@@ -514,11 +514,11 @@ export const getEvaluationStats = async (): Promise<{
       const stats = {
         totalEvaluations: evaluationsArray.length,
         evaluationsByScale: evaluationsArray.reduce((acc, e) => {
-          acc[e.scale.code] = (acc[e.scale.code] || 0) + 1;
+          acc[e.state] = (acc[e.state] || 0) + 1;
           return acc;
         }, {} as Record<string, number>),
         evaluationsByCategory: evaluationsArray.reduce((acc, e) => {
-          acc[e.category.code] = (acc[e.category.code] || 0) + 1;
+          acc[e.dimension] = (acc[e.dimension] || 0) + 1;
           return acc;
         }, {} as Record<string, number>),
         averagePoints: evaluationsArray.length > 0 

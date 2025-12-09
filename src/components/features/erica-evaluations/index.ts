@@ -22,27 +22,26 @@ export { default as GridStatsV2 } from './evaluation-grid/grid-stats-v2';
 // Evaluation grid components (Legacy - category/scale based)
 export { default as EvaluationGrid } from './evaluation-grid/evaluation-grid';
 export { default as EvaluationCell } from './evaluation-grid/evaluation-cell';
-export { default as EvaluationGridRow } from './evaluation-grid/evaluation-grid-row';
-export { default as EvaluationGridHeader } from './evaluation-grid/evaluation-grid-header';
-export { default as EvaluationPatterns } from './evaluation-grid/evaluation-patterns';
-export { default as EvaluationCopyTool } from './evaluation-grid/evaluation-copy-tool';
 export { default as EvaluationDropdown } from './evaluation-grid/evaluation-dropdown';
 export { default as CompactTableView } from './evaluation-grid/compact-table-view';
 export { default as GridStats } from './evaluation-grid/grid-stats';
 export { default as ScaleSelector } from './evaluation-grid/scale-selector';
 
 // Context info components
-export { default as AcademicContextCard } from './context-info/academic-context-card';
-export { default as TeacherCourseInfo } from './context-info/teacher-course-info';
-export { default as TopicInfoCard } from './context-info/topic-info-card';
+// (Commented out - files are empty/not implemented)
+// export { default as AcademicContextCard } from './context-info/academic-context-card';
+// export { default as TeacherCourseInfo } from './context-info/teacher-course-info';
+// export { default as TopicInfoCard } from './context-info/topic-info-card';
 
 // Selection grid component
 export { SelectionGrid } from './selection-grid';
 
 // Common components
-export { default as LoadingStates } from './common/loading-states';
+// (Commented out - files are empty/not implemented)
+// export { default as LoadingStates } from './common/loading-states';
 
 // Utils
-export * from './utils/data-formatters';
+// (Commented out - files are empty/not implemented)
+// export * from './utils/data-formatters';
 export * from './utils/evaluation-helpers';
-export * from './utils/validation-helpers';
+// export * from './utils/validation-helpers';
