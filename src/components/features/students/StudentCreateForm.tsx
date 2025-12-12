@@ -338,7 +338,6 @@ export const StudentCreateForm: React.FC = () => {
                   if (!result) {
                     // ✅ NUEVO: Console log detallado de errores
                     const errors = form.formState.errors;
-                    console.table(errors);
                     
                     // Detalles específicos
                     Object.entries(errors).forEach(([field, error]: any) => {

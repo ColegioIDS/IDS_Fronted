@@ -77,7 +77,6 @@ export async function GET(request: NextRequest) {
       data: dimensionColors,
     });
   } catch (error) {
-    console.error('Error al obtener colores de dimensiones:', error);
     return NextResponse.json(
       {
         success: false,

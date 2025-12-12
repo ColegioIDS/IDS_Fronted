@@ -17,10 +17,8 @@ export const useDebugAuth = () => {
       return acc;
     }, {} as Record<string, string>);
 
-    console.group('🔐 DEBUG AUTH');
     
     // 2. Mostrar info de CORS
-    console.groupEnd();
   }, [user, isAuthenticated, isLoading]);
 
   return { user, isAuthenticated, isLoading };

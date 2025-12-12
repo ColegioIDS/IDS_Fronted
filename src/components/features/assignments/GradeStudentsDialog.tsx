@@ -122,12 +122,9 @@ export const GradeStudentsDialog: FC<GradeStudentsDialogProps> = ({
           ungraded: gradesResponse.statistics.ungraded,
           averageScore: gradesResponse.statistics.averageScore,
         });
-        console.log('✅ Calificaciones cargadas:', gradesMap);
-        console.log('📊 Estadísticas:', gradesResponse.statistics);
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Error al cargar datos';
         setError(errorMsg);
-        console.error('Error al cargar estudiantes y calificaciones:', err);
       } finally {
         setLoading(false);
       }
@@ -223,7 +220,6 @@ export const GradeStudentsDialog: FC<GradeStudentsDialogProps> = ({
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error al guardar calificaciones';
       toast.error(errorMsg);
-      console.error('Error al guardar calificaciones:', err);
     } finally {
       setSaving(false);
     }

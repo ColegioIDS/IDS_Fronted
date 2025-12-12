@@ -28,14 +28,11 @@ export const useEricaColors = () => {
 
       // Obtener del servidor
       const result = await ericaColorsService.getEricaColors();
-      console.log('✅ Colors loaded:', result);
       setColors(result);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error al cargar colores';
       setError(errorMsg);
-      console.error('❌ Error fetching ERICA colors:', err);
       // Usar colores por defecto como fallback
-      console.log('Using default colors as fallback');
       setColors(DEFAULT_COLORS);
     } finally {
       setLoading(false);

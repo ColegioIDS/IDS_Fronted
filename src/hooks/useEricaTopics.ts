@@ -46,7 +46,6 @@ export const useEricaTopics = () => {
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error al cargar temas';
       setError(errorMsg);
-      console.error('Error fetching topics:', err);
     } finally {
       setLoading(false);
     }
@@ -64,7 +63,6 @@ export const useEricaTopics = () => {
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error al cargar tema';
       setError(errorMsg);
-      console.error('Error fetching topic:', err);
     } finally {
       setLoading(false);
     }

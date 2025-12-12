@@ -223,7 +223,6 @@ export function UsersPageContent() {
       handleFormSuccess();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error desconocido al procesar el formulario';
-      console.error('Form submission error:', error);
       toast.error(`Error: ${message}`);
     }
   };

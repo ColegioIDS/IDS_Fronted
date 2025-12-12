@@ -86,7 +86,6 @@ export async function GET(request: NextRequest) {
       data: stateColors,
     });
   } catch (error) {
-    console.error('Error al obtener colores de estados:', error);
     return NextResponse.json(
       {
         success: false,

@@ -45,7 +45,6 @@ export default function CreateEricaTopicPage() {
       toast.error('Error al crear tema', {
         description: errorMsg,
       });
-      console.error('Error creating topic:', err);
     } finally {
       setLoading(false);
     }

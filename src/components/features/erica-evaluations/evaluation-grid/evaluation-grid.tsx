@@ -253,7 +253,6 @@ export default function EvaluationGrid({
         await fetchEvaluationGrid(selectedTopic.id, true);
       }
     } catch (error) {
-      console.error('Error saving evaluations:', error);
     }
   }, [pendingChanges, selectedTopic.id, selectedTeacher.id, saveGrid, fetchEvaluationGrid]);
 

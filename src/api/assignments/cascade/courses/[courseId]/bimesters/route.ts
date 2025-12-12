@@ -81,7 +81,6 @@ export async function GET(
       { status: 200 }
     );
   } catch (error) {
-    console.error('[GET /api/assignments/cascade/courses/[courseId]/bimesters]', error);
     return NextResponse.json(
       {
         success: false,

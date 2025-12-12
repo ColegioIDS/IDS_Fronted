@@ -118,7 +118,6 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
       const data = await locationsService.getAllDepartments();
       setDepartments(data);
     } catch (error: any) {
-      console.error('Error al cargar departamentos:', error);
       toast.error('Error al cargar departamentos');
     } finally {
       setLoadingLocations(false);
@@ -131,7 +130,6 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
       const data = await locationsService.getMunicipalities(departmentId);
       setMunicipalities(data);
     } catch (error: any) {
-      console.error('Error al cargar municipios:', error);
       toast.error('Error al cargar municipios');
     } finally {
       setLoadingLocations(false);

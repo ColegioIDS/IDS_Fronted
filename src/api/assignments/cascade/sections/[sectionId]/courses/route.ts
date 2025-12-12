@@ -103,7 +103,6 @@ export async function GET(
       { status: 200 }
     );
   } catch (error) {
-    console.error('[GET /api/assignments/cascade/sections/[sectionId]/courses]', error);
     return NextResponse.json(
       {
         success: false,

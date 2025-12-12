@@ -49,7 +49,6 @@ export const ericaColorsService = {
         dimension: d.dimension || d.name,
       }));
     } catch (error: any) {
-      console.error('Error fetching dimension colors from config:', error);
       return DEFAULT_COLORS.dimensions;
     }
   },
@@ -78,7 +77,6 @@ export const ericaColorsService = {
           )
         );
       }
-      console.error('Error fetching dimension colors:', error);
       return DEFAULT_COLORS.dimensions;
     }
   },
@@ -103,7 +101,6 @@ export const ericaColorsService = {
         state: s.state || s.name,
       }));
     } catch (error: any) {
-      console.error('Error fetching state colors from config:', error);
       return DEFAULT_COLORS.states;
     }
   },
@@ -132,7 +129,6 @@ export const ericaColorsService = {
           )
         );
       }
-      console.error('Error fetching state colors:', error);
       return DEFAULT_COLORS.states;
     }
   },
@@ -164,7 +160,6 @@ export const ericaColorsService = {
           extractErrorMessage(error.response.data, 'Error al obtener colores ERICA')
         );
       }
-      console.error('Error fetching ERICA colors:', error);
       return DEFAULT_COLORS;
     }
   },

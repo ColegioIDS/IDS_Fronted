@@ -220,15 +220,12 @@ export default function EvaluationGridV2({
 
   // Guardar cambios
   const handleSave = useCallback(async () => {
-    console.log('[handleSave] Iniciando guardado...');
     const result = await saveGrid(topicId, teacherId);
-    console.log('[handleSave] Resultado:', result);
     
     if (result) {
       setLastSaved(new Date());
       const evalCount = result.evaluationsProcessed || result.evaluations?.length || 0;
       const message = result.message || `Cambios guardados exitosamente (${evalCount} evaluaciones)`;
-      console.log('[handleSave] Mostrando mensaje de éxito:', message);
       setSaveMessage({
         type: 'success',
         message,
@@ -240,16 +237,13 @@ export default function EvaluationGridV2({
       // Auto-dismiss en 5 segundos
       setTimeout(() => setSaveMessage(null), 5000);
     } else {
-      console.log('[handleSave] No hay resultado');
     }
   }, [topicId, teacherId, saveGrid, onSaveSuccess]);
 
   // Monitorear cambios en saveError
   useEffect(() => {
-    console.log('[useEffect saveError] saveError cambió:', saveError);
     if (saveError) {
       const message = `Error al guardar: ${saveError}`;
-      console.log('[useEffect saveError] Mostrando mensaje de error:', message);
       setSaveMessage({
         type: 'error',
         message,

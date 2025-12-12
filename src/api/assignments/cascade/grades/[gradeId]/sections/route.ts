@@ -71,7 +71,6 @@ export async function GET(
       { status: 200 }
     );
   } catch (error) {
-    console.error('[GET /api/assignments/cascade/grades/[gradeId]/sections]', error);
     return NextResponse.json(
       {
         success: false,

@@ -94,9 +94,5 @@ export const logCotejosError = (
   context: string,
   detail?: string,
 ): void => {
-  console.error(`[Cotejos] ${context}:`, {
-    errorCode,
-    detail,
-    timestamp: new Date().toISOString(),
-  });
+  
 };

@@ -139,9 +139,7 @@ export const ericaEvaluationsService = {
         data
       );
       
-      console.log('[saveEvaluationGridByTopic] Full Response:', response);
-      console.log('[saveEvaluationGridByTopic] Response.data:', response.data);
-      
+     
       const responseData = response.data;
       
       // Manejar errores de negocio (success: false)
@@ -157,7 +155,6 @@ export const ericaEvaluationsService = {
       // Retornar el objeto completo que contiene success, evaluationsProcessed, message
       return responseData as SaveGridResult;
     } catch (err: any) {
-      console.error('[saveEvaluationGridByTopic] Error:', err);
       
       // Si es error de negocio ya formateado, re-lanzar
       if (err.details || err.message?.includes('evaluations')) {

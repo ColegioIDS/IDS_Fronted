@@ -173,7 +173,6 @@ export function useEricaEvaluationGrid(): UseEvaluationGridReturn {
         evaluations,
       });
       
-      console.log('[saveGrid] Result from service:', result);
       
       setState(prev => ({ ...prev, isSaving: false }));
       

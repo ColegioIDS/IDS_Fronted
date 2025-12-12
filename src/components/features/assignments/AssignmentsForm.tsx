@@ -64,7 +64,6 @@ export const AssignmentsForm: FC<AssignmentsFormProps> = ({ onSuccess }) => {
   };
 
   const handleCascadeError = (error: string) => {
-    console.error('Error en cascada:', error);
   };
 
   const handleDetailsSuccess = () => {

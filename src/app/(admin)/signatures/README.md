@@ -112,7 +112,6 @@ export default function MyComponent() {
         isActive: true
       });
     } catch (error) {
-      console.error(error);
     }
   };
 

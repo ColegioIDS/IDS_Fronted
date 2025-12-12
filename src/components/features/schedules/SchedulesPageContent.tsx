@@ -298,13 +298,7 @@ export default function SchedulesPageContent({
       setTempSchedules([]);
       setPendingChanges([]);
       
-      console.log('🔍 Batch Save Debug:', {
-        hasErrors,
-        'batchResult?.success': batchResult?.success,
-        'batchResult?.data?.stats': batchResult?.data?.stats,
-        'batchResult?.data?.items?.errors': batchResult?.data?.items?.errors,
-        condition: hasErrors || (batchResult && !batchResult.success),
-      });
+     
       
       // Show appropriate toast based on results
       if (hasErrors || (batchResult && !batchResult.success)) {
@@ -312,14 +306,7 @@ export default function SchedulesPageContent({
         let errors = batchResult?.data?.items?.errors || [];
         const batchStats = batchResult?.data?.stats ?? { created: 0, updated: 0, deleted: 0, errors: 0 };
         
-        console.log('❌ Error path taken:', {
-          batchResult,
-          errors,
-          batchError,
-          hasErrors,
-          'batchResult?.data': batchResult?.data,
-          'batchResult?.data?.items': batchResult?.data?.items,
-        });
+       
         
         // If no errors found in the expected location, check if backend sent them differently
         if (!errors || errors.length === 0) {

@@ -46,7 +46,6 @@ export function useStudentSubmissions({
     } catch (err: any) {
       const errorMsg = err.message || 'Error al obtener calificaciones de estudiantes';
       setError(errorMsg);
-      console.error('Error en useStudentSubmissions:', err);
     } finally {
       setLoading(false);
     }

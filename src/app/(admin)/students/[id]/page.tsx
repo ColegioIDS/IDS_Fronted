@@ -68,7 +68,6 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
         includeAcademic: true,
       });
     } catch (err) {
-      console.error('Error descargando Excel:', err);
       alert('Error al descargar el reporte en Excel');
     } finally {
       setDownloadingExcel(false);
@@ -84,7 +83,6 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
         includeAcademic: true,
       });
     } catch (err) {
-      console.error('Error descargando PDF:', err);
       alert('Error al descargar el reporte en PDF');
     } finally {
       setDownloadingPdf(false);

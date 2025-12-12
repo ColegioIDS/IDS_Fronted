@@ -99,7 +99,6 @@ export function useAssignmentsList({
       const errorMsg =
         err instanceof Error ? err.message : 'Error al cargar tareas';
       setError(errorMsg);
-      console.error('Error al cargar tareas:', err);
     } finally {
       setLoading(false);
     }

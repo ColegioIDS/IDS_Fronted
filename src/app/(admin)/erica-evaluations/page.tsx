@@ -93,7 +93,6 @@ export default function EricaEvaluationsPage() {
         });
         setTopics(result.data || []);
       } catch (err) {
-        console.error('Error cargando topics:', err);
         const errorMessage = err instanceof Error ? err.message : 'Error al cargar temas';
         setTopicsError(errorMessage);
         setTopics([]);
@@ -469,7 +468,6 @@ export default function EricaEvaluationsPage() {
             // Toast o notificación de éxito
           }}
           onSaveError={(error) => {
-            console.error('Error al guardar:', error);
           }}
         />
       )}

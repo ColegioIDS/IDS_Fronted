@@ -233,7 +233,6 @@ export function EricaTopicForm({
       };
       await onSubmit(submitData);
     } catch (error) {
-      console.error('Error submitting form:', error);
     }
   };
 

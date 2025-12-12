@@ -101,7 +101,6 @@ export default function SignatureFormModal({
       await onSubmit(data, isEdit);
       onClose();
     } catch (error) {
-      console.error('Error submitting form:', error);
     }
   };
 

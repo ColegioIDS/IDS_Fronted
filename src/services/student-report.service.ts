@@ -56,7 +56,6 @@ export const studentReportService = {
 
       downloadBlob(blob, `ficha-estudiante-${studentId}.xlsx`);
     } catch (error) {
-      console.error('Error en downloadStudentExcel:', error);
       throw new Error(`Error al descargar el reporte en Excel: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   },
@@ -109,7 +108,6 @@ export const studentReportService = {
 
       downloadBlob(blob, `ficha-estudiante-${studentId}.pdf`);
     } catch (error) {
-      console.error('Error en downloadStudentPdf:', error);
       throw new Error(`Error al descargar el reporte en PDF: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   },

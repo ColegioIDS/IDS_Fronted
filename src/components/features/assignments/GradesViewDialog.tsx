@@ -72,7 +72,6 @@ export const GradesViewDialog: FC<GradesViewDialogProps> = ({
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Error al cargar calificaciones';
         setError(errorMsg);
-        console.error('Error al cargar calificaciones:', err);
       } finally {
         setLoading(false);
       }

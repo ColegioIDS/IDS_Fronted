@@ -113,9 +113,7 @@ export const CreateAssignmentForm: FC<CreateAssignmentFormProps> = ({
         maxScore: formData.maxScore,
       };
 
-      console.log('📤 Enviando payload:', assignmentPayload);
       const result = await assignmentsService.createAssignment(assignmentPayload);
-      console.log('✅ Respuesta del servidor:', result);
 
       toast.success('Tarea creada exitosamente');
       setSuccess(true);

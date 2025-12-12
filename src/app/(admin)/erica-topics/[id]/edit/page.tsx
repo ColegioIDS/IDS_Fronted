@@ -83,7 +83,6 @@ export default function EditEricaTopicPage({ params }: EditEricaTopicPageProps) 
       toast.error('Error al actualizar tema', {
         description: errorMsg,
       });
-      console.error('Error updating topic:', err);
     } finally {
       setSubmitting(false);
     }

@@ -93,7 +93,6 @@ export const SubmissionsTable: FC<SubmissionsTableProps> = ({
         const errorMsg =
           err instanceof Error ? err.message : 'Error al cargar entregas';
         setError(errorMsg);
-        console.error('Error al cargar entregas:', err);
       } finally {
         setLoading(false);
       }
@@ -109,9 +108,7 @@ export const SubmissionsTable: FC<SubmissionsTableProps> = ({
     try {
       const response = await assignmentsService.listSubmissionsByAssignment(assignmentId);
       setSubmissions(response?.submissions || []);
-      console.log('✅ GradeSubmissionModal: handleGradeSuccess ejecutado');
     } catch (err) {
-      console.error('Error al refetch submissions:', err);
     }
   };
 
@@ -300,7 +297,6 @@ export const SubmissionsTable: FC<SubmissionsTableProps> = ({
                     className="w-8 h-8 p-0 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-md transition-colors"
                     title="Calificar"
                     onClick={() => {
-                      console.log('✅ SubmissionsTable: Botón Calificar clickeado');
                       setSelectedSubmission(submission);
                       setIsGradeModalOpen(true);
                     }}

@@ -84,7 +84,6 @@ export default function SignatureFormModal({
       }
     } catch (error: any) {
       toast.error('Error al cargar usuarios: ' + error.message);
-      console.error('Error loading users:', error);
       setUsers([]);
     } finally {
       setLoadingUsers(false);
@@ -181,7 +180,6 @@ export default function SignatureFormModal({
       await onSubmit(data, isEdit);
       onClose();
     } catch (error) {
-      console.error('Error submitting form:', error);
     }
   };
 

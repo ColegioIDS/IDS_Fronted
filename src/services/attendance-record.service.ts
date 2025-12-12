@@ -16,7 +16,6 @@ export const attendanceRecordService = {
   ): Promise<any[]> {
     try {
       const url = `/api/attendance/section/${sectionId}/cycle/${cycleId}/date/${date}`;
-      console.table({ endpoint: url });
 
       const response = await api.get<{ success: boolean; data: any[]; message?: string }>(url);
 
@@ -49,7 +48,6 @@ export const attendanceRecordService = {
         changeReason: reason,
       };
 
-      console.table({ endpoint: url, payload });
 
       const response = await api.patch<{ success: boolean; data: any; message?: string }>(url, payload);
 
@@ -95,7 +93,6 @@ export const attendanceRecordService = {
         arrivalTime: arrivalTime || null,
       };
 
-      console.table({ endpoint: url, payload });
 
       const response = await api.post<{ success: boolean; data: any; message?: string }>(url, payload);
 
@@ -143,7 +140,6 @@ export const attendanceRecordService = {
         notes,
       };
 
-      console.table({ endpoint: url, payload });
 
       const response = await api.post<{ success: boolean; data: any; message?: string }>(url, payload);
 

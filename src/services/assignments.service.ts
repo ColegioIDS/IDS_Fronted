@@ -71,16 +71,12 @@ export const assignmentsService = {
       createdAt: formatDateTimeForAPI(),
     };
 
-    console.log('🔵 [AssignmentsService] POST /api/assignments', payload);
     
     const response = await api.post('/api/assignments', payload);
     
-    console.log('🟢 [AssignmentsService] Response Status:', response.status);
-    console.log('🟢 [AssignmentsService] Response Data:', response.data);
 
     if (!response.data?.success) {
       const errorMsg = response.data?.message || `Error al crear la tarea (Status: ${response.status})`;
-      console.error('🔴 [AssignmentsService] Error:', errorMsg);
       throw new Error(errorMsg);
     }
 
@@ -350,10 +346,8 @@ export const assignmentsService = {
     try {
       const response = await api.get(`/api/assignments/${assignmentId}/grades`);
 
-      console.log('🟢 [AssignmentsService] Get grades response:', response.data);
 
       if (!response.data?.success) {
-        console.warn('⚠️ [AssignmentsService] Could not fetch grades:', response.data?.message);
         return {
           assignment: { id: 0, title: '', maxScore: 0, dueDate: '', description: '' },
           grades: [],
@@ -367,7 +361,6 @@ export const assignmentsService = {
         statistics: { total: 0, graded: 0, ungraded: 0, averageScore: 0, maxScore: 0, minScore: 0 },
       };
     } catch (err) {
-      console.warn('⚠️ [AssignmentsService] Error fetching grades:', err);
       // No lanzar error, solo retornar objeto vacío para no romper el UI
       return {
         assignment: { id: 0, title: '', maxScore: 0, dueDate: '', description: '' },
@@ -407,11 +400,7 @@ export const assignmentsService = {
       studentName: string;
     }>;
   }> {
-    console.log('🔵 [AssignmentsService] POST /api/assignments/:assignmentId/batch-grade', {
-      assignmentId,
-      gradesCount: grades.length,
-      grades,
-    });
+  
 
     const response = await api.post(
       `/api/assignments/${assignmentId}/batch-grade`,
@@ -420,12 +409,10 @@ export const assignmentsService = {
       }
     );
 
-    console.log('🟢 [AssignmentsService] Batch grade response:', response.data);
 
     if (!response.data?.success) {
       const errorMsg =
         response.data?.message || `Error al guardar calificaciones (Status: ${response.status})`;
-      console.error('🔴 [AssignmentsService] Error:', errorMsg);
       throw new Error(errorMsg);
     }
 
@@ -447,21 +434,16 @@ export const assignmentsService = {
     courseId: number,
     bimesterId: number
   ): Promise<StudentSubmissionsResponse> {
-    console.log(
-      '🔵 [AssignmentsService] GET /api/assignments/course/:courseId/bimester/:bimesterId/students-submissions',
-      { courseId, bimesterId }
-    );
+   
 
     const response = await api.get(
       `/api/assignments/course/${courseId}/bimester/${bimesterId}/students-submissions`
     );
 
-    console.log('🟢 [AssignmentsService] Student submissions response:', response.data);
 
     if (!response.data?.success) {
       const errorMsg =
         response.data?.message || `Error al obtener calificaciones de estudiantes (Status: ${response.status})`;
-      console.error('🔴 [AssignmentsService] Error:', errorMsg);
       throw new Error(errorMsg);
     }
 
