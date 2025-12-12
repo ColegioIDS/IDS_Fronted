@@ -1,200 +1,285 @@
-# IDS Colegio - Sistema de Gestión Académica
+# IDS Colegio - Sistema de Gestión Académica Integral
 
-Sistema de gestión académica completo construido sobre **Next.js 15 + TypeScript + Tailwind CSS**, proporcionando todas las herramientas necesarias para administrar un colegio de forma integral.
+**Sistema de gestión académica completo** construido con **Next.js 15 + React 19 + TypeScript + Tailwind CSS v4**, proporcionando todas las herramientas necesarias para administrar de forma integral un colegio moderno.
 
-## 🎯 Nueva Integración: Endpoints de Ciclos para Bimestres
+## 🎯 Módulos Principales
 
-Se ha completado la integración de **endpoints de ciclos escolares accesibles desde permisos de bimester**, permitiendo que usuarios con permisos limitados puedan gestionar bimestres sin necesidad de permisos de administración de ciclos.
+### 📊 Dashboard Académico
+- Estadísticas generales de estudiantes, asistencia y calificaciones
+- Visualización de ciclos escolares y bimestres activos
+- Resumen de actividades recientes
 
-### 📚 Documentación de la Integración
+### 👥 Gestión de Estudiantes
+- Creación y edición de estudiantes
+- Sistema de matrículas con validación de capacidad
+- Historial de transferencias entre secciones
+- Búsqueda y filtros avanzados
 
-- **[📖 README Principal](./README_BIMESTER_INTEGRATION.md)** - Resumen completo de la implementación
-- **[🚀 Quick Start](./QUICK_START_BIMESTER_CYCLES.md)** - Guía rápida con ejemplos copy-paste
-- **[🔧 Documentación Completa](./INTEGRATION_BIMESTER_CYCLES.md)** - Documentación técnica detallada
-- **[📝 Endpoints Backend](./BIMESTER_CYCLES_ENDPOINTS.md)** - Especificación de los endpoints
+### 📋 Asistencia
+- Registro de asistencia por clase
+- Reportes de asistencia por estudiante
+- Gestión de justificantes
+- Estadísticas de inasistencia
 
-### ✨ Características Principales
+### 📚 Crear y Gestionar Tareas
+- Creación de tareas por curso y bimestre
+- Interfaz con **dos tabs**:
+  - **Tab 1 - Tareas del Curso**: Listado de tareas con toggle para ver detalles de calificaciones por tarea individual
+  - **Tab 2 - Calificaciones**: Tabla de estudiantes con todas sus calificaciones por tarea
+- Nuevo endpoint integrado: `/api/assignments/course/:courseId/bimester/:bimesterId/students-submissions`
+- Calificación por lotes
+- Visualización de entregas con estado (calificado/pendiente)
 
-- ✅ **3 nuevos endpoints** para ciclos escolares desde bimester
-- ✅ **Componentes reutilizables** (CycleSelector, CycleInfo)
-- ✅ **Hooks especializados** (useBimesters, useBimesterCycles)
-- ✅ **Formulario completo** de ejemplo con validación Zod
-- ✅ **Dark mode completo** y responsive
-- ✅ **TypeScript estricto** sin 'any'
-- ✅ **Manejo de errores centralizado** con toasts
+### 📝 Cotejos (Consolidación de Calificaciones)
+- Sistema completo de consolidación de calificaciones por componentes:
+  - **ERICA**: 0-40 puntos (evaluaciones contextualizadas)
+  - **TAREAS**: Suma de calificaciones de tareas (máximo 20 puntos)
+  - **ACTITUDINAL**: 0-20 puntos
+  - **DECLARATIVO**: 0-30 puntos
+  - **TOTAL**: 0-100 puntos
+- Tabla con **columnas coloreadas temáticamente**:
+  - 🟢 Verde para ERICA
+  - 🟠 Naranja para TAREAS (individual + total)
+  - 🔵 Azul para ACTITUDINAL
+  - 🟣 Púrpura para DECLARATIVO
+  - ⭐ Gris para TOTAL
+- Toggle para mostrar/ocultar detalles de tareas individuales
+- Auto-selección de ciclo y bimestre activos
+- Estados: DRAFT, SUBMITTED, COMPLETED
+- Protección: No se pueden editar cotejos completados/enviados
+- Errores específicos en toasts
+
+### 🎓 Evaluaciones ERICA
+- Gestión de evaluaciones contextualizadas
+- Colores por dimensión
+- Permisos por rol
+
+### 💻 Autenticación
+- Sistema de autenticación con roles
+- Control de acceso basado en permisos
+- Gestión de sesiones seguras
 
 ---
 
-# TailAdmin Next.js - Free Next.js Tailwind Admin Dashboard Template
+## 🛠️ Stack Tecnológico
 
-TailAdmin is a free and open-source admin dashboard template built on **Next.js and Tailwind CSS** providing developers with everything they need to create a feature-rich and data-driven: back-end, dashboard, or admin panel solution for any sort of web project.
+| Tecnología | Versión | Propósito |
+|------------|---------|----------|
+| **Next.js** | 15.x | Framework React fullstack |
+| **React** | 19 | Librería UI |
+| **TypeScript** | 5.x | Tipado estricto |
+| **Tailwind CSS** | v4 | Estilos |
+| **Shadcn/ui** | Latest | Componentes base |
+| **Lucide React** | Latest | Iconos |
+| **Zod** | Latest | Validación de esquemas |
+| **Axios** | Latest | Cliente HTTP |
+| **Date-fns** | Latest | Manipulación de fechas |
+| **Sonner** | Latest | Notificaciones toast |
 
-![TailAdmin - Next.js Dashboard Preview](./banner.png)
+---
 
-With TailAdmin Next.js, you get access to all the necessary dashboard UI components, elements, and pages required to build a high-quality and complete dashboard or admin panel. Whether you're building a dashboard or admin panel for a complex web application or a simple website. 
+## 📁 Estructura del Proyecto
 
-TailAdmin utilizes the powerful features of **Next.js 15** and common features of Next.js such as server-side rendering (SSR), static site generation (SSG), and seamless API route integration. Combined with the advancements of **React 19** and the robustness of **TypeScript**, TailAdmin is the perfect solution to help get your project up and running quickly.
-
-## Overview
-
-TailAdmin provides essential UI components and layouts for building feature-rich, data-driven admin dashboards and control panels. It's built on:
-
-- Next.js 15.x
-- React 19
-- TypeScript
-- Tailwind CSS V4
-
-### Quick Links
-- [✨ Visit Website](https://tailadmin.com)
-- [📄 Documentation](https://tailadmin.com/docs)
-- [⬇️ Download](https://tailadmin.com/download)
-- [🖌️ Figma Design File (Community Edition)](https://www.figma.com/community/file/1463141366275764364)
-- [⚡ Get PRO Version](https://tailadmin.com/pricing)
-
-### Demos
-- [Free Version](https://nextjs-free-demo.tailadmin.com)
-- [Pro Version](https://nextjs-demo.tailadmin.com)
-
-### Other Versions
-- [HTML Version](https://github.com/TailAdmin/tailadmin-free-tailwind-dashboard-template)
-- [React Version](https://github.com/TailAdmin/free-react-tailwind-admin-dashboard)
-- [Vue.js Version](https://github.com/TailAdmin/vue-tailwind-admin-dashboard)
-
-## Installation
-
-### Prerequisites
-To get started with TailAdmin, ensure you have the following prerequisites installed and set up:
-
-- Node.js 18.x or later (recommended to use Node.js 20.x or later)
-
-### Cloning the Repository
-Clone the repository using the following command:
-
-```bash
-git clone https://github.com/TailAdmin/free-nextjs-admin-dashboard.git
+```
+src/
+├── app/                          # Rutas y layouts de Next.js 15
+│   ├── (admin)/                 # Layout admin protegido
+│   ├── (auth)/                  # Layout de autenticación
+│   ├── (full-width-pages)/      # Páginas sin sidebar
+│   └── auth/                    # Rutas de autenticación
+├── components/
+│   ├── features/                # Componentes por módulo
+│   │   ├── assignments/         # Módulo de tareas
+│   │   ├── cotejos/            # Módulo de cotejos
+│   │   ├── attendance/         # Módulo de asistencia
+│   │   ├── students/           # Módulo de estudiantes
+│   │   └── ...
+│   ├── ui/                      # Componentes base (shadcn/ui)
+│   └── shared/                  # Componentes reutilizables
+├── services/                    # Servicios API
+│   ├── assignments.service.ts
+│   ├── cotejos.service.ts
+│   ├── enrollments.service.ts
+│   └── ...
+├── hooks/                       # Hooks personalizados
+│   ├── useCotejos/
+│   ├── useStudentSubmissions.ts
+│   └── ...
+├── types/                       # Tipos TypeScript
+├── constants/                   # Constantes y configuración
+│   └── cotejos/                # Constantes del módulo cotejos
+│       ├── errors.constants.ts
+│       └── index.ts
+├── utils/                       # Utilidades
+│   ├── cotejos-error.utils.ts
+│   └── ...
+└── config/                      # Configuración
+    ├── api.ts
+    ├── theme.config.ts
+    └── timezone.ts
 ```
 
-> Windows Users: place the repository near the root of your drive if you face issues while cloning.
+---
 
-1. Install dependencies:
-    ```bash
-    npm install
-    # or
-    yarn install
-    ```
-    > Use `--legacy-peer-deps` flag if you face peer-dependency error during installation.
+## 🚀 Primeros Pasos
 
-2. Start the development server:
-    ```bash
-    npm run dev
-    # or
-    yarn dev
-    ```
+### Prerequisitos
+- Node.js 18.x o superior (recomendado 20.x)
+- npm o yarn
 
-## Components
+### Instalación
 
-TailAdmin is a pre-designed starting point for building a web-based dashboard using Next.js and Tailwind CSS. The template includes:
+```bash
+# Clonar repositorio
+git clone https://github.com/ColegioIDS/IDS_Fronted.git
+cd IDS_Fronted
 
-- Sophisticated and accessible sidebar
-- Data visualization components
-- Profile management and custom 404 page
-- Tables and Charts(Line and Bar)
-- Authentication forms and input elements
-- Alerts, Dropdowns, Modals, Buttons and more
-- Can't forget Dark Mode 🕶️
+# Instalar dependencias
+npm install
+# o
+yarn install
 
-All components are built with React and styled using Tailwind CSS for easy customization.
+# Variables de entorno (.env.local)
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-## Feature Comparison
+# Iniciar servidor de desarrollo
+npm run dev
+# o
+yarn dev
+```
 
-### Free Version
-- 1 Unique Dashboard
-- 30+ dashboard components
-- 50+ UI elements
-- Basic Figma design files
-- Community support
+Accede a http://localhost:3000
 
-### Pro Version
-- 5 Unique Dashboards: Analytics, Ecommerce, Marketing, CRM, Stocks (more coming soon)
-- 400+ dashboard components and UI elements
-- Complete Figma design file
-- Email support
+### Build para producción
 
-To learn more about pro version features and pricing, visit our [pricing page](https://tailadmin.com/pricing).
+```bash
+npm run build
+npm run start
+```
 
-## Changelog
+---
 
-### Version 2.0.2 - [March 25, 2025]
+## 🎨 Características Destacadas
 
-- Upgraded to Next v15.2.3 for [CVE-2025-29927](https://nextjs.org/blog/cve-2025-29927) concerns
-- Included overrides vectormap for packages to prevent peer dependency errors during installation.
-- Migrated from react-flatpickr to flatpickr package for React 19 support
+### ✨ Sistema de Errores Centralizado
+- `constants/cotejos/errors.constants.ts`: Mapeo de códigos de error
+- `utils/cotejos-error.utils.ts`: Extracción y procesamiento de errores
+- `hooks/useCotejosErrorToast.ts`: Notificaciones de error específicas
+- Errores genéricos evitados, mensajes descriptivos en toasts
 
-### Version 2.0.1 - [February 27, 2025]
+### 🎯 Auto-selección de Contexto
+- Ciclo académico activo auto-seleccionado en cascadas
+- Bimestre activo auto-seleccionado
+- Información visual con fechas y detalles
 
-#### Update Overview
+### 📊 Tablas Mejoradas
+- Colores temáticos por componente de calificación
+- Dark mode completo
+- Responsive con scroll horizontal
+- Indicadores visuales (badges, iconos)
 
-- Upgraded to Tailwind CSS v4 for better performance and efficiency.
-- Updated class usage to match the latest syntax and features.
-- Replaced deprecated class and optimized styles.
+### 🔐 Control de Acceso
+- Protección en rutas
+- Validación de permisos
+- Middleware de autenticación
 
-#### Next Steps
+---
 
-- Run npm install or yarn install to update dependencies.
-- Check for any style changes or compatibility issues.
-- Refer to the Tailwind CSS v4 [Migration Guide](https://tailwindcss.com/docs/upgrade-guide) on this release. if needed.
-- This update keeps the project up to date with the latest Tailwind improvements. 🚀
+## 📊 Módulos Técnicos Implementados
 
-### v2.0.0 (February 2025)
-A major update focused on Next.js 15 implementation and comprehensive redesign.
+### Cotejos
+- ✅ 7 endpoints backend integrados
+- ✅ 7 hooks personalizados con manejo de errores
+- ✅ Sistema completo de error handling
+- ✅ Componentes de edición (Actitudinal, Declarativo)
+- ✅ Componente de envío (Submit)
+- ✅ Tabla con toggle de detalles
+- ✅ Protección contra edición de estados finales
 
-#### Major Improvements
-- Complete redesign using Next.js 15 App Router and React Server Components
-- Enhanced user interface with Next.js-optimized components
-- Improved responsiveness and accessibility
-- New features including collapsible sidebar, chat screens, and calendar
-- Redesigned authentication using Next.js App Router and server actions
-- Updated data visualization using ApexCharts for React
+### Tareas (Assignments)
+- ✅ Cascada de selección (Grado → Sección → Curso → Bimestre)
+- ✅ Creación de tareas
+- ✅ Listado con tarjetas de tarea
+- ✅ Endpoint nuevo: `students-submissions`
+- ✅ Hook: `useStudentSubmissions`
+- ✅ Tabla de calificaciones por estudiante
+- ✅ Estados: Calificado/Pendiente
 
-#### Breaking Changes
+---
 
-- Migrated from Next.js 14 to Next.js 15
-- Chart components now use ApexCharts for React
-- Authentication flow updated to use Server Actions and middleware
+## 🔄 Flujo de Datos
 
-[Read more](https://tailadmin.com/docs/update-logs/nextjs) on this release.
+### Exemplo: Creación de Cotejo
+```
+1. Usuario selecciona Ciclo → Bimestre → Grado → Sección → Curso
+2. Sistema auto-selecciona ciclo/bimestre activos
+3. Se genera cotejo para cada estudiante
+4. Usuario edita componentes (ERICA, Tareas, Actitudinal, Declarativo)
+5. Sistema valida no exceder 100 puntos
+6. Usuario envía/completa el cotejo
+7. Se bloquea edición para estados SUBMITTED/COMPLETED
+8. Errores específicos en toasts (no genéricos)
+```
 
-#### Breaking Changes
-- Migrated from Next.js 14 to Next.js 15
-- Chart components now use ApexCharts for React
-- Authentication flow updated to use Server Actions and middleware
+---
 
-### v1.3.4 (July 01, 2024)
-- Fixed JSvectormap rendering issues
+## 🛡️ Manejo de Errores
 
-### v1.3.3 (June 20, 2024)
-- Fixed build error related to Loader component
+### Estrategia
+1. **Captura en servicio**: `validateApiResponse()` detecta `success: false`
+2. **Transformación**: `extractCotejosError()` extrae código y mensaje
+3. **Presentación**: `useCotejosErrorToast()` muestra error específico
+4. **UI**: Toast con descripción clara del problema
 
-### v1.3.2 (June 19, 2024)
-- Added ClickOutside component for dropdown menus
-- Refactored sidebar components
-- Updated Jsvectormap package
+### Ejemplo
+```typescript
+// En componente
+const { showError } = useCotejosErrorToast();
+try {
+  await updateActitudinal(...);
+  toast.success('Actualizado exitosamente');
+} catch (error: any) {
+  showError(error?.errorCode, error?.message);
+  // Muestra: "Puntuación inválida: máximo 20 puntos"
+}
+```
 
-### v1.3.1 (Feb 12, 2024)
-- Fixed layout naming consistency
-- Updated styles
+---
 
-### v1.3.0 (Feb 05, 2024)
-- Upgraded to Next.js 14
-- Added Flatpickr integration
-- Improved form elements
-- Enhanced multiselect functionality
-- Added default layout component
+## 📝 Convenciones de Código
 
-## License
+- **TypeScript**: Tipado estricto, sin `any`
+- **Componentes**: Funcionales con hooks
+- **Nombrado**: PascalCase (componentes), camelCase (variables)
+- **Imports**: Ruta absoluta con alias `@/`
+- **Estilos**: Tailwind CSS, dark mode en todos los componentes
+- **Errores**: Específicos, no genéricos
 
-TailAdmin Next.js Free Version is released under the MIT License.
+---
 
-## Support
+## 🤝 Contribuir
 
-If you find this project helpful, please consider giving it a star on GitHub. Your support helps us continue developing and maintaining this template.
+Este es un proyecto privado del Colegio IDS. Para cambios:
+1. Crear rama desde `dev`
+2. Implementar cambios
+3. Hacer PR a `dev`
+4. Esperar review
+
+---
+
+## 📄 Licencia
+
+Proyecto privado - Colegio IDS
+
+---
+
+## 📞 Soporte
+
+Para soporte técnico, contacta al equipo de desarrollo del Colegio IDS.
+
+---
+
+**Última actualización**: 12 de diciembre de 2025
+**Versión**: 1.0.0
+**Estado**: En desarrollo activo
