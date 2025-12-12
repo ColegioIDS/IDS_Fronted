@@ -268,6 +268,27 @@ const navItems: NavItem[] = [
         requiredPermission: ERICA_COLORS_PERMISSIONS.READ
       },
     ]
+  },
+  {
+    icon: <ClipboardList className="w-5 h-5" />,
+    name: "Cotejo",
+    color: "text-lime-300 dark:text-lime-300",
+    requiredAnyPermissions: [
+      { module: 'cotejo', action: 'read' },
+      { module: 'assignments', action: 'read' }
+    ],
+    subItems: [
+      {
+        name: "Consolidación de Calificaciones",
+        path: "/cotejos",
+        requiredPermission: { module: 'cotejo', action: 'read' }
+      },
+      {
+        name: "Tareas",
+        path: "/assignments",
+        requiredPermission: { module: 'assignments', action: 'read' }
+      },
+    ]
   }
 
 ];

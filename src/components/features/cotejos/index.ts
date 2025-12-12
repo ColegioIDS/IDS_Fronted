@@ -1,0 +1,9 @@
+export { CotejosContent } from './CotejosContent';
+export { CotejosFilters } from './CotejosFilters';
+export { CotejosTable } from './CotejosTable';
+export { CotejosRowActions } from './CotejosRowActions';
+export { CotejoForm } from './CotejoForm';
+export { CotejoEditDialog } from './CotejoEditDialog';
+export { CotejoEditActitudinal } from './CotejoEditActitudinal';
+export { CotejoEditDeclarativo } from './CotejoEditDeclarativo';
+export { CotejoSubmit } from './CotejoSubmit';
