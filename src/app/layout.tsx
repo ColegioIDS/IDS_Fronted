@@ -25,11 +25,23 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
   return (
     <html 
       lang="es" 
       suppressHydrationWarning
     >
+      <head>
+        {/* reCAPTCHA v3 Script */}
+        {recaptchaSiteKey && (
+          <script
+            async
+            defer
+            src={`https://www.google.com/recaptcha/api.js?render=${recaptchaSiteKey}`}
+          />
+        )}
+      </head>
       <body 
         className={`${outfit.className} dark:bg-gray-900 overflow-x-hidden`}
         suppressHydrationWarning
