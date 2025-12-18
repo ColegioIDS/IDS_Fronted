@@ -100,10 +100,10 @@ export function AcademicWeekDetailDialog({
                   Fecha de Inicio
                 </p>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  {formatDateWithTimezone(start, "d")}
+                  {formatDateWithTimezone(start, "d 'de' MMMM")}
                 </p>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                  {formatDateWithTimezone(start, "MMMM, yyyy")}
+                  {formatDateWithTimezone(start, "yyyy")}
                 </p>
               </div>
 
@@ -126,10 +126,10 @@ export function AcademicWeekDetailDialog({
                   Fecha de Fin
                 </p>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  {formatDateWithTimezone(end, "d")}
+                  {formatDateWithTimezone(end, "d 'de' MMMM")}
                 </p>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                  {formatDateWithTimezone(end, "MMMM, yyyy")}
+                  {formatDateWithTimezone(end, "yyyy")}
                 </p>
               </div>
             </div>

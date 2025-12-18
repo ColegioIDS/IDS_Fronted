@@ -20,7 +20,6 @@ import { GradeStatsDialog } from "./GradeStatsDialog";
 import { useGrades } from "@/hooks/data/useGrades";
 import { gradesService } from "@/services/grades.service";
 import { handleApiError, handleApiSuccess } from "@/utils/handleApiError";
-import { parseApiError } from "@/utils/handleApiError";
 import type {
   Grade,
   CreateGradeDto,

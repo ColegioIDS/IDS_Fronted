@@ -12,16 +12,26 @@ import { Course } from '@/types/courses';
 import { COURSE_PERMISSIONS } from '@/constants/modules-permissions/course';
 
 interface EditCoursePageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default function EditCoursePage({ params }: EditCoursePageProps) {
-  const courseId = parseInt(params.id);
+  const [courseId, setCourseId] = useState<number | null>(null);
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const resolveParams = async () => {
+      const { id } = await params;
+      setCourseId(parseInt(id));
+    };
+    resolveParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (courseId === null) return;
+
     const loadCourse = async () => {
       try {
         setLoading(true);
@@ -47,7 +57,7 @@ export default function EditCoursePage({ params }: EditCoursePageProps) {
     );
   }
 
-  if (error || !course) {
+  if (error || !course || courseId === null) {
     return (
       <ProtectedPage module={COURSE_PERMISSIONS.UPDATE.module} action={COURSE_PERMISSIONS.UPDATE.action}>
         <ErrorState

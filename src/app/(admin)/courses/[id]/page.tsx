@@ -14,13 +14,13 @@ import { useAuth } from '@/context/AuthContext';
 import { COURSE_PERMISSIONS } from '@/constants/modules-permissions/course';
 
 interface CourseDetailPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const router = useRouter();
   const { hasPermission } = useAuth();
-  const courseId = parseInt(params.id);
+  const [courseId, setCourseId] = useState<number | null>(null);
 
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,6 +29,16 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const canUpdate = hasPermission(COURSE_PERMISSIONS.UPDATE.module, COURSE_PERMISSIONS.UPDATE.action);
 
   useEffect(() => {
+    const resolveParams = async () => {
+      const { id } = await params;
+      setCourseId(parseInt(id));
+    };
+    resolveParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (courseId === null) return;
+
     const loadCourse = async () => {
       try {
         setLoading(true);
@@ -54,7 +64,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     );
   }
 
-  if (error || !course) {
+  if (error || !course || courseId === null) {
     return (
       <ProtectedPage module={COURSE_PERMISSIONS.READ_ONE.module} action={COURSE_PERMISSIONS.READ_ONE.action}>
         <ErrorState

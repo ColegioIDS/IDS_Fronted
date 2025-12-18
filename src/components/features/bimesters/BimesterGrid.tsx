@@ -20,7 +20,7 @@ interface BimesterGridProps {
   onPageChange: (page: number) => void;
   onEdit?: (bimester: Bimester) => void;
   onDelete?: (bimester: Bimester) => void;
-  onViewDetails: (bimester: Bimester) => void;
+  onViewDetails?: (bimester: Bimester) => void;
 }
 
 /**

@@ -210,7 +210,7 @@ export function AcademicWeekTimeline({
                           <div className="flex-1">
                             <p className="text-xs text-sky-600 dark:text-sky-400 font-medium mb-1">Período</p>
                             <p className="text-sm font-semibold text-sky-900 dark:text-sky-100">
-                              {formatDateWithTimezone(start, "d MMM")} - {formatDateWithTimezone(end, "d MMM")}
+                              {formatDateWithTimezone(start, "dd MMM")} - {formatDateWithTimezone(end, "dd MMM")}
                             </p>
                             <p className="text-xs text-sky-700 dark:text-sky-300 mt-1">
                               {duration} días
