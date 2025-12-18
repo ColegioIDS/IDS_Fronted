@@ -16,6 +16,8 @@ import { CheckCircle2, XCircle, Loader2 as LoaderIcon } from 'lucide-react';
 interface GradeCycleWizardProps {
   onSuccess?: () => void;
   onCancel?: () => void;
+  canCreate?: boolean;
+  canUpdate?: boolean;
 }
 
 const steps = [
@@ -27,7 +29,7 @@ const steps = [
 /**
  * 🧙 Wizard principal para configuración de ciclos-grados - Diseño moderno
  */
-export function GradeCycleWizard({ onSuccess, onCancel }: GradeCycleWizardProps) {
+export function GradeCycleWizard({ onSuccess, onCancel, canCreate = false, canUpdate = false }: GradeCycleWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedCycle, setSelectedCycle] = useState<AvailableCycle | null>(null);
   const [selectedGradeIds, setSelectedGradeIds] = useState<string[]>([]);

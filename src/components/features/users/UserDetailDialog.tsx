@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ParentDetailsForm, TeacherDetailsForm, ParentStudentLinksDialog } from './';
+import { ParentStudentLinksDialog } from './';
 import {
   Mail,
   Phone,
@@ -565,7 +565,6 @@ export function UserDetailDialog({
             {/* ParentDetails Tab */}
             {(parentDetails || roleName?.toLowerCase().includes('padre') || roleName?.toLowerCase().includes('parent')) && (
               <TabsContent value="parent" className="space-y-4 mt-4">
-                <ParentDetailsForm userId={user.id} onSubmit={async () => {}} />
                 
                 {/* Display existing parent details */}
                 <div className="grid grid-cols-1 gap-4">
@@ -659,7 +658,6 @@ export function UserDetailDialog({
             {/* TeacherDetails Tab */}
             {(teacherDetails || roleName?.toLowerCase().includes('maestro') || roleName?.toLowerCase().includes('docente') || roleName?.toLowerCase().includes('teacher')) && (
               <TabsContent value="teacher" className="space-y-4 mt-4">
-                <TeacherDetailsForm userId={user.id} onSubmit={async () => {}} />
                 
                 <div className="grid grid-cols-1 gap-4">
                   {/* Employment Section */}

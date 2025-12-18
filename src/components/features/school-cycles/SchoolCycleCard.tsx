@@ -124,41 +124,6 @@ export function SchoolCycleCard({
         shadow-lg hover:shadow-2xl hover:-translate-y-1
         transition-all duration-300 ease-out">
 
-        {/* Progress Indicator - Only for ongoing cycles */}
-        {isOngoing && !cycle.isArchived && (
-          <div className="absolute top-3 left-3 z-10">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="relative cursor-help">
-                  <div className="w-16 h-16 rounded-full border-4 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800">
-                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 40 40">
-                      <circle
-                        cx="24"
-                        cy="24"
-                        r="20"
-                        fill="none"
-                        stroke="currentColor"
-                        className="text-blue-600 dark:text-blue-400"
-                        strokeWidth="4"
-                        strokeDasharray={`${(progressPercentage / 100) * 125.6} 125.6`}
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      {Math.round(progressPercentage)}%
-                    </span>
-                  </div>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
-                <p className="font-semibold">Progreso del ciclo: {Math.round(progressPercentage)}%</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        )}
-
         {/* Header */}
         <CardHeader className="bg-white dark:bg-gray-900 border-b-2 border-gray-200 dark:border-gray-700
           group-hover:border-blue-200 dark:group-hover:border-blue-800 transition-colors duration-300">

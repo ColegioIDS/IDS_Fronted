@@ -8,6 +8,7 @@ import { RefreshCw, List, Plus } from 'lucide-react';
 import { useSections } from '@/hooks/data/useSections';
 import { useSectionFormData } from '@/hooks/data/useSectionFormData';
 import { usePermissions } from '@/hooks/usePermissions';
+import { handleApiError } from '@/utils/handleApiError';
 import { 
   Section, 
   SectionFilters as SectionFiltersType,
@@ -15,6 +16,7 @@ import {
   UpdateSectionDto,
 } from '@/types/sections.types';
 import { ProtectedPage } from '@/components/shared/permissions/ProtectedPage';
+import { ErrorAlert, ConfirmDialog } from '@/components/shared/feedback';
 import { SectionStats } from './SectionStats';
 import { SectionFilters } from './SectionFilters';
 import { SectionsGrid } from './SectionsGrid';
@@ -22,7 +24,7 @@ import { SectionForm } from './SectionForm';
 import { SectionsPagination } from './SectionsPagination';
 import { SectionToast, ToastType } from './SectionToast';
 import { SectionDetailView } from './SectionDetailView';
-import { ErrorAlert } from '@/components/shared/feedback/ErrorAlert';
+import { toast } from 'sonner';
 
 interface ApiError {
   title: string;
@@ -36,16 +38,29 @@ interface ToastMessage {
   message: string;
 }
 
-export function SectionPageContent() {
+interface SectionPageContentProps {
+  canView?: boolean;
+  canCreate?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+}
+
+export function SectionPageContent({
+  canView = false,
+  canCreate = false,
+  canEdit = false,
+  canDelete = false,
+}: SectionPageContentProps) {
   const [activeTab, setActiveTab] = useState<'list' | 'form' | 'detail'>('list');
   const [editingSection, setEditingSection] = useState<Section | undefined>(undefined);
   const [viewingSection, setViewingSection] = useState<Section | undefined>(undefined);
   const [globalError, setGlobalError] = useState<ApiError | null>(null);
-  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [toastMessage, setToastMessage] = useState<ToastMessage | null>(null);
   const [filters, setFilters] = useState<SectionFiltersType>({});
   const [isSaving, setIsSaving] = useState(false);
-
-  const { hasPermission } = usePermissions();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sectionToDelete, setSectionToDelete] = useState<Section | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     data,
@@ -74,10 +89,6 @@ export function SectionPageContent() {
     isLoading: isLoadingFormData,
     error: formDataError,
   } = useSectionFormData();
-
-  // Permisos
-  const canRead = hasPermission('section', 'read');
-  const canCreate = hasPermission('section', 'create');
 
   const handleFilterChange = useCallback((newFilters: SectionFiltersType) => {
     setFilters(newFilters);
@@ -121,7 +132,7 @@ export function SectionPageContent() {
     setViewingSection(section);
     setActiveTab('detail');
     setGlobalError(null);
-    setToast(null);
+    setToastMessage(null);
   }, []);
 
   const handleFormSuccess = useCallback(() => {
@@ -141,61 +152,61 @@ export function SectionPageContent() {
     try {
       setIsSaving(true);
       setGlobalError(null);
-      setToast(null);
+      setToastMessage(null);
       
       if (editingSection) {
         // Actualizar
         await updateSection(editingSection.id, data as UpdateSectionDto);
-        setToast({
-          type: 'success',
-          title: 'Sección actualizada',
-          message: `La sección "${data.name}" ha sido actualizada correctamente.`,
-        });
+        toast.success(`La sección "${data.name}" ha sido actualizada correctamente`);
       } else {
         // Crear
         await createSection(data as CreateSectionDto);
-        setToast({
-          type: 'success',
-          title: 'Sección creada',
-          message: `La sección "${data.name}" ha sido creada exitosamente.`,
-        });
+        toast.success(`La sección "${data.name}" ha sido creada exitosamente`);
       }
       
       handleFormSuccess();
     } catch (err: any) {
-      setGlobalError({
-        title: editingSection ? 'Error al actualizar sección' : 'Error al crear sección',
-        message: err.message || 'Ha ocurrido un error inesperado',
-        details: err.details,
-      });
+      const handled = handleApiError(err, editingSection ? 'Error al actualizar sección' : 'Error al crear sección');
+      if (handled && typeof handled === 'object') {
+        setGlobalError({
+          title: editingSection ? 'Error al actualizar sección' : 'Error al crear sección',
+          message: handled.message || 'Ha ocurrido un error inesperado',
+          details: handled.details || [],
+        });
+      }
       throw err; // Re-throw para que el formulario lo maneje
     } finally {
       setIsSaving(false);
     }
   }, [editingSection, createSection, updateSection, handleFormSuccess]);
 
-  const handleDelete = useCallback(async (section: Section) => {
-    if (!window.confirm(`¿Estás seguro de eliminar la sección "${section.name}"?`)) {
-      return;
-    }
+  const handleOpenDelete = useCallback((section: Section) => {
+    if (!canDelete) return;
+    setSectionToDelete(section);
+    setDeleteDialogOpen(true);
+  }, [canDelete]);
+
+  const handleDelete = useCallback(async () => {
+    if (!canDelete || !sectionToDelete) return;
 
     try {
+      setIsDeleting(true);
       setGlobalError(null);
-      setToast(null);
-      await deleteSection(section.id);
-      setToast({
-        type: 'success',
-        title: 'Sección eliminada',
-        message: `La sección "${section.name}" ha sido eliminada correctamente.`,
-      });
+      setToastMessage(null);
+      await deleteSection(sectionToDelete.id);
+      toast.success(`La sección "${sectionToDelete.name}" ha sido eliminada correctamente`);
+      setDeleteDialogOpen(false);
+      setSectionToDelete(null);
+      refresh();
     } catch (err: any) {
-      setGlobalError({
-        title: 'Error al eliminar sección',
-        message: err.message || 'No se pudo eliminar la sección',
-        details: err.details,
-      });
+      const handled = handleApiError(err, 'Error al eliminar sección');
+      if (handled && typeof handled === 'object') {
+        toast.error(handled.message || 'No se pudo eliminar la sección');
+      }
+    } finally {
+      setIsDeleting(false);
     }
-  }, [deleteSection]);
+  }, [canDelete, sectionToDelete, deleteSection, refresh]);
 
   // Calcular stats
   const sections = data || [];
@@ -266,11 +277,11 @@ export function SectionPageContent() {
         )}
 
         {/* Toast de éxito */}
-        {toast && (
+        {toastMessage && (
           <SectionToast
-            type={toast.type}
-            title={toast.title}
-            message={toast.message}
+            type={toastMessage.type}
+            title={toastMessage.title}
+            message={toastMessage.message}
           />
         )}
 
@@ -320,9 +331,12 @@ export function SectionPageContent() {
             <SectionsGrid
               sections={sections}
               isLoading={isLoading}
-              onView={handleView}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
+              onView={canView ? handleView : undefined}
+              onEdit={canEdit ? handleEdit : undefined}
+              onDelete={canDelete ? handleOpenDelete : undefined}
+              canView={canView}
+              canEdit={canEdit}
+              canDelete={canDelete}
             />
 
             {/* Paginación */}
@@ -367,11 +381,24 @@ export function SectionPageContent() {
                   setViewingSection(undefined);
                   setActiveTab('list');
                 }}
-                canEdit={hasPermission('section', 'update')}
+                canEdit={canEdit}
               />
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          title="Eliminar sección"
+          description={sectionToDelete ? `¿Estás seguro de que deseas eliminar la sección "${sectionToDelete.name}"? Esta acción no se puede deshacer.` : undefined}
+          confirmText="Eliminar"
+          cancelText="Cancelar"
+          type="danger"
+          isLoading={isDeleting}
+          onConfirm={handleDelete}
+        />
       </div>
     </ProtectedPage>
   );

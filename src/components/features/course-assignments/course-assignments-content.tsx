@@ -26,13 +26,25 @@ import { useCourseAssignment } from '@/hooks/useCourseAssignment';
 import GradeSectionSelector from './components/grade-section-selector';
 import CourseTeacherTable from './components/course-teacher-table';
 
-export default function CourseAssignmentsContent() {
+interface CourseAssignmentsContentProps {
+  canView?: boolean;
+  canCreate?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+}
+
+export default function CourseAssignmentsContent({
+  canView = true,
+  canCreate = true,
+  canEdit = true,
+  canDelete = true,
+}: CourseAssignmentsContentProps = {}) {
   // ✅ NUEVO: Verificar permisos
   const { hasPermission } = useAuth();
   const canRead = hasPermission('course-assignment', 'read');
-  const canCreate = hasPermission('course-assignment', 'create');
-  const canUpdate = hasPermission('course-assignment', 'update');
-  const canBulkUpdate = hasPermission('course-assignment', 'bulk-update');
+  const canCreateLocal = canCreate && hasPermission('course-assignment', 'create');
+  const canUpdateLocal = canEdit && hasPermission('course-assignment', 'update');
+  const canBulkUpdate = canEdit && hasPermission('course-assignment', 'bulk-update');
 
   // Hook principal
   const { 
@@ -418,7 +430,7 @@ export default function CourseAssignmentsContent() {
             <CourseTeacherTable 
               gradeId={selectedGradeId} 
               sectionId={selectedSectionId}
-              canUpdate={canUpdate}
+              canUpdate={canUpdateLocal}
               canBulkUpdate={canBulkUpdate}
             />
           </div>

@@ -28,65 +28,102 @@ export const useLoginForm = () => {
   const onSubmit = async (dataForm: LoginFormData) => {
     try {
       setErrorMessage(""); // Limpiar errores previos
-      setIsVerifyingRecaptcha(true);
-
-      // 1. Ejecutar reCAPTCHA
-      const recaptchaToken = await executeRecaptcha('login');
       
-      if (!recaptchaToken) {
-        throw new Error('No se pudo verificar reCAPTCHA');
-      }
+      // 1. PRIMERO validar credenciales en el backend (sin reCAPTCHA)
+      try {
+        console.log('Validating credentials...');
+        const user = await signin(dataForm);
+        
+        // Las credenciales son válidas, ahora verificar reCAPTCHA
+        console.log('Credentials valid, proceeding with reCAPTCHA verification...');
+        setIsVerifyingRecaptcha(true);
 
-      // 2. Verificar el token en el servidor
-      const recaptchaResult = await verifyRecaptchaToken(recaptchaToken);
+        // 2. Ejecutar reCAPTCHA
+        let recaptchaToken: string | null = null;
+        try {
+          recaptchaToken = await executeRecaptcha('login');
+          
+          if (!recaptchaToken || recaptchaToken.trim() === '') {
+            console.error('reCAPTCHA returned empty token');
+            setIsVerifyingRecaptcha(false);
+            setErrorMessage('Error al verificar seguridad. Por favor, intenta de nuevo.');
+            return;
+          }
+          console.log('reCAPTCHA token obtained successfully');
+        } catch (recaptchaError: any) {
+          console.error('reCAPTCHA execution error:', recaptchaError);
+          setIsVerifyingRecaptcha(false);
+          setErrorMessage('Error al verificar seguridad. Por favor, intenta de nuevo.');
+          return;
+        }
 
-      console.log('reCAPTCHA response:', recaptchaResult);
+        // 3. Verificar el token en el servidor
+        let recaptchaResult: any;
+        try {
+          recaptchaResult = await verifyRecaptchaToken(recaptchaToken);
+          console.log('reCAPTCHA response:', recaptchaResult);
+        } catch (verifyError: any) {
+          console.error('reCAPTCHA verification error:', verifyError);
+          setIsVerifyingRecaptcha(false);
+          setErrorMessage('No se pudo verificar reCAPTCHA. Por favor, intenta de nuevo.');
+          return;
+        }
 
-      // 3. Validar resultado y score
-      if (!recaptchaResult.success) {
-        console.error('reCAPTCHA verification failed:', {
-          success: recaptchaResult.success,
-          error_codes: recaptchaResult.error_codes,
-        });
-        throw new Error('Verificación de seguridad fallida. Por favor, intenta de nuevo.');
-      }
+        // 4. Validar resultado y score
+        if (!recaptchaResult.success) {
+          console.error('reCAPTCHA verification failed:', {
+            success: recaptchaResult.success,
+            error_codes: recaptchaResult.error_codes,
+          });
+          setIsVerifyingRecaptcha(false);
+          setErrorMessage('Verificación de seguridad fallida. Por favor, intenta de nuevo.');
+          return;
+        }
 
-      const isValidScore = isValidRecaptchaScore(recaptchaResult.score);
-      console.log('reCAPTCHA score validation:', {
-        score: recaptchaResult.score,
-        isValid: isValidScore,
-      });
-
-      if (!isValidScore) {
-        console.warn('reCAPTCHA score too low:', {
+        const isValidScore = isValidRecaptchaScore(recaptchaResult.score);
+        console.log('reCAPTCHA score validation:', {
           score: recaptchaResult.score,
-          threshold: 0.5,
+          isValid: isValidScore,
         });
-        throw new Error('Verificación de seguridad fallida. Por favor, intenta de nuevo.');
+
+        if (!isValidScore) {
+          console.warn('reCAPTCHA score too low:', {
+            score: recaptchaResult.score,
+            threshold: 0.5,
+          });
+          setIsVerifyingRecaptcha(false);
+          setErrorMessage('Parece que hay actividad sospechosa. Por favor, intenta de nuevo más tarde.');
+          return;
+        }
+
+        console.log('reCAPTCHA verification passed:', {
+          score: recaptchaResult.score,
+          action: recaptchaResult.action,
+        });
+
+        setIsVerifyingRecaptcha(false);
+
+        // 5. Si reCAPTCHA pasó, hacer login
+        login(user);
+      } catch (signInError: any) {
+        // Error de credenciales - mostrar error sin pasar por reCAPTCHA
+        console.error('Sign in error:', signInError);
+        setIsVerifyingRecaptcha(false);
+        
+        if (signInError.details && Array.isArray(signInError.details)) {
+          setErrorMessage(signInError.details);
+        } else if (signInError.message) {
+          setErrorMessage(signInError.message);
+        } else {
+          setErrorMessage("Credenciales inválidas");
+        }
       }
-
-      console.log('reCAPTCHA verification passed:', {
-        score: recaptchaResult.score,
-        action: recaptchaResult.action,
-      });
-
-      setIsVerifyingRecaptcha(false);
-
-      // 4. Si reCAPTCHA pasó, proceder con login
-      const user = await signin(dataForm);
-      // ✅ El método login() en AuthContext ya maneja la redirección a /dashboard
-      login(user);
     } catch (error: any) {
       setIsVerifyingRecaptcha(false);
       
-      // ✨ Manejar errores estructurados
-      if (error.details && Array.isArray(error.details)) {
-        setErrorMessage(error.details);
-      } else if (error.message) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage("Error al iniciar sesión");
-      }
+      // Fallback para errores no capturados
+      console.error('Unexpected error in login form:', error);
+      setErrorMessage("Error al iniciar sesión. Por favor, intenta de nuevo.");
     }
   };
 

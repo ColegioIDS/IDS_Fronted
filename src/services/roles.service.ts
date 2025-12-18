@@ -199,7 +199,7 @@ export const rolesService = {
     roleId: number,
     data: RemoveMultiplePermissionsDto
   ): Promise<{ removed: number }> {
-    const response = await api.delete(`/api/roles/${roleId}/permissions/bulk`, { data });
+    const response = await api.post(`/api/roles/${roleId}/permissions/remove-bulk`, data);
     
     if (!response.data?.success) {
       throw new Error(response.data?.message || 'Error al remover permisos');

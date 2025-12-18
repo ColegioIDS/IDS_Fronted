@@ -162,7 +162,7 @@ export default function SignInForm() {
           {/* reCAPTCHA Badge Info */}
           <div className="text-center mt-4 text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1">
             <svg
-              className="w-3 h-3"
+              className="w-3 h-3 text-blue-500 dark:text-blue-400"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="currentColor"

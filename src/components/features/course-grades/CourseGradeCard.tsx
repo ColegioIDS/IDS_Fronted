@@ -26,6 +26,9 @@ interface CourseGradeCardProps {
   onEdit: (courseGrade: CourseGradeDetail) => void;
   onDelete: (courseGrade: CourseGradeDetail) => void;
   onViewDetails: (courseGrade: CourseGradeDetail) => void;
+  canReadOne?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function CourseGradeCard({
@@ -33,30 +36,33 @@ export default function CourseGradeCard({
   onEdit,
   onDelete,
   onViewDetails,
+  canReadOne = true,
+  canUpdate = false,
+  canDelete = false,
 }: CourseGradeCardProps) {
   return (
     <TooltipProvider>
       <Card className="overflow-hidden border-2 border-gray-200 dark:border-gray-800 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
         {/* Header */}
         <CardHeader className="bg-indigo-50 dark:bg-indigo-950 border-b-2 border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 flex-1">
-              <div className="p-3 rounded-xl bg-indigo-100 dark:bg-indigo-900 shadow-sm">
+          <div className="flex gap-3">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="p-3 rounded-xl bg-indigo-100 dark:bg-indigo-900 shadow-sm flex-shrink-0">
                 <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
               </div>
 
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">
                   {courseGrade.course.name}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-xs text-gray-600 dark:text-gray-400">
                   {courseGrade.course.code}
                 </p>
               </div>
             </div>
 
-            {/* Type Badge */}
-            <div className="flex items-center gap-2">
+            {/* Type Badge & Menu */}
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
               <Tooltip>
                 <TooltipTrigger asChild>
                   {courseGrade.isCore ? (
@@ -89,22 +95,30 @@ export default function CourseGradeCard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => onViewDetails(courseGrade)}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    Ver Detalles
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onEdit(courseGrade)}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Editar
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => onDelete(courseGrade)}
-                    className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Eliminar
-                  </DropdownMenuItem>
+                  {canReadOne && (
+                    <DropdownMenuItem onClick={() => onViewDetails(courseGrade)}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      Ver Detalles
+                    </DropdownMenuItem>
+                  )}
+                  {canUpdate && (
+                    <DropdownMenuItem onClick={() => onEdit(courseGrade)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Editar
+                    </DropdownMenuItem>
+                  )}
+                  {canDelete && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => onDelete(courseGrade)}
+                        className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -146,21 +160,23 @@ export default function CourseGradeCard({
         )}
 
         {/* Action Button */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={() => onViewDetails(courseGrade)}
-              variant="outline"
-              className="w-full mt-2 border-2 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 shadow-sm hover:shadow transition-all"
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              Ver Detalles Completos
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
-            <p className="font-semibold">Ver información completa de la asignación</p>
-          </TooltipContent>
-        </Tooltip>
+        {canReadOne && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => onViewDetails(courseGrade)}
+                variant="outline"
+                className="w-full mt-2 border-2 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 shadow-sm hover:shadow transition-all"
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                Ver Detalles Completos
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+              <p className="font-semibold">Ver información completa de la asignación</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </CardContent>
     </Card>
   </TooltipProvider>

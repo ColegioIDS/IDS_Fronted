@@ -26,6 +26,7 @@ interface SectionCardProps {
   onEdit?: (section: Section) => void;
   onDelete?: (section: Section) => void;
   onViewStats?: (section: Section) => void;
+  canView?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
 }
@@ -39,6 +40,7 @@ export function SectionCard({
   onEdit,
   onDelete,
   onViewStats,
+  canView = true,
   canEdit = true,
   canDelete = true,
 }: SectionCardProps) {
@@ -218,22 +220,24 @@ export function SectionCard({
 
         <CardFooter className="relative flex flex-wrap gap-2 pt-4 pb-5 border-t-2 border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
           {/* Ver */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onView?.(section)}
-                className="flex-1 min-w-[80px] border-2 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 hover:border-blue-500 dark:hover:bg-blue-950/40 dark:hover:border-blue-600 transition-all duration-200 font-semibold shadow-sm hover:shadow"
-              >
-                <Eye className="w-3.5 h-3.5 mr-1.5" strokeWidth={2.5} />
-                Ver
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
-              <p className="font-semibold">Ver detalles completos de la sección</p>
-            </TooltipContent>
-          </Tooltip>
+          {canView && onView && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onView(section)}
+                  className="flex-1 min-w-[80px] border-2 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 hover:border-blue-500 dark:hover:bg-blue-950/40 dark:hover:border-blue-600 transition-all duration-200 font-semibold shadow-sm hover:shadow"
+                >
+                  <Eye className="w-3.5 h-3.5 mr-1.5" strokeWidth={2.5} />
+                  Ver
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                <p className="font-semibold">Ver detalles completos de la sección</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
 
           {/* Editar */}
           {canEdit && onEdit && (
@@ -256,7 +260,7 @@ export function SectionCard({
           )}
 
           {/* Stats */}
-          {onViewStats && (
+          {canView && onViewStats && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

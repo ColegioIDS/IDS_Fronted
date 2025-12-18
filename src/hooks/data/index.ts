@@ -8,4 +8,4 @@ export { useAttendanceStatuses } from './useAttendanceStatuses';
 export { useAttendanceStatusPermissions } from './useAttendanceStatusPermissions';
 export { useParentDetails } from './useParentDetails';
 export { useTeacherDetails } from './useTeacherDetails';
-export { useParentStudentLinks } from './useParentStudentLinks';
+export { useParentStudentLinks } from './useParentStudentLinks';export { useStudentExport } from './useStudentExport';

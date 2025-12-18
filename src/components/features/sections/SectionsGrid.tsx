@@ -15,6 +15,7 @@ interface SectionsGridProps {
   onEdit?: (section: Section) => void;
   onDelete?: (section: Section) => void;
   onViewStats?: (section: Section) => void;
+  canView?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
 }
@@ -29,6 +30,7 @@ export function SectionsGrid({
   onEdit,
   onDelete,
   onViewStats,
+  canView = true,
   canEdit = true,
   canDelete = true,
 }: SectionsGridProps) {
@@ -86,6 +88,7 @@ export function SectionsGrid({
               onEdit={onEdit}
               onDelete={onDelete}
               onViewStats={onViewStats}
+              canView={canView}
               canEdit={canEdit}
               canDelete={canDelete}
             />

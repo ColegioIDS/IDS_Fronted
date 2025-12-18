@@ -27,6 +27,9 @@ interface CoursesGridProps {
   onClearFilters?: () => void;
   onUpdate?: () => void;
   onEdit?: (courseId: number) => void;
+  canReadOne?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export function CoursesGrid({
@@ -41,6 +44,9 @@ export function CoursesGrid({
   onClearFilters,
   onUpdate,
   onEdit,
+  canReadOne = true,
+  canUpdate = false,
+  canDelete = false,
 }: CoursesGridProps) {
   // Loading state
   if (isLoading) {
@@ -117,6 +123,9 @@ export function CoursesGrid({
             course={course}
             onUpdate={onUpdate}
             onEdit={onEdit}
+            canReadOne={canReadOne}
+            canUpdate={canUpdate}
+            canDelete={canDelete}
           />
         ))}
       </div>

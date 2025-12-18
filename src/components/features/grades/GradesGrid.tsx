@@ -15,6 +15,7 @@ interface GradesGridProps {
   onEdit?: (grade: Grade) => void;
   onDelete?: (grade: Grade) => void;
   onViewStats?: (grade: Grade) => void;
+  canView?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
 }
@@ -29,6 +30,7 @@ export function GradesGrid({
   onEdit,
   onDelete,
   onViewStats,
+  canView = true,
   canEdit = true,
   canDelete = true,
 }: GradesGridProps) {
@@ -86,6 +88,7 @@ export function GradesGrid({
               onEdit={onEdit}
               onDelete={onDelete}
               onViewStats={onViewStats}
+              canView={canView}
               canEdit={canEdit}
               canDelete={canDelete}
             />

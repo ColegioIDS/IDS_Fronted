@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
 import Breadcrumb from '@/components/common/Breadcrumb';
 import { ProtectedPage } from '@/components/shared/permissions/ProtectedPage';
+import { COURSE_PERMISSIONS } from '@/constants/modules-permissions/course';
 
 // Importación dinámica del nuevo contenido con estructura de features
 const CoursesPageContent = dynamic(
@@ -14,7 +15,7 @@ const CoursesPageContent = dynamic(
 
 export default function CoursesPage() {
   return (
-    <ProtectedPage module="course" action="read">
+    <ProtectedPage module={COURSE_PERMISSIONS.READ.module} action={COURSE_PERMISSIONS.READ.action}>
       <div className="space-y-6">
         <Breadcrumb
           pageTitle="Gestión de Cursos"

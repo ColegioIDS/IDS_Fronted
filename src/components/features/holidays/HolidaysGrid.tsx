@@ -13,6 +13,7 @@ interface HolidaysGridProps {
   onView?: (holiday: Holiday) => void;
   onEdit?: (holiday: Holiday) => void;
   onDelete?: (holiday: Holiday) => void;
+  canView?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
 }
@@ -26,6 +27,7 @@ export function HolidaysGrid({
   onView,
   onEdit,
   onDelete,
+  canView = false,
   canEdit = false,
   canDelete = false,
 }: HolidaysGridProps) {
@@ -56,6 +58,7 @@ export function HolidaysGrid({
           onView={onView}
           onEdit={onEdit}
           onDelete={onDelete}
+          canView={canView}
           canEdit={canEdit}
           canDelete={canDelete}
         />

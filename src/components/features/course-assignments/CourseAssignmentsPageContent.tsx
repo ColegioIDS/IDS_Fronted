@@ -29,6 +29,7 @@ import {
   Check
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { COURSE_ASSIGNMENT_PERMISSIONS } from '@/constants/modules-permissions/course-assignment';
 import ProtectedContent from '@/components/common/ProtectedContent';
 import { useCourseAssignment } from '@/hooks/useCourseAssignment';
 import GradeSectionSelector from './components/grade-section-selector';
@@ -38,7 +39,12 @@ import { toast } from 'sonner';
 export default function CourseAssignmentsPageContent() {
   // Verificar permisos
   const { hasPermission } = useAuth();
-  const canRead = hasPermission('course-assignment', 'read');
+  const canRead = hasPermission(COURSE_ASSIGNMENT_PERMISSIONS.READ.module, COURSE_ASSIGNMENT_PERMISSIONS.READ.action);
+  const canCreate = hasPermission(COURSE_ASSIGNMENT_PERMISSIONS.CREATE.module, COURSE_ASSIGNMENT_PERMISSIONS.CREATE.action);
+  const canUpdate = hasPermission(COURSE_ASSIGNMENT_PERMISSIONS.UPDATE.module, COURSE_ASSIGNMENT_PERMISSIONS.UPDATE.action);
+  const canDelete = hasPermission(COURSE_ASSIGNMENT_PERMISSIONS.DELETE.module, COURSE_ASSIGNMENT_PERMISSIONS.DELETE.action);
+  const canBulkCreate = hasPermission(COURSE_ASSIGNMENT_PERMISSIONS.BULK_CREATE.module, COURSE_ASSIGNMENT_PERMISSIONS.BULK_CREATE.action);
+  const canBulkUpdate = hasPermission(COURSE_ASSIGNMENT_PERMISSIONS.BULK_UPDATE.module, COURSE_ASSIGNMENT_PERMISSIONS.BULK_UPDATE.action);
 
   // Hook principal
   const { 

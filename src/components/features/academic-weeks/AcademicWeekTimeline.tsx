@@ -3,7 +3,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Calendar, Clock, CheckCircle2, Flag } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, Flag, BookOpen, Hash } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { format, differenceInDays, isWithinInterval } from 'date-fns';
@@ -107,22 +107,22 @@ export function AcademicWeekTimeline({
       {timelineSections.map((section, sectionIndex) => (
         <div key={section.bimesterId || `no-bimester-${sectionIndex}`} className="relative">
           {/* Header del bimestre */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex items-center justify-center w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-full">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-indigo-200 dark:border-indigo-800">
+            <div className="p-2.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-700">
               <Flag className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h3 className="text-lg font-bold text-indigo-900 dark:text-indigo-100">
                 {section.bimesterName}
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
                 {section.weeks.length} semana{section.weeks.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
 
           {/* Línea vertical */}
-          <div className="absolute left-5 top-16 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
+          <div className="absolute left-5 top-16 bottom-0 w-0.5 bg-gradient-to-b from-indigo-300 via-indigo-200 to-indigo-100 dark:from-indigo-700 dark:via-indigo-800 dark:to-indigo-900" />
 
           {/* Semanas */}
           <div className="space-y-4 ml-6">
@@ -137,51 +137,57 @@ export function AcademicWeekTimeline({
               return (
                 <div key={week.id} className="relative">
                   {/* Punto en la línea */}
-                  <div
-                    className={cn(
-                      'absolute -left-[26px] top-6 w-3 h-3 rounded-full border-2 bg-white dark:bg-gray-900',
-                      isPast
-                        ? 'border-gray-400 dark:border-gray-600'
-                        : isInProgress
-                        ? 'border-blue-500 dark:border-blue-400 animate-pulse'
-                        : theme.border.replace('border-l-', 'border-'),
-                    )}
-                  />
+                  <div className="absolute -left-[29px] top-6 flex items-center justify-center">
+                    <div
+                      className={cn(
+                        'w-5 h-5 rounded-full border-2 flex items-center justify-center',
+                        isPast
+                          ? 'border-emerald-500 dark:border-emerald-400 bg-emerald-50 dark:bg-emerald-950'
+                          : isInProgress
+                          ? 'border-sky-500 dark:border-sky-400 bg-sky-50 dark:bg-sky-950 animate-pulse'
+                          : 'border-indigo-500 dark:border-indigo-400 bg-indigo-50 dark:bg-indigo-950',
+                      )}
+                    >
+                      <div className={cn('w-2 h-2 rounded-full', isPast ? 'bg-emerald-500' : isInProgress ? 'bg-sky-500' : 'bg-indigo-500')} />
+                    </div>
+                  </div>
 
                   {/* Card de la semana */}
                   <Card
                     className={cn(
-                      'ml-6 transition-all duration-200 border-l-4 cursor-pointer',
-                      'hover:shadow-lg hover:-translate-y-0.5',
+                      'ml-6 transition-all duration-300 border-0 shadow-sm cursor-pointer overflow-hidden',
+                      'hover:shadow-lg hover:-translate-y-1',
                       week.isActive
-                        ? theme.border
-                        : 'border-l-gray-300 dark:border-l-gray-600',
-                      isInProgress && 'ring-2 ring-blue-500 dark:ring-blue-400',
+                        ? 'bg-white dark:bg-slate-900'
+                        : 'bg-slate-50 dark:bg-slate-950',
+                      isInProgress && 'ring-2 ring-sky-400 dark:ring-sky-500',
                     )}
                     onClick={() => onWeekClick?.(week)}
                   >
-                    <div className="p-4">
+                    {/* Top border color */}
+                    <div className={cn('h-1 w-full', theme.border)} />
+                    <div className="p-5">
                       {/* Header */}
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
                             {/* Badge número */}
-                            <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold rounded">
+                            <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-full">
                               #{week.number}
                             </span>
                             {/* Badge tipo */}
-                            <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', theme.badge)}>
+                            <span className={cn('px-3 py-1 rounded-full text-xs font-bold text-white', theme.badge)}>
                               {WEEK_TYPE_LABELS[week.weekType]}
                             </span>
                             {/* Badge estado */}
                             {isInProgress && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium animate-pulse">
+                              <span className="flex items-center gap-1 px-3 py-1 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 rounded-full text-xs font-semibold animate-pulse border border-sky-200 dark:border-sky-700">
                                 <Clock className="h-3 w-3" />
                                 En curso
                               </span>
                             )}
                             {isPast && week.isActive && (
-                              <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                              <span className="flex items-center gap-1 px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-semibold border border-emerald-200 dark:border-emerald-700">
                                 <CheckCircle2 className="h-3 w-3" />
                                 Completada
                               </span>
@@ -189,56 +195,42 @@ export function AcademicWeekTimeline({
                           </div>
 
                           {/* Título */}
-                          <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-                            Semana {week.number} - {WEEK_TYPE_LABELS[week.weekType]}
+                          <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                            Semana {week.number}
                           </h4>
                         </div>
                       </div>
 
                       {/* Fechas */}
-                      <div className="flex items-center gap-4 text-sm mb-3">
-                        <div className="flex items-center gap-2">
-                          <Calendar className={cn('h-4 w-4', theme.icon)} />
-                          <div>
-                            <p className="text-gray-700 dark:text-gray-300 font-medium">
-                              {formatDateWithTimezone(start, "d 'de' MMMM")}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Inicio</p>
+                      <div className="p-3 rounded-lg bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-800 mb-4">
+                        <div className="flex items-center gap-3 text-sm">
+                          <div className="p-2 rounded-lg bg-sky-100 dark:bg-sky-900/40 flex-shrink-0">
+                            <Calendar className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                           </div>
-                        </div>
-
-                        <div className="flex-1 flex items-center justify-center">
-                          <div className="h-px flex-1 bg-gray-300 dark:bg-gray-600" />
-                          <span className="px-3 text-xs text-gray-500 dark:text-gray-400">
-                            {duration} días
-                          </span>
-                          <div className="h-px flex-1 bg-gray-300 dark:bg-gray-600" />
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <div className="text-right">
-                            <p className="text-gray-700 dark:text-gray-300 font-medium">
-                              {format(end, "d 'de' MMMM", { locale: es })}
+                          <div className="flex-1">
+                            <p className="text-xs text-sky-600 dark:text-sky-400 font-medium mb-1">Período</p>
+                            <p className="text-sm font-semibold text-sky-900 dark:text-sky-100">
+                              {formatDateWithTimezone(start, "d MMM")} - {formatDateWithTimezone(end, "d MMM")}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Fin</p>
+                            <p className="text-xs text-sky-700 dark:text-sky-300 mt-1">
+                              {duration} días
+                            </p>
                           </div>
-                          <Calendar className={cn('h-4 w-4', theme.icon)} />
                         </div>
                       </div>
 
                       {/* Progress bar si está en curso */}
                       {isInProgress && (
-                        <div className="mb-3">
-                          <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
-                            <span>Progreso</span>
+                        <div className="mb-4 p-3 bg-sky-50 dark:bg-sky-900/20 rounded-lg border border-sky-200 dark:border-sky-700">
+                          <div className="flex items-center justify-between text-xs text-sky-700 dark:text-sky-300 font-semibold mb-2">
+                            <span>Progreso de la semana</span>
                             <span>
-                              {Math.ceil(differenceInDays(today, start))} /{' '}
-                              {duration} días
+                              {Math.ceil(differenceInDays(today, start))} / {duration} días
                             </span>
                           </div>
-                          <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div className="h-2 bg-sky-200 dark:bg-sky-900 rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-blue-500 transition-all duration-300"
+                              className="h-full bg-sky-500 transition-all duration-300"
                               style={{
                                 width: `${(differenceInDays(today, start) / duration) * 100}%`,
                               }}
@@ -249,17 +241,23 @@ export function AcademicWeekTimeline({
 
                       {/* Objetivos */}
                       {week.objectives && (
-                        <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            {week.objectives}
-                          </p>
+                        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 mb-4">
+                          <div className="flex gap-2">
+                            <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex-shrink-0">
+                              <BookOpen className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <p className="text-xs text-amber-800 dark:text-amber-200 line-clamp-2">
+                              {week.objectives}
+                            </p>
+                          </div>
                         </div>
                       )}
 
                       {/* Footer con año y mes */}
-                      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
-                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {week.year}</span>
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {format(start, 'MMMM', { locale: es })}</span>
+                      <div className="flex items-center gap-2 pt-3 border-t border-slate-200 dark:border-slate-700 text-xs">
+                        <div className="flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
+                          <Hash className="w-3 h-3" /> {week.year}
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -271,17 +269,16 @@ export function AcademicWeekTimeline({
       ))}
 
       {/* Resumen final */}
-      <div className="flex items-center gap-3 pt-4">
-        <div className="flex items-center justify-center w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full">
-          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+      <div className="flex items-center gap-3 pt-6 px-4 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700">
+        <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
+          <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            Final de la línea de tiempo
+          <p className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
+            Línea de tiempo completa
           </p>
-          <p className="text-xs text-gray-600 dark:text-gray-400">
-            Total: {weeks.length} semana{weeks.length !== 1 ? 's' : ''} académica
-            {weeks.length !== 1 ? 's' : ''}
+          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">
+            Total: {weeks.length} semana{weeks.length !== 1 ? 's' : ''} académica{weeks.length !== 1 ? 's' : ''}
           </p>
         </div>
       </div>

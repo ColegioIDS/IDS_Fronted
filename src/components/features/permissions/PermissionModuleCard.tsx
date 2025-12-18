@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
 import { 
   Shield, 
   ChevronDown, 
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 import { PermissionModule } from '@/types/permissions.types';
 import { getModuleTheme, getActionTheme, getStatusTheme } from '@/config/theme.config';
+import { MODULES_PERMISSIONS } from '@/constants/modules-permissions';
 import { PermissionDetailDialog } from './PermissionDetailDialog';
 
 interface PermissionModuleCardProps {
@@ -26,8 +28,13 @@ interface PermissionModuleCardProps {
 export function PermissionModuleCard({ module }: PermissionModuleCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedPermissionId, setSelectedPermissionId] = useState<number | null>(null);
+  const { hasPermission } = useAuth();
 
   const moduleTheme = getModuleTheme(module.module);
+  const canReadDetails = hasPermission(
+    MODULES_PERMISSIONS.PERMISSION.READ_ONE.module,
+    MODULES_PERMISSIONS.PERMISSION.READ_ONE.action
+  );
 
   return (
     <>
@@ -162,16 +169,18 @@ export function PermissionModuleCard({ module }: PermissionModuleCardProps) {
                         </div>
                       </div>
 
-                      {/* Acción */}
-                      <Button
-                        onClick={() => setSelectedPermissionId(permission.id)}
-                        variant="ghost"
-                        size="sm"
-                        className={`${moduleTheme.text} hover:${moduleTheme.bgHover}`}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Ver Detalle
-                      </Button>
+                      {/* Acción - Solo mostrar si no es módulo de PERMISSION y tiene permiso */}
+                      {permission.module !== 'permission' && canReadDetails && (
+                        <Button
+                          onClick={() => setSelectedPermissionId(permission.id)}
+                          variant="ghost"
+                          size="sm"
+                          className={`${moduleTheme.text} hover:${moduleTheme.bgHover}`}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Ver Detalle
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );

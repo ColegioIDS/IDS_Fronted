@@ -75,22 +75,21 @@ export function SchoolCycleDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] p-0 bg-white dark:bg-gray-900">
+      <DialogContent className="max-w-3xl max-h-[95vh] p-0 overflow-hidden bg-white dark:bg-gray-900 flex flex-col">
         {/* Header */}
-        <div className="relative overflow-hidden bg-blue-600 dark:bg-blue-700 border-b-2 border-blue-700 dark:border-blue-600">
-          <DialogHeader className="relative z-10 p-6 space-y-3">
-            <div className="flex items-start gap-4">
-              <div className="relative p-3 rounded-xl bg-blue-500 dark:bg-blue-800
-                border-2 border-blue-400 dark:border-blue-600 shadow-lg">
-                <Calendar className="w-8 h-8 text-white" strokeWidth={2.5} />
-              </div>
+        <div className="overflow-hidden bg-blue-600 dark:bg-blue-700 border-b-2 border-blue-700 dark:border-blue-600 p-6">
+          <div className="flex items-start gap-4">
+            <div className="relative p-3 rounded-xl bg-blue-500 dark:bg-blue-800
+              border-2 border-blue-400 dark:border-blue-600 shadow-lg">
+              <Calendar className="w-8 h-8 text-white" strokeWidth={2.5} />
+            </div>
 
-              <div className="flex-1 space-y-2">
-                <DialogTitle className="text-2xl font-bold text-white">
-                  {cycle.name}
-                </DialogTitle>
+            <div className="flex-1 space-y-2">
+              <h2 className="text-2xl font-bold text-white">
+                {cycle.name}
+              </h2>
 
-                <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
                   {/* Status Badge */}
                   <Badge className={
                     cycle.isArchived
@@ -150,17 +149,10 @@ export function SchoolCycleDetailDialog({
                 )}
               </div>
             </div>
-          </DialogHeader>
-
-          {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 dark:bg-blue-600
-            opacity-20 rounded-full -mr-16 -mt-16" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-700 dark:bg-blue-800
-            opacity-20 rounded-full -ml-12 -mb-12" />
-        </div>
+          </div>
 
         {/* Content with ScrollArea */}
-        <ScrollArea className="max-h-[calc(85vh-180px)]">
+        <ScrollArea className="flex-1 overflow-hidden">
           <div className="p-6 space-y-4">
             {error && <ErrorAlert message={error} />}
 

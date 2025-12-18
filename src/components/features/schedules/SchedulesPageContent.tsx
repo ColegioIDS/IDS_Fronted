@@ -12,6 +12,7 @@ import ProtectedContent from '@/components/common/ProtectedContent';
 
 import { useSchedules } from '@/hooks/useSchedules';
 import { usePermissions } from '@/hooks/usePermissions';
+import { MODULES_PERMISSIONS } from '@/constants/modules-permissions';
 
 // Import calendar components
 import { ScheduleHeader } from './calendar/ScheduleHeader';
@@ -34,17 +35,37 @@ import { DEFAULT_TIME_SLOTS, ScheduleTimeGenerator } from '@/types/schedules.typ
  * Architecture: Uses unified useSchedules hook + schedulesService
  * Primary identifier: courseAssignmentId
  */
+
+interface SchedulesPageContentProps {
+  className?: string;
+  canView?: boolean;
+  canCreate?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canConfigure?: boolean;
+}
+
 export default function SchedulesPageContent({
   className = '',
-}: {
-  className?: string;
-}) {
+  canView = true,
+  canCreate = true,
+  canEdit = true,
+  canDelete = true,
+  canConfigure = true,
+}: SchedulesPageContentProps = {}) {
   // Permission checks
   const { hasPermission } = usePermissions();
-  const canRead = hasPermission('schedule', 'read');
-  const canCreate = hasPermission('schedule', 'create');
-  const canUpdate = hasPermission('schedule', 'update');
-  const canDelete = hasPermission('schedule', 'delete');
+  const canReadLocal = hasPermission('schedule', 'read');
+  const canCreateLocal = canCreate && hasPermission('schedule', 'create');
+  const canUpdateLocal = canEdit && hasPermission('schedule', 'update');
+  const canDeleteLocal = canDelete && hasPermission('schedule', 'delete');
+  const canConfigureLocal = canConfigure && hasPermission('schedule', 'configure');
+  
+  // Schedule Config permissions
+  const canCreateScheduleConfig = hasPermission(
+    MODULES_PERMISSIONS.SCHEDULE_CONFIG.CREATE.module,
+    MODULES_PERMISSIONS.SCHEDULE_CONFIG.CREATE.action
+  );
 
   // State
   const [selectedCycle, setSelectedCycle] = useState<number>(0);
@@ -194,7 +215,7 @@ export default function SchedulesPageContent({
 
   // Handlers for schedule operations
   const handleBatchSave = useCallback(async (changes: ScheduleChange[]) => {
-    if (!canCreate && !canUpdate && !canDelete) {
+    if (!canCreateLocal && !canUpdateLocal && !canDeleteLocal) {
       toast.error('No tienes permisos para guardar cambios');
       return { success: false };
     }
@@ -211,7 +232,7 @@ export default function SchedulesPageContent({
       // Process deletes
       const deletes = changes.filter(c => c.action === 'delete');
       for (const change of deletes) {
-        if (canDelete && typeof change.schedule.id === 'number') {
+        if (canDeleteLocal && typeof change.schedule.id === 'number') {
           try {
             await deleteScheduleItem(change.schedule.id);
             operationResults.deleted++;
@@ -224,7 +245,7 @@ export default function SchedulesPageContent({
       // Process updates
       const updates = changes.filter(c => c.action === 'update');
       for (const change of updates) {
-        if (canUpdate && typeof change.schedule.id === 'number') {
+        if (canUpdateLocal && typeof change.schedule.id === 'number') {
           try {
             await updateScheduleItem(change.schedule.id, {
               courseAssignmentId: change.schedule.courseAssignmentId!,
@@ -245,7 +266,7 @@ export default function SchedulesPageContent({
       let batchResult = null;
       let batchError: any = null;
       
-      if (creates.length > 0 && canCreate) {
+      if (creates.length > 0 && canCreateLocal) {
         const schedulesToCreate = creates.map(change => ({
           courseAssignmentId: change.schedule.courseAssignmentId!,
           dayOfWeek: change.schedule.dayOfWeek,
@@ -424,7 +445,7 @@ export default function SchedulesPageContent({
     } finally {
       setIsSaving(false);
     }
-  }, [canCreate, canUpdate, canDelete, deleteScheduleItem, updateScheduleItem, batchSave]);
+  }, [canCreateLocal, canUpdateLocal, canDeleteLocal, deleteScheduleItem, updateScheduleItem, batchSave]);
 
   const handleSectionChange = useCallback((value: string) => {
     const newSectionId = parseInt(value);
@@ -671,7 +692,7 @@ export default function SchedulesPageContent({
   };
 
   // ✅ Check permissions
-  if (!canRead) {
+  if (!canReadLocal) {
     return (
       <ProtectedContent
         requiredPermission={{ module: 'schedule', action: 'read' }}
@@ -1001,13 +1022,15 @@ export default function SchedulesPageContent({
                       Debes configurar los horarios de inicio/fin, duración de períodos y recreos antes de crear un horario.
                     </p>
                   </div>
-                  <Button
-                    onClick={() => setShowConfigModal(true)}
-                    className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-2"
-                  >
-                    <Settings className="h-5 w-5" />
-                    Configurar Horario
-                  </Button>
+                  {canCreateScheduleConfig && (
+                    <Button
+                      onClick={() => setShowConfigModal(true)}
+                      className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-2"
+                    >
+                      <Settings className="h-5 w-5" />
+                      Configurar Horario
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : (
@@ -1025,8 +1048,8 @@ export default function SchedulesPageContent({
                 onScheduleClick={(schedule) => {
                   // TODO: Open edit modal
                 }}
-                canEdit={canUpdate}
-                canDelete={canDelete}
+                canEdit={canUpdateLocal}
+                canDelete={canDeleteLocal}
               />
             )
           ) : (

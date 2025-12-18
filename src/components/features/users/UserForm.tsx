@@ -147,6 +147,7 @@ export function UserForm({
             isHomeroomTeacher: false,
           },
         },
+    mode: 'onChange',
   });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,6 +207,47 @@ export function UserForm({
     }
     return undefined;
   };
+
+  // Reset form when user data changes
+  useEffect(() => {
+    if (isEditMode && user) {
+      form.reset({
+        givenNames: user?.givenNames || '',
+        lastNames: user?.lastNames || '',
+        phone: user?.phone || '',
+        gender: user?.gender || 'M',
+        roleId: user && 'role' in user ? user.role?.id.toString() : user?.roleId?.toString() || '',
+        isActive: user?.isActive ?? true,
+        canAccessPlatform: user?.canAccessPlatform ?? false,
+        parentDetails: user && 'parentDetails' in user ? {
+          dpiIssuedAt: user.parentDetails?.dpiIssuedAt || '',
+          email: user.parentDetails?.email || '',
+          workPhone: user.parentDetails?.workPhone || '',
+          occupation: user.parentDetails?.occupation || '',
+          workplace: user.parentDetails?.workplace || '',
+          isSponsor: user.parentDetails?.isSponsor ?? false,
+          sponsorInfo: user.parentDetails?.sponsorInfo || '',
+        } : {
+          dpiIssuedAt: '',
+          email: '',
+          workPhone: '',
+          occupation: '',
+          workplace: '',
+          isSponsor: false,
+          sponsorInfo: '',
+        },
+        teacherDetails: user && 'teacherDetails' in user ? {
+          hiredDate: user.teacherDetails?.hiredDate ? new Date(user.teacherDetails.hiredDate) : undefined,
+          academicDegree: user.teacherDetails?.academicDegree || '',
+          isHomeroomTeacher: user.teacherDetails?.isHomeroomTeacher ?? false,
+        } : {
+          hiredDate: undefined,
+          academicDegree: '',
+          isHomeroomTeacher: false,
+        },
+      });
+    }
+  }, [user, isEditMode, form]);
 
   const currentPictureUrl = preview || getExistingProfilePicture();
 
@@ -594,7 +636,7 @@ export function UserForm({
                             transition-all duration-300
                             w-full
                           ">
-                            <SelectValue />
+                            <SelectValue placeholder="Seleccionar género..." />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="
@@ -627,7 +669,7 @@ export function UserForm({
                       </FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        value={field.value?.toString() || ''}
+                        value={field.value?.toString() ?? ''}
                         disabled={isLoading || isSubmitting}
                       >
                         <FormControl>

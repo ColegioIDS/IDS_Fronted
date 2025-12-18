@@ -29,6 +29,7 @@ import { AcademicWeekBusinessRulesDialog } from './AcademicWeekBusinessRulesDial
 type ViewMode = 'grid' | 'list' | 'calendar' | 'timeline';
 
 interface AcademicWeekPageContentProps {
+  canView?: boolean;
   canCreate?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
@@ -46,6 +47,7 @@ interface AcademicWeekPageContentProps {
  * - Gestión de estado global
  */
 export function AcademicWeekPageContent({
+  canView = false,
   canCreate = false,
   canEdit = false,
   canDelete = false,
@@ -396,9 +398,10 @@ export function AcademicWeekPageContent({
         <AcademicWeekGrid
           weeks={weeks}
           isLoading={isLoadingWeeks}
-          onView={handleView}
+          onView={canView ? handleView : undefined}
           onEdit={canEdit ? handleEdit : undefined}
           onDelete={canDelete ? handleDelete : undefined}
+          canView={canView}
           canEdit={canEdit}
           canDelete={canDelete}
           currentPage={meta.page}
@@ -411,9 +414,10 @@ export function AcademicWeekPageContent({
         <AcademicWeekList
           weeks={weeks}
           isLoading={isLoadingWeeks}
-          onView={handleView}
+          onView={canView ? handleView : undefined}
           onEdit={canEdit ? handleEdit : undefined}
           onDelete={canDelete ? handleDelete : undefined}
+          canView={canView}
           canEdit={canEdit}
           canDelete={canDelete}
           currentPage={meta.page}
@@ -429,7 +433,7 @@ export function AcademicWeekPageContent({
         <AcademicWeekCalendar
           weeks={weeks}
           isLoading={isLoadingWeeks}
-          onWeekClick={handleView}
+          onWeekClick={canView ? handleView : undefined}
         />
       )}
 
@@ -437,7 +441,7 @@ export function AcademicWeekPageContent({
         <AcademicWeekTimeline
           weeks={weeks}
           isLoading={isLoadingWeeks}
-          onWeekClick={handleView}
+          onWeekClick={canView ? handleView : undefined}
         />
       )}
 

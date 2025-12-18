@@ -47,9 +47,30 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: `secret=${secretKey}&response=${token}`,
+      signal: AbortSignal.timeout(10000), // 10 segundos timeout
     });
 
+    if (!response.ok) {
+      console.error('Google reCAPTCHA API error:', {
+        status: response.status,
+        statusText: response.statusText,
+      });
+      return NextResponse.json(
+        { error: 'Error communicating with reCAPTCHA service' },
+        { status: 502 }
+      );
+    }
+
     const data: RecaptchaVerifyResponse = await response.json();
+
+    // Validar respuesta
+    if (!data || typeof data.success !== 'boolean') {
+      console.error('Invalid response from Google reCAPTCHA:', data);
+      return NextResponse.json(
+        { error: 'Invalid response from reCAPTCHA service' },
+        { status: 502 }
+      );
+    }
 
     // Log para debugging
     console.log('reCAPTCHA verification result:', {

@@ -14,6 +14,7 @@ interface AcademicWeekGridProps {
   onView?: (week: AcademicWeek) => void;
   onEdit?: (week: AcademicWeek) => void;
   onDelete?: (week: AcademicWeek) => void;
+  canView?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
   // Paginación
@@ -33,6 +34,7 @@ export function AcademicWeekGrid({
   onView,
   onEdit,
   onDelete,
+  canView = false,
   canEdit = false,
   canDelete = false,
   currentPage,
@@ -45,7 +47,7 @@ export function AcademicWeekGrid({
         {[...Array(6)].map((_, i) => (
           <div
             key={i}
-            className="h-48 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg"
+            className="h-56 bg-gradient-to-br from-slate-200 to-slate-100 dark:from-slate-700 dark:to-slate-800 animate-pulse rounded-xl border border-slate-200 dark:border-slate-700"
           />
         ))}
       </div>
@@ -54,10 +56,10 @@ export function AcademicWeekGrid({
 
   if (weeks.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="inline-flex items-center justify-center w-16 h-16 mb-4 bg-gray-100 dark:bg-gray-800 rounded-full">
+      <div className="text-center py-16 px-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
           <svg
-            className="w-8 h-8 text-gray-400"
+            className="w-8 h-8 text-slate-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -70,11 +72,11 @@ export function AcademicWeekGrid({
             />
           </svg>
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">
           No se encontraron semanas académicas
         </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          No hay semanas académicas que coincidan con los filtros seleccionados.
+        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto">
+          No hay semanas académicas que coincidan con los filtros seleccionados. Intenta ajustar los filtros o crear una nueva semana.
         </p>
       </div>
     );
@@ -91,6 +93,7 @@ export function AcademicWeekGrid({
             onView={onView}
             onEdit={onEdit}
             onDelete={onDelete}
+            canView={canView}
             canEdit={canEdit}
             canDelete={canDelete}
           />
@@ -99,8 +102,8 @@ export function AcademicWeekGrid({
 
       {/* Paginación */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex items-center justify-between pt-4 px-4 py-3 border-t border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900/50">
+          <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">
             Página {currentPage} de {totalPages}
           </div>
 
@@ -110,6 +113,7 @@ export function AcademicWeekGrid({
               size="sm"
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
+              className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
               Anterior
@@ -149,6 +153,7 @@ export function AcademicWeekGrid({
               size="sm"
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
+              className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
             >
               Siguiente
               <ChevronRight className="h-4 w-4 ml-1" />

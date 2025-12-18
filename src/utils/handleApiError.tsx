@@ -6,6 +6,11 @@ interface ApiErrorResponse {
   success: false;
   message: string;
   details?: string[];
+  reason?: string;
+  requiredPermission?: {
+    module: string;
+    action: string;
+  };
 }
 
 interface HandledError {
@@ -52,8 +57,12 @@ export function handleApiError(
     }
     
     // Extraer detalles si existen
-    if (Array.isArray(data.details)) {
+    if (Array.isArray(data.details) && data.details.length > 0) {
       details = data.details;
+    }
+    // Si no hay details pero hay reason, usarlo
+    else if (data.reason) {
+      details = [data.reason];
     }
   } 
   // ✅ Fallback a error message si no hay response
@@ -90,7 +99,9 @@ export function parseApiError(error: any): HandledError {
   if (error.response?.data) {
     const data: ApiErrorResponse = error.response.data;
     message = data.message || message;
-    details = Array.isArray(data.details) ? data.details : [];
+    details = Array.isArray(data.details) && data.details.length > 0 
+      ? data.details 
+      : (data.reason ? [data.reason] : []);
   } else if (error.message) {
     message = error.message;
   }

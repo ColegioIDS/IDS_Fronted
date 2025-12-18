@@ -409,3 +409,52 @@ export function isDateInRange(
   
   return dateToCheckStr >= startStr && dateToCheckStr <= endStr;
 }
+
+/**
+ * Convierte un objeto Date a formato ISO respetando la zona horaria de Guatemala
+ * 
+ * PROBLEMA: Date.toISOString() siempre usa UTC, lo que puede causar cambios de día
+ * al convertir desde Guatemala (UTC-6).
+ * 
+ * SOLUCIÓN: Extrae la fecha en la zona horaria de Guatemala y la convierte
+ * a ISO string con la hora en Guatemala (sin Z).
+ *
+ * @param date - Objeto Date a convertir
+ * @returns string - Fecha en formato "YYYY-MM-DDTHH:MM:SS.000Z" en zona horaria de Guatemala
+ *
+ * @example
+ * const date = new Date(2025, 10, 3, 12, 0, 0); // Nov 3, 12:00 Guatemala
+ * dateToISOStringInTimezone(date)
+ * // Devuelve "2025-11-03T12:00:00.000Z" (NO "2025-11-03T18:00:00.000Z")
+ */
+export function dateToISOStringInTimezone(date: Date): string {
+  try {
+    // Obtener componentes de la fecha en la zona horaria de Guatemala
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+
+    const parts = formatter.formatToParts(date);
+    const getPart = (type: string) => parts.find(p => p.type === type)?.value || '00';
+
+    const year = getPart('year');
+    const month = getPart('month');
+    const day = getPart('day');
+    const hour = getPart('hour');
+    const minute = getPart('minute');
+    const second = getPart('second');
+
+    return `${year}-${month}-${day}T${hour}:${minute}:${second}.000Z`;
+  } catch (error) {
+    // En caso de error, usar toISOString() estándar
+    return date.toISOString();
+  }
+}
+

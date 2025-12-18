@@ -24,7 +24,7 @@ interface BimesterCardProps {
   bimester: Bimester;
   onEdit?: (bimester: Bimester) => void;
   onDelete?: (bimester: Bimester) => void;
-  onViewDetails: (bimester: Bimester) => void;
+  onViewDetails?: (bimester: Bimester) => void;
 }
 
 /**
@@ -101,15 +101,17 @@ export function BimesterCard({
 
         {/* Acciones */}
         <div className="flex gap-2 pt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onViewDetails(bimester)}
-            className="flex-1 border-gray-300 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-950/30"
-          >
-            <Eye className="h-4 w-4 mr-1" />
-            Ver
-          </Button>
+          {onViewDetails && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onViewDetails(bimester)}
+              className="flex-1 border-gray-300 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              Ver
+            </Button>
+          )}
 
           {onEdit && (
             <Button

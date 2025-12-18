@@ -41,9 +41,9 @@ export function GradeStatsDialog({
   return (
     <TooltipProvider>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[90vh] p-0 overflow-hidden bg-white dark:bg-gray-900">
+        <DialogContent className="max-w-2xl max-h-[90vh] p-0 overflow-hidden bg-white dark:bg-gray-900 flex flex-col">
           {/* Header con diseño azul sólido (sin gradiente) */}
-          <div className="bg-indigo-600 dark:bg-indigo-700 border-b-2 border-indigo-700 dark:border-indigo-800 px-6 py-5 relative overflow-hidden">
+          <div className="bg-indigo-600 dark:bg-indigo-700 border-b-2 border-indigo-700 dark:border-indigo-800 px-6 py-5 relative overflow-hidden flex-shrink-0">
             {/* Decorative circles */}
             <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" />
             <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/5 rounded-full" />
@@ -61,8 +61,8 @@ export function GradeStatsDialog({
             </DialogHeader>
           </div>
 
-          {/* Content */}
-          <div className="p-6 space-y-5 bg-white dark:bg-gray-900">
+          {/* Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-white dark:bg-gray-900">
             {/* Información del grado (sin gradiente) */}
             <div className="bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-200 dark:border-indigo-800 rounded-xl p-5 relative overflow-hidden">
               {/* Decorative element */}
@@ -199,7 +199,7 @@ export function GradeStatsDialog({
 
           {/* Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t-2 border-gray-200 dark:border-gray-700
-            bg-gray-50 dark:bg-gray-900/50">
+            bg-gray-50 dark:bg-gray-900/50 flex-shrink-0">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

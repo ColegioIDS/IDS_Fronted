@@ -24,8 +24,16 @@ import CourseGradeForm from './CourseGradeForm';
 import DeleteCourseGradeDialog from './DeleteCourseGradeDialog';
 import CourseGradeDetailDialog from './CourseGradeDetailDialog';
 import CourseGradeStats from './CourseGradeStats';
+import { useAuth } from '@/context/AuthContext';
+import { COURSE_GRADE_PERMISSIONS } from '@/constants/modules-permissions/course-grade';
 
 export default function CourseGradesPageContent() {
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission(COURSE_GRADE_PERMISSIONS.CREATE.module, COURSE_GRADE_PERMISSIONS.CREATE.action);
+  const canReadOne = hasPermission(COURSE_GRADE_PERMISSIONS.READ_ONE.module, COURSE_GRADE_PERMISSIONS.READ_ONE.action);
+  const canUpdate = hasPermission(COURSE_GRADE_PERMISSIONS.UPDATE.module, COURSE_GRADE_PERMISSIONS.UPDATE.action);
+  const canDelete = hasPermission(COURSE_GRADE_PERMISSIONS.DELETE.module, COURSE_GRADE_PERMISSIONS.DELETE.action);
+
   const [data, setData] = useState<PaginatedCourseGrades | null>(null);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<CourseGradesQuery>({
@@ -187,17 +195,21 @@ export default function CourseGradesPageContent() {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  onClick={handleCreate}
-                  className="bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nueva Asignación
-                </Button>
+                {canCreate && (
+                  <Button
+                    onClick={handleCreate}
+                    className="bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nueva Asignación
+                  </Button>
+                )}
               </TooltipTrigger>
-              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
-                <p className="font-semibold">Crear una nueva asignación curso-grado</p>
-              </TooltipContent>
+              {canCreate && (
+                <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                  <p className="font-semibold">Crear una nueva asignación curso-grado</p>
+                </TooltipContent>
+              )}
             </Tooltip>
           </div>
         </TooltipProvider>
@@ -239,6 +251,9 @@ export default function CourseGradesPageContent() {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onViewDetails={handleViewDetails}
+            canReadOne={canReadOne}
+            canUpdate={canUpdate}
+            canDelete={canDelete}
           />
 
           {/* Pagination */}

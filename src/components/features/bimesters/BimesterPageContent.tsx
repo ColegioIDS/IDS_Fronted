@@ -7,9 +7,8 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useBimesters } from '@/hooks/data/useBimesters';
 import { useBimesterCycles } from '@/hooks/data/useBimesterCycles';
-import { usePermissions } from '@/hooks/usePermissions';
-import { ProtectedPage } from '@/components/shared/permissions/ProtectedPage';
-import { ProtectedContent } from '@/components/shared/permissions/ProtectedContent';
+import { useAuth } from '@/context/AuthContext';
+import { MODULES_PERMISSIONS } from '@/constants/modules-permissions';
 import { NoPermissionCard } from '@/components/shared/permissions/NoPermissionCard';
 import { ErrorAlert } from '@/components/shared/feedback/ErrorAlert';
 import { BimesterStats } from './BimesterStats';
@@ -42,7 +41,7 @@ interface ApiError {
  * - Orquestar la interacción entre componentes
  */
 export function BimesterPageContent() {
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = useAuth();
   const { activeCycle, cycles } = useBimesterCycles();
   
   // Estado de query inicial con ciclo activo
@@ -57,12 +56,30 @@ export function BimesterPageContent() {
 
   // Estado para el ciclo seleccionado (para mostrar en el progress card)
   const [selectedCycle, setSelectedCycle] = useState<SchoolCycleForBimester | null>(activeCycle);
+  const [cycleLoading, setCycleLoading] = useState(false);
 
   // Actualizar el ciclo seleccionado cuando cambie el query
   useEffect(() => {
     if (query.schoolCycleId) {
-      const cycle = cycles.find((c) => c.id === query.schoolCycleId);
-      setSelectedCycle(cycle || null);
+      // Primero intentar encontrar en la lista local de ciclos
+      const localCycle = cycles.find((c) => c.id === query.schoolCycleId);
+      if (localCycle) {
+        setSelectedCycle(localCycle);
+      } else {
+        // Si no está en la lista local, cargar desde el servidor
+        setCycleLoading(true);
+        bimesterService
+          .getCycleById(query.schoolCycleId)
+          .then((cycle) => {
+            setSelectedCycle(cycle);
+          })
+          .catch(() => {
+            setSelectedCycle(null);
+          })
+          .finally(() => {
+            setCycleLoading(false);
+          });
+      }
     } else {
       setSelectedCycle(null);
     }
@@ -79,10 +96,11 @@ export function BimesterPageContent() {
   const [globalError, setGlobalError] = useState<ApiError | null>(null);
 
   // Verificar permisos
-  const canRead = hasPermission('bimester', 'read');
-  const canCreate = hasPermission('bimester', 'create');
-  const canUpdate = hasPermission('bimester', 'update');
-  const canDelete = hasPermission('bimester', 'delete');
+  const canRead = hasPermission(MODULES_PERMISSIONS.BIMESTER.READ.module, MODULES_PERMISSIONS.BIMESTER.READ.action);
+  const canCreate = hasPermission(MODULES_PERMISSIONS.BIMESTER.CREATE.module, MODULES_PERMISSIONS.BIMESTER.CREATE.action);
+  const canUpdate = hasPermission(MODULES_PERMISSIONS.BIMESTER.UPDATE.module, MODULES_PERMISSIONS.BIMESTER.UPDATE.action);
+  const canDelete = hasPermission(MODULES_PERMISSIONS.BIMESTER.DELETE.module, MODULES_PERMISSIONS.BIMESTER.DELETE.action);
+  const canReadOne = hasPermission(MODULES_PERMISSIONS.BIMESTER.READ_ONE.module, MODULES_PERMISSIONS.BIMESTER.READ_ONE.action);
 
   // Handlers
   const handleFilterChange = useCallback((filters: any) => {
@@ -151,7 +169,8 @@ export function BimesterPageContent() {
     return (
       <NoPermissionCard 
         title="Acceso Denegado" 
-        /* message="No tienes permisos para ver bimestres" */
+        description="No tienes permisos para ver los bimestres."
+        variant="page"
       />
     );
   }
@@ -174,7 +193,7 @@ export function BimesterPageContent() {
           {canRead && <BimesterBusinessRulesDialog />}
           
           {/* Botón Crear - Solo visible con permiso create */}
-          <ProtectedContent module="bimester" action="create">
+          {canCreate && (
             <Button 
               onClick={handleCreateClick}
               className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -182,7 +201,7 @@ export function BimesterPageContent() {
               <Plus className="h-4 w-4 mr-2" />
               Crear Bimestre
             </Button>
-          </ProtectedContent>
+          )}
         </div>
       </div>
 
@@ -224,7 +243,7 @@ export function BimesterPageContent() {
         onPageChange={handlePageChange}
         onEdit={canUpdate ? handleEditClick : undefined}
         onDelete={canDelete ? handleDeleteClick : undefined}
-        onViewDetails={handleViewDetails}
+        onViewDetails={canReadOne ? handleViewDetails : undefined}
       />
 
       {/* Diálogos */}

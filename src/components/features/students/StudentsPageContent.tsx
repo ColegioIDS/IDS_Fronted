@@ -21,7 +21,27 @@ interface StudentStats {
   notEnrolled: number;
 }
 
-export const StudentsPageContent: React.FC = () => {
+interface StudentsPageContentProps {
+  canRead?: boolean;
+  canReadOne?: boolean;
+  canCreate?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
+  canUploadPicture?: boolean;
+  canDeletePicture?: boolean;
+  canGenerateReport?: boolean;
+}
+
+export const StudentsPageContent: React.FC<StudentsPageContentProps> = ({
+  canRead = false,
+  canReadOne = false,
+  canCreate = false,
+  canUpdate = false,
+  canDelete = false,
+  canUploadPicture = false,
+  canDeletePicture = false,
+  canGenerateReport = false,
+}) => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [stats, setStats] = useState<StudentStats>({
@@ -70,12 +90,14 @@ export const StudentsPageContent: React.FC = () => {
             </div>
 
             {/* Right Side - Actions */}
-            <Link href="/students/create">
-              <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg hover:shadow-xl transition-all h-11 px-6 rounded-lg">
-                <Plus className="w-5 h-5" />
-                <span className="font-semibold">Nuevo Estudiante</span>
-              </Button>
-            </Link>
+            {canCreate && (
+              <Link href="/students/create">
+                <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg hover:shadow-xl transition-all h-11 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled={!canCreate}>
+                  <Plus className="w-5 h-5" />
+                  <span className="font-semibold">Nuevo Estudiante</span>
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -183,6 +205,12 @@ export const StudentsPageContent: React.FC = () => {
             onStatsUpdate={handleStatsUpdate}
             searchFilter={searchFilter}
             enrollmentFilter={enrollmentFilter}
+            canRead={canRead}
+            canReadOne={canReadOne}
+            canUpdate={canUpdate}
+            canDelete={canDelete}
+            canUploadPicture={canUploadPicture}
+            canDeletePicture={canDeletePicture}
           />
 
         {/* Student Detail Dialog */}

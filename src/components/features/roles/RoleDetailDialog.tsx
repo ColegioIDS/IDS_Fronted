@@ -2,6 +2,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { MODULES_PERMISSIONS } from '@/constants/modules-permissions';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +41,12 @@ export function RoleDetailDialog({ roleId, open, onClose }: RoleDetailDialogProp
   const [stats, setStats] = useState<RoleStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { hasPermission } = useAuth();
+
+  const canRemovePermissions = hasPermission(
+    MODULES_PERMISSIONS.ROLE.REMOVE_PERMISSIONS.module,
+    MODULES_PERMISSIONS.ROLE.REMOVE_PERMISSIONS.action
+  );
 
   useEffect(() => {
     if (open && roleId) {
@@ -97,22 +105,23 @@ export function RoleDetailDialog({ roleId, open, onClose }: RoleDetailDialogProp
             <div className="relative overflow-hidden bg-purple-600 dark:bg-purple-700
               border-b-2 border-purple-700 dark:border-purple-600">
               <DialogHeader className="relative z-10 p-8 space-y-4">
-                <div className="flex items-start gap-5">
-                  <div className="relative p-4 rounded-2xl bg-purple-500 dark:bg-purple-800
-                    border-2 border-purple-400 dark:border-purple-600 shadow-2xl
-                    hover:scale-105 transition-transform duration-200">
-                    <Shield className="w-10 h-10 text-white" strokeWidth={2.5} />
-                    <div className="absolute inset-0 bg-white opacity-0 hover:opacity-20
-                      rounded-2xl transition-opacity duration-200" />
-                  </div>
+                <div className="flex items-start justify-between gap-5">
+                  <div className="flex items-start gap-5 flex-1">
+                    <div className="relative p-4 rounded-2xl bg-purple-500 dark:bg-purple-800
+                      border-2 border-purple-400 dark:border-purple-600 shadow-2xl
+                      hover:scale-105 transition-transform duration-200">
+                      <Shield className="w-10 h-10 text-white" strokeWidth={2.5} />
+                      <div className="absolute inset-0 bg-white opacity-0 hover:opacity-20
+                        rounded-2xl transition-opacity duration-200" />
+                    </div>
 
-                  <div className="flex-1 space-y-2">
-                    <DialogTitle className="text-2xl font-bold text-white flex items-center gap-2">
-                      {role.name}
-                      {role.isSystem && (
-                        <Lock className="w-5 h-5" />
-                      )}
-                    </DialogTitle>
+                    <div className="flex-1 space-y-2">
+                      <DialogTitle className="text-2xl font-bold text-white flex items-center gap-2">
+                        {role.name}
+                        {role.isSystem && (
+                          <Lock className="w-5 h-5" />
+                        )}
+                      </DialogTitle>
                     
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge className={
@@ -150,6 +159,7 @@ export function RoleDetailDialog({ roleId, open, onClose }: RoleDetailDialogProp
                         {role.description}
                       </p>
                     )}
+                    </div>
                   </div>
                 </div>
               </DialogHeader>

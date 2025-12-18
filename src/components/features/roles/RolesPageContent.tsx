@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRoles } from '@/hooks/data/useRoles';
+import { useAuth } from '@/context/AuthContext';
 import { RoleStats } from './RoleStats';
 import { RoleFilters } from './RoleFilters';
 import { RolesGrid } from './RolesGrid';
@@ -11,10 +12,12 @@ import { RoleForm } from './RoleForm';
 import { ProtectedPage } from '@/components/shared/permissions/ProtectedPage';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, List, Plus } from 'lucide-react';
+import { MODULES_PERMISSIONS } from '@/constants/modules-permissions';
 
 export function RolesPageContent() {
   const [activeTab, setActiveTab] = useState<'list' | 'form'>('list');
   const [editingRoleId, setEditingRoleId] = useState<number | undefined>(undefined);
+  const { hasPermission } = useAuth();
 
   const {
     data,
@@ -82,7 +85,7 @@ export function RolesPageContent() {
   const systemRoles = roles.filter(r => r.isSystem).length;
 
   return (
-    <ProtectedPage module="role" action="read">
+    <ProtectedPage {...MODULES_PERMISSIONS.ROLE.READ}>
       <div className="space-y-6 p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -138,27 +141,31 @@ export function RolesPageContent() {
               <List className="w-4 h-4 mr-2" />
               Lista de Roles
             </TabsTrigger>
-            <TabsTrigger 
-              value="form"
-              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              {editingRoleId ? 'Editar Rol' : 'Crear Rol'}
-            </TabsTrigger>
+            {(hasPermission(MODULES_PERMISSIONS.ROLE.CREATE.module, MODULES_PERMISSIONS.ROLE.CREATE.action) || editingRoleId) && (
+              <TabsTrigger 
+                value="form"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {editingRoleId ? 'Editar Rol' : 'Crear Rol'}
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* TAB: LISTA */}
           <TabsContent value="list" className="space-y-6 mt-6">
             {/* Botón crear en la lista */}
-            <div className="flex justify-end">
-              <Button
-                onClick={handleCreateNew}
-                className="bg-purple-600 hover:bg-purple-700 gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Crear Nuevo Rol
-              </Button>
-            </div>
+            {hasPermission(MODULES_PERMISSIONS.ROLE.CREATE.module, MODULES_PERMISSIONS.ROLE.CREATE.action) && (
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleCreateNew}
+                  className="bg-purple-600 hover:bg-purple-700 gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Crear Nuevo Rol
+                </Button>
+              </div>
+            )}
 
             {/* Filtros */}
             <RoleFilters

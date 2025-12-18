@@ -15,8 +15,6 @@ import { UserForm } from './UserForm';
 import { DeleteUserDialog } from './DeleteUserDialog';
 import { ChangePasswordDialog } from './ChangePasswordDialog';
 import { UserDetailDialog } from './UserDetailDialog';
-import { ProtectedPage } from '@/components/shared/permissions/ProtectedPage';
-import { ProtectedButton } from '@/components/shared/permissions/ProtectedButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -34,7 +32,33 @@ interface ViewMode {
   type: 'grid' | 'table';
 }
 
-export function UsersPageContent() {
+interface UsersPageContentProps {
+  canView?: boolean;
+  canCreate?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canChangePassword?: boolean;
+  canGrantAccess?: boolean;
+  canRevokeAccess?: boolean;
+  canVerifyEmail?: boolean;
+  canRestore?: boolean;
+  canAssignRole?: boolean;
+  canReadStats?: boolean;
+}
+
+export function UsersPageContent({
+  canView = true,
+  canCreate = true,
+  canEdit = true,
+  canDelete = true,
+  canChangePassword = true,
+  canGrantAccess = true,
+  canRevokeAccess = true,
+  canVerifyEmail = true,
+  canRestore = true,
+  canAssignRole = true,
+  canReadStats = true,
+}: UsersPageContentProps = {}) {
   const [activeTab, setActiveTab] = useState<'list' | 'form'>('list');
   const [viewMode, setViewMode] = useState<ViewMode['type']>('grid');
   const [editingUserId, setEditingUserId] = useState<number | undefined>(undefined);
@@ -100,11 +124,19 @@ export function UsersPageContent() {
   };
 
   const handleCreateNew = () => {
+    if (!canCreate) {
+      toast.error('No tienes permisos para crear usuarios');
+      return;
+    }
     setEditingUserId(undefined);
     setActiveTab('form');
   };
 
   const handleEdit = (user: User) => {
+    if (!canEdit) {
+      toast.error('No tienes permisos para editar usuarios');
+      return;
+    }
     setEditingUserId(user.id);
     setActiveTab('form');
   };
@@ -125,6 +157,16 @@ export function UsersPageContent() {
     file?: File
   ) => {
     try {
+      // Validar permisos
+      if (editingUserId && !canEdit) {
+        toast.error('No tienes permisos para editar usuarios');
+        return;
+      }
+      if (!editingUserId && !canCreate) {
+        toast.error('No tienes permisos para crear usuarios');
+        return;
+      }
+
       // Helper function to convert Date objects to ISO strings
       const convertDatesToISO = (data: any) => {
         const converted = { ...data };
@@ -228,11 +270,19 @@ export function UsersPageContent() {
   };
 
   const handleDeleteUser = (user: User) => {
+    if (!canDelete) {
+      toast.error('No tienes permisos para eliminar usuarios');
+      return;
+    }
     setSelectedUser(user);
     setDeleteDialogOpen(true);
   };
 
   const handleConfirmDelete = async () => {
+    if (!canDelete) {
+      toast.error('No tienes permisos para eliminar usuarios');
+      return;
+    }
     if (selectedUser) {
       await deleteUser(selectedUser.id);
       setDeleteDialogOpen(false);
@@ -241,11 +291,19 @@ export function UsersPageContent() {
   };
 
   const handleChangePassword = (user: User) => {
+    if (!canChangePassword) {
+      toast.error('No tienes permisos para cambiar contraseñas');
+      return;
+    }
     setSelectedUser(user);
     setPasswordDialogOpen(true);
   };
 
   const handleConfirmChangePassword = async (data: any) => {
+    if (!canChangePassword) {
+      toast.error('No tienes permisos para cambiar contraseñas');
+      return;
+    }
     if (selectedUser) {
       await changePassword(selectedUser.id, data);
       setPasswordDialogOpen(false);
@@ -254,6 +312,10 @@ export function UsersPageContent() {
   };
 
   const handleViewDetails = async (user: User) => {
+    if (!canView) {
+      toast.error('No tienes permisos para ver detalles de usuarios');
+      return;
+    }
     try {
       const detailUser = await getUserById(user.id);
       setSelectedDetailUser(detailUser);
@@ -276,42 +338,43 @@ export function UsersPageContent() {
   const currentPage = data?.meta.page || 1;
 
   return (
-    <ProtectedPage module="user" action="read">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Usuarios</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-              Gestiona los usuarios del sistema
-            </p>
-          </div>
-          <ProtectedButton
-            module="user"
-            action="create"
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Usuarios</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+            Gestiona los usuarios del sistema
+          </p>
+        </div>
+        {canCreate && (
+          <Button
             onClick={handleCreateNew}
             disabled={isLoading}
             className="dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700"
           >
             <Plus className="w-4 h-4 mr-2" />
             Crear Usuario
-          </ProtectedButton>
-        </div>
+          </Button>
+        )}
+      </div>
 
-        {/* Stats */}
-        <UserStats stats={stats} isLoading={isLoading} permissionError={permissionError} />
+      {/* Stats */}
+      <UserStats stats={stats} isLoading={isLoading} permissionError={permissionError} />
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'list' | 'form')}>
-          <TabsList className="grid w-full grid-cols-2 max-w-md dark:bg-slate-800 dark:border-slate-700">
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'list' | 'form')}>
+          <TabsList className={`grid ${canCreate ? 'grid-cols-2' : 'grid-cols-1'} w-full max-w-md dark:bg-slate-800 dark:border-slate-700`}>
             <TabsTrigger value="list" className="dark:data-[state=active]:bg-slate-700">
               <List className="w-4 h-4 mr-2" />
               Usuarios
             </TabsTrigger>
-            <TabsTrigger value="form" className="dark:data-[state=active]:bg-slate-700">
-              <Plus className="w-4 h-4 mr-2" />
-              {editingUserId ? 'Editar' : 'Nuevo'}
-            </TabsTrigger>
+            {canCreate && (
+              <TabsTrigger value="form" className="dark:data-[state=active]:bg-slate-700">
+                <Plus className="w-4 h-4 mr-2" />
+                {editingUserId ? 'Editar' : 'Nuevo'}
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* List Tab */}
@@ -392,6 +455,9 @@ export function UsersPageContent() {
                 onDelete={handleDeleteUser}
                 onViewDetails={handleViewDetails}
                 isLoading={isLoading}
+                canEdit={canEdit}
+                canDelete={canDelete}
+                canView={canView}
               />
             ) : (
               <UserTable
@@ -401,6 +467,10 @@ export function UsersPageContent() {
                 onViewDetails={handleViewDetails}
                 onChangePassword={handleChangePassword}
                 isLoading={isLoading}
+                canEdit={canEdit}
+                canDelete={canDelete}
+                canView={canView}
+                canChangePassword={canChangePassword}
               />
             )}
 
@@ -461,31 +531,30 @@ export function UsersPageContent() {
           </TabsContent>
         </Tabs>
 
-        {/* Dialogs */}
-        <DeleteUserDialog
-          user={selectedUser}
-          isOpen={deleteDialogOpen}
-          isLoading={isLoading}
-          onConfirm={handleConfirmDelete}
-          onOpenChange={setDeleteDialogOpen}
-        />
+      {/* Dialogs */}
+      <DeleteUserDialog
+        user={selectedUser}
+        isOpen={deleteDialogOpen}
+        isLoading={isLoading}
+        onConfirm={handleConfirmDelete}
+        onOpenChange={setDeleteDialogOpen}
+      />
 
-        <ChangePasswordDialog
-          user={selectedUser}
-          isOpen={passwordDialogOpen}
-          isLoading={isLoading}
-          onSubmit={handleConfirmChangePassword}
-          onOpenChange={setPasswordDialogOpen}
-        />
+      <ChangePasswordDialog
+        user={selectedUser}
+        isOpen={passwordDialogOpen}
+        isLoading={isLoading}
+        onSubmit={handleConfirmChangePassword}
+        onOpenChange={setPasswordDialogOpen}
+      />
 
-        <UserDetailDialog
-          user={selectedDetailUser}
-          isOpen={detailDialogOpen}
-          isLoading={isLoading}
-          onOpenChange={setDetailDialogOpen}
-        />
-      </div>
-    </ProtectedPage>
+      <UserDetailDialog
+        user={selectedDetailUser}
+        isOpen={detailDialogOpen}
+        isLoading={isLoading}
+        onOpenChange={setDetailDialogOpen}
+      />
+    </div>
   );
 }
 

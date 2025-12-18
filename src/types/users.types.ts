@@ -278,3 +278,57 @@ export interface PaginatedParentStudentLinks {
     totalPages: number;
   };
 }
+
+// ✅ Grade info for enrollment
+export interface GradeInfo {
+  id: number;
+  name: string;
+}
+
+// ✅ Section info for enrollment
+export interface SectionInfo {
+  id: number;
+  name: string;
+}
+
+// ✅ Cycle info for enrollment
+export interface CycleInfo {
+  id?: number;
+  name?: string;
+  academicYear: number;
+  startDate?: string;
+  endDate?: string;
+  isActive?: boolean;
+}
+
+// ✅ Enrollment for student
+export interface StudentEnrollment {
+  id: number;
+  status: 'ACTIVE' | 'INACTIVE' | 'GRADUATED' | 'SUSPENDED';
+  dateEnrolled: string;
+  cycle: CycleInfo | number; // Puede ser objeto o número
+  grade: GradeInfo;
+  section: SectionInfo;
+}
+
+// ✅ Student with enrollments (response from GET /api/users/parent/:parentId/children)
+export interface StudentWithEnrollments {
+  id: number;
+  codeSIRE: string;
+  givenNames: string;
+  lastNames: string;
+  birthDate: string;
+  gender: 'M' | 'F' | 'O' | string; // Puede ser string según la API
+  enrollments: StudentEnrollment[];
+  // Propiedades del ParentStudentLink
+  parentStudentLinkId?: number;
+  relationshipType?: string;
+  isPrimaryContact?: boolean;
+  hasLegalCustody?: boolean;
+  canAccessInfo?: boolean;
+  livesWithStudent?: boolean;
+  financialResponsible?: boolean;
+  emergencyContactPriority?: number;
+  receivesSchoolNotices?: boolean;
+}
+

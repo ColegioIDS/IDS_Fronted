@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,9 +37,9 @@ import {
 } from 'lucide-react';
 import { Role } from '@/types/roles.types';
 import { getRoleTheme } from '@/config/theme.config';
+import { MODULES_PERMISSIONS } from '@/constants/modules-permissions';
 import { RoleDetailDialog } from './RoleDetailDialog';
 import { DeleteRoleDialog } from './DeleteRoleDialog';
-import { ProtectedButton } from '@/components/shared/permissions/ProtectedButton';
 
 interface RoleCardProps {
   role: Role & { _count?: { users: number; permissions: number } };
@@ -50,8 +51,25 @@ export function RoleCard({ role, onUpdate, onEdit }: RoleCardProps) {
   const [showDetail, setShowDetail] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const { hasPermission } = useAuth();
 
   const roleTheme = getRoleTheme(role.name.toLowerCase());
+  const canViewDetails = hasPermission(
+    MODULES_PERMISSIONS.ROLE.READ_ONE.module,
+    MODULES_PERMISSIONS.ROLE.READ_ONE.action
+  );
+  const canUpdate = hasPermission(
+    MODULES_PERMISSIONS.ROLE.UPDATE.module,
+    MODULES_PERMISSIONS.ROLE.UPDATE.action
+  );
+  const canDelete = hasPermission(
+    MODULES_PERMISSIONS.ROLE.DELETE.module,
+    MODULES_PERMISSIONS.ROLE.DELETE.action
+  );
+  const canAssignPermissions = hasPermission(
+    MODULES_PERMISSIONS.ROLE.ASSIGN_PERMISSIONS.module,
+    MODULES_PERMISSIONS.ROLE.ASSIGN_PERMISSIONS.action
+  );
 
   const handleSuccess = () => {
     onUpdate?.();
@@ -144,33 +162,30 @@ export function RoleCard({ role, onUpdate, onEdit }: RoleCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-gray-800">
-                <DropdownMenuItem
-                  onClick={() => setShowDetail(true)}
-                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Ver Detalle
-                </DropdownMenuItem>
+                {canViewDetails && (
+                  <DropdownMenuItem
+                    onClick={() => setShowDetail(true)}
+                    className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Ver Detalle
+                  </DropdownMenuItem>
+                )}
 
-                <ProtectedButton
-                  module="role"
-                  action="update"
-                  hideOnNoPermission
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start px-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onClick={() => onEdit?.(role.id)} // ✅ CAMBIAR AQUÍ
+                {canUpdate && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start px-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    onClick={() => onEdit?.(role.id)}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
+                )}
 
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Editar
-                </ProtectedButton>
-
-                {!role.isActive && (
-                  <ProtectedButton
-                    module="role"
-                    action="restore"
-                    hideOnNoPermission
+                {!role.isActive && canUpdate && (
+                  <Button
                     variant="ghost"
                     size="sm"
                     className="w-full justify-start px-2 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -178,24 +193,24 @@ export function RoleCard({ role, onUpdate, onEdit }: RoleCardProps) {
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Restaurar
-                  </ProtectedButton>
+                  </Button>
                 )}
 
-                <DropdownMenuSeparator />
-
-                <ProtectedButton
-                  module="role"
-                  action="delete"
-                  hideOnNoPermission
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start px-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  onClick={() => setShowDelete(true)}
-                  disabled={role.isSystem}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Eliminar
-                </ProtectedButton>
+                {canDelete && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start px-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      onClick={() => setShowDelete(true)}
+                      disabled={role.isSystem}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Eliminar
+                    </Button>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -370,18 +385,20 @@ export function RoleCard({ role, onUpdate, onEdit }: RoleCardProps) {
               </TooltipContent>
             </Tooltip>
 
-            <Button
-              onClick={() => setShowDetail(true)}
-              variant="ghost"
-              size="sm"
-              className="text-purple-600 hover:text-purple-700 dark:text-purple-400
-                hover:bg-purple-50 dark:hover:bg-purple-900/30
-                font-semibold transition-all duration-200
-                hover:scale-105"
-            >
-              <Eye className="w-4 h-4 mr-1.5" strokeWidth={2.5} />
-              Ver detalles
-            </Button>
+            {canViewDetails && (
+              <Button
+                onClick={() => setShowDetail(true)}
+                variant="ghost"
+                size="sm"
+                className="text-purple-600 hover:text-purple-700 dark:text-purple-400
+                  hover:bg-purple-50 dark:hover:bg-purple-900/30
+                  font-semibold transition-all duration-200
+                  hover:scale-105"
+              >
+                <Eye className="w-4 h-4 mr-1.5" strokeWidth={2.5} />
+                Ver detalles
+              </Button>
+            )}
           </div>
         </CardContent>
 

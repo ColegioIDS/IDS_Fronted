@@ -34,7 +34,7 @@ import { bimesterService } from '@/services/bimester.service';
 import { handleApiError, handleApiSuccess } from '@/utils/handleApiError';
 import { Bimester } from '@/types/bimester.types';
 import { useBimesterCycles } from '@/hooks/data/useBimesterCycles';
-import { parseISODateForTimezone } from '@/utils/dateUtils';
+import { parseISODateForTimezone, dateToISOStringInTimezone } from '@/utils/dateUtils';
 
 // ============================================
 // SCHEMA ZOD
@@ -206,8 +206,8 @@ export function BimesterForm({
       const payload = {
         number: data.number,
         name: data.name,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
+        startDate: dateToISOStringInTimezone(startDate),
+        endDate: dateToISOStringInTimezone(endDate),
         isActive: data.isActive,
         weeksCount: data.weeksCount,
       };
@@ -323,7 +323,7 @@ export function BimesterForm({
                         selected={startDate}
                         onSelect={(date) => {
                           setStartDate(date);
-                          setValue('startDate', date ? date.toISOString() : '');
+                          setValue('startDate', date ? dateToISOStringInTimezone(date) : '');
                           setStartDateOpen(false);
                         }}
                         disabled={(date) =>
@@ -361,7 +361,7 @@ export function BimesterForm({
                         selected={endDate}
                         onSelect={(date) => {
                           setEndDate(date);
-                          setValue('endDate', date ? date.toISOString() : '');
+                          setValue('endDate', date ? dateToISOStringInTimezone(date) : '');
                           setEndDateOpen(false);
                         }}
                         disabled={(date) =>

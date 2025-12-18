@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useAuth } from '@/context/AuthContext';
+import { MODULES_PERMISSIONS } from '@/constants/modules-permissions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,7 +60,7 @@ type RoleFormData = z.infer<typeof roleSchema>;
 
 interface PermissionSelection {
   permissionId: number;
-  scope: 'all' | 'own' | 'grade' | 'section';
+  scope: 'all' | 'own' | 'grade' | 'section' | 'coordinator';
   isSelected: boolean;
 }
 
@@ -73,9 +75,16 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [availablePermissions, setAvailablePermissions] = useState<Permission[]>([]);
   const [selectedPermissions, setSelectedPermissions] = useState<Map<number, PermissionSelection>>(new Map());
+  const [originalPermissions, setOriginalPermissions] = useState<Map<number, PermissionSelection>>(new Map());
   const [globalError, setGlobalError] = useState<null | { title?: string; message: string; details?: string[] }>(null);
   const [missingDependencies, setMissingDependencies] = useState<Set<number>>(new Set());
   const [roleTypes, setRoleTypes] = useState<Array<{ value: RoleType; label: string; description: string }>>([]);
+  const { hasPermission } = useAuth();
+
+  const isCreating = !roleId;
+  const canCreate = hasPermission(MODULES_PERMISSIONS.ROLE.CREATE.module, MODULES_PERMISSIONS.ROLE.CREATE.action);
+  const canUpdate = hasPermission(MODULES_PERMISSIONS.ROLE.UPDATE.module, MODULES_PERMISSIONS.ROLE.UPDATE.action);
+  const canAssignPermissions = hasPermission(MODULES_PERMISSIONS.ROLE.ASSIGN_PERMISSIONS.module, MODULES_PERMISSIONS.ROLE.ASSIGN_PERMISSIONS.action);
 
   const isEdit = !!roleId;
 
@@ -157,13 +166,15 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
 
       const existingPermissions = new Map<number, PermissionSelection>();
       role.permissions.forEach((rp) => {
+        const normalizedScope = (typeof rp.scope === 'string' ? rp.scope.toLowerCase() : 'all') as 'all' | 'own' | 'grade' | 'section' | 'coordinator';
         existingPermissions.set(rp.permissionId, {
           permissionId: rp.permissionId,
-          scope: rp.scope as any,
+          scope: normalizedScope,
           isSelected: true,
         });
       });
       setSelectedPermissions(existingPermissions);
+      setOriginalPermissions(new Map(existingPermissions));
     } catch (err: any) {
       handleApiError(err, 'Error al cargar el rol');
     } finally {
@@ -249,7 +260,7 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
   };
 
   // ✨ MEJORADO: Cambio de scope con validación
-  const handleScopeChange = (permissionId: number, scope: 'all' | 'own' | 'grade' | 'section') => {
+  const handleScopeChange = (permissionId: number, scope: 'all' | 'own' | 'grade' | 'section' | 'coordinator') => {
     const permission = availablePermissions.find(p => p.id === permissionId);
 
     // Validar que el scope esté permitido
@@ -304,17 +315,46 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
         toast.success('Rol creado exitosamente');
       }
 
-      if (selectedPermissions.size > 0) {
-        const permissionsToAssign = Array.from(selectedPermissions.values()).map((p) => ({
-          permissionId: p.permissionId,
-          scope: p.scope,
-        }));
+      // ✨ MEJORADO: Solo enviar permisos NUEVOS o con scope modificado
+      const permissionsToAssign: Array<{ permissionId: number; scope: 'all' | 'own' | 'grade' | 'section' }> = [];
+      
+      selectedPermissions.forEach((selected) => {
+        const original = originalPermissions.get(selected.permissionId);
+        
+        // Es un permiso nuevo O el scope cambió
+        if (!original || original.scope !== selected.scope) {
+          permissionsToAssign.push({
+            permissionId: selected.permissionId,
+            scope: selected.scope as 'all' | 'own' | 'grade' | 'section',
+          });
+        }
+      });
 
+      if (permissionsToAssign.length > 0) {
         await rolesService.assignMultiplePermissions(roleId_, {
           permissions: permissionsToAssign,
         });
 
-        toast.success(`${permissionsToAssign.length} permisos asignados`);
+        toast.success(`${permissionsToAssign.length} permiso(s) ${isEdit ? 'actualizado(s)' : 'asignado(s)'}`);
+      }
+
+      // 🔥 REMOVER PERMISOS QUE FUERON DESELECCIONADOS
+      if (isEdit && originalPermissions.size > 0) {
+        const permissionsToRemove: number[] = [];
+
+        originalPermissions.forEach((originalPerm) => {
+          if (!selectedPermissions.has(originalPerm.permissionId)) {
+            permissionsToRemove.push(originalPerm.permissionId);
+          }
+        });
+
+        if (permissionsToRemove.length > 0) {
+          await rolesService.removeMultiplePermissions(roleId_, {
+            permissionIds: permissionsToRemove,
+          });
+
+          toast.success(`${permissionsToRemove.length} permiso(s) removido(s)`);
+        }
       }
 
       onSuccess?.();
@@ -586,12 +626,14 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
                     <AccordionContent className="px-4 pb-4 pt-3">
                       <div className="space-y-2">
                         {permissions.map((permission) => {
-
-
                           const isSelected = selectedPermissions.has(permission.id);
                           const hasMissingDeps = missingDependencies.has(permission.id);
                           const actionTheme = getActionTheme(permission.action);
-                          const currentScope = selectedPermissions.get(permission.id)?.scope || 'all';
+                          const selectedPermission = selectedPermissions.get(permission.id);
+                          // Si está seleccionado, usar el scope guardado, si no usar el primer scope permitido o 'all'
+                          const currentScope = isSelected 
+                            ? (selectedPermission?.scope ?? (permission.allowedScopes?.[0] as any) ?? 'all')
+                            : 'all';
 
                           return (
                             <div
@@ -647,25 +689,31 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
                                   onChange={(e) =>
                                     handleScopeChange(
                                       permission.id,
-                                      e.target.value as any
+                                      e.target.value as 'all' | 'own' | 'grade' | 'section' | 'coordinator'
                                     )
                                   }
                                   disabled={isLoading}
                                   className="ml-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500"
                                 >
                                   {permission.allowedScopes && permission.allowedScopes.length > 0 ? (
-                                    permission.allowedScopes.map((scope) => (
-                                      <option key={scope} value={scope}>
-                                        {scope === 'all' && 'Scope: Todos'}
-                                        {scope === 'own' && 'Scope: Propios'}
-                                        {scope === 'grade' && 'Scope: Grado'}
-                                        {scope === 'section' && 'Scope: Sección'}
-                                      </option>
-                                    ))
+                                    permission.allowedScopes.map((scope) => {
+                                      // Normalizar el scope del backend a minúsculas
+                                      const scopeValue = String(scope).toLowerCase().trim();
+                                      return (
+                                        <option key={scopeValue} value={scopeValue}>
+                                          {scopeValue === 'all' && 'Scope: Todos'}
+                                          {scopeValue === 'own' && 'Scope: Propios'}
+                                          {scopeValue === 'coordinator' && 'Scope: Coordinador'}
+                                          {scopeValue === 'grade' && 'Scope: Grado'}
+                                          {scopeValue === 'section' && 'Scope: Sección'}
+                                        </option>
+                                      );
+                                    })
                                   ) : (
                                     <>
                                       <option value="all">Scope: Todos</option>
                                       <option value="own">Scope: Propios</option>
+                                      <option value="coordinator">Scope: Coordinador</option>
                                       <option value="grade">Scope: Grado</option>
                                       <option value="section">Scope: Sección</option>
                                     </>

@@ -26,6 +26,7 @@ interface GradeCardProps {
   onEdit?: (grade: Grade) => void;
   onDelete?: (grade: Grade) => void;
   onViewStats?: (grade: Grade) => void;
+  canView?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
 }
@@ -39,6 +40,7 @@ export function GradeCard({
   onEdit,
   onDelete,
   onViewStats,
+  canView = true,
   canEdit = true,
   canDelete = true,
 }: GradeCardProps) {
@@ -253,7 +255,7 @@ export function GradeCard({
         <CardFooter className="flex flex-wrap gap-2 pt-4 pb-5 border-t-2 border-gray-200 dark:border-gray-700
           bg-gray-50 dark:bg-gray-900/50">
           {/* View Details */}
-          {onView && (
+          {canView && onView && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -301,7 +303,7 @@ export function GradeCard({
           )}
 
           {/* Stats */}
-          {onViewStats && (
+          {canView && onViewStats && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

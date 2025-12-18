@@ -35,6 +35,9 @@ import { DeleteGradeDialog } from './DeleteGradeDialog';
 
 interface GradeCycleListProps {
   onCreateNew: () => void;
+  canCreate?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 interface CycleWithGrades extends AvailableCycle {
@@ -44,7 +47,12 @@ interface CycleWithGrades extends AvailableCycle {
 /**
  * 📋 Lista de configuraciones de ciclo-grados - Diseño moderno
  */
-export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
+export function GradeCycleList({ 
+  onCreateNew,
+  canCreate = false,
+  canUpdate = false,
+  canDelete = false,
+}: GradeCycleListProps) {
   const [cycles, setCycles] = useState<CycleWithGrades[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -263,7 +271,8 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
                 <TooltipTrigger asChild>
                   <Button
                     onClick={onCreateNew}
-                    className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700 h-12 px-6 font-bold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 border-2 border-indigo-700 dark:border-indigo-500 transition-all"
+                    disabled={!canCreate}
+                    className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700 h-12 px-6 font-bold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 border-2 border-indigo-700 dark:border-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-5 h-5" strokeWidth={2.5} />
                     Nuevo Ciclo
@@ -355,7 +364,8 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
               </p>
               <Button
                 onClick={onCreateNew}
-                className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700 h-12 px-8 text-base font-bold shadow-lg shadow-indigo-500/30 hover:shadow-xl border-2 border-indigo-700"
+                disabled={!canCreate}
+                className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700 h-12 px-8 text-base font-bold shadow-lg shadow-indigo-500/30 hover:shadow-xl border-2 border-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="w-5 h-5" strokeWidth={2.5} />
                 Crear Primer Ciclo
@@ -465,26 +475,28 @@ export function GradeCycleList({ onCreateNew }: GradeCycleListProps) {
                                 </div>
 
                                 {/* Delete Button */}
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDeleteClick(cycle, grade)}
-                                      disabled={isDeleting}
-                                      className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 ml-2 flex-shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity"
-                                    >
-                                      {isDeleting ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2.5} />
-                                      ) : (
-                                        <Trash2 className="w-4 h-4" strokeWidth={2.5} />
-                                      )}
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
-                                    <p className="font-semibold">Eliminar {grade.name} de este ciclo</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                {canDelete && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteClick(cycle, grade)}
+                                        disabled={isDeleting}
+                                        className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 ml-2 flex-shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                                      >
+                                        {isDeleting ? (
+                                          <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2.5} />
+                                        ) : (
+                                          <Trash2 className="w-4 h-4" strokeWidth={2.5} />
+                                        )}
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                                      <p className="font-semibold">Eliminar {grade.name} de este ciclo</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
                               </div>
                             );
                           })}

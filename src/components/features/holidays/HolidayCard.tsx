@@ -18,6 +18,7 @@ interface HolidayCardProps {
   onView?: (holiday: Holiday) => void;
   onEdit?: (holiday: Holiday) => void;
   onDelete?: (holiday: Holiday) => void;
+  canView?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
 }
@@ -37,6 +38,7 @@ export function HolidayCard({
   onView,
   onEdit,
   onDelete,
+  canView = false,
   canEdit = false,
   canDelete = false,
 }: HolidayCardProps) {
@@ -133,12 +135,13 @@ export function HolidayCard({
 
         {/* Acciones */}
         <div className="flex items-center justify-end gap-2">
-          {onView && (
+          {canView && onView && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onView(holiday)}
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+              className="h-8 w-8 p-0 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-400"
+              title="Ver detalles"
             >
               <Eye className="h-4 w-4" />
             </Button>
@@ -148,7 +151,8 @@ export function HolidayCard({
               variant="ghost"
               size="sm"
               onClick={() => onEdit(holiday)}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+              className="h-8 w-8 p-0 hover:bg-sky-100 dark:hover:bg-sky-900/30 hover:text-sky-600 dark:hover:text-sky-400"
+              title="Editar"
             >
               <Edit2 className="h-4 w-4" />
             </Button>
@@ -158,7 +162,8 @@ export function HolidayCard({
               variant="ghost"
               size="sm"
               onClick={() => onDelete(holiday)}
-              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+              className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400"
+              title="Eliminar"
             >
               <Trash2 className="h-4 w-4" />
             </Button>

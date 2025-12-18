@@ -15,6 +15,7 @@ import { CourseFilters as CourseFiltersType } from '@/types/courses';
 import { useAuth } from '@/context/AuthContext';
 import { useCourses } from '@/hooks/data/useCourses';
 import { toast } from 'sonner';
+import { COURSE_PERMISSIONS } from '@/constants/modules-permissions/course';
 
 export function CoursesPageContent() {
   const [activeTab, setActiveTab] = useState<'list' | 'form'>('list');
@@ -22,7 +23,11 @@ export function CoursesPageContent() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const { hasPermission } = useAuth();
-  const canCreate = hasPermission('course', 'create');
+  const canCreate = hasPermission(COURSE_PERMISSIONS.CREATE.module, COURSE_PERMISSIONS.CREATE.action);
+  const canReadOne = hasPermission(COURSE_PERMISSIONS.READ_ONE.module, COURSE_PERMISSIONS.READ_ONE.action);
+  const canUpdate = hasPermission(COURSE_PERMISSIONS.UPDATE.module, COURSE_PERMISSIONS.UPDATE.action);
+  const canDelete = hasPermission(COURSE_PERMISSIONS.DELETE.module, COURSE_PERMISSIONS.DELETE.action);
+  const canRestore = hasPermission(COURSE_PERMISSIONS.RESTORE.module, COURSE_PERMISSIONS.RESTORE.action);
 
   // Usar hook para obtener cursos con filtros dinámicos
   const { data, isLoading, error, query, updateQuery, refresh } = useCourses({
@@ -265,6 +270,9 @@ export function CoursesPageContent() {
               onClearFilters={handleReset}
               onUpdate={refresh}
               onEdit={handleEdit}
+              canReadOne={canReadOne}
+              canUpdate={canUpdate}
+              canDelete={canDelete}
             />
           </TabsContent>
 

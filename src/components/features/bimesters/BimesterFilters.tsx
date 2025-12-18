@@ -64,11 +64,9 @@ export function BimesterFilters({
 
     const payload: any = {};
 
-    // Ciclo escolar (OBLIGATORIO)
+    // Ciclo escolar (OPCIONAL - se puede filtrar por ciclo específico o solo mostrar bimestres en general)
     if (currentCycleId) {
       payload.schoolCycleId = currentCycleId;
-    } else {
-      return;
     }
 
     // Búsqueda
@@ -146,17 +144,12 @@ export function BimesterFilters({
     
     // Resetear UI
     setSearchInput('');
-    setCycleId(currentCycleId || null);
+    setCycleId(null);
     setIsActive('all');
     setNumber('all');
     
-    // Aplicar filtros limpios
-    applyFilters({
-      search: '',
-      cycleId: currentCycleId || null,
-      isActive: 'all',
-      number: 'all',
-    });
+    // Aplicar filtros completamente limpios (sin ciclo, sin búsqueda, sin estados)
+    onFilterChange({});
   };
 
   const hasActiveFilters = 

@@ -11,6 +11,9 @@ interface UsersGridProps {
   onDelete?: (user: User) => void;
   onViewDetails?: (user: User) => void;
   isLoading?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canView?: boolean;
 }
 
 export function UsersGrid({
@@ -19,6 +22,9 @@ export function UsersGrid({
   onDelete,
   onViewDetails,
   isLoading,
+  canEdit = true,
+  canDelete = true,
+  canView = true,
 }: UsersGridProps) {
   if (isLoading) {
     return (
@@ -46,6 +52,9 @@ export function UsersGrid({
           onDelete={onDelete}
           onViewDetails={onViewDetails}
           isLoading={isLoading}
+          canEdit={canEdit}
+          canDelete={canDelete}
+          canView={canView}
         />
       ))}
     </div>

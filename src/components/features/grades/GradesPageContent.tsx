@@ -19,6 +19,8 @@ import { DeleteGradeDialog } from "./DeleteGradeDialog";
 import { GradeStatsDialog } from "./GradeStatsDialog";
 import { useGrades } from "@/hooks/data/useGrades";
 import { gradesService } from "@/services/grades.service";
+import { handleApiError, handleApiSuccess } from "@/utils/handleApiError";
+import { parseApiError } from "@/utils/handleApiError";
 import type {
   Grade,
   CreateGradeDto,
@@ -26,7 +28,19 @@ import type {
   GradeFilters as GradeFiltersType,
 } from "@/types/grades.types";
 
-export function GradesPageContent() {
+interface GradesPageContentProps {
+  canView?: boolean;
+  canCreate?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+}
+
+export function GradesPageContent({
+  canView = false,
+  canCreate = false,
+  canEdit = false,
+  canDelete = false,
+}: GradesPageContentProps) {
   // State for filters
   const [filters, setFilters] = useState<GradeFiltersType>({
     search: undefined,
@@ -103,30 +117,20 @@ export function GradesPageContent() {
     try {
       if (formDialog.mode === "create") {
         await gradesService.create(dto);
-        toast.success("Grado creado exitosamente", {
-          description: `${dto.name} ha sido agregado al sistema`,
-          icon: <CheckCircle2 className="w-5 h-5" />,
-        });
+        handleApiSuccess("Grado creado exitosamente", [`${dto.name} ha sido agregado al sistema`]);
       } else if (formDialog.grade) {
         await gradesService.update(formDialog.grade.id, dto);
-        toast.success("Grado actualizado exitosamente", {
-          description: `Los cambios en ${dto.name} se guardaron correctamente`,
-          icon: <CheckCircle2 className="w-5 h-5" />,
-        });
+        handleApiSuccess("Grado actualizado exitosamente", [`Los cambios en ${dto.name} se guardaron correctamente`]);
       }
       setFormDialog({ open: false, mode: "create" });
       refresh();
     } catch (error: any) {
-      const message =
-        error.response?.data?.message ||
-        (formDialog.mode === "create"
+      handleApiError(
+        error,
+        formDialog.mode === "create"
           ? "Error al crear el grado"
-          : "Error al actualizar el grado");
-      toast.error(message, {
-        description: "Por favor, verifica los datos e intenta nuevamente",
-        icon: <XCircle className="w-5 h-5" />,
-      });
-      throw error;
+          : "Error al actualizar el grado"
+      );
     }
   };
 
@@ -135,20 +139,11 @@ export function GradesPageContent() {
 
     try {
       await gradesService.delete(deleteDialog.grade.id);
-      toast.success("Grado eliminado exitosamente", {
-        description: `${deleteDialog.grade.name} fue eliminado del sistema`,
-        icon: <CheckCircle2 className="w-5 h-5" />,
-      });
+      handleApiSuccess("Grado eliminado exitosamente", [`${deleteDialog.grade.name} fue eliminado del sistema`]);
       setDeleteDialog({ open: false });
       refresh();
     } catch (error: any) {
-      const message =
-        error.response?.data?.message || "Error al eliminar el grado";
-      toast.error(message, {
-        description: "El grado podría estar en uso",
-        icon: <AlertCircle className="w-5 h-5" />,
-      });
-      throw error;
+      handleApiError(error, "Error al eliminar el grado");
     }
   };
 
@@ -157,20 +152,11 @@ export function GradesPageContent() {
 
     try {
       await gradesService.deactivate(deleteDialog.grade.id);
-      toast.success("Grado desactivado exitosamente", {
-        description: `${deleteDialog.grade.name} ya no estará disponible`,
-        icon: <CheckCircle2 className="w-5 h-5" />,
-      });
+      handleApiSuccess("Grado desactivado exitosamente", [`${deleteDialog.grade.name} ya no estará disponible`]);
       setDeleteDialog({ open: false });
       refresh();
     } catch (error: any) {
-      const message =
-        error.response?.data?.message || "Error al desactivar el grado";
-      toast.error(message, {
-        description: "Por favor, intenta nuevamente",
-        icon: <XCircle className="w-5 h-5" />,
-      });
-      throw error;
+      handleApiError(error, "Error al desactivar el grado");
     }
   };
 
@@ -270,14 +256,16 @@ export function GradesPageContent() {
               </p>
             </div>
           </div>
-          <Button
-            onClick={() => setFormDialog({ open: true, mode: "create" })}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-600 font-semibold shadow-md hover:shadow-lg border-2 border-indigo-700 dark:border-indigo-600"
-            size="lg"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Nuevo Grado
-          </Button>
+          {canCreate && (
+            <Button
+              onClick={() => setFormDialog({ open: true, mode: "create" })}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-600 font-semibold shadow-md hover:shadow-lg border-2 border-indigo-700 dark:border-indigo-600"
+              size="lg"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Nuevo Grado
+            </Button>
+          )}
         </div>
       </div>
 
@@ -403,6 +391,9 @@ export function GradesPageContent() {
         onEdit={handleEdit}
         onDelete={handleDeleteClick}
         onViewStats={handleStatsClick}
+        canView={canView}
+        canEdit={canEdit}
+        canDelete={canDelete}
       />
 
       {/* Enhanced Pagination */}

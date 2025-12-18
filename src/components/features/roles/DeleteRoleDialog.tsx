@@ -2,6 +2,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { MODULES_PERMISSIONS } from '@/constants/modules-permissions';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +27,9 @@ interface DeleteRoleDialogProps {
 
 export function DeleteRoleDialog({ role, open, onClose, onSuccess }: DeleteRoleDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { hasPermission } = useAuth();
+
+  const canDelete = hasPermission(MODULES_PERMISSIONS.ROLE.DELETE.module, MODULES_PERMISSIONS.ROLE.DELETE.action);
 
   const handleDelete = async () => {
     try {

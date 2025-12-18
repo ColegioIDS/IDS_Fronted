@@ -79,6 +79,7 @@ export function PermissionDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] p-0 bg-white dark:bg-gray-900">
+        <DialogTitle className="sr-only">Detalles del permiso</DialogTitle>
         {isLoading ? (
           // Loading state
           <div className="flex items-center justify-center h-96">

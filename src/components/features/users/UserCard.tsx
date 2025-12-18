@@ -25,6 +25,9 @@ interface UserCardProps {
   onDelete?: (user: User) => void;
   onViewDetails?: (user: User) => void;
   isLoading?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canView?: boolean;
 }
 
 export function UserCard({
@@ -33,6 +36,9 @@ export function UserCard({
   onDelete,
   onViewDetails,
   isLoading,
+  canEdit = true,
+  canDelete = true,
+  canView = true,
 }: UserCardProps) {
   const isUserWithRelations = (u: any): u is UserWithRelations => 'role' in u;
   const roleName = isUserWithRelations(user) && user.role ? user.role.name : 'N/A';
@@ -194,26 +200,28 @@ export function UserCard({
 
         {/* Actions */}
         <div className="flex gap-2 pt-2 border-t border-slate-200/30 dark:border-slate-700/30">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onViewDetails?.(user)}
-            disabled={isLoading}
-            className="flex-1 h-9 text-xs font-semibold 
-              bg-gradient-to-r from-blue-50 to-blue-50/50 dark:from-blue-950/40 dark:to-blue-950/20
-              text-blue-700 dark:text-blue-300
-              hover:from-blue-100 hover:to-blue-100/60 dark:hover:from-blue-900/60 dark:hover:to-blue-900/30
-              border border-blue-200/30 dark:border-blue-800/30
-              hover:border-blue-300/60 dark:hover:border-blue-700/60
-              transition-all duration-300
-              group/btn
-            "
-          >
-            <Eye className="w-3.5 h-3.5 mr-1 group-hover/btn:scale-110 transition-transform" />
-            Ver
-          </Button>
+          {onViewDetails && canView && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onViewDetails(user)}
+              disabled={isLoading}
+              className="flex-1 h-9 text-xs font-semibold
+                bg-gradient-to-r from-blue-50 to-blue-50/50 dark:from-blue-950/40 dark:to-blue-950/20
+                text-blue-700 dark:text-blue-300
+                hover:from-blue-100 hover:to-blue-100/60 dark:hover:from-blue-900/60 dark:hover:to-blue-900/30
+                border border-blue-200/30 dark:border-blue-800/30
+                hover:border-blue-300/60 dark:hover:border-blue-700/60
+                transition-all duration-300
+                group/btn
+              "
+            >
+              <Eye className="w-3.5 h-3.5 mr-1 group-hover/btn:scale-110 transition-transform" />
+              Ver
+            </Button>
+          )}
           
-          {onEdit && (
+          {onEdit && canEdit && (
             <Button
               variant="ghost"
               size="sm"
@@ -234,7 +242,7 @@ export function UserCard({
             </Button>
           )}
 
-          {onDelete && (
+          {onDelete && canDelete && (
             <Button
               variant="ghost"
               size="sm"

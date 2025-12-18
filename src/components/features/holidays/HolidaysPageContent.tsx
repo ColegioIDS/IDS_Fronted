@@ -31,7 +31,21 @@ import {
 /**
  * 🏠 Componente principal de la página de Holidays
  */
-export function HolidaysPageContent() {
+interface HolidaysPageContentProps {
+  canView?: boolean;
+  canCreate?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canExport?: boolean;
+}
+
+export function HolidaysPageContent({
+  canView = false,
+  canCreate = false,
+  canEdit = false,
+  canDelete = false,
+  canExport = false,
+}: HolidaysPageContentProps) {
   const {
     data: holidays,
     meta,
@@ -59,12 +73,18 @@ export function HolidaysPageContent() {
 
   // Handlers - CREATE
   const handleOpenCreate = () => {
+    if (!canCreate) return;
     setFormMode('create');
     setSelectedHoliday(null);
     setFormDialogOpen(true);
   };
 
   const handleCreate = async (data: CreateHolidayDto) => {
+    if (!canCreate) {
+      toast.error('No tienes permisos para crear días festivos');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await holidaysService.create(data);
@@ -83,12 +103,18 @@ export function HolidaysPageContent() {
 
   // Handlers - UPDATE
   const handleOpenEdit = (holiday: Holiday) => {
+    if (!canEdit) return;
     setFormMode('edit');
     setSelectedHoliday(holiday);
     setFormDialogOpen(true);
   };
 
   const handleUpdate = async (data: CreateHolidayDto) => {
+    if (!canEdit) {
+      toast.error('No tienes permisos para editar días festivos');
+      return;
+    }
+
     if (!selectedHoliday) return;
 
     setIsSubmitting(true);
@@ -117,11 +143,16 @@ export function HolidaysPageContent() {
 
   // Handlers - DELETE
   const handleOpenDelete = (holiday: Holiday) => {
+    if (!canDelete) return;
     setSelectedHoliday(holiday);
     setDeleteDialogOpen(true);
   };
 
   const handleDelete = async () => {
+    if (!canDelete) {
+      toast.error('No tienes permisos para eliminar días festivos');
+      return;
+    }
     if (!selectedHoliday) return;
 
     setIsSubmitting(true);
@@ -143,6 +174,7 @@ export function HolidaysPageContent() {
 
   // Handlers - DETAIL
   const handleOpenDetail = (holiday: Holiday) => {
+    if (!canView) return;
     setSelectedHoliday(holiday);
     setDetailDialogOpen(true);
   };
@@ -178,13 +210,16 @@ export function HolidaysPageContent() {
             Gestión de días festivos y recuperables
           </p>
         </div>
-        <Button
-          onClick={handleOpenCreate}
-          className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Día Festivo
-        </Button>
+        {canCreate && (
+          <Button
+            onClick={handleOpenCreate}
+            className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white"
+            title="Crear nuevo día festivo"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Día Festivo
+          </Button>
+        )}
       </div>
 
       {/* Estadísticas */}
@@ -314,11 +349,12 @@ export function HolidaysPageContent() {
       <HolidaysGrid
         holidays={holidays}
         isLoading={isLoading}
-        onView={handleOpenDetail}
-        onEdit={handleOpenEdit}
-        onDelete={handleOpenDelete}
-        canEdit={true}
-        canDelete={true}
+        onView={canView ? handleOpenDetail : undefined}
+        onEdit={canEdit ? handleOpenEdit : undefined}
+        onDelete={canDelete ? handleOpenDelete : undefined}
+        canView={canView}
+        canEdit={canEdit}
+        canDelete={canDelete}
       />
 
       {/* Paginación */}

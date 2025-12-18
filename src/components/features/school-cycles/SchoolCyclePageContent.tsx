@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ErrorAlert, ConfirmDialog } from '@/components/shared/feedback';
 import { useSchoolCycles } from '@/hooks/data/useSchoolCycles';
-import { usePermissions } from '@/hooks/usePermissions';
+import { useAuth } from '@/context/AuthContext';
+import { MODULES_PERMISSIONS } from '@/constants/modules-permissions';
 import { schoolCycleService } from '@/services/school-cycle.service';
 import { SchoolCycle, QuerySchoolCyclesDto } from '@/types/school-cycle.types';
-import { ProtectedContent } from '@/components/shared/permissions/ProtectedContent';
 import { NoPermissionCard } from '@/components/shared/permissions/NoPermissionCard';
 import { handleApiError } from '@/utils/handleApiError';
 import {
@@ -31,7 +31,7 @@ interface ApiError {
 }
 
 export function SchoolCyclePageContent() {
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = useAuth();
   const { data, meta, isLoading, error, query, updateQuery, setPage, refresh } =
     useSchoolCycles();
 
@@ -54,12 +54,34 @@ export function SchoolCyclePageContent() {
   const [globalError, setGlobalError] = useState<ApiError | null>(null);
 
   // Permisos
-  const canRead = hasPermission('school-cycle', 'read');
-  const canCreate = hasPermission('school-cycle', 'create');
-  const canUpdate = hasPermission('school-cycle', 'update');
-  const canDelete = hasPermission('school-cycle', 'delete');
-  const canActivate = hasPermission('school-cycle', 'activate');
-  const canArchive = hasPermission('school-cycle', 'activate'); // ← CAMBIO: era canClose
+  const canRead = hasPermission(
+    MODULES_PERMISSIONS.SCHOOL_CYCLE.READ.module,
+    MODULES_PERMISSIONS.SCHOOL_CYCLE.READ.action
+  );
+  const canCreate = hasPermission(
+    MODULES_PERMISSIONS.SCHOOL_CYCLE.CREATE.module,
+    MODULES_PERMISSIONS.SCHOOL_CYCLE.CREATE.action
+  );
+  const canUpdate = hasPermission(
+    MODULES_PERMISSIONS.SCHOOL_CYCLE.UPDATE.module,
+    MODULES_PERMISSIONS.SCHOOL_CYCLE.UPDATE.action
+  );
+  const canDelete = hasPermission(
+    MODULES_PERMISSIONS.SCHOOL_CYCLE.DELETE.module,
+    MODULES_PERMISSIONS.SCHOOL_CYCLE.DELETE.action
+  );
+  const canActivate = hasPermission(
+    MODULES_PERMISSIONS.SCHOOL_CYCLE.ACTIVATE.module,
+    MODULES_PERMISSIONS.SCHOOL_CYCLE.ACTIVATE.action
+  );
+  const canArchive = hasPermission(
+    MODULES_PERMISSIONS.SCHOOL_CYCLE.CLOSE.module,
+    MODULES_PERMISSIONS.SCHOOL_CYCLE.CLOSE.action
+  );
+  const canReadOne = hasPermission(
+    MODULES_PERMISSIONS.SCHOOL_CYCLE.READ_ONE.module,
+    MODULES_PERMISSIONS.SCHOOL_CYCLE.READ_ONE.action
+  );
 
   const hasSearchFilter =
     (query.search && query.search.trim().length > 0) ||
@@ -213,13 +235,11 @@ export function SchoolCyclePageContent() {
   // Sin permisos de lectura
   if (!canRead) {
     return (
-      <div className="space-y-6">
-        <NoPermissionCard
-          title="Acceso Denegado"
-          description="No tienes permiso para ver ciclos escolares"
-/*           requiredPermission="school-cycle:read"
- */        />
-      </div>
+      <NoPermissionCard
+        title="Acceso Denegado"
+        description="No tienes permiso para ver ciclos escolares"
+        variant="page"
+      />
     );
   }
 
@@ -236,7 +256,7 @@ export function SchoolCyclePageContent() {
           </p>
         </div>
 
-        <ProtectedContent module="school-cycle" action="create" hideOnNoPermission>
+        {canCreate && (
           <Button
             onClick={handleCreateClick}
             disabled={isLoading || actionLoading}
@@ -245,7 +265,7 @@ export function SchoolCyclePageContent() {
             <Plus className="w-4 h-4 mr-2" strokeWidth={2.5} />
             Crear Ciclo Escolar
           </Button>
-        </ProtectedContent>
+        )}
       </div>
 
       {/* Estadísticas */}
@@ -283,8 +303,8 @@ export function SchoolCyclePageContent() {
         onEdit={canUpdate ? handleEdit : undefined}
         onDelete={canDelete ? handleDelete : undefined}
         onActivate={canActivate ? handleActivate : undefined}
-        onArchive={canArchive ? handleArchiveClick : undefined} // ← CAMBIO: era onClose
-        onViewDetails={handleViewDetails}
+        onArchive={canArchive ? handleArchiveClick : undefined}
+        onViewDetails={canReadOne ? handleViewDetails : undefined}
         onCreate={canCreate ? handleCreateClick : undefined}
         onClearFilters={handleClearFilters}
       />

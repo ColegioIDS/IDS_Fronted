@@ -40,6 +40,7 @@ import { studentsService } from '@/services/students.service';
 import { Student } from '@/types/students.types';
 import { toast } from 'sonner';
 import { useStudentScope } from '@/hooks/useStudentScope';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 
 interface StudentListProps {
   onSelectStudent?: (student: Student) => void;
@@ -50,6 +51,12 @@ interface StudentListProps {
   onStatsUpdate?: (students: Student[], total: number) => void;
   searchFilter?: string;
   enrollmentFilter?: 'all' | 'enrolled' | 'not-enrolled';
+  canRead?: boolean;
+  canReadOne?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
+  canUploadPicture?: boolean;
+  canDeletePicture?: boolean;
 }
 
 export const StudentsList: React.FC<StudentListProps> = ({
@@ -61,6 +68,12 @@ export const StudentsList: React.FC<StudentListProps> = ({
   onStatsUpdate,
   searchFilter = '',
   enrollmentFilter = 'all',
+  canRead = false,
+  canReadOne = false,
+  canUpdate = false,
+  canDelete = false,
+  canUploadPicture = false,
+  canDeletePicture = false,
 }) => {
   const router = useRouter();
   const scopeFilter = useStudentScope();
@@ -75,6 +88,11 @@ export const StudentsList: React.FC<StudentListProps> = ({
   const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; student: Student | null; loading: boolean }>({
+    open: false,
+    student: null,
+    loading: false,
+  });
 
   // Cargar estudiantes con filtro de scope
   const loadStudents = async () => {
@@ -143,10 +161,15 @@ export const StudentsList: React.FC<StudentListProps> = ({
     }
     // Si scope === 'ALL', permitir eliminación sin restricciones
 
-    if (!confirm(`¿Eliminar a ${student.givenNames} ${student.lastNames}?`)) {
-      return;
-    }
+    // Abrir el diálogo de confirmación
+    setDeleteConfirm({ open: true, student, loading: false });
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm.student) return;
+    const student = deleteConfirm.student;
+
+    setDeleteConfirm(prev => ({ ...prev, loading: true }));
     try {
       if (!student.id) {
         toast.error('ID de estudiante no válido');
@@ -154,10 +177,12 @@ export const StudentsList: React.FC<StudentListProps> = ({
       }
       await studentsService.deleteStudent(student.id);
       toast.success('Estudiante eliminado correctamente');
+      setDeleteConfirm({ open: false, student: null, loading: false });
       loadStudents();
       onDelete?.(student);
     } catch (err: any) {
       toast.error(err.message || 'Error al eliminar estudiante');
+      setDeleteConfirm(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -361,40 +386,44 @@ export const StudentsList: React.FC<StudentListProps> = ({
                       {/* Acciones */}
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1 items-center">
-                          {/* View Button */}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              if (student.id) {
-                                router.push(`/students/${student.id}`);
-                              } else {
-                                onViewStudent?.(student) || onSelectStudent?.(student);
-                              }
-                            }}
-                            title="Ver detalles"
-                            className="hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          {/* View Button - Only with READ_ONE permission */}
+                          {canReadOne && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                if (student.id) {
+                                  router.push(`/students/${student.id}`);
+                                } else {
+                                  onViewStudent?.(student) || onSelectStudent?.(student);
+                                }
+                              }}
+                              title="Ver detalles"
+                              className="hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
 
                           {/* Edit Button */}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              if (student.id) {
-                                router.push(`/students/${student.id}/edit`);
-                              }
-                            }}
-                            title="Editar"
-                            className="hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-600 dark:text-amber-400"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
+                          {canUpdate && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                if (student.id) {
+                                  router.push(`/students/${student.id}/edit`);
+                                }
+                              }}
+                              title="Editar"
+                              className="hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          )}
 
-                          {/* Delete Button - Only for ALL scope */}
-                          {scopeFilter.scope === 'ALL' ? (
+                          {/* Delete Button - Only with DELETE permission */}
+                          {canDelete && (
                             <Button
                               size="sm"
                               variant="ghost"
@@ -404,13 +433,6 @@ export const StudentsList: React.FC<StudentListProps> = ({
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                          ) : (
-                            <div
-                              title="No tienes permisos para eliminar estudiantes"
-                              className="text-slate-300 dark:text-slate-600 w-9 h-9 flex items-center justify-center"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </div>
                           )}
                         </div>
                       </TableCell>
@@ -475,6 +497,23 @@ export const StudentsList: React.FC<StudentListProps> = ({
             </div>
           )}
         </div>
+
+        {/* Confirm Delete Dialog */}
+        <ConfirmDialog
+          open={deleteConfirm.open}
+          onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
+          title="Eliminar Estudiante"
+          description={
+            deleteConfirm.student
+              ? `¿Estás seguro de que deseas eliminar a ${deleteConfirm.student.givenNames} ${deleteConfirm.student.lastNames}? Esta acción no se puede deshacer.`
+              : 'Esta acción no se puede deshacer.'
+          }
+          actionLabel="Eliminar"
+          cancelLabel="Cancelar"
+          onConfirm={handleConfirmDelete}
+          isLoading={deleteConfirm.loading}
+          variant="destructive"
+        />
       </div>
     </div>
   );

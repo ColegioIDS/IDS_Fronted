@@ -6,6 +6,7 @@ import { PermissionStats } from './PermissionStats';
 import { PermissionFilters } from './PermissionFilters';
 import { PermissionsGrid } from './PermissionsGrid';
 import { ProtectedPage } from '@/components/shared/permissions/ProtectedPage';
+import { PERMISSION_PERMISSIONS } from '@/constants/modules-permissions/permission/permission.permissions';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -68,7 +69,7 @@ const inactivePermissions = totalPermissions - activePermissions;
 
   const totalModules = modules.length;
   return (
-    <ProtectedPage module="permission" action="read">
+    <ProtectedPage {...PERMISSION_PERMISSIONS.READ}>
       <div className="space-y-6 p-6">
         {/* Header */}
         <div className="flex items-center justify-between">

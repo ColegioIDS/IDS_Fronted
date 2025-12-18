@@ -17,10 +17,10 @@ export default function CourseGradeDetailDialog({
   onEdit,
 }: CourseGradeDetailDialogProps) {
   return (
-    <div className="fixed inset-0 z-999999 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-      <div className="w-full max-w-2xl rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900">
+    <div className="fixed inset-0 z-999999 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className="w-full max-w-2xl rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900 my-4">
         {/* Header */}
-        <div className="border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 px-6 py-4 rounded-t-lg dark:border-gray-800">
+        <div className="border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 px-6 py-4 rounded-t-lg dark:border-gray-800 sticky top-0">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               Detalles de Asignación
@@ -35,7 +35,7 @@ export default function CourseGradeDetailDialog({
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
           {/* Type Badge */}
           <div className="mb-6 flex justify-center">
             {courseGrade.isCore ? (
@@ -182,24 +182,13 @@ export default function CourseGradeDetailDialog({
 
         {/* Actions */}
         <div className="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 px-6 py-4 rounded-b-lg">
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end">
             <button
               onClick={onClose}
               className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Cerrar
             </button>
-            {onEdit && (
-              <button
-                onClick={() => {
-                  onEdit(courseGrade);
-                  onClose();
-                }}
-                className="rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 text-white transition-all"
-              >
-                Editar
-              </button>
-            )}
           </div>
         </div>
       </div>

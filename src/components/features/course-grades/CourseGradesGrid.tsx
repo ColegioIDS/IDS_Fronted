@@ -13,6 +13,9 @@ interface CourseGradesGridProps {
   onEdit: (courseGrade: CourseGradeDetail) => void;
   onDelete: (courseGrade: CourseGradeDetail) => void;
   onViewDetails: (courseGrade: CourseGradeDetail) => void;
+  canReadOne?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function CourseGradesGrid({
@@ -20,6 +23,9 @@ export default function CourseGradesGrid({
   onEdit,
   onDelete,
   onViewDetails,
+  canReadOne = true,
+  canUpdate = false,
+  canDelete = false,
 }: CourseGradesGridProps) {
   if (courseGrades.length === 0) {
     return (
@@ -59,6 +65,9 @@ export default function CourseGradesGrid({
           onEdit={onEdit}
           onDelete={onDelete}
           onViewDetails={onViewDetails}
+          canReadOne={canReadOne}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
         />
       ))}
     </div>

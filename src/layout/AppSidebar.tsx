@@ -191,6 +191,10 @@ const navItems: NavItem[] = [
         name: "Crear Estudiante", path: "/students/create",
         requiredPermission: { module: 'student', action: 'create' }
       },
+      {
+        name: "Exportar Estudiantes", path: "/students/export",
+        requiredPermission: { module: 'student', action: 'export' }
+      },
     ]
   },
 

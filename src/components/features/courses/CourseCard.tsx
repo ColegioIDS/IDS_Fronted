@@ -30,6 +30,7 @@ import { getCourseTheme } from '@/config/theme.config';
 import { CourseDetailDialog } from './CourseDetailDialog';
 import { DeleteCourseDialog } from './DeleteCourseDialog';
 import { ProtectedButton } from '@/components/shared/permissions/ProtectedButton';
+import { COURSE_PERMISSIONS } from '@/constants/modules-permissions/course';
 import { coursesService } from '@/services/courses.service';
 import { toast } from 'sonner';
 import {
@@ -43,9 +44,19 @@ interface CourseCardProps {
   course: Course & { _count?: { schedules: number; students: number } };
   onUpdate?: () => void;
   onEdit?: (courseId: number) => void;
+  canReadOne?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
-export function CourseCard({ course, onUpdate, onEdit }: CourseCardProps) {
+export function CourseCard({ 
+  course, 
+  onUpdate, 
+  onEdit,
+  canReadOne = true,
+  canUpdate = false,
+  canDelete = false,
+}: CourseCardProps) {
   const [showDetail, setShowDetail] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -142,17 +153,19 @@ export function CourseCard({ course, onUpdate, onEdit }: CourseCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-gray-800">
-                <DropdownMenuItem
-                  onClick={() => setShowDetail(true)}
-                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Ver Detalle
-                </DropdownMenuItem>
+                {canReadOne && (
+                  <DropdownMenuItem
+                    onClick={() => setShowDetail(true)}
+                    className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Ver Detalle
+                  </DropdownMenuItem>
+                )}
 
                 <ProtectedButton
-                  module="course"
-                  action="update"
+                  module={COURSE_PERMISSIONS.UPDATE.module}
+                  action={COURSE_PERMISSIONS.UPDATE.action}
                   hideOnNoPermission
                   variant="ghost"
                   size="sm"
@@ -165,8 +178,8 @@ export function CourseCard({ course, onUpdate, onEdit }: CourseCardProps) {
 
                 {!course.isActive && (
                   <ProtectedButton
-                    module="course"
-                    action="restore"
+                    module={COURSE_PERMISSIONS.RESTORE.module}
+                    action={COURSE_PERMISSIONS.RESTORE.action}
                     hideOnNoPermission
                     variant="ghost"
                     size="sm"
@@ -191,8 +204,8 @@ export function CourseCard({ course, onUpdate, onEdit }: CourseCardProps) {
                 <DropdownMenuSeparator />
 
                 <ProtectedButton
-                  module="course"
-                  action="delete"
+                  module={COURSE_PERMISSIONS.DELETE.module}
+                  action={COURSE_PERMISSIONS.DELETE.action}
                   hideOnNoPermission
                   variant="ghost"
                   size="sm"
@@ -313,14 +326,16 @@ export function CourseCard({ course, onUpdate, onEdit }: CourseCardProps) {
               })}
             </span>
 
-            <Button
-              onClick={() => setShowDetail(true)}
-              variant="ghost"
-              size="sm"
-              className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
-            >
-              Ver más
-            </Button>
+            {canReadOne && (
+              <Button
+                onClick={() => setShowDetail(true)}
+                variant="ghost"
+                size="sm"
+                className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+              >
+                Ver más
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
