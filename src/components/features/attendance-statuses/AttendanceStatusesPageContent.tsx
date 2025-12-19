@@ -3,9 +3,10 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, AlertCircle, Grid3x3, List, ShieldCheck } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { AttendanceStatus } from '@/types/attendance-status.types';
-import { useAttendanceStatuses, useAttendanceStatusPermissions } from '@/hooks/data';
+import { useAttendanceStatuses } from '@/hooks/data';
 import { attendanceStatusesService } from '@/services/attendance-statuses.service';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,10 +20,28 @@ import { DeleteStatusDialog } from './DeleteStatusDialog';
 
 type ViewMode = 'list' | 'grid' | 'form';
 
-export const AttendanceStatusesPageContent = () => {
-  const { canReadStatuses, canCreateStatus, canUpdateStatus, canDeleteStatus } =
-    useAttendanceStatusPermissions();
+/**
+ * Props interface para AttendanceStatusesPageContent
+ * 
+ * Recibe 4 permisos desde la página principal:
+ * - canReadOne: Ver detalles de un estado
+ * - canCreate: Crear nuevos estados
+ * - canUpdate: Actualizar estados existentes
+ * - canDelete: Eliminar estados
+ */
+interface AttendanceStatusesPageContentProps {
+  canReadOne?: boolean;
+  canCreate?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
+}
 
+export const AttendanceStatusesPageContent = ({
+  canReadOne = true,
+  canCreate = true,
+  canUpdate = true,
+  canDelete = true,
+}: AttendanceStatusesPageContentProps) => {
   // ============================================
   // ESTADO
   // ============================================
@@ -61,9 +80,18 @@ export const AttendanceStatusesPageContent = () => {
     try {
       setIsOperating(true);
       await attendanceStatusesService.createStatus(data);
+      toast.success('Estado creado correctamente');
+      setEditingStatus(undefined);
       setViewMode('list');
       refresh();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error creating status:', error);
+      // Re-lanzar el error para que el formulario lo capture y muestre
+      throw new Error(
+        error?.response?.data?.message || 
+        error?.message || 
+        'Error al crear el estado'
+      );
     } finally {
       setIsOperating(false);
     }
@@ -77,10 +105,19 @@ export const AttendanceStatusesPageContent = () => {
     try {
       setIsOperating(true);
       await attendanceStatusesService.updateStatus(editingStatus.id, data);
+      toast.success('Estado actualizado correctamente');
+      // Solo si es exitoso:
       setEditingStatus(undefined);
       setViewMode('list');
       refresh();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error updating status:', error);
+      // Re-lanzar el error para que el formulario lo capture y muestre
+      throw new Error(
+        error?.response?.data?.message || 
+        error?.message || 
+        'Error al actualizar el estado'
+      );
     } finally {
       setIsOperating(false);
     }
@@ -99,10 +136,19 @@ export const AttendanceStatusesPageContent = () => {
     try {
       setIsOperating(true);
       await attendanceStatusesService.deleteStatus(deleteTarget.id);
+      toast.success('Estado eliminado correctamente');
+      // Solo si es exitoso:
       setDeleteDialogOpen(false);
       setDeleteTarget(null);
       refresh();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error deleting status:', error);
+      // Para delete, mostrar el error en un toast en el diálogo
+      toast.error(
+        error?.response?.data?.message || 
+        error?.message || 
+        'Error al eliminar el estado'
+      );
     } finally {
       setIsOperating(false);
     }
@@ -120,32 +166,18 @@ export const AttendanceStatusesPageContent = () => {
         await attendanceStatusesService.deactivateStatus(id);
       }
       refresh();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error toggling status:', error);
+      // Re-lanzar el error para que la tabla lo capture y muestre
+      throw new Error(
+        error?.response?.data?.message || 
+        error?.message || 
+        'Error al cambiar el estado'
+      );
     } finally {
       setIsOperating(false);
     }
   };
-
-  // ============================================
-  // VALIDACIÓN DE PERMISOS
-  // ============================================
-  if (!canReadStatuses) {
-    return (
-      <Card className="border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20">
-        <CardContent className="flex items-center gap-4 p-6">
-          <div className="p-3 rounded-lg bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400">
-            <AlertCircle className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-red-700 dark:text-red-400">Acceso Denegado</h3>
-            <p className="text-red-600 dark:text-red-400/80 text-sm">
-              No tienes permisos para ver los estados de asistencia
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -166,7 +198,7 @@ export const AttendanceStatusesPageContent = () => {
         </div>
 
         {/* Botón Crear (solo visible si no estamos en formulario) */}
-        {viewMode !== 'form' && canCreateStatus && (
+        {viewMode !== 'form' && canCreate && (
           <Button
             onClick={() => {
               setEditingStatus(undefined);
@@ -217,12 +249,13 @@ export const AttendanceStatusesPageContent = () => {
           ============================================ */}
       {viewMode !== 'form' && (
         <div className="space-y-6">
-          {/* CONTROLES SUPERIORES */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            <AttendanceStatusFilters filters={query} onFilterChange={updateQuery} />
-            
-            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)} className="w-full sm:w-auto">
-              <TabsList className="grid w-full grid-cols-2 sm:w-auto bg-slate-100 dark:bg-slate-800">
+          {/* FILTROS */}
+          <AttendanceStatusFilters filters={query} onFilterChange={updateQuery} />
+
+          {/* CONTROLES - Vista */}
+          <div className="flex justify-end">
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)} className="w-auto">
+              <TabsList className="grid grid-cols-2 bg-slate-100 dark:bg-slate-800">
                 <TabsTrigger value="list" className="gap-2 text-xs sm:text-sm">
                   <List className="w-4 h-4" />
                   <span className="hidden sm:inline">Lista</span>
@@ -259,19 +292,19 @@ export const AttendanceStatusesPageContent = () => {
                   <AttendanceStatusTable
                     statuses={statuses}
                     loading={isLoading}
-                    onEdit={(status) => {
+                    onEdit={canUpdate ? (status) => {
                       setEditingStatus(status);
                       setViewMode('form');
-                    }}
-                    onDelete={(id) => {
+                    } : undefined}
+                    onDelete={canDelete ? (id) => {
                       const status = statuses.find((s) => s.id === id);
                       if (status) handleDeleteClick(id, status.name);
-                    }}
-                    onToggleActive={handleToggleActive}
-                    onAdd={() => {
+                    } : undefined}
+                    onToggleActive={canUpdate ? handleToggleActive : undefined}
+                    onAdd={canCreate ? () => {
                       setEditingStatus(undefined);
                       setViewMode('form');
-                    }}
+                    } : undefined}
                   />
                 </div>
               )}
@@ -295,7 +328,7 @@ export const AttendanceStatusesPageContent = () => {
                         <p className="text-slate-600 dark:text-slate-400 max-w-sm mb-6">
                           Comienza creando los estados que utilizarás para registrar la asistencia.
                         </p>
-                        {canCreateStatus && (
+                        {canCreate && (
                           <Button onClick={() => setViewMode('form')} className="bg-blue-600 hover:bg-blue-700 text-white">
                             <Plus className="h-4 w-4 mr-2" />
                             Crear primer estado
@@ -309,15 +342,15 @@ export const AttendanceStatusesPageContent = () => {
                         <AttendanceStatusCard
                           key={status.id}
                           status={status}
-                          onEdit={(s) => {
+                          onEdit={canUpdate ? (s) => {
                             setEditingStatus(s);
                             setViewMode('form');
-                          }}
-                          onDelete={(id) => {
+                          } : undefined}
+                          onDelete={canDelete ? (id) => {
                             const status = statuses.find((s) => s.id === id);
                             if (status) handleDeleteClick(id, status.name);
-                          }}
-                          onToggleActive={handleToggleActive}
+                          } : undefined}
+                          onToggleActive={canUpdate ? handleToggleActive : undefined}
                         />
                       ))}
                     </div>

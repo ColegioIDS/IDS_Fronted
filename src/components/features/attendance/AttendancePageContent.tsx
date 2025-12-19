@@ -8,6 +8,7 @@
  * • Carga datos iniciales
  * • Orquesta los hooks
  * • Gestiona el estado global del módulo
+ * • Valida permisos para cada funcionalidad
  */
 
 'use client';
@@ -26,7 +27,40 @@ import { ATTENDANCE_TABS, ATTENDANCE_TAB_LABELS } from '@/constants/attendance.c
 
 type AttendanceTabType = typeof ATTENDANCE_TABS[keyof typeof ATTENDANCE_TABS];
 
-function AttendancePageContentInner() {
+/**
+ * Props interface para AttendancePageContent
+ * 
+ * Recibe 8 permisos desde la página principal:
+ * - canReadOne: Ver detalles de registros
+ * - canReadConfig: Acceder a configuración
+ * - canReadStats: Ver estadísticas
+ * - canCreate: Crear registros individuales
+ * - canCreateBulk: Crear registros en lote
+ * - canUpdate: Actualizar registros
+ * - canDelete: Eliminar registros
+ * - canValidate: Validar datos de asistencia
+ */
+interface AttendancePageContentProps {
+  canReadOne?: boolean;
+  canReadConfig?: boolean;
+  canReadStats?: boolean;
+  canCreate?: boolean;
+  canCreateBulk?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
+  canValidate?: boolean;
+}
+
+function AttendancePageContentInner({
+  canReadOne = true,
+  canReadConfig = true,
+  canReadStats = true,
+  canCreate = true,
+  canCreateBulk = true,
+  canUpdate = true,
+  canDelete = true,
+  canValidate = true,
+}: AttendancePageContentProps) {
   const { state: attendanceState } = useAttendanceContext();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<AttendanceTabType>(ATTENDANCE_TABS.TAB_1);
@@ -91,6 +125,7 @@ function AttendancePageContentInner() {
         <TabsList className="grid w-full grid-cols-3 gap-2 rounded-xl bg-gray-100 p-2 dark:bg-gray-800">
           <TabsTrigger
             value={ATTENDANCE_TABS.TAB_1}
+            disabled={!canCreate && !canCreateBulk}
             className="data-[state=active]:bg-green-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
           >
             <Edit3 className="mr-2 h-4 w-4" />
@@ -98,6 +133,7 @@ function AttendancePageContentInner() {
           </TabsTrigger>
           <TabsTrigger
             value={ATTENDANCE_TABS.TAB_2}
+            disabled={!canUpdate}
             className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
           >
             <Edit3 className="mr-2 h-4 w-4" />
@@ -105,6 +141,7 @@ function AttendancePageContentInner() {
           </TabsTrigger>
           <TabsTrigger
             value={ATTENDANCE_TABS.TAB_3}
+            disabled={!canValidate}
             className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
           >
             <CheckCircle className="mr-2 h-4 w-4" />
@@ -113,27 +150,33 @@ function AttendancePageContentInner() {
         </TabsList>
 
         {/* TAB 1: REGISTRO DIARIO */}
-        <TabsContent value={ATTENDANCE_TABS.TAB_1} className="space-y-6">
-          <DailyRegistration />
-        </TabsContent>
+        {(canCreate || canCreateBulk) && (
+          <TabsContent value={ATTENDANCE_TABS.TAB_1} className="space-y-6">
+            <DailyRegistration canCreate={canCreate} canCreateBulk={canCreateBulk} />
+          </TabsContent>
+        )}
 
         {/* TAB 2: ACTUALIZAR ASISTENCIA */}
-        <TabsContent value={ATTENDANCE_TABS.TAB_2} className="space-y-6">
-          <UpdateAttendanceTabSmartEdit />
-        </TabsContent>
+        {canUpdate && (
+          <TabsContent value={ATTENDANCE_TABS.TAB_2} className="space-y-6">
+            <UpdateAttendanceTabSmartEdit canUpdate={canUpdate} canDelete={canDelete} />
+          </TabsContent>
+        )}
 
         {/* TAB 3: VALIDACIONES */}
-        <TabsContent value={ATTENDANCE_TABS.TAB_3} className="space-y-6">
-          <ValidationsChecker
-            cycleId={attendanceState.selectedCycleId}
-            bimesterId={attendanceState.selectedBimesterId || undefined}
-            date={attendanceState.selectedDate}
-            teacherId={undefined}
-            roleId={user?.role?.id}
-            sectionId={attendanceState.selectedSectionId || undefined}
-            studentCount={attendanceState.students.length}
-          />
-        </TabsContent>
+        {canValidate && (
+          <TabsContent value={ATTENDANCE_TABS.TAB_3} className="space-y-6">
+            <ValidationsChecker
+              cycleId={attendanceState.selectedCycleId}
+              bimesterId={attendanceState.selectedBimesterId || undefined}
+              date={attendanceState.selectedDate}
+              teacherId={undefined}
+              roleId={user?.role?.id}
+              sectionId={attendanceState.selectedSectionId || undefined}
+              studentCount={attendanceState.students.length}
+            />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Debug Info (opcional, quitar en producción) */}
@@ -151,10 +194,28 @@ function AttendancePageContentInner() {
   );
 }
 
-export function AttendancePageContent() {
+export function AttendancePageContent({
+  canReadOne = true,
+  canReadConfig = true,
+  canReadStats = true,
+  canCreate = true,
+  canCreateBulk = true,
+  canUpdate = true,
+  canDelete = true,
+  canValidate = true,
+}: AttendancePageContentProps) {
   return (
     <AttendanceProvider>
-      <AttendancePageContentInner />
+      <AttendancePageContentInner
+        canReadOne={canReadOne}
+        canReadConfig={canReadConfig}
+        canReadStats={canReadStats}
+        canCreate={canCreate}
+        canCreateBulk={canCreateBulk}
+        canUpdate={canUpdate}
+        canDelete={canDelete}
+        canValidate={canValidate}
+      />
     </AttendanceProvider>
   );
 }

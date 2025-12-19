@@ -10,6 +10,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle, RefreshCw, Info, FileText, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+interface UpdateAttendanceTabSmartEditProps {
+  canUpdate?: boolean;
+  canDelete?: boolean;
+}
+
 /**
  * TAB 2 - ACTUALIZAR ASISTENCIA (OPCIÓN C: SMART EDIT)
  * 
@@ -20,8 +25,15 @@ import { Button } from '@/components/ui/button';
  * - Razón/motivo del cambio capturado
  * - Recarga automática después de guardar
  * - Mensajes de éxito/error integrados
+ * 
+ * Permisos:
+ * - canUpdate: Permite actualizar registros de asistencia
+ * - canDelete: Permite eliminar registros
  */
-export function UpdateAttendanceTabSmartEdit() {
+export function UpdateAttendanceTabSmartEdit({
+  canUpdate = true,
+  canDelete = true,
+}: UpdateAttendanceTabSmartEditProps) {
   const { state: attendanceState } = useAttendanceContext();
   const { user } = useAuth();
   

@@ -29,6 +29,11 @@ export { COURSE_GRADE_PERMISSIONS } from './course-grade/course-grade.permission
 export { COURSE_ASSIGNMENT_PERMISSIONS } from './course-assignment/course-assignment.permissions';
 export { SCHEDULE_PERMISSIONS } from './schedule/schedule.permissions';
 export { SCHEDULE_CONFIG_PERMISSIONS } from './schedule-config/schedule-config.permissions';
+export { ENROLLMENT_PERMISSIONS } from './enrollment/enrollment.permissions';
+export { ATTENDANCE_PERMISSIONS } from './attendance/attendance.permissions';
+export { ATTENDANCE_CONFIG_PERMISSIONS } from './attendance-config/attendance-config.permissions';
+export { ATTENDANCE_STATUS_PERMISSIONS } from './attendance-status/attendance-status.permissions';
+export { ATTENDANCE_PERMISSIONS_PERMISSIONS } from './attendance-permissions/attendance-permissions.permissions';
 
 /**
  * Objeto centralizado con todos los permisos por módulo
@@ -55,4 +60,9 @@ export const MODULES_PERMISSIONS = {
   COURSE_ASSIGNMENT: require('./course-assignment/course-assignment.permissions').COURSE_ASSIGNMENT_PERMISSIONS,
   SCHEDULE: require('./schedule/schedule.permissions').SCHEDULE_PERMISSIONS,
   SCHEDULE_CONFIG: require('./schedule-config/schedule-config.permissions').SCHEDULE_CONFIG_PERMISSIONS,
+  ENROLLMENT: require('./enrollment/enrollment.permissions').ENROLLMENT_PERMISSIONS,
+  ATTENDANCE: require('./attendance/attendance.permissions').ATTENDANCE_PERMISSIONS,
+  ATTENDANCE_CONFIG: require('./attendance-config/attendance-config.permissions').ATTENDANCE_CONFIG_PERMISSIONS,
+  ATTENDANCE_STATUS: require('./attendance-status/attendance-status.permissions').ATTENDANCE_STATUS_PERMISSIONS,
+  ATTENDANCE_PERMISSIONS: require('./attendance-permissions/attendance-permissions.permissions').ATTENDANCE_PERMISSIONS_PERMISSIONS,
 } as const;

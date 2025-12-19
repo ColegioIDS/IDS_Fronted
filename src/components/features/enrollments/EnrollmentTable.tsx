@@ -39,6 +39,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 interface EnrollmentTableProps {
   enrollments: EnrollmentResponse[];
   loading?: boolean;
+  canView?: boolean;
+  canUpdateStatus?: boolean;
+  canUpdatePlacement?: boolean;
+  canTransfer?: boolean;
+  canDelete?: boolean;
   onView?: (enrollment: EnrollmentResponse) => void;
   onEdit?: (enrollment: EnrollmentResponse) => void;
   onDelete?: (enrollment: EnrollmentResponse) => void;
@@ -80,9 +85,14 @@ const statusConfig = {
 export const EnrollmentTable = ({
   enrollments,
   loading = false,
+  canView,
+  canUpdateStatus,
+  canUpdatePlacement,
+  canTransfer,
+  canDelete,
   onView,
   onEdit,
-  onDelete,
+  onDelete: onDeleteClick,
   onTransfer,
   onStatusChange,
 }: EnrollmentTableProps) => {
@@ -216,7 +226,7 @@ export const EnrollmentTable = ({
                       </Tooltip>
                     </TooltipProvider>
                     <DropdownMenuContent align="end" className="w-48">
-                      {onView && (
+                      {canView && onView && (
                         <DropdownMenuItem
                           onClick={() => onView(enrollment)}
                           className="cursor-pointer gap-2"
@@ -225,16 +235,16 @@ export const EnrollmentTable = ({
                           <span>Ver detalle</span>
                         </DropdownMenuItem>
                       )}
-                      {onEdit && (
+                      {canUpdatePlacement && onEdit && (
                         <DropdownMenuItem
                           onClick={() => onEdit(enrollment)}
                           className="cursor-pointer gap-2"
                         >
                           <Edit className="h-4 w-4" />
-                          <span>Editar</span>
+                          <span>Cambiar grado/sección</span>
                         </DropdownMenuItem>
                       )}
-                      {onStatusChange && (
+                      {canUpdateStatus && onStatusChange && (
                         <DropdownMenuItem
                           onClick={() => onStatusChange(enrollment)}
                           className="cursor-pointer gap-2"
@@ -243,7 +253,7 @@ export const EnrollmentTable = ({
                           <span>Cambiar estado</span>
                         </DropdownMenuItem>
                       )}
-                      {onTransfer && (
+                      {canTransfer && onTransfer && (
                         <DropdownMenuItem
                           onClick={() => onTransfer(enrollment)}
                           className="cursor-pointer gap-2"
@@ -252,10 +262,10 @@ export const EnrollmentTable = ({
                           <span>Transferir</span>
                         </DropdownMenuItem>
                       )}
-                      {(onDelete || onStatusChange) && <DropdownMenuSeparator />}
-                      {onDelete && (
+                      {(canDelete || canUpdateStatus) && <DropdownMenuSeparator />}
+                      {canDelete && onDeleteClick && (
                         <DropdownMenuItem
-                          onClick={() => onDelete(enrollment)}
+                          onClick={() => onDeleteClick(enrollment)}
                           className="cursor-pointer gap-2 text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />

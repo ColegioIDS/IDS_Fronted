@@ -1,4 +1,13 @@
 // src/components/features/attendance-config/AttendanceConfigPage.tsx
+/**
+ * ====================================================================
+ * ATTENDANCE CONFIG PAGE - Configuración de Asistencia
+ * ====================================================================
+ * 
+ * Componente para gestionar la configuración del módulo de asistencia
+ * Valida permisos antes de permitir crear, modificar o eliminar
+ */
+
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -6,6 +15,7 @@ import { AttendanceConfig, UpdateAttendanceConfigDto, CreateAttendanceConfigDto 
 import { attendanceConfigService } from '@/services/attendance-config.service';
 import { ConfigDisplayView, ConfigEditView, ConfigActions } from './components';
 import Button from '@/components/ui/button/Button';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import {
   AlertCircle,
   CheckCircle,
@@ -16,14 +26,31 @@ import {
 } from 'lucide-react';
 import { ATTENDANCE_CONFIG_THEME } from './attendance-config-theme';
 
+/**
+ * Props interface para AttendanceConfigPage
+ * 
+ * Recibe 4 permisos desde la página principal:
+ * - canCreate: Crear nueva configuración
+ * - canModify: Modificar configuración existente
+ * - canDelete: Eliminar configuración
+ * - canRestore: Restaurar configuración eliminada
+ */
 interface AttendanceConfigPageProps {
   compact?: boolean;
+  canCreate?: boolean;
+  canModify?: boolean;
+  canDelete?: boolean;
+  canRestore?: boolean;
 }
 
 type ViewMode = 'display' | 'edit';
 
 export const AttendanceConfigPage: React.FC<AttendanceConfigPageProps> = ({
   compact = false,
+  canCreate = true,
+  canModify = true,
+  canDelete = true,
+  canRestore = true,
 }) => {
   const [config, setConfig] = useState<AttendanceConfig | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('display');
@@ -31,6 +58,8 @@ export const AttendanceConfigPage: React.FC<AttendanceConfigPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Cargar configuración
   const loadConfig = useCallback(async () => {
@@ -90,16 +119,9 @@ export const AttendanceConfigPage: React.FC<AttendanceConfigPageProps> = ({
 
   // Resetear a valores por defecto
   const handleReset = async () => {
-    if (
-      !window.confirm(
-        '¿Estás seguro de que deseas restaurar los valores por defecto? Esta acción no se puede deshacer.'
-      )
-    ) {
-      return;
-    }
-
     setLoading(true);
     setError(null);
+    setShowResetConfirm(false);
     try {
       const updated = await attendanceConfigService.reset();
       setConfig(updated);
@@ -115,18 +137,11 @@ export const AttendanceConfigPage: React.FC<AttendanceConfigPageProps> = ({
 
   // Eliminar configuración
   const handleDelete = async () => {
-    if (
-      !window.confirm(
-        '¿Estás seguro de que deseas eliminar la configuración? Esto podría afectar el funcionamiento del sistema.'
-      )
-    ) {
-      return;
-    }
-
     if (!config) return;
 
     setLoading(true);
     setError(null);
+    setShowDeleteConfirm(false);
     try {
       await attendanceConfigService.delete(config.id);
       setConfig(null);
@@ -173,8 +188,9 @@ export const AttendanceConfigPage: React.FC<AttendanceConfigPageProps> = ({
               <div className="flex flex-col gap-3">
                 <Button
                   onClick={() => setShowCreateForm(true)}
-                  disabled={loading}
+                  disabled={loading || !canCreate}
                   className="w-full"
+                  title={!canCreate ? 'No tienes permiso para crear configuración' : ''}
                 >
                   <Sparkles className="w-5 h-5 mr-2" />
                   Crear Configuración Ahora
@@ -283,7 +299,30 @@ export const AttendanceConfigPage: React.FC<AttendanceConfigPageProps> = ({
 
   return (
     <div className={compact ? 'space-y-4' : 'space-y-6'}>
-      {/* 🔴 Alertas de error */}
+      {/* Diálogos de confirmación */}
+      <ConfirmDialog
+        open={showResetConfirm}
+        onOpenChange={setShowResetConfirm}
+        title="Restaurar valores por defecto"
+        description="¿Estás seguro de que deseas restaurar los valores por defecto? Esta acción no se puede deshacer."
+        actionLabel="Restaurar"
+        cancelLabel="Cancelar"
+        onConfirm={handleReset}
+        isLoading={loading}
+      />
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Eliminar configuración"
+        description="¿Estás seguro de que deseas eliminar la configuración? Esto podría afectar el funcionamiento del sistema."
+        actionLabel="Eliminar"
+        cancelLabel="Cancelar"
+        onConfirm={handleDelete}
+        isLoading={loading}
+        variant="destructive"
+      />
+
       {/* 🔴 Alertas de error */}
       {error && (
         <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4">
@@ -307,12 +346,15 @@ export const AttendanceConfigPage: React.FC<AttendanceConfigPageProps> = ({
           </div>
           <ConfigActions
             onEdit={() => setViewMode('edit')}
-            onReset={handleReset}
-            onDelete={handleDelete}
+            onReset={() => setShowResetConfirm(true)}
+            onDelete={() => setShowDeleteConfirm(true)}
             onRefresh={loadConfig}
             loading={loading}
             compact={false}
             showMore={true}
+            canModify={canModify}
+            canDelete={canDelete}
+            canRestore={canRestore}
           />
         </div>
       )}
@@ -322,12 +364,15 @@ export const AttendanceConfigPage: React.FC<AttendanceConfigPageProps> = ({
         <div className="flex justify-end">
           <ConfigActions
             onEdit={() => setViewMode('edit')}
-            onReset={handleReset}
-            onDelete={handleDelete}
+            onReset={() => setShowResetConfirm(true)}
+            onDelete={() => setShowDeleteConfirm(true)}
             onRefresh={loadConfig}
             loading={loading}
             compact={true}
             showMore={true}
+            canModify={canModify}
+            canDelete={canDelete}
+            canRestore={canRestore}
           />
         </div>
       )}

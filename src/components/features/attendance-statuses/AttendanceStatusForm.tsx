@@ -72,9 +72,16 @@ export const AttendanceStatusForm = ({
 
     try {
       await onSubmit(formData);
-      toast.success(initialData ? 'Estado actualizado correctamente' : 'Estado creado correctamente');
-    } catch (error) {
-      toast.error('Error al guardar el estado. Intenta de nuevo.');
+      // El éxito se maneja en el componente padre (AttendanceStatusesPageContent)
+    } catch (error: any) {
+      console.error('Error en handleSubmit:', error);
+      // Extraer mensaje de error de diferentes formatos
+      const errorMessage = 
+        error?.response?.data?.message || 
+        error?.message || 
+        'Error al guardar el estado. Intenta de nuevo.';
+      console.log('Mostrando toast con mensaje:', errorMessage);
+      toast.error(errorMessage);
     }
   };
 

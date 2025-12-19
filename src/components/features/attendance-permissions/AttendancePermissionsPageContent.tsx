@@ -31,13 +31,22 @@ import { toast } from 'sonner';
 interface AttendancePermissionsPageContentProps {
   roles?: Array<{ id: number; name: string }>;
   statuses?: Array<{ id: number; code: string; name: string }>;
+  canCreate?: boolean;
+  canModify?: boolean;
+  canDelete?: boolean;
 }
 
 type TabType = 'list' | 'matrix' | 'dashboard';
 
 export const AttendancePermissionsPageContent: React.FC<
   AttendancePermissionsPageContentProps
-> = ({ roles: propsRoles = [], statuses: propsStatuses = [] }) => {
+> = ({ 
+  roles: propsRoles = [], 
+  statuses: propsStatuses = [],
+  canCreate = true,
+  canModify = true,
+  canDelete = true,
+}) => {
   const [roles, setRoles] = useState<Array<{ id: number; name: string }>>(propsRoles);
   const [statuses, setStatuses] = useState<Array<{ id: number; code: string; name: string }>>(propsStatuses);
   const [loadingData, setLoadingData] = useState(false);
@@ -175,13 +184,15 @@ export const AttendancePermissionsPageContent: React.FC<
             Administra los permisos que tiene cada rol sobre los estados de asistencia
           </p>
         </div>
-        <Button
-          onClick={handleCreateClick}
-          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Permiso
-        </Button>
+        {canCreate && (
+          <Button
+            onClick={handleCreateClick}
+            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Permiso
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -215,6 +226,8 @@ export const AttendancePermissionsPageContent: React.FC<
             permissions={permissions}
             onEdit={handleEditClick}
             loading={loading}
+            canModify={canModify}
+            canDelete={canDelete}
           />
 
           {/* Pagination */}

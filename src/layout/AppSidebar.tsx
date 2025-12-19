@@ -10,6 +10,10 @@ import { CalendarPlus, GraduationCap, CalendarCheck, ClipboardList, CalendarChec
 import { ProtectedNavItem } from '@/components/navigation/ProtectedNavItem';
 import { ERICA_TOPICS_PERMISSIONS } from '@/constants/erica-topics.permissions';
 import { ERICA_COLORS_PERMISSIONS } from '@/constants/erica-colors.permissions';
+import { ATTENDANCE_PERMISSIONS } from '@/constants/modules-permissions/attendance';
+import { ATTENDANCE_CONFIG_PERMISSIONS } from '@/constants/modules-permissions/attendance-config';
+import { ATTENDANCE_STATUS_PERMISSIONS } from '@/constants/modules-permissions/attendance-status';
+import { ATTENDANCE_PERMISSIONS_PERMISSIONS } from '@/constants/modules-permissions/attendance-permissions';
 import { Palette } from 'lucide-react';
 
 import {
@@ -243,8 +247,40 @@ const navItems: NavItem[] = [
   {
     icon: <CalendarCheck2 className="w-5 h-5" />,
     name: "Asistencia",
-    path: "/attendance",
     color: "text-red-300 dark:text-red-300",
+    requiredAnyPermissions: [
+      ATTENDANCE_PERMISSIONS.READ,
+      ATTENDANCE_CONFIG_PERMISSIONS.VIEW,
+      ATTENDANCE_STATUS_PERMISSIONS.READ,
+      ATTENDANCE_PERMISSIONS_PERMISSIONS.VIEW,
+    ],
+    subItems: [
+      {
+        name: "Asistencia",
+        path: "/attendance",
+        requiredPermission: ATTENDANCE_PERMISSIONS.READ
+      },
+      {
+        name: "Reportes",
+        path: "/attendance-reports",
+        requiredPermission: ATTENDANCE_PERMISSIONS.READ
+      },
+      {
+        name: "Configuración",
+        path: "/attendance-config",
+        requiredPermission: ATTENDANCE_CONFIG_PERMISSIONS.VIEW
+      },
+      {
+        name: "Estados de Asistencia",
+        path: "/attendance-statuses",
+        requiredPermission: ATTENDANCE_STATUS_PERMISSIONS.READ
+      },
+      {
+        name: "Permisos",
+        path: "/attendance-config/permissions",
+        requiredPermission: ATTENDANCE_PERMISSIONS_PERMISSIONS.VIEW
+      },
+    ]
   },
   {
     icon: <FileSignature className="w-5 h-5" />,

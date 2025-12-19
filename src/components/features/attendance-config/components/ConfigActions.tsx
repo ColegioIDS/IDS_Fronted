@@ -12,6 +12,9 @@ interface ConfigActionsProps {
   loading?: boolean;
   compact?: boolean;
   showMore?: boolean;
+  canModify?: boolean;
+  canDelete?: boolean;
+  canRestore?: boolean;
 }
 
 const buttonBaseClasses = 'px-5 py-3.5 text-sm inline-flex items-center justify-center font-medium gap-2 rounded-lg transition disabled:cursor-not-allowed disabled:opacity-50';
@@ -28,6 +31,9 @@ export const ConfigActions: React.FC<ConfigActionsProps> = ({
   loading = false,
   compact = false,
   showMore = false,
+  canModify = true,
+  canDelete = true,
+  canRestore = true,
 }) => {
   const [showMenuMore, setShowMenuMore] = useState(false);
 
@@ -44,17 +50,19 @@ export const ConfigActions: React.FC<ConfigActionsProps> = ({
 
         {showMenuMore && (
           <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-10">
-            <button
-              onClick={() => {
-                onEdit();
-                setShowMenuMore(false);
-              }}
-              disabled={loading}
-              className={`${ghostClasses} w-full justify-start px-4 py-2 text-left disabled:opacity-50`}
-            >
-              <Edit className="h-4 w-4 mr-2" />
-              Editar
-            </button>
+            {canModify && (
+              <button
+                onClick={() => {
+                  onEdit();
+                  setShowMenuMore(false);
+                }}
+                disabled={loading}
+                className={`${ghostClasses} w-full justify-start px-4 py-2 text-left`}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Editar
+              </button>
+            )}
 
             {onRefresh && (
               <button
@@ -70,28 +78,28 @@ export const ConfigActions: React.FC<ConfigActionsProps> = ({
               </button>
             )}
 
-            {onReset && (
+            {onReset && canRestore && (
               <button
                 onClick={() => {
                   onReset();
                   setShowMenuMore(false);
                 }}
                 disabled={loading}
-                className={`${ghostClasses} w-full justify-start px-4 py-2 text-left disabled:opacity-50`}
+                className={`${ghostClasses} w-full justify-start px-4 py-2 text-left`}
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Restaurar
               </button>
             )}
 
-            {onDelete && (
+            {onDelete && canDelete && (
               <button
                 onClick={() => {
                   onDelete();
                   setShowMenuMore(false);
                 }}
                 disabled={loading}
-                className={`${destructiveClasses} w-full justify-start px-4 py-2 text-left disabled:opacity-50`}
+                className={`${destructiveClasses} w-full justify-start px-4 py-2 text-left`}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Eliminar
@@ -105,14 +113,16 @@ export const ConfigActions: React.FC<ConfigActionsProps> = ({
 
   return (
     <div className="flex gap-2">
-      <button
-        onClick={onEdit}
-        disabled={loading}
-        className={`${buttonBaseClasses} ${primaryClasses}`}
-      >
-        <Edit className="h-4 w-4 mr-2" />
-        Editar
-      </button>
+      {canModify && (
+        <button
+          onClick={onEdit}
+          disabled={loading}
+          className={`${buttonBaseClasses} ${primaryClasses}`}
+        >
+          <Edit className="h-4 w-4 mr-2" />
+          Editar
+        </button>
+      )}
 
       {onRefresh && (
         <button
@@ -125,7 +135,7 @@ export const ConfigActions: React.FC<ConfigActionsProps> = ({
         </button>
       )}
 
-      {onReset && (
+      {onReset && canRestore && (
         <button
           onClick={onReset}
           disabled={loading}
@@ -136,7 +146,7 @@ export const ConfigActions: React.FC<ConfigActionsProps> = ({
         </button>
       )}
 
-      {onDelete && (
+      {onDelete && canDelete && (
         <button
           onClick={onDelete}
           disabled={loading}

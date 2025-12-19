@@ -40,7 +40,27 @@ import {
 import { enrollmentsService } from '@/services/enrollments.service';
 import { EnrollmentResponse } from '@/types/enrollments.types';
 
-export const EnrollmentsPageContent = () => {
+interface EnrollmentsPageContentProps {
+  canView?: boolean;
+  canCreate?: boolean;
+  canUpdateStatus?: boolean;
+  canUpdatePlacement?: boolean;
+  canTransfer?: boolean;
+  canDelete?: boolean;
+  canViewStats?: boolean;
+  canExport?: boolean;
+}
+
+export const EnrollmentsPageContent = ({
+  canView = false,
+  canCreate = false,
+  canUpdateStatus = false,
+  canUpdatePlacement = false,
+  canTransfer = false,
+  canDelete = false,
+  canViewStats = false,
+  canExport = false,
+}: EnrollmentsPageContentProps) => {
   // Hooks principales
   const { enrollments, loading, pagination, fetchEnrollments, refetch } = useEnrollments();
   const { enrollment, fetchDetail } = useEnrollmentDetail();
@@ -63,12 +83,15 @@ export const EnrollmentsPageContent = () => {
   // Cargar estadísticas y grados cuando hay ciclo seleccionado
   useEffect(() => {
     if (selectedCycleId) {
-      fetchStatistics(selectedCycleId);
+      // Solo cargar estadísticas si tiene permiso
+      if (canViewStats) {
+        fetchStatistics(selectedCycleId);
+      }
       refetchGrades(selectedCycleId);
       // Resetear grado y secciones cuando cambia el ciclo
       setSelectedGradeId(null);
     }
-  }, [selectedCycleId, fetchStatistics, refetchGrades]);
+  }, [selectedCycleId, fetchStatistics, refetchGrades, canViewStats]);
 
   // Cargar secciones cuando hay ciclo y grado seleccionado
   useEffect(() => {
@@ -232,31 +255,50 @@ export const EnrollmentsPageContent = () => {
             </div>
           </div>
           <div className="flex gap-3 w-full sm:w-auto">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  onClick={handleExport}
-                  disabled={loading || actionLoading}
-                  className="border-2 shadow-sm hover:shadow-md transition-all"
-                >
-                  {actionLoading ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  )}
-                  Exportar
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
-                <p className="font-semibold">Exportar matrículas a Excel</p>
-              </TooltipContent>
-            </Tooltip>
+            {canCreate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => window.location.href = '/enrollments/create'}
+                    disabled={loading || actionLoading}
+                    className="border-2 shadow-sm hover:shadow-md transition-all bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-600"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nueva Matrícula
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                  <p className="font-semibold">Crear nueva matrícula</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {canExport && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={handleExport}
+                    disabled={loading || actionLoading}
+                    className="border-2 shadow-sm hover:shadow-md transition-all"
+                  >
+                    {actionLoading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    )}
+                    Exportar
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-0">
+                  <p className="font-semibold">Exportar matrículas a Excel</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </div>
 
         {/* Estadísticas */}
-        {selectedCycleId && (
+        {selectedCycleId && canViewStats && (
           <Card className="border-2 border-slate-200 dark:border-slate-800 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="bg-slate-50 dark:bg-slate-900/50 border-b-2 border-slate-200 dark:border-slate-800">
               <CardTitle className="flex items-center gap-3 text-lg">
@@ -326,6 +368,11 @@ export const EnrollmentsPageContent = () => {
             <EnrollmentTable
               enrollments={enrollments}
               loading={loading}
+              canView={canView}
+              canUpdateStatus={canUpdateStatus}
+              canUpdatePlacement={canUpdatePlacement}
+              canTransfer={canTransfer}
+              canDelete={canDelete}
               onView={handleView}
               onStatusChange={handleStatusChange}
               onTransfer={handleTransfer}

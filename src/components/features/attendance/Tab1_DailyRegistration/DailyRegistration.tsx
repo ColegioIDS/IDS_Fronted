@@ -11,6 +11,7 @@
  * • Seleccionar estado de asistencia por estudiante
  * • Botón "Registrar Asistencia" para guardar todo masivamente
  * • Mostrar feedback de éxito/error
+ * • Validar permisos antes de permitir registros
  */
 
 'use client';
@@ -45,7 +46,12 @@ interface StudentAttendance {
   notes?: string;
 }
 
-export function DailyRegistration() {
+interface DailyRegistrationProps {
+  canCreate?: boolean;
+  canCreateBulk?: boolean;
+}
+
+export function DailyRegistration({ canCreate = true, canCreateBulk = true }: DailyRegistrationProps) {
   const { state: attendanceState } = useAttendanceContext();
   const { user } = useAuth();
   const [validationState, validationActions] = useAttendanceValidations();

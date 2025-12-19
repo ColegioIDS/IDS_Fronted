@@ -80,14 +80,24 @@ export const AttendanceStatusTable = ({
     });
   };
 
-  const confirmToggleActive = () => {
-    if (onToggleActive) {
-      onToggleActive(confirmDialog.statusId, confirmDialog.newValue);
-      toast.success(
-        confirmDialog.newValue ? 'Estado activado' : 'Estado desactivado'
+  const confirmToggleActive = async () => {
+    try {
+      if (onToggleActive) {
+        await onToggleActive(confirmDialog.statusId, confirmDialog.newValue);
+        toast.success(
+          confirmDialog.newValue ? 'Estado activado' : 'Estado desactivado'
+        );
+      }
+    } catch (error: any) {
+      console.error('Error toggling status:', error);
+      toast.error(
+        error?.response?.data?.message || 
+        error?.message || 
+        'Error al cambiar el estado'
       );
+    } finally {
+      setConfirmDialog({ open: false, statusId: 0, newValue: false });
     }
-    setConfirmDialog({ open: false, statusId: 0, newValue: false });
   };
 
   const getStatusColor = (colorCode?: string) => {

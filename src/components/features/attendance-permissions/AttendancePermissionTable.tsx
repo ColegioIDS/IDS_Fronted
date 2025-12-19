@@ -47,11 +47,13 @@ interface AttendancePermissionTableProps {
   permissions: AttendancePermissionWithRelations[];
   onEdit: (permission: AttendancePermissionWithRelations) => void;
   loading?: boolean;
+  canModify?: boolean;
+  canDelete?: boolean;
 }
 
 export const AttendancePermissionTable: React.FC<
   AttendancePermissionTableProps
-> = ({ permissions, onEdit, loading = false }) => {
+> = ({ permissions, onEdit, loading = false, canModify = true, canDelete = true }) => {
   const { deletePermission } = useAttendancePermissions();
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
@@ -219,18 +221,24 @@ export const AttendancePermissionTable: React.FC<
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(permission)}>
-                          <Edit2 className="h-4 w-4 mr-2" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteClick(permission)}
-                          className="text-red-600 dark:text-red-400 focus:text-red-600 focus:dark:text-red-400"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Eliminar
-                        </DropdownMenuItem>
+                        {canModify && (
+                          <>
+                            <DropdownMenuItem onClick={() => onEdit(permission)}>
+                              <Edit2 className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                          </>
+                        )}
+                        {canDelete && (
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteClick(permission)}
+                            className="text-red-600 dark:text-red-400 focus:text-red-600 focus:dark:text-red-400"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Eliminar
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

@@ -12,7 +12,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -74,21 +73,23 @@ export const EnrollmentDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border-2 border-slate-200 dark:border-slate-800 shadow-2xl">
-        <DialogHeader className="border-b-2 border-slate-200 dark:border-slate-800 pb-4">
-          <DialogTitle className="flex items-center gap-3 text-2xl">
-            <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800">
-              <Info className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            Detalle de Matrícula
-          </DialogTitle>
-          <DialogDescription className="text-base font-medium">
-            ID Matrícula: #{enrollment.id}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[95vh] border-2 border-slate-200 dark:border-slate-800 shadow-2xl p-0 gap-0 flex flex-col overflow-hidden">
+        <div className="border-b-2 border-slate-200 dark:border-slate-800 px-6 py-4 flex-shrink-0 bg-white dark:bg-slate-950">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="flex items-center gap-3 text-2xl">
+              <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800">
+                <Info className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              Detalle de Matrícula
+            </DialogTitle>
+            <DialogDescription className="text-base font-medium">
+              ID Matrícula: #{enrollment.id}
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-6 py-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="space-y-6 p-6">
             {/* Información del Estudiante */}
             <Card className="border-2 border-slate-200 dark:border-slate-800 shadow-md">
               <CardHeader className="bg-slate-50 dark:bg-slate-900/50 border-b-2 border-slate-200 dark:border-slate-800">
@@ -236,7 +237,7 @@ export const EnrollmentDetailDialog = ({
               </Card>
             )}
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
