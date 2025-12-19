@@ -190,7 +190,6 @@ export const AttendanceConfigPage: React.FC<AttendanceConfigPageProps> = ({
                   onClick={() => setShowCreateForm(true)}
                   disabled={loading || !canCreate}
                   className="w-full"
-                  title={!canCreate ? 'No tienes permiso para crear configuración' : ''}
                 >
                   <Sparkles className="w-5 h-5 mr-2" />
                   Crear Configuración Ahora
