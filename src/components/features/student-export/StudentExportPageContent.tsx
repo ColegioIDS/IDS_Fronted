@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Calendar, AlertTriangle, Clock, Users, Download } from 'lucide-react';
+import { Calendar, AlertTriangle, Clock, Users, Download, FileJson, FileText, Table } from 'lucide-react';
 import { GradesSelector, SectionsSelector } from './shared';
 
 export function StudentExportPageContent() {
@@ -21,6 +21,9 @@ export function StudentExportPageContent() {
     formError: error,
     isDownloading,
     downloadExcel,
+    downloadCsv,
+    downloadJson,
+    downloadPdf,
   } = useStudentExport({ autoFetch: true });
 
   const activeCycle = exportData?.[0];
@@ -230,18 +233,59 @@ export function StudentExportPageContent() {
                   }}
                 >
                   <Download className="w-4 h-4" />
-                  {isDownloading ? 'Descargando...' : 'Descargar Excel'}
+                  {isDownloading ? 'Descargando...' : 'Excel'}
                 </Button>
+
                 <Button
-                  variant="outline"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 gap-2"
+                  disabled={!selectedGradeId || !selectedSectionId || isDownloading}
                   onClick={() => {
-                    setSelectedGradeId(undefined);
-                    setSelectedSectionId(undefined);
+                    if (selectedGradeId && selectedSectionId && activeCycle?.id) {
+                      downloadPdf(activeCycle.id, selectedGradeId, selectedSectionId);
+                    }
                   }}
                 >
-                  Limpiar
+                  <FileText className="w-4 h-4" />
+                  PDF
+                </Button>
+
+                <Button
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-600 gap-2"
+                  disabled={!selectedGradeId || !selectedSectionId || isDownloading}
+                  onClick={() => {
+                    if (selectedGradeId && selectedSectionId && activeCycle?.id) {
+                      downloadCsv(activeCycle.id, selectedGradeId, selectedSectionId);
+                    }
+                  }}
+                >
+                  <Table className="w-4 h-4" />
+                  CSV
+                </Button>
+
+                <Button
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 gap-2"
+                  disabled={!selectedGradeId || !selectedSectionId || isDownloading}
+                  onClick={() => {
+                    if (selectedGradeId && selectedSectionId && activeCycle?.id) {
+                      downloadJson(activeCycle.id, selectedGradeId, selectedSectionId);
+                    }
+                  }}
+                >
+                  <FileJson className="w-4 h-4" />
+                  JSON
                 </Button>
               </div>
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setSelectedGradeId(undefined);
+                  setSelectedSectionId(undefined);
+                }}
+              >
+                Limpiar
+              </Button>
             </CardContent>
           </Card>
         )}

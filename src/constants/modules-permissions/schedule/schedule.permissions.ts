@@ -49,4 +49,10 @@ export const SCHEDULE_PERMISSIONS = {
     description: 'Configurar horarios',
     scope: 'all' as PermissionScope,
   } as PermissionConfig,
+  EXPORT: {
+    module: 'schedule',
+    action: 'export',
+    description: 'Exportar horarios',
+    scope: 'all' as PermissionScope,
+  } as PermissionConfig,
 } as const;

@@ -2,6 +2,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { useSchedules } from '@/hooks/useSchedules';
+import { useScheduleExport } from '@/hooks/data/useScheduleExport';
+import { usePermissions } from '@/hooks/usePermissions';
+import { SCHEDULE_PERMISSIONS } from '@/constants/modules-permissions/schedule/schedule.permissions';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,7 +18,8 @@ import { Combobox } from '@/components/ui/combobox';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Calendar, Users, Clock, Filter, BookOpen, MapPin, AlertCircle, Info } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2, Calendar, Users, Clock, Filter, BookOpen, MapPin, AlertCircle, Info, Download, FileJson, FileText, Table } from 'lucide-react';
 import { Schedule, ScheduleConfig, ScheduleTimeGenerator, TimeSlot } from '@/types/schedules.types';
 
 /**
@@ -34,6 +38,24 @@ export default function SchedulesViewContent() {
     loadConfig,
   } = useSchedules({ autoLoadFormData: true });
 
+  // Hook para exportación
+  const {
+    isDownloading,
+    downloadExcel,
+    downloadCsv,
+    downloadJson,
+    downloadPdf,
+  } = useScheduleExport();
+
+  // Hook para permisos
+  const { can } = usePermissions();
+
+  // Verificar permisos de exportación
+  const canExport = can.do(
+    SCHEDULE_PERMISSIONS.EXPORT.module,
+    SCHEDULE_PERMISSIONS.EXPORT.action
+  );
+
   // =========================================================================
   // STATE MANAGEMENT
   // =========================================================================
@@ -43,6 +65,7 @@ export default function SchedulesViewContent() {
   const [selectedDay, setSelectedDay] = useState<string>('all');
   const [selectedCycle, setSelectedCycle] = useState<number | null>(null);
   const [selectedGrade, setSelectedGrade] = useState<number | null>(null);
+  const [includeTeacherName, setIncludeTeacherName] = useState<boolean>(true);
 
   // =========================================================================
   // DATA PROCESSING
@@ -369,8 +392,124 @@ export default function SchedulesViewContent() {
             </div>
           </Card>
 
-      {/* SCHEDULE GRID */}
-      <Card className="border-2 shadow-lg overflow-hidden">
+          {/* EXPORT SECTION */}
+          <Card className="border-2 shadow-lg overflow-hidden relative">
+              <div className="p-4 bg-green-600 dark:bg-green-950 border-b-4 border-green-700 dark:border-green-800">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-700 dark:bg-green-900 rounded-lg">
+                    <Download className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-lg text-white">Exportar Horarios</h4>
+                    <p className="text-sm text-green-100 dark:text-green-300">Descarga los horarios en diferentes formatos</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Loading Overlay */}
+              {isDownloading && (
+                <div className="absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center rounded-b-lg z-50">
+                  <div className="bg-white dark:bg-slate-900 rounded-lg p-6 shadow-xl border-2 border-green-400 dark:border-green-600">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="relative w-16 h-16">
+                        <Loader2 className="w-16 h-16 text-green-600 dark:text-green-400 animate-spin" />
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-lg">Preparando descarga</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Por favor espera...</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="p-6">
+                <div className="space-y-4">
+                  {/* Opción de incluir nombre del docente */}
+                  <div className="flex items-center space-x-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <Checkbox
+                      id="includeTeacherName"
+                      checked={includeTeacherName}
+                      onCheckedChange={(checked) => setIncludeTeacherName(checked as boolean)}
+                      className="w-5 h-5"
+                    />
+                    <label htmlFor="includeTeacherName" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer flex-1">
+                      Incluir nombre del docente en la exportación
+                    </label>
+                  </div>
+
+                  {/* Botones de descarga */}
+                  <div className="flex gap-3 flex-wrap">
+                  <Button
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 gap-2"
+                    disabled={!selectedSectionId || isDownloading}
+                    onClick={() => {
+                      if (selectedSectionId) {
+                        downloadExcel(selectedSectionId, {
+                          columns: ['clave', 'dia', 'horaInicio', 'horaFin', 'aula', 'materia', 'profesor'],
+                          includeTeacherName
+                        });
+                      }
+                    }}
+                  >
+                    <Download className="w-4 h-4" />
+                    {isDownloading ? 'Descargando...' : 'Excel'}
+                  </Button>
+
+                  <Button
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 gap-2"
+                    disabled={!selectedSectionId || isDownloading}
+                    onClick={() => {
+                      if (selectedSectionId) {
+                        downloadPdf(selectedSectionId, {
+                          columns: ['clave', 'dia', 'horaInicio', 'horaFin', 'aula', 'materia', 'profesor'],
+                          includeTeacherName
+                        });
+                      }
+                    }}
+                  >
+                    <FileText className="w-4 h-4" />
+                    PDF
+                  </Button>
+
+                  <Button
+                    className="flex-1 bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-600 gap-2"
+                    disabled={!selectedSectionId || isDownloading}
+                    onClick={() => {
+                      if (selectedSectionId) {
+                        downloadCsv(selectedSectionId, {
+                          columns: ['clave', 'dia', 'horaInicio', 'horaFin', 'aula', 'materia', 'profesor'],
+                          includeTeacherName
+                        });
+                      }
+                    }}
+                  >
+                    <Table className="w-4 h-4" />
+                    CSV
+                  </Button>
+
+                  <Button
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 gap-2"
+                    disabled={!selectedSectionId || isDownloading}
+                    onClick={() => {
+                      if (selectedSectionId) {
+                        downloadJson(selectedSectionId, {
+                          columns: ['clave', 'dia', 'horaInicio', 'horaFin', 'aula', 'materia', 'profesor'],
+                          includeTeacherName
+                        });
+                      }
+                    }}
+                  >
+                    <FileJson className="w-4 h-4" />
+                    JSON
+                  </Button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+          {/* SCHEDULE GRID */}
+          <Card className="border-2 shadow-lg overflow-hidden">
         <div className="p-4 bg-slate-100 dark:bg-slate-800 border-b-2 border-slate-200 dark:border-slate-700">
           <h3 className="font-semibold text-lg flex items-center gap-2 text-slate-900 dark:text-slate-100">
             <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />

@@ -155,9 +155,12 @@ class AttendanceReportsService {
         params.append('academicWeekId', academicWeekId.toString());
       }
 
-      const response = await api.get<ApiResponse<AttendanceSummary>>(
-        `${BASE_URL}/sections/${sectionId}/attendance-summary?${params.toString()}`
-      );
+      const url = `${BASE_URL}/sections/${sectionId}/attendance-summary?${params.toString()}`;
+      console.log('📊 Fetching attendance summary:', { url, gradeId, sectionId, courseId, bimesterId, academicWeekId });
+
+      const response = await api.get<ApiResponse<AttendanceSummary>>(url);
+
+      console.log('📊 Attendance summary response:', response.data);
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Error al obtener resumen de asistencia');
@@ -165,6 +168,7 @@ class AttendanceReportsService {
 
       return response.data.data;
     } catch (error) {
+      console.error('❌ Error fetching attendance summary:', error);
       throw error;
     }
   }
@@ -193,9 +197,12 @@ class AttendanceReportsService {
         params.append('academicWeekId', academicWeekId.toString());
       }
 
-      const response = await api.get<ApiResponse<StudentsAttendanceResponse>>(
-        `${BASE_URL}/sections/${sectionId}/students-attendance?${params.toString()}`
-      );
+      const url = `${BASE_URL}/sections/${sectionId}/students-attendance?${params.toString()}`;
+      console.log('👥 Fetching students attendance:', { url, gradeId, sectionId, courseId, bimesterId, academicWeekId });
+
+      const response = await api.get<ApiResponse<StudentsAttendanceResponse>>(url);
+
+      console.log('👥 Students attendance response:', response.data);
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Error al obtener asistencia de estudiantes');
@@ -203,6 +210,7 @@ class AttendanceReportsService {
 
       return response.data.data;
     } catch (error) {
+      console.error('❌ Error fetching students attendance:', error);
       throw error;
     }
   }

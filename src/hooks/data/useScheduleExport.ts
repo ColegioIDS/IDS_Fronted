@@ -1,46 +1,28 @@
-// src/hooks/data/useStudentExport.ts
+// src/hooks/data/useScheduleExport.ts
 'use client';
 
-import { useQuery, UseQueryResult } from '@tanstack/react-query';
-import {
-  studentExportService,
-  ExportFormData,
-  ExportOptions,
-} from '@/services/student-export.service';
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import {
+  scheduleExportService,
+  ScheduleExportOptions,
+} from '@/services/schedule-export.service';
 
-interface UseStudentExportOptions {
+interface UseScheduleExportOptions {
   autoFetch?: boolean;
 }
 
-export function useStudentExport(options: UseStudentExportOptions = {}) {
-  const { autoFetch = true } = options;
+export function useScheduleExport(options: UseScheduleExportOptions = {}) {
   const [isDownloading, setIsDownloading] = useState(false);
 
-  // ✅ Query para obtener datos del formulario
-  const {
-    data: formData,
-    isLoading: isFormLoading,
-    error: formError,
-    refetch: refetchFormData,
-  }: UseQueryResult<ExportFormData[], Error> = useQuery({
-    queryKey: ['student-export', 'form-data'],
-    queryFn: () => studentExportService.getExportFormData(),
-    enabled: autoFetch,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes (formerly cacheTime)
-    retry: 2,
-  });
-
   /**
-   * Descarga estudiantes en Excel
+   * Descarga horarios en Excel
    */
   const downloadExcel = useCallback(
-    async (cycleId: number, gradeId: number, sectionId: number, exportOptions?: ExportOptions) => {
+    async (sectionId: number, exportOptions?: ScheduleExportOptions) => {
       setIsDownloading(true);
       try {
-        await studentExportService.exportStudents(cycleId, gradeId, sectionId, {
+        await scheduleExportService.exportSchedules(sectionId, {
           ...exportOptions,
           format: 'excel',
         });
@@ -57,13 +39,13 @@ export function useStudentExport(options: UseStudentExportOptions = {}) {
   );
 
   /**
-   * Descarga estudiantes en CSV
+   * Descarga horarios en CSV
    */
   const downloadCsv = useCallback(
-    async (cycleId: number, gradeId: number, sectionId: number, exportOptions?: ExportOptions) => {
+    async (sectionId: number, exportOptions?: ScheduleExportOptions) => {
       setIsDownloading(true);
       try {
-        await studentExportService.exportStudents(cycleId, gradeId, sectionId, {
+        await scheduleExportService.exportSchedules(sectionId, {
           ...exportOptions,
           format: 'csv',
         });
@@ -80,13 +62,13 @@ export function useStudentExport(options: UseStudentExportOptions = {}) {
   );
 
   /**
-   * Descarga estudiantes en JSON
+   * Descarga horarios en JSON
    */
   const downloadJson = useCallback(
-    async (cycleId: number, gradeId: number, sectionId: number, exportOptions?: ExportOptions) => {
+    async (sectionId: number, exportOptions?: ScheduleExportOptions) => {
       setIsDownloading(true);
       try {
-        await studentExportService.exportStudents(cycleId, gradeId, sectionId, {
+        await scheduleExportService.exportSchedules(sectionId, {
           ...exportOptions,
           format: 'json',
         });
@@ -103,13 +85,13 @@ export function useStudentExport(options: UseStudentExportOptions = {}) {
   );
 
   /**
-   * Descarga estudiantes en PDF
+   * Descarga horarios en PDF
    */
   const downloadPdf = useCallback(
-    async (cycleId: number, gradeId: number, sectionId: number, exportOptions?: ExportOptions) => {
+    async (sectionId: number, exportOptions?: ScheduleExportOptions) => {
       setIsDownloading(true);
       try {
-        await studentExportService.exportStudents(cycleId, gradeId, sectionId, {
+        await scheduleExportService.exportSchedules(sectionId, {
           ...exportOptions,
           format: 'pdf',
         });
@@ -127,9 +109,6 @@ export function useStudentExport(options: UseStudentExportOptions = {}) {
 
   return {
     // Data
-    formData,
-    isFormLoading,
-    formError,
     isDownloading,
 
     // Methods
@@ -137,6 +116,5 @@ export function useStudentExport(options: UseStudentExportOptions = {}) {
     downloadCsv,
     downloadJson,
     downloadPdf,
-    refetchFormData,
   };
 }

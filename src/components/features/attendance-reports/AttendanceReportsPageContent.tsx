@@ -57,6 +57,22 @@ export function AttendanceReportsPageContent() {
     academicWeekId: selectedWeekId,
   });
 
+  useEffect(() => {
+    if (selectedGradeId && selectedSectionId && selectedCourseId) {
+      console.log('📊 Summary hook triggered:', {
+        gradeId: selectedGradeId,
+        sectionId: selectedSectionId,
+        courseId: selectedCourseId,
+        bimesterId: selectedBimesterId,
+        academicWeekId: selectedWeekId,
+      });
+    }
+  }, [selectedGradeId, selectedSectionId, selectedCourseId, selectedBimesterId, selectedWeekId]);
+
+  useEffect(() => {
+    console.log('📊 Summary data updated:', { data: attendanceSummary, loading: isSummaryLoading, error: summaryError });
+  }, [attendanceSummary, isSummaryLoading, summaryError]);
+
   // Hook para obtener los detalles de asistencia de estudiantes
   const {
     data: studentsAttendance,
@@ -70,6 +86,22 @@ export function AttendanceReportsPageContent() {
     bimesterId: selectedBimesterId,
     academicWeekId: selectedWeekId,
   });
+
+  useEffect(() => {
+    if (selectedGradeId && selectedSectionId && selectedCourseId) {
+      console.log('👥 Students hook triggered:', {
+        gradeId: selectedGradeId,
+        sectionId: selectedSectionId,
+        courseId: selectedCourseId,
+        bimesterId: selectedBimesterId,
+        academicWeekId: selectedWeekId,
+      });
+    }
+  }, [selectedGradeId, selectedSectionId, selectedCourseId, selectedBimesterId, selectedWeekId]);
+
+  useEffect(() => {
+    console.log('👥 Students data updated:', { data: studentsAttendance, loading: isStudentsLoading, error: studentsError });
+  }, [studentsAttendance, isStudentsLoading, studentsError]);
 
   const calculateProgress = () => {
     if (!cycle) return 0;

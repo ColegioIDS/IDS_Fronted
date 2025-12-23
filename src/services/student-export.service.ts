@@ -1,7 +1,7 @@
 // src/services/student-export.service.ts
 import { api } from '@/config/api';
 
-export type ExportFormat = 'csv' | 'excel' | 'json';
+export type ExportFormat = 'csv' | 'excel' | 'json' | 'pdf';
 
 export interface ExportPayload {
   cycleId: number;
@@ -144,7 +144,7 @@ export const studentExportService = {
 
       // Extraer nombre de archivo del header Content-Disposition
       const contentDisposition = response.headers['content-disposition'];
-      let fileName = `estudiantes_export.${format === 'excel' ? 'xlsx' : format}`;
+      let fileName = `estudiantes_export.${format === 'excel' ? 'xlsx' : format === 'pdf' ? 'pdf' : format}`;
       
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);

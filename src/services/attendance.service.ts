@@ -313,20 +313,87 @@ export const getJustifications = async (
 // CONFIGURACIÓN Y VALIDACIONES
 // ====================================================================
 
+// ====================================================================
+// CACHE + DEDUPLICACIÓN PARA CICLO ACTIVO
+// Previene múltiples solicitudes simultáneas (HTTP 429)
+// ====================================================================
+let cachedActiveCycle: Record<string, unknown> | null = null;
+let cacheTimestamp: number | null = null;
+let pendingActiveCycleRequest: Promise<Record<string, unknown>> | null = null;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos en milisegundos
+
 /**
  * Obtener ciclo escolar activo
  * GET /api/attendance/cycle/active
+ * 
+ * Con caché (5 min) + deduplicación de promesas
+ * Si ya hay una solicitud en vuelo, devuelve esa misma promesa
  */
 export const getActiveCycle = async (): Promise<Record<string, unknown>> => {
-  const response = await api.get<ApiResponse<Record<string, unknown>>>(
-    `${BASE_URL}/cycle/active`
-  );
+  try {
+    // ✅ Si hay datos en caché válidos, devolver inmediatamente
+    if (cachedActiveCycle && cacheTimestamp) {
+      const now = Date.now();
+      if ((now - cacheTimestamp) < CACHE_TTL) {
+        console.log('📦 Retornando ciclo del caché (TTL válido)');
+        return cachedActiveCycle;
+      }
+    }
 
-  if (!response.data.success) {
-    throw new Error(response.data.message || 'Error al obtener ciclo activo');
+    // ✅ Si ya hay una solicitud en vuelo, devolver esa misma promesa
+    // Esto previene múltiples solicitudes simultáneas
+    if (pendingActiveCycleRequest) {
+      console.log('⏳ Solicitud en vuelo, reutilizando promesa...');
+      return pendingActiveCycleRequest;
+    }
+
+    // ✅ Crear nueva solicitud y guardarla como pendiente
+    pendingActiveCycleRequest = (async () => {
+      try {
+        const url = `${BASE_URL}/cycle/active`;
+        console.log('🔄 Fetching active cycle from:', url);
+        
+        const response = await api.get<ApiResponse<Record<string, unknown>>>(url);
+
+        console.log('✅ Active cycle response:', response.data);
+
+        if (!response.data.success) {
+          throw new Error(response.data.message || 'Error al obtener ciclo activo');
+        }
+
+        const data = response.data.data || {};
+        
+        // Guardar en caché
+        cachedActiveCycle = data;
+        cacheTimestamp = Date.now();
+        console.log('💾 Ciclo guardado en caché');
+
+        return data;
+      } catch (error) {
+        console.error('❌ Error fetching active cycle:', error);
+        throw error;
+      } finally {
+        // Limpiar promesa pendiente después de completarse
+        pendingActiveCycleRequest = null;
+      }
+    })();
+
+    return pendingActiveCycleRequest;
+  } catch (error) {
+    console.error('❌ Error in getActiveCycle:', error);
+    throw error;
   }
+};
 
-  return response.data.data || {};
+/**
+ * Limpiar caché del ciclo activo
+ * Útil cuando necesitas forzar una actualización
+ */
+export const invalidateActiveCycleCache = (): void => {
+  cachedActiveCycle = null;
+  cacheTimestamp = null;
+  // No limpiar pendingActiveCycleRequest, déjalo completarse naturalmente
+  console.log('🧹 Caché del ciclo activo limpiado');
 };
 
 /**
@@ -334,15 +401,23 @@ export const getActiveCycle = async (): Promise<Record<string, unknown>> => {
  * GET /api/attendance/cycle/active/grades
  */
 export const getGradesFromActiveCycle = async (): Promise<Record<string, unknown>[]> => {
-  const response = await api.get<ApiResponse<Record<string, unknown>[]>>(
-    `${BASE_URL}/cycle/active/grades`
-  );
+  try {
+    const url = `${BASE_URL}/cycle/active/grades`;
+    console.log('🔄 Fetching grades from active cycle:', url);
+    
+    const response = await api.get<ApiResponse<Record<string, unknown>[]>>(url);
 
-  if (!response.data.success) {
-    throw new Error(response.data.message || 'Error al obtener grados');
+    console.log('✅ Grades response:', response.data);
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Error al obtener grados');
+    }
+
+    return response.data.data || [];
+  } catch (error) {
+    console.error('❌ Error fetching grades:', error);
+    throw error;
   }
-
-  return response.data.data || [];
 };
 
 /**
@@ -350,15 +425,23 @@ export const getGradesFromActiveCycle = async (): Promise<Record<string, unknown
  * GET /api/attendance/grades/:gradeId/sections
  */
 export const getSectionsByGrade = async (gradeId: number): Promise<Record<string, unknown>[]> => {
-  const response = await api.get<ApiResponse<Record<string, unknown>[]>>(
-    `${BASE_URL}/grades/${gradeId}/sections`
-  );
+  try {
+    const url = `${BASE_URL}/grades/${gradeId}/sections`;
+    console.log('🔄 Fetching sections for grade:', { url, gradeId });
+    
+    const response = await api.get<ApiResponse<Record<string, unknown>[]>>(url);
 
-  if (!response.data.success) {
-    throw new Error(response.data.message || 'Error al obtener secciones');
+    console.log('✅ Sections response:', response.data);
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Error al obtener secciones');
+    }
+
+    return response.data.data || [];
+  } catch (error) {
+    console.error('❌ Error fetching sections:', error);
+    throw error;
   }
-
-  return response.data.data || [];
 };
 
 /**
@@ -543,17 +626,78 @@ export const getHolidays = async (bimesterId?: number): Promise<Record<string, u
 /**
  * Obtener bimestre activo actual
  * GET /api/attendance/bimester/active
+ * 
+ * Con caché (5 min) + deduplicación de promesas
+ * Si ya hay una solicitud en vuelo, devuelve esa misma promesa
  */
+let cachedActiveBimester: Record<string, unknown> | null = null;
+let bimesterCacheTimestamp: number | null = null;
+let pendingActiveBimesterRequest: Promise<Record<string, unknown>> | null = null;
+
 export const getActiveBimester = async (): Promise<Record<string, unknown>> => {
-  const response = await api.get<ApiResponse<Record<string, unknown>>>(
-    `${BASE_URL}/bimester/active`
-  );
+  try {
+    // ✅ Si hay datos en caché válidos, devolver inmediatamente
+    if (cachedActiveBimester && bimesterCacheTimestamp) {
+      const now = Date.now();
+      if ((now - bimesterCacheTimestamp) < CACHE_TTL) {
+        console.log('📦 Retornando bimestre del caché (TTL válido)');
+        return cachedActiveBimester;
+      }
+    }
 
-  if (!response.data.success) {
-    throw new Error(response.data.message || 'Error al obtener bimestre activo');
+    // ✅ Si ya hay una solicitud en vuelo, devolver esa misma promesa
+    // Esto previene múltiples solicitudes simultáneas
+    if (pendingActiveBimesterRequest) {
+      console.log('⏳ Solicitud de bimestre en vuelo, reutilizando promesa...');
+      return pendingActiveBimesterRequest;
+    }
+
+    // ✅ Crear nueva solicitud y guardarla como pendiente
+    pendingActiveBimesterRequest = (async () => {
+      try {
+        const url = `${BASE_URL}/bimester/active`;
+        console.log('🔄 Fetching active bimester from:', url);
+        
+        const response = await api.get<ApiResponse<Record<string, unknown>>>(url);
+
+        console.log('✅ Active bimester response:', response.data);
+
+        if (!response.data.success) {
+          throw new Error(response.data.message || 'Error al obtener bimestre activo');
+        }
+
+        const data = response.data.data || {};
+        
+        // Guardar en caché
+        cachedActiveBimester = data;
+        bimesterCacheTimestamp = Date.now();
+        console.log('💾 Bimestre guardado en caché');
+
+        return data;
+      } catch (error) {
+        console.error('❌ Error fetching active bimester:', error);
+        throw error;
+      } finally {
+        // Limpiar promesa pendiente después de completarse
+        pendingActiveBimesterRequest = null;
+      }
+    })();
+
+    return pendingActiveBimesterRequest;
+  } catch (error) {
+    console.error('❌ Error in getActiveBimester:', error);
+    throw error;
   }
+};
 
-  return response.data.data || {};
+/**
+ * Limpiar caché del bimestre activo
+ * Útil cuando necesitas forzar una actualización
+ */
+export const invalidateActiveBimesterCache = (): void => {
+  cachedActiveBimester = null;
+  bimesterCacheTimestamp = null;
+  console.log('🧹 Caché del bimestre activo limpiado');
 };
 
 /**
@@ -890,6 +1034,7 @@ export const attendanceQueries = {
  */
 export const attendanceConfig = {
   getActiveCycle,
+  invalidateActiveCycleCache,
   getGradesFromActiveCycle,
   getSectionsByGrade,
   getAllowedAttendanceStatusesByRole,
@@ -902,6 +1047,7 @@ export const attendanceConfig = {
   getActiveAttendanceConfig,
   getHolidays,
   getActiveBimester,
+  invalidateActiveBimesterCache,
   getEnrollmentsBySection,
   getActiveEnrollmentsBySectionAndCycle,
 };
@@ -946,6 +1092,7 @@ const attendanceService = {
 
   // Configuración y Validaciones
   getActiveCycle,
+  invalidateActiveCycleCache,
   getGradesFromActiveCycle,
   getSectionsByGrade,
   getAllowedAttendanceStatusesByRole,
@@ -959,6 +1106,7 @@ const attendanceService = {
   getActiveAttendanceConfig,
   getHolidays,
   getActiveBimester,
+  invalidateActiveBimesterCache,
   getEnrollmentsBySection,
   getActiveEnrollmentsBySectionAndCycle,
 
