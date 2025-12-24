@@ -307,6 +307,10 @@ const navItems: NavItem[] = [
         path: "/erica-colors",
         requiredPermission: ERICA_COLORS_PERMISSIONS.READ
       },
+      {
+        name: "Evaluaciones",
+        path: "/erica-evaluations",
+      }
     ]
   },
   {
@@ -321,6 +325,11 @@ const navItems: NavItem[] = [
       {
         name: "Consolidación de Calificaciones",
         path: "/cotejos",
+        requiredPermission: { module: 'cotejo', action: 'read' }
+      },
+      {
+        name: "Reportes",
+        path: "/cotejos/reportes",
         requiredPermission: { module: 'cotejo', action: 'read' }
       },
       {
