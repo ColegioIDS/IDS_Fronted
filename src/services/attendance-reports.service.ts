@@ -144,6 +144,7 @@ class AttendanceReportsService {
     try {
       const params = new URLSearchParams({
         gradeId: gradeId.toString(),
+        sectionId: sectionId.toString(),
         courseId: courseId.toString(),
       });
 
@@ -186,6 +187,7 @@ class AttendanceReportsService {
     try {
       const params = new URLSearchParams({
         gradeId: gradeId.toString(),
+        sectionId: sectionId.toString(),
         courseId: courseId.toString(),
       });
 
@@ -225,13 +227,16 @@ class AttendanceReportsService {
     try {
       const queryParams = new URLSearchParams({
         gradeId: params.gradeId.toString(),
-        sectionId: params.sectionId.toString(),
         courseId: params.courseId.toString(),
-        format: params.format || 'excel',
+        sectionId: params.sectionId.toString(),
       });
 
       if (params.bimesterId !== null && params.bimesterId !== undefined) {
         queryParams.append('bimesterId', params.bimesterId.toString());
+      }
+
+      if (params.academicWeekId !== null && params.academicWeekId !== undefined) {
+        queryParams.append('academicWeekId', params.academicWeekId.toString());
       }
 
       if (params.startDate) {
@@ -241,6 +246,8 @@ class AttendanceReportsService {
       if (params.endDate) {
         queryParams.append('endDate', params.endDate);
       }
+
+      queryParams.append('format', params.format || 'excel');
 
       const response = await api.get<Blob>(
         `${BASE_URL}/export/student/${studentId}?${queryParams.toString()}`,
@@ -266,11 +273,14 @@ class AttendanceReportsService {
       const queryParams = new URLSearchParams({
         gradeId: params.gradeId.toString(),
         courseId: params.courseId.toString(),
-        format: params.format || 'excel',
       });
 
       if (params.bimesterId !== null && params.bimesterId !== undefined) {
         queryParams.append('bimesterId', params.bimesterId.toString());
+      }
+
+      if (params.academicWeekId !== null && params.academicWeekId !== undefined) {
+        queryParams.append('academicWeekId', params.academicWeekId.toString());
       }
 
       if (params.startDate) {
@@ -280,6 +290,8 @@ class AttendanceReportsService {
       if (params.endDate) {
         queryParams.append('endDate', params.endDate);
       }
+
+      queryParams.append('format', params.format || 'excel');
 
       const response = await api.get<Blob>(
         `${BASE_URL}/export/section/${sectionId}?${queryParams.toString()}`,

@@ -58,15 +58,13 @@ export function AttendanceReportsPageContent() {
   });
 
   useEffect(() => {
-    if (selectedGradeId && selectedSectionId && selectedCourseId) {
-      console.log('📊 Summary hook triggered:', {
-        gradeId: selectedGradeId,
-        sectionId: selectedSectionId,
-        courseId: selectedCourseId,
-        bimesterId: selectedBimesterId,
-        academicWeekId: selectedWeekId,
-      });
-    }
+    console.log('📊 Summary hook triggered:', {
+      gradeId: selectedGradeId,
+      sectionId: selectedSectionId,
+      courseId: selectedCourseId,
+      bimesterId: selectedBimesterId,
+      academicWeekId: selectedWeekId,
+    });
   }, [selectedGradeId, selectedSectionId, selectedCourseId, selectedBimesterId, selectedWeekId]);
 
   useEffect(() => {
@@ -88,15 +86,13 @@ export function AttendanceReportsPageContent() {
   });
 
   useEffect(() => {
-    if (selectedGradeId && selectedSectionId && selectedCourseId) {
-      console.log('👥 Students hook triggered:', {
-        gradeId: selectedGradeId,
-        sectionId: selectedSectionId,
-        courseId: selectedCourseId,
-        bimesterId: selectedBimesterId,
-        academicWeekId: selectedWeekId,
-      });
-    }
+    console.log('👥 Students hook triggered:', {
+      gradeId: selectedGradeId,
+      sectionId: selectedSectionId,
+      courseId: selectedCourseId,
+      bimesterId: selectedBimesterId,
+      academicWeekId: selectedWeekId,
+    });
   }, [selectedGradeId, selectedSectionId, selectedCourseId, selectedBimesterId, selectedWeekId]);
 
   useEffect(() => {

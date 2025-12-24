@@ -53,10 +53,10 @@ export function ExportStudentsTab({
 
   // Helper function to build export parameters with priority logic
   const getExportParams = () => {
-    // academicWeekId (highest priority) - if set, ignore bimesterId and dates
+    // academicWeekId (highest priority) - if set, also send bimesterId and ignore dates
     if (academicWeekId) {
       return {
-        bimesterId: undefined,
+        bimesterId,
         academicWeekId,
         startDate: undefined,
         endDate: undefined,
@@ -115,6 +115,7 @@ export function ExportStudentsTab({
       sectionId,
       courseId,
       bimesterId: exportParams.bimesterId,
+      academicWeekId: exportParams.academicWeekId,
       startDate: exportParams.startDate,
       endDate: exportParams.endDate,
     });
@@ -405,6 +406,7 @@ export function ExportStudentsTab({
                   gradeId,
                   courseId,
                   bimesterId: exportParams.bimesterId,
+                  academicWeekId: exportParams.academicWeekId,
                   startDate: exportParams.startDate,
                   endDate: exportParams.endDate,
                 });

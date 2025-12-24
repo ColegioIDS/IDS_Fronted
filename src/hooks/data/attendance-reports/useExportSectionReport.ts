@@ -10,6 +10,7 @@ interface UseExportSectionReportParams {
   gradeId?: number;
   courseId?: number;
   bimesterId?: number | null;
+  academicWeekId?: number | null;
   startDate?: string;
   endDate?: string;
 }
@@ -25,6 +26,7 @@ export function useExportSectionReport() {
       gradeId,
       courseId,
       bimesterId,
+      academicWeekId,
       startDate,
       endDate,
     }: UseExportSectionReportParams) => {
@@ -37,6 +39,7 @@ export function useExportSectionReport() {
         courseId,
         format,
         bimesterId,
+        academicWeekId,
         startDate,
         endDate,
       });

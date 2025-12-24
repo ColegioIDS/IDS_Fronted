@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { attendanceReportsService } from '@/services/attendance-reports.service';
 import { AttendanceSummary } from '@/types/attendance-reports.types';
+import { useEffect } from 'react';
 
 interface UseAttendanceSummaryParams {
   gradeId?: number;
@@ -34,16 +35,35 @@ export function useAttendanceSummary({
     academicWeekId,
   ];
 
+  useEffect(() => {
+    console.log('🔍 useAttendanceSummary params changed:', {
+      gradeId,
+      sectionId,
+      courseId,
+      bimesterId,
+      academicWeekId,
+      willExecute: !!(gradeId && sectionId && courseId),
+    });
+  }, [gradeId, sectionId, courseId, bimesterId, academicWeekId]);
+
   const { data, isLoading, error, isError } = useQuery<AttendanceSummary>({
     queryKey,
-    queryFn: () =>
-      attendanceReportsService.getAttendanceSummary(
+    queryFn: () => {
+      console.log('🚀 useAttendanceSummary queryFn executing with:', {
+        gradeId,
+        sectionId,
+        courseId,
+        bimesterId,
+        academicWeekId,
+      });
+      return attendanceReportsService.getAttendanceSummary(
         gradeId!,
         sectionId!,
         courseId!,
         bimesterId,
         academicWeekId
-      ),
+      );
+    },
     enabled: !!(gradeId && sectionId && courseId),
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 0, // Sin reintentos automáticos (el QueryProvider maneja esto)

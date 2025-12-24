@@ -11,6 +11,7 @@ interface UseExportStudentReportParams {
   sectionId?: number;
   courseId?: number;
   bimesterId?: number | null;
+  academicWeekId?: number | null;
   startDate?: string;
   endDate?: string;
 }
@@ -27,6 +28,7 @@ export function useExportStudentReport() {
       sectionId,
       courseId,
       bimesterId,
+      academicWeekId,
       startDate,
       endDate,
     }: UseExportStudentReportParams) => {
@@ -40,6 +42,7 @@ export function useExportStudentReport() {
         courseId,
         format,
         bimesterId,
+        academicWeekId,
         startDate,
         endDate,
       });
