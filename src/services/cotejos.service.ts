@@ -18,6 +18,8 @@ import {
   SubmitCotejoDTO,
   GetStudentsResponse,
   StudentEnrollmentData,
+  CotejosStudentsFiltersResponse,
+  CotejosStudentsFiltersQuery,
 } from '@/types/cotejos.types';
 import { extractCotejosError } from '@/utils/cotejos-error.utils';
 
@@ -239,6 +241,22 @@ export const getStudents = async (status: 'all' | 'active' | 'inactive' = 'all')
   try {
     const response = await api.get<{ data: GetStudentsResponse }>(`${BASE_URL}/students`, {
       params: { status },
+    });
+    validateApiResponse(response.data);
+    return response.data.data;
+  } catch (error) {
+    throw extractCotejosError(error);
+  }
+};
+
+/**
+ * Obtiene estudiantes filtrados por ciclo, grado, sección y curso
+ * GET /api/cotejos/students/filters?cycleId=1&gradeId=2&sectionId=3&courseId=5
+ */
+export const getStudentsByFilters = async (query: CotejosStudentsFiltersQuery) => {
+  try {
+    const response = await api.get<CotejosStudentsFiltersResponse>(`${BASE_URL}/students/filters`, {
+      params: query,
     });
     validateApiResponse(response.data);
     return response.data.data;

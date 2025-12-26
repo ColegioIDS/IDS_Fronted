@@ -267,3 +267,76 @@ export interface GetStudentsResponse {
   totalStudents: number;
   students: StudentEnrollmentData[];
 }
+
+// ==================== COTEJOS REPORTES - FILTRADOS ====================
+
+export interface Course {
+  id: number;
+  name: string;
+  area: string;
+  colorHex: string;
+}
+
+export interface Teacher {
+  id: number;
+  email: string;
+  phone: string;
+}
+
+export interface CourseAssignment {
+  id: number;
+  course: Course;
+  teacher: Teacher;
+}
+
+export interface StudentBasic {
+  id: number;
+  givenNames: string;
+  lastNames: string;
+  birthDate: string;
+  gender: string;
+}
+
+export interface Cycle {
+  id: number;
+  name: string;
+}
+
+export interface Grade {
+  id: number;
+  name: string;
+}
+
+export interface Section {
+  id: number;
+  name: string;
+}
+
+export interface StudentEnrollmentWithCotejo {
+  enrollmentId: number;
+  student: StudentBasic;
+  cycle: Cycle;
+  grade: Grade;
+  section: Section;
+  status: string;
+  dateEnrolled: string;
+  cotejo: Cotejo | null;
+}
+
+export interface CotejosStudentsFiltersResponse {
+  success: true;
+  errorCode: null;
+  message: string;
+  data: {
+    courseAssignment: CourseAssignment;
+    totalStudents: number;
+    students: StudentEnrollmentWithCotejo[];
+  };
+}
+
+export interface CotejosStudentsFiltersQuery {
+  cycleId: number;
+  gradeId: number;
+  sectionId: number;
+  courseId: number;
+}
