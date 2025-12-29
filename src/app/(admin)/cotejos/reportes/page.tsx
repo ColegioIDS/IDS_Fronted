@@ -2,41 +2,74 @@
 
 import { useState, useEffect } from 'react';
 import { useCotejosStudentsFilters } from '@/hooks/data/useCotejosStudentsFilters';
-import { useCycles, useGrades, useSectionsByGrade, useCourses } from '@/hooks/data';
+import { useCascadeData } from '@/hooks/data';
 import { CotejosStudentsFiltersQuery } from '@/types/cotejos.types';
-import { CycleSummary } from '@/types/enrollments.types';
-import { Grade } from '@/types/grades.types';
-import { Section } from '@/types/sections.types';
-import { Course } from '@/types/courses';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { CotejosReportesFilters } from '@/components/features/cotejos-reports/CotejosReportesFilters';
+import { CotejosReportesResults } from '@/components/features/cotejos-reports/CotejosReportesResults';
+import { CotejosReportesError } from '@/components/features/cotejos-reports/CotejosReportesError';
 
 export default function ReportesPage() {
   // Estado para los filtros
   const [filters, setFilters] = useState<Partial<CotejosStudentsFiltersQuery>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Hooks de datos
-  const { cycles, loading: cyclesLoading } = useCycles();
-  const { data: grades, isLoading: gradesLoading } = useGrades();
-  const { data: sections, isLoading: sectionsLoading } = useSectionsByGrade(
-    filters.gradeId ?? null
-  );
-  const { data: coursesData, isLoading: coursesLoading } = useCourses();
+  // Hook de datos en cascada del módulo de cotejos
+  const { data: cascadeData, loading: cascadeLoading } = useCascadeData();
   const { data: studentsData, loading: studentsLoading, error: studentsError, fetch } =
     useCotejosStudentsFilters();
 
-  // Filtrar cursos - extraer array del objeto paginado
-  const filteredCourses = coursesData?.data || [];
+  // Extrae datos de cascadeData
+  const cycles = cascadeData?.data?.cycle ? [cascadeData.data.cycle] : [];
+  const bimestres = cascadeData?.data?.activeBimester ? [cascadeData.data.activeBimester] : [];
+  const grades = cascadeData?.data?.grades || [];
+  const gradesSections = cascadeData?.data?.gradesSections || {};
+  
+  // Obtener secciones del grado seleccionado
+  const sections = filters.gradeId ? gradesSections[filters.gradeId] || [] : [];
+  
+  // Obtener cursos de las secciones del grado seleccionado
+  const coursesSet = new Map<number, any>();
+  if (filters.gradeId && sections.length > 0) {
+    sections.forEach((section: any) => {
+      section.courseAssignments?.forEach((assignment: any) => {
+        if (!coursesSet.has(assignment.course.id)) {
+          coursesSet.set(assignment.course.id, assignment.course);
+        }
+      });
+    });
+  }
+  const courses = Array.from(coursesSet.values());
+
+  // Autoseleccionar valores si solo hay uno
+  useEffect(() => {
+    if (cascadeLoading) return;
+
+    setFilters((prev) => {
+      let updated = { ...prev };
+
+      // Autoseleccionar ciclo si solo hay uno
+      if (!prev.cycleId && cycles.length === 1) {
+        updated.cycleId = cycles[0].id;
+      }
+
+      // Autoseleccionar bimestre si solo hay uno
+      if (!prev.bimesterId && bimestres.length === 1) {
+        updated.bimesterId = bimestres[0].id;
+      }
+
+      // Autoseleccionar grado si solo hay uno y ya tenemos ciclo
+      if (!prev.gradeId && updated.cycleId && grades.length === 1) {
+        updated.gradeId = grades[0].id;
+      }
+
+      // Autoseleccionar sección si solo hay uno y ya tenemos grado
+      if (!prev.sectionId && updated.gradeId && sections.length === 1) {
+        updated.sectionId = sections[0].id;
+      }
+
+      return Object.keys(updated).length > Object.keys(prev).length ? updated : prev;
+    });
+  }, [cycles.length, bimestres.length, grades.length, sections.length, cascadeLoading]);
 
   // Manejar el cambio de filtros
   const handleFilterChange = (key: keyof CotejosStudentsFiltersQuery, value: number) => {
@@ -45,9 +78,12 @@ export default function ReportesPage() {
 
       // Resetear valores dependientes
       if (key === 'cycleId') {
+        delete updated.bimesterId;
         delete updated.gradeId;
         delete updated.sectionId;
         delete updated.courseId;
+      } else if (key === 'bimesterId') {
+        // El bimestre no afecta otros filtros por ahora
       } else if (key === 'gradeId') {
         delete updated.sectionId;
         delete updated.courseId;
@@ -61,7 +97,7 @@ export default function ReportesPage() {
 
   // Obtener estudiantes
   const handleSearch = async () => {
-    if (!filters.cycleId || !filters.gradeId || !filters.sectionId || !filters.courseId) {
+    if (!filters.cycleId || !filters.bimesterId || !filters.gradeId || !filters.sectionId || !filters.courseId) {
       return;
     }
 
@@ -74,188 +110,27 @@ export default function ReportesPage() {
   };
 
   const isFormValid =
-    filters.cycleId && filters.gradeId && filters.sectionId && filters.courseId;
+    filters.cycleId && filters.bimesterId && filters.gradeId && filters.sectionId && filters.courseId;
 
   return (
     <div className="space-y-6 p-6">
-      {/* Sección de Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros de Búsqueda</CardTitle>
-          <CardDescription>Selecciona los parámetros para ver los estudiantes</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Ciclo */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Ciclo</label>
-              <Select
-                value={filters.cycleId?.toString() || ''}
-                onValueChange={(value) => handleFilterChange('cycleId', parseInt(value))}
-                disabled={cyclesLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar ciclo..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {cycles?.map((cycle: CycleSummary) => (
-                    <SelectItem key={cycle.id} value={cycle.id.toString()}>
-                      {cycle.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <CotejosReportesFilters
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onSearch={handleSearch}
+        cascadeLoading={cascadeLoading}
+        studentsLoading={studentsLoading}
+        isSubmitting={isSubmitting}
+        cycles={cycles}
+        bimestres={bimestres}
+        grades={grades}
+        sections={sections}
+        courses={courses}
+      />
 
-            {/* Grado */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Grado</label>
-              <Select
-                value={filters.gradeId?.toString() || ''}
-                onValueChange={(value) => handleFilterChange('gradeId', parseInt(value))}
-                disabled={!filters.cycleId || gradesLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar grado..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {grades?.map((grade: Grade) => (
-                    <SelectItem key={grade.id} value={grade.id.toString()}>
-                      {grade.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      {studentsError && <CotejosReportesError error={studentsError} />}
 
-            {/* Sección */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Sección</label>
-              <Select
-                value={filters.sectionId?.toString() || ''}
-                onValueChange={(value) => handleFilterChange('sectionId', parseInt(value))}
-                disabled={!filters.gradeId || sectionsLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar sección..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {sections?.map((section: Section) => (
-                    <SelectItem key={section.id} value={section.id.toString()}>
-                      {section.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Curso */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Curso</label>
-              <Select
-                value={filters.courseId?.toString() || ''}
-                onValueChange={(value) => handleFilterChange('courseId', parseInt(value))}
-                disabled={!filters.gradeId || coursesLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar curso..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredCourses?.map((course: Course) => (
-                    <SelectItem key={course.id} value={course.id.toString()}>
-                      {course.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <Button
-            onClick={handleSearch}
-            disabled={!isFormValid || studentsLoading || isSubmitting}
-            className="mt-6"
-          >
-            {studentsLoading || isSubmitting ? 'Buscando...' : 'Buscar Estudiantes'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Errores */}
-      {studentsError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{studentsError.message}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Resultados */}
-      {studentsData && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {studentsData.courseAssignment.course.name} - {studentsData.totalStudents} estudiantes
-            </CardTitle>
-            <CardDescription>
-              Docente: {studentsData.courseAssignment.teacher.email}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-100 dark:bg-gray-800">
-                  <tr>
-                    <th className="px-4 py-2 text-left">Nombre</th>
-                    <th className="px-4 py-2 text-left">F. Nacimiento</th>
-                    <th className="px-4 py-2 text-left">Género</th>
-                    <th className="px-4 py-2 text-left">Ciclo</th>
-                    <th className="px-4 py-2 text-left">Grado</th>
-                    <th className="px-4 py-2 text-left">Sección</th>
-                    <th className="px-4 py-2 text-left">Estado</th>
-                    <th className="px-4 py-2 text-left">Cotejo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {studentsData.students.map((enrollment) => (
-                    <tr key={enrollment.enrollmentId} className="border-t">
-                      <td className="px-4 py-2">
-                        {enrollment.student.givenNames} {enrollment.student.lastNames}
-                      </td>
-                      <td className="px-4 py-2">
-                        {new Date(enrollment.student.birthDate).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-2">{enrollment.student.gender}</td>
-                      <td className="px-4 py-2">{enrollment.cycle.name}</td>
-                      <td className="px-4 py-2">{enrollment.grade.name}</td>
-                      <td className="px-4 py-2">{enrollment.section.name}</td>
-                      <td className="px-4 py-2">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-semibold ${
-                            enrollment.status === 'ACTIVE'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {enrollment.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2">
-                        {enrollment.cotejo ? (
-                          <span className="text-blue-600 font-medium">
-                            {enrollment.cotejo.status}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">Sin cotejo</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {studentsData && <CotejosReportesResults studentsData={studentsData} />}
     </div>
   );
 }

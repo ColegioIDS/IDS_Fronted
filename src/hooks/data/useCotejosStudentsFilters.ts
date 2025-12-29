@@ -30,7 +30,7 @@ export const useCotejosStudentsFilters = () => {
       setState({ data: result, loading: false, error: null });
       return result;
     } catch (error) {
-      const cotejosError = error instanceof CotejosError ? error : new CotejosError('UNKNOWN_ERROR', 'Error desconocido');
+      const cotejosError = error instanceof CotejosError ? error : new CotejosError('UNKNOWN_ERROR', 'UNKNOWN', 'Error desconocido');
       setState({ data: null, loading: false, error: cotejosError });
       throw cotejosError;
     }

@@ -28,7 +28,7 @@ export const useCascadeData = (includeInactive: boolean = false) => {
         setState({ data: result, loading: false, error: null });
       } catch (error) {
         const cotejosError =
-          error instanceof CotejosError ? error : new CotejosError('UNKNOWN_ERROR', 'Error desconocido');
+          error instanceof CotejosError ? error : new CotejosError('UNKNOWN_ERROR', 'UNKNOWN', 'Error desconocido');
         setState({ data: null, loading: false, error: cotejosError });
       }
     };

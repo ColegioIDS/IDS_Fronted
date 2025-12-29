@@ -270,23 +270,23 @@ export interface GetStudentsResponse {
 
 // ==================== COTEJOS REPORTES - FILTRADOS ====================
 
-export interface Course {
+export interface CourseReport {
   id: number;
   name: string;
   area: string;
   colorHex: string;
 }
 
-export interface Teacher {
+export interface TeacherReport {
   id: number;
   email: string;
   phone: string;
 }
 
-export interface CourseAssignment {
+export interface CourseAssignmentReport {
   id: number;
-  course: Course;
-  teacher: Teacher;
+  course: CourseReport;
+  teacher: TeacherReport;
 }
 
 export interface StudentBasic {
@@ -297,17 +297,17 @@ export interface StudentBasic {
   gender: string;
 }
 
-export interface Cycle {
+export interface CycleReport {
   id: number;
   name: string;
 }
 
-export interface Grade {
+export interface GradeReport {
   id: number;
   name: string;
 }
 
-export interface Section {
+export interface SectionReport {
   id: number;
   name: string;
 }
@@ -315,9 +315,9 @@ export interface Section {
 export interface StudentEnrollmentWithCotejo {
   enrollmentId: number;
   student: StudentBasic;
-  cycle: Cycle;
-  grade: Grade;
-  section: Section;
+  cycle: CycleReport;
+  grade: GradeReport;
+  section: SectionReport;
   status: string;
   dateEnrolled: string;
   cotejo: Cotejo | null;
@@ -328,7 +328,7 @@ export interface CotejosStudentsFiltersResponse {
   errorCode: null;
   message: string;
   data: {
-    courseAssignment: CourseAssignment;
+    courseAssignment: CourseAssignmentReport;
     totalStudents: number;
     students: StudentEnrollmentWithCotejo[];
   };
@@ -336,6 +336,7 @@ export interface CotejosStudentsFiltersResponse {
 
 export interface CotejosStudentsFiltersQuery {
   cycleId: number;
+  bimesterId: number;
   gradeId: number;
   sectionId: number;
   courseId: number;

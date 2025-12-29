@@ -251,6 +251,7 @@ export interface ExportParams {
   courseId: number;
   format?: ExportFormat;
   bimesterId?: number | null;
+  academicWeekId?: number | null;
   startDate?: string; // YYYY-MM-DD
   endDate?: string; // YYYY-MM-DD
 }

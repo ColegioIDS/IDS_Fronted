@@ -256,16 +256,6 @@ const navItems: NavItem[] = [
     ],
     subItems: [
       {
-        name: "Asistencia",
-        path: "/attendance",
-        requiredPermission: ATTENDANCE_PERMISSIONS.READ
-      },
-      {
-        name: "Reportes",
-        path: "/attendance-reports",
-        requiredPermission: ATTENDANCE_PERMISSIONS.READ
-      },
-      {
         name: "Configuración",
         path: "/attendance-config",
         requiredPermission: ATTENDANCE_CONFIG_PERMISSIONS.VIEW
@@ -280,6 +270,17 @@ const navItems: NavItem[] = [
         path: "/attendance-config/permissions",
         requiredPermission: ATTENDANCE_PERMISSIONS_PERMISSIONS.VIEW
       },
+      {
+        name: "Asistencia",
+        path: "/attendance",
+        requiredPermission: ATTENDANCE_PERMISSIONS.READ
+      },
+      {
+        name: "Reportes",
+        path: "/attendance-reports",
+        requiredPermission: ATTENDANCE_PERMISSIONS.READ
+      },
+      
     ]
   },
   {

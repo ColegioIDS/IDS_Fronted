@@ -22,15 +22,92 @@ import { useGradesByCycle } from '@/hooks/data/attendance/useGradesByCycle';
 import { useSectionsByGrade } from '@/hooks/data/attendance/useSectionsByGrade';
 import { useActiveCycleAndBimester } from '@/hooks/data/attendance/useActiveCycleAndBimester';
 import { useStudentsBySection } from '@/hooks/data/attendance/useStudentsBySection';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Loader2, Filter, CheckCircle, Users } from 'lucide-react';
+import { AlertCircle, Loader2, Filter, CheckCircle, Users, ChevronRight } from 'lucide-react';
+
+interface FilterSectionProps {
+  title: string;
+  description: string;
+  loading: boolean;
+  items: any[];
+  selectedId: number | null | undefined;
+  onSelect: (id: number) => void;
+  isAutoSelected: boolean;
+  getItemLabel: (item: any) => string;
+}
+
+function FilterSection({
+  title,
+  description,
+  loading,
+  items,
+  selectedId,
+  onSelect,
+  isAutoSelected,
+  getItemLabel,
+}: FilterSectionProps) {
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm text-gray-600 dark:bg-slate-800 dark:border-slate-700">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Cargando {title.toLowerCase()}...
+      </div>
+    );
+  }
+
+  if (!items || items.length === 0) {
+    return null;
+  }
+
+  // Si hay solo 1 opción, mostrar como pequeño chip/badge compacto
+  if (items.length === 1) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">{title}:</span>
+        <div className="inline-flex items-center gap-2 bg-emerald-100 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-full px-3 py-1.5">
+          <CheckCircle className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+          <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">{getItemLabel(items[0])}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Si hay múltiples opciones, mostrar como tarjetas seleccionables
+  return (
+    <div className="space-y-3">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {items.map((item) => {
+          const isSelected = selectedId === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onSelect(item.id)}
+              className={`relative group rounded-lg p-4 transition-all duration-200 ${
+                isSelected
+                  ? 'bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 text-white shadow-lg scale-105 border-2 border-blue-400'
+                  : 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">{getItemLabel(item)}</span>
+                {isSelected && <ChevronRight className="h-5 w-5" />}
+              </div>
+              {isSelected && (
+                <div className="mt-2 text-xs font-medium opacity-90">
+                  ✓ Seleccionado
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function AttendanceFilters() {
   const { state: attendanceState, actions: attendanceActions } = useAttendanceContext();
@@ -57,17 +134,26 @@ export function AttendanceFilters() {
   // Refs para evitar loops infinitos
   const cycleLoadedRef = useRef(false);
   const bimesterLoadedRef = useRef(false);
+  const gradeLoadedRef = useRef(false);
+  const sectionLoadedRef = useRef(false);
   const studentsLoadedRef = useRef(false);
 
-  // Efecto para cargar ciclo activo por defecto
+  // Efecto para cargar ciclo activo por defecto o auto-seleccionar si hay solo 1
   useEffect(() => {
-    if (activeCycle?.id && !attendanceState.selectedCycleId && !cycleLoadedRef.current) {
+    if (cyclesData.cycles && !attendanceState.selectedCycleId && !cycleLoadedRef.current) {
       cycleLoadedRef.current = true;
-      attendanceActions.selectCycle(activeCycle.id);
+      
+      // Si hay solo 1 ciclo, auto-seleccionar
+      if (cyclesData.cycles.length === 1) {
+        attendanceActions.selectCycle(cyclesData.cycles[0].id);
+      } else if (activeCycle?.id) {
+        // Si hay múltiples, seleccionar el activo
+        attendanceActions.selectCycle(activeCycle.id);
+      }
     }
-  }, [activeCycle?.id, attendanceState.selectedCycleId]);
+  }, [cyclesData.cycles, attendanceState.selectedCycleId, activeCycle?.id]);
 
-  // Efecto para cargar bimestre activo después del ciclo
+  // Efecto para auto-seleccionar bimestre si hay solo 1
   useEffect(() => {
     if (
       bimestresData.bimesters?.length &&
@@ -75,11 +161,44 @@ export function AttendanceFilters() {
       !attendanceState.selectedBimesterId &&
       !bimesterLoadedRef.current
     ) {
-      const activeBimData = bimestresData.bimesters[0];
       bimesterLoadedRef.current = true;
-      attendanceActions.selectBimester(activeBimData.id);
+      const bimesterToSelect = bimestresData.bimesters[0];
+      attendanceActions.selectBimester(bimesterToSelect.id);
     }
   }, [bimestresData.bimesters?.length, attendanceState.selectedCycleId, attendanceState.selectedBimesterId]);
+
+  // Efecto para auto-seleccionar grado si hay solo 1
+  useEffect(() => {
+    if (
+      gradesData.grades?.length &&
+      attendanceState.selectedBimesterId &&
+      !selectedGradeId &&
+      !gradeLoadedRef.current
+    ) {
+      gradeLoadedRef.current = true;
+      
+      if (gradesData.grades.length === 1) {
+        setSelectedGradeId(gradesData.grades[0].id);
+      }
+    }
+  }, [gradesData.grades?.length, attendanceState.selectedBimesterId, selectedGradeId]);
+
+  // Efecto para auto-seleccionar sección si hay solo 1
+  useEffect(() => {
+    if (
+      sectionsData.sections?.length &&
+      selectedGradeId &&
+      !attendanceState.selectedSectionId &&
+      !sectionLoadedRef.current
+    ) {
+      sectionLoadedRef.current = true;
+      
+      if (sectionsData.sections.length === 1) {
+        const sectionId = parseInt(sectionsData.sections[0].id.toString(), 10);
+        attendanceActions.selectSection(sectionId);
+      }
+    }
+  }, [sectionsData.sections?.length, selectedGradeId, attendanceState.selectedSectionId]);
 
   // Efecto para resetear el ref cuando cambia la sección
   useEffect(() => {
@@ -123,36 +242,35 @@ export function AttendanceFilters() {
     }
   }, [studentsData.students, studentsData.loading, attendanceState.selectedSectionId, attendanceState.selectedDate]);
 
-  const handleCycleChange = (cycleId: string) => {
-    const id = parseInt(cycleId, 10);
-    attendanceActions.selectCycle(id);
+  const handleCycleChange = (cycleId: number) => {
+    attendanceActions.selectCycle(cycleId);
     attendanceActions.setStudents([]);
     setSelectedGradeId(null);
-    cycleLoadedRef.current = false;
+    gradeLoadedRef.current = false;
     bimesterLoadedRef.current = false;
+    sectionLoadedRef.current = false;
     studentsLoadedRef.current = false;
   };
 
-  const handleBimesterChange = (bimesterId: string) => {
-    const id = parseInt(bimesterId, 10);
-    attendanceActions.selectBimester(id);
+  const handleBimesterChange = (bimesterId: number) => {
+    attendanceActions.selectBimester(bimesterId);
     attendanceActions.setStudents([]);
     setSelectedGradeId(null);
+    gradeLoadedRef.current = false;
+    sectionLoadedRef.current = false;
     studentsLoadedRef.current = false;
   };
 
-  const handleGradeChange = (gradeId: string) => {
-    const id = parseInt(gradeId, 10);
-    setSelectedGradeId(id);
+  const handleGradeChange = (gradeId: number) => {
+    setSelectedGradeId(gradeId);
     attendanceActions.setStudents([]);
+    sectionLoadedRef.current = false;
     studentsLoadedRef.current = false;
   };
 
-  const handleSectionChange = (sectionId: string) => {
-    const id = parseInt(sectionId, 10);
-    // Limpiar estudiantes viejos ANTES de cambiar la sección
+  const handleSectionChange = (sectionId: number) => {
     attendanceActions.setStudents([]);
-    attendanceActions.selectSection(id);
+    attendanceActions.selectSection(sectionId);
     studentsLoadedRef.current = false;
   };
 
@@ -183,139 +301,121 @@ export function AttendanceFilters() {
       )}
 
       {/* Filters Grid */}
-      <div className="grid gap-6 md:grid-cols-4">
-        {/* Ciclo Escolar */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Ciclo Escolar</label>
-          {cyclesData.loading ? (
-            <div className="flex items-center gap-2 rounded border border-gray-300 bg-gray-50 p-2 text-sm text-gray-600">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Cargando...
-            </div>
-          ) : (
-            <Select
-              value={attendanceState.selectedCycleId?.toString() || ''}
-              onValueChange={handleCycleChange}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecciona un ciclo" />
-              </SelectTrigger>
-              <SelectContent>
-                {cyclesData.cycles && cyclesData.cycles.length > 0 ? (
-                  cyclesData.cycles.map((cycle) => (
-                    <SelectItem key={cycle.id} value={cycle.id.toString()}>
-                      {cycle.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <div className="px-2 py-1.5 text-sm text-gray-500">No hay ciclos disponibles</div>
-                )}
-              </SelectContent>
-            </Select>
+      <div className="space-y-6">
+        {/* Auto-selected filters - compact row */}
+        <div className="flex flex-wrap items-center gap-4 pb-4 border-b border-gray-200 dark:border-slate-700">
+          {/* Ciclo Escolar */}
+          {cyclesData.cycles && cyclesData.cycles.length === 1 && !cyclesData.loading && (
+            <FilterSection
+              title="Ciclo Escolar"
+              description=""
+              loading={cyclesData.loading}
+              items={cyclesData.cycles}
+              selectedId={attendanceState.selectedCycleId}
+              onSelect={handleCycleChange}
+              isAutoSelected={true}
+              getItemLabel={(item: any) => item.name}
+            />
+          )}
+
+          {/* Bimestre */}
+          {attendanceState.selectedCycleId && bimestresData.bimesters && bimestresData.bimesters.length === 1 && !bimestresData.loading && (
+            <FilterSection
+              title="Bimestre"
+              description=""
+              loading={bimestresData.loading}
+              items={bimestresData.bimesters}
+              selectedId={attendanceState.selectedBimesterId}
+              onSelect={handleBimesterChange}
+              isAutoSelected={true}
+              getItemLabel={(item: any) => item.name}
+            />
+          )}
+
+          {/* Grado */}
+          {attendanceState.selectedBimesterId && gradesData.grades && gradesData.grades.length === 1 && !gradesData.loading && (
+            <FilterSection
+              title="Grado"
+              description=""
+              loading={gradesData.loading}
+              items={gradesData.grades}
+              selectedId={selectedGradeId}
+              onSelect={handleGradeChange}
+              isAutoSelected={true}
+              getItemLabel={(item: any) => item.name}
+            />
+          )}
+
+          {/* Sección */}
+          {selectedGradeId && sectionsData.sections && sectionsData.sections.length === 1 && !sectionsData.loading && (
+            <FilterSection
+              title="Sección"
+              description=""
+              loading={sectionsData.loading}
+              items={sectionsData.sections}
+              selectedId={attendanceState.selectedSectionId}
+              onSelect={handleSectionChange}
+              isAutoSelected={true}
+              getItemLabel={(item: any) => `Sección ${item.name}`}
+            />
           )}
         </div>
 
-        {/* Bimestre */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Bimestre</label>
-          {bimestresData.loading ? (
-            <div className="flex items-center gap-2 rounded border border-gray-300 bg-gray-50 p-2 text-sm text-gray-600">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Cargando...
-            </div>
-          ) : (
-            <Select
-              value={attendanceState.selectedBimesterId?.toString() || ''}
-              onValueChange={handleBimesterChange}
-              disabled={!attendanceState.selectedCycleId}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecciona un bimestre" />
-              </SelectTrigger>
-              <SelectContent>
-                {bimestresData.bimesters && bimestresData.bimesters.length > 0 ? (
-                  bimestresData.bimesters.map((bimester) => (
-                    <SelectItem key={bimester.id} value={bimester.id.toString()}>
-                      {bimester.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <div className="px-2 py-1.5 text-sm text-gray-500">
-                    {attendanceState.selectedCycleId ? 'No hay bimestres disponibles' : 'Selecciona un ciclo primero'}
-                  </div>
-                )}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
+        {/* Ciclo Escolar - selectable if > 1 */}
+        {cyclesData.cycles && cyclesData.cycles.length > 1 && (
+          <FilterSection
+            title="Ciclo Escolar"
+            description={cyclesData.cycles && cyclesData.cycles.length === 1 ? "Seleccionado automáticamente" : "Elige el ciclo escolar"}
+            loading={cyclesData.loading}
+            items={cyclesData.cycles}
+            selectedId={attendanceState.selectedCycleId}
+            onSelect={handleCycleChange}
+            isAutoSelected={false}
+            getItemLabel={(item: any) => item.name}
+          />
+        )}
 
-        {/* Grado */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Grado</label>
-          {gradesData.loading ? (
-            <div className="flex items-center gap-2 rounded border border-gray-300 bg-gray-50 p-2 text-sm text-gray-600">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Cargando...
-            </div>
-          ) : (
-            <Select
-              value={selectedGradeId?.toString() || ''}
-              onValueChange={handleGradeChange}
-              disabled={!attendanceState.selectedBimesterId}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecciona un grado" />
-              </SelectTrigger>
-              <SelectContent>
-                {gradesData.grades && gradesData.grades.length > 0 ? (
-                  gradesData.grades.map((grade) => (
-                    <SelectItem key={grade.id} value={grade.id.toString()}>
-                      {grade.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <div className="px-2 py-1.5 text-sm text-gray-500">
-                    {attendanceState.selectedBimesterId ? 'No hay grados disponibles' : 'Selecciona un bimestre primero'}
-                  </div>
-                )}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
+        {/* Bimestre - selectable if > 1 */}
+        {attendanceState.selectedCycleId && bimestresData.bimesters && bimestresData.bimesters.length > 1 && (
+          <FilterSection
+            title="Bimestre"
+            description={bimestresData.bimesters && bimestresData.bimesters.length === 1 ? "Seleccionado automáticamente" : "Elige el bimestre"}
+            loading={bimestresData.loading}
+            items={bimestresData.bimesters}
+            selectedId={attendanceState.selectedBimesterId}
+            onSelect={handleBimesterChange}
+            isAutoSelected={false}
+            getItemLabel={(item: any) => item.name}
+          />
+        )}
 
-        {/* Sección */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Sección</label>
-          {sectionsData.loading ? (
-            <div className="flex items-center gap-2 rounded border border-gray-300 bg-gray-50 p-2 text-sm text-gray-600">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Cargando...
-            </div>
-          ) : (
-            <Select
-              value={attendanceState.selectedSectionId?.toString() || ''}
-              onValueChange={handleSectionChange}
-              disabled={!selectedGradeId}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecciona una sección" />
-              </SelectTrigger>
-              <SelectContent>
-                {sectionsData.sections && sectionsData.sections.length > 0 ? (
-                  sectionsData.sections.map((section) => (
-                    <SelectItem key={section.id} value={section.id.toString()}>
-                      Sección {section.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <div className="px-2 py-1.5 text-sm text-gray-500">
-                    {selectedGradeId ? 'No hay secciones disponibles' : 'Selecciona un grado primero'}
-                  </div>
-                )}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
+        {/* Grado - selectable if > 1 */}
+        {attendanceState.selectedBimesterId && gradesData.grades && gradesData.grades.length > 1 && (
+          <FilterSection
+            title="Grado"
+            description={gradesData.grades && gradesData.grades.length === 1 ? "Seleccionado automáticamente" : "Elige el grado"}
+            loading={gradesData.loading}
+            items={gradesData.grades}
+            selectedId={selectedGradeId}
+            onSelect={handleGradeChange}
+            isAutoSelected={false}
+            getItemLabel={(item: any) => item.name}
+          />
+        )}
+
+        {/* Sección - selectable if > 1 */}
+        {selectedGradeId && sectionsData.sections && sectionsData.sections.length > 1 && (
+          <FilterSection
+            title="Sección"
+            description={sectionsData.sections && sectionsData.sections.length === 1 ? "Seleccionado automáticamente" : "Elige la sección"}
+            loading={sectionsData.loading}
+            items={sectionsData.sections}
+            selectedId={attendanceState.selectedSectionId}
+            onSelect={handleSectionChange}
+            isAutoSelected={false}
+            getItemLabel={(item: any) => `Sección ${item.name}`}
+          />
+        )}
       </div>
 
       {/* Summary */}
