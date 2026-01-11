@@ -6,6 +6,7 @@ export interface LoginCredentials {
   dpi?: string;
   email?: string;
   password: string;
+  recaptchaToken?: string;
 }
 
 export const signin = async (credentials: LoginCredentials) => {

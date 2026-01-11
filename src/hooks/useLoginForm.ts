@@ -7,7 +7,6 @@ import { signin } from "@/services/authService";
 import { z } from "zod";
 import { useAuth } from "@/context/AuthContext";
 import { useRecaptcha } from "@/hooks/useRecaptcha";
-import { verifyRecaptchaToken, isValidRecaptchaScore } from "@/services/recaptcha.service";
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
@@ -29,84 +28,44 @@ export const useLoginForm = () => {
     try {
       setErrorMessage(""); // Limpiar errores previos
       
-      // 1. PRIMERO validar credenciales en el backend (sin reCAPTCHA)
-      try {
-        console.log('Validating credentials...');
-        const user = await signin(dataForm);
-        
-        // Las credenciales son válidas, ahora verificar reCAPTCHA
-        console.log('Credentials valid, proceeding with reCAPTCHA verification...');
-        setIsVerifyingRecaptcha(true);
+      setIsVerifyingRecaptcha(true);
 
-        // 2. Ejecutar reCAPTCHA
-        let recaptchaToken: string | null = null;
-        try {
-          recaptchaToken = await executeRecaptcha('login');
-          
-          if (!recaptchaToken || recaptchaToken.trim() === '') {
-            console.error('reCAPTCHA returned empty token');
-            setIsVerifyingRecaptcha(false);
-            setErrorMessage('Error al verificar seguridad. Por favor, intenta de nuevo.');
-            return;
-          }
-          console.log('reCAPTCHA token obtained successfully');
-        } catch (recaptchaError: any) {
-          console.error('reCAPTCHA execution error:', recaptchaError);
+      // 1. Ejecutar reCAPTCHA para obtener el token
+      let recaptchaToken: string | null = null;
+      try {
+        recaptchaToken = await executeRecaptcha('login');
+        
+        if (!recaptchaToken || recaptchaToken.trim() === '') {
+          console.error('reCAPTCHA returned empty token');
           setIsVerifyingRecaptcha(false);
           setErrorMessage('Error al verificar seguridad. Por favor, intenta de nuevo.');
           return;
         }
+        console.log('reCAPTCHA token obtained successfully');
+      } catch (recaptchaError: any) {
+        console.error('reCAPTCHA execution error:', recaptchaError);
+        setIsVerifyingRecaptcha(false);
+        setErrorMessage('Error al verificar seguridad. Por favor, intenta de nuevo.');
+        return;
+      }
 
-        // 3. Verificar el token en el servidor
-        let recaptchaResult: any;
-        try {
-          recaptchaResult = await verifyRecaptchaToken(recaptchaToken);
-          console.log('reCAPTCHA response:', recaptchaResult);
-        } catch (verifyError: any) {
-          console.error('reCAPTCHA verification error:', verifyError);
-          setIsVerifyingRecaptcha(false);
-          setErrorMessage('No se pudo verificar reCAPTCHA. Por favor, intenta de nuevo.');
-          return;
-        }
-
-        // 4. Validar resultado y score
-        if (!recaptchaResult.success) {
-          console.error('reCAPTCHA verification failed:', {
-            success: recaptchaResult.success,
-            error_codes: recaptchaResult.error_codes,
-          });
-          setIsVerifyingRecaptcha(false);
-          setErrorMessage('Verificación de seguridad fallida. Por favor, intenta de nuevo.');
-          return;
-        }
-
-        const isValidScore = isValidRecaptchaScore(recaptchaResult.score);
-        console.log('reCAPTCHA score validation:', {
-          score: recaptchaResult.score,
-          isValid: isValidScore,
-        });
-
-        if (!isValidScore) {
-          console.warn('reCAPTCHA score too low:', {
-            score: recaptchaResult.score,
-            threshold: 0.5,
-          });
-          setIsVerifyingRecaptcha(false);
-          setErrorMessage('Parece que hay actividad sospechosa. Por favor, intenta de nuevo más tarde.');
-          return;
-        }
-
-        console.log('reCAPTCHA verification passed:', {
-          score: recaptchaResult.score,
-          action: recaptchaResult.action,
-        });
-
+      // 2. Enviar credenciales + token reCAPTCHA al backend
+      try {
+        const credentialsWithRecaptcha = {
+          ...dataForm,
+          recaptchaToken, // El token se envía aquí
+        };
+        
+        console.log('Sending credentials with reCAPTCHA token to backend...');
+        const user = await signin(credentialsWithRecaptcha);
+        
+        console.log('Sign in successful');
         setIsVerifyingRecaptcha(false);
 
-        // 5. Si reCAPTCHA pasó, hacer login
+        // 3. Si el backend validó exitosamente, hacer login
         login(user);
       } catch (signInError: any) {
-        // Error de credenciales - mostrar error sin pasar por reCAPTCHA
+        // Error del servidor - puede ser credenciales inválidas o reCAPTCHA falló
         console.error('Sign in error:', signInError);
         setIsVerifyingRecaptcha(false);
         
@@ -115,7 +74,7 @@ export const useLoginForm = () => {
         } else if (signInError.message) {
           setErrorMessage(signInError.message);
         } else {
-          setErrorMessage("Credenciales inválidas");
+          setErrorMessage("Error al iniciar sesión. Por favor, intenta de nuevo.");
         }
       }
     } catch (error: any) {
