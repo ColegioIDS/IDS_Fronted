@@ -23,6 +23,7 @@ import {
   X,
   Download,
   Eye,
+  Edit,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -52,12 +53,16 @@ interface AssignmentDetailsDialogProps {
   assignment: Assignment | null;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onEdit?: (assignment: Assignment) => void;
+  canUpdate?: boolean;
 }
 
 export const AssignmentDetailsDialog: FC<AssignmentDetailsDialogProps> = ({
   assignment,
   isOpen,
   onOpenChange,
+  onEdit,
+  canUpdate = false,
 }) => {
   if (!assignment) return null;
 
@@ -235,6 +240,21 @@ export const AssignmentDetailsDialog: FC<AssignmentDetailsDialogProps> = ({
             <X className="w-4 h-4 mr-2" />
             Cerrar
           </Button>
+          {canUpdate && (
+            <Button
+              variant="default"
+              className="bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600"
+              onClick={() => {
+                if (onEdit && assignment) {
+                  onEdit(assignment);
+                  onOpenChange(false);
+                }
+              }}
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              Editar
+            </Button>
+          )}
           <Button
             variant="default"
             className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"

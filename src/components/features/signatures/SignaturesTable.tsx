@@ -8,22 +8,24 @@ import Button from '@/components/ui/button/Button';
 import { Edit2, Trash2, Star, ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react';
 
 interface SignaturesTableProps {
-  signatures: Signature[];
-  loading: boolean;
-  onEdit: (signature: Signature) => void;
-  onDelete: (id: number) => void;
-  onSetDefault: (id: number) => void;
+  filters?: {
+    search: string;
+    type: string;
+    status: string;
+  };
+  onView?: (signature: any) => void;
+  onEdit?: (signature: any) => void;
+  onDelete?: (signature: any) => void;
+  onSetDefault?: (signature: any) => void;
+  canView?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canSetDefault?: boolean;
+  signatures?: Signature[];
+  loading?: boolean;
 }
 
 const ITEMS_PER_PAGE = 10;
-
-interface SignaturesTableProps {
-  signatures: Signature[];
-  loading: boolean;
-  onEdit: (signature: Signature) => void;
-  onDelete: (id: number) => void;
-  onSetDefault: (id: number) => void;
-}
 
 const getTypeLabel = (type: SignatureType) => {
   const labels: Record<SignatureType, string> = {
@@ -48,11 +50,17 @@ const getTypeColor = (type: SignatureType) => {
 };
 
 export default function SignaturesTable({
-  signatures,
-  loading,
+  filters,
+  onView,
   onEdit,
   onDelete,
   onSetDefault,
+  canView = false,
+  canEdit = false,
+  canDelete = false,
+  canSetDefault = false,
+  signatures = [],
+  loading = false,
 }: SignaturesTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
@@ -157,7 +165,7 @@ export default function SignaturesTable({
                   )}
                   {!signature.isDefault && (
                     <button
-                      onClick={() => onSetDefault(signature.id)}
+                      onClick={() => onSetDefault?.(signature)}
                       className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 font-semibold transition-colors"
                     >
                       <Star className="h-3 w-3" />
@@ -168,7 +176,7 @@ export default function SignaturesTable({
                 <td className="px-6 py-4">
                   <div className="flex gap-2">
                     <button
-                      onClick={() => onEdit(signature)}
+                      onClick={() => onEdit?.(signature)}
                       className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
                       title="Editar"
                     >
@@ -178,7 +186,7 @@ export default function SignaturesTable({
                     <button
                       onClick={() => {
                         if (confirm('¿Estás seguro de que deseas eliminar esta firma?')) {
-                          onDelete(signature.id);
+                          onDelete?.(signature);
                         }
                       }}
                       className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition-colors"

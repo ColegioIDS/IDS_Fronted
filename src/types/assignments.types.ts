@@ -244,6 +244,7 @@ export interface CascadeFormState {
   isLoadingBimesters: boolean;
   error?: string;
   cycleName?: string;
+  cascadeDataLoaded: boolean;
 }
 
 export interface CascadeFormActions {

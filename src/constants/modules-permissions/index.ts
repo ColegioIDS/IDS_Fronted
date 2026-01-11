@@ -34,6 +34,8 @@ export { ATTENDANCE_PERMISSIONS } from './attendance/attendance.permissions';
 export { ATTENDANCE_CONFIG_PERMISSIONS } from './attendance-config/attendance-config.permissions';
 export { ATTENDANCE_STATUS_PERMISSIONS } from './attendance-status/attendance-status.permissions';
 export { ATTENDANCE_PERMISSIONS_PERMISSIONS } from './attendance-permissions/attendance-permissions.permissions';
+export { SIGNATURES_PERMISSIONS } from './signatures/signatures.permissions';
+export { ASSIGNMENTS_PERMISSIONS } from './assignments/assignments.permissions';
 
 /**
  * Objeto centralizado con todos los permisos por módulo
@@ -65,4 +67,6 @@ export const MODULES_PERMISSIONS = {
   ATTENDANCE_CONFIG: require('./attendance-config/attendance-config.permissions').ATTENDANCE_CONFIG_PERMISSIONS,
   ATTENDANCE_STATUS: require('./attendance-status/attendance-status.permissions').ATTENDANCE_STATUS_PERMISSIONS,
   ATTENDANCE_PERMISSIONS: require('./attendance-permissions/attendance-permissions.permissions').ATTENDANCE_PERMISSIONS_PERMISSIONS,
+  SIGNATURES: require('./signatures/signatures.permissions').SIGNATURES_PERMISSIONS,
+  ASSIGNMENTS: require('./assignments/assignments.permissions').ASSIGNMENTS_PERMISSIONS,
 } as const;

@@ -53,6 +53,7 @@ const INITIAL_STATE: CascadeFormState = {
   isLoadingCourses: false,
   isLoadingBimesters: false,
   error: undefined,
+  cascadeDataLoaded: false,
 };
 
 // ==================== HOOK ====================
@@ -101,13 +102,20 @@ export function useAssignmentsCascade() {
       const data = await assignmentsCascadeService.getCascadeData(true);
 
       if (data) {
+        // Auto-seleccionar si hay solo 1 grado
+        const gradesLength = data.grades.length;
+        const autoSelectGrade = gradesLength === 1 ? data.grades[0] : null;
+        
+        // Actualizar cascadeData y estado juntos
         setCascadeData(data);
         setState(prev => ({
           ...prev,
           grades: data.grades,
+          selectedGrade: autoSelectGrade,
           selectedBimester: data.activeBimester,
           cycleName: data.cycle?.name,
           isLoadingGrades: false,
+          cascadeDataLoaded: true, // Flag para saber que los datos ya están listos
         }));
       } else {
         setState(prev => ({
@@ -127,8 +135,8 @@ export function useAssignmentsCascade() {
 
   // ==================== ACTUALIZAR SECCIONES ====================
 
-  const updateSections = useCallback(() => {
-    if (!state.selectedGrade || !cascadeData) {
+  const updateSections = useCallback((selectedGrade: GradeOption | null, cascadeDataParam: CascadeData | null) => {
+    if (!selectedGrade || !cascadeDataParam) {
       setState(prev => ({
         ...prev,
         sections: [],
@@ -139,27 +147,30 @@ export function useAssignmentsCascade() {
       return;
     }
 
-    const sectionsData = cascadeData.gradesSections[state.selectedGrade.id] || [];
+    const sectionsData = cascadeDataParam.gradesSections[selectedGrade.id] || [];
     const sections: SectionOption[] = sectionsData.map(s => ({
       id: s.id,
       name: s.name,
       gradeId: s.gradeId,
     }));
 
+    // Auto-seleccionar si hay solo 1 sección
+    const autoSelectSection = sections.length === 1 ? sections[0] : null;
+
     setState(prev => ({
       ...prev,
       sections,
-      selectedSection: null,
+      selectedSection: autoSelectSection,
       courses: [],
       selectedCourse: null,
       isLoadingSections: false,
     }));
-  }, [state.selectedGrade, cascadeData]);
+  }, []);
 
   // ==================== ACTUALIZAR CURSOS ====================
 
-  const updateCourses = useCallback(() => {
-    if (!state.selectedSection || !cascadeData) {
+  const updateCourses = useCallback((selectedGrade: GradeOption | null, selectedSection: SectionOption | null, cascadeDataParam: CascadeData | null) => {
+    if (!selectedSection || !cascadeDataParam) {
       setState(prev => ({
         ...prev,
         courses: [],
@@ -168,8 +179,8 @@ export function useAssignmentsCascade() {
       return;
     }
 
-    const sectionData = cascadeData.gradesSections[state.selectedGrade?.id || 0]?.find(
-      s => s.id === state.selectedSection?.id
+    const sectionData = cascadeDataParam.gradesSections[selectedGrade?.id || 0]?.find(
+      s => s.id === selectedSection?.id
     );
 
     const courses: CourseOption[] = sectionData?.courseAssignments?.map(ca => ({
@@ -181,13 +192,16 @@ export function useAssignmentsCascade() {
       isActive: ca.course.isActive,
     })) || [];
 
+    // Auto-seleccionar si hay solo 1 curso
+    const autoSelectCourse = courses.length === 1 ? courses[0] : null;
+
     setState(prev => ({
       ...prev,
       courses,
-      selectedCourse: null,
+      selectedCourse: autoSelectCourse,
       isLoadingCourses: false,
     }));
-  }, [state.selectedGrade?.id, state.selectedSection, cascadeData]);
+  }, []);
 
   // ==================== SETTERS ====================
 
@@ -234,6 +248,7 @@ export function useAssignmentsCascade() {
       ...INITIAL_STATE,
       grades: prev.grades,
       selectedBimester: cascadeData?.activeBimester || null,
+      cascadeDataLoaded: prev.cascadeDataLoaded,
     }));
   }, [cascadeData?.activeBimester]);
 
@@ -245,17 +260,21 @@ export function useAssignmentsCascade() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Array vacío = ejecutar solo una vez al montar
 
-  // Actualizar secciones cuando cambia grado
+  // Actualizar secciones cuando cambia grado Y cascadeData está listo
   useEffect(() => {
-    updateSections();
+    if (state.cascadeDataLoaded && state.selectedGrade && cascadeData) {
+      updateSections(state.selectedGrade, cascadeData);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.selectedGrade]); // Solo cuando cambia el grado
+  }, [state.selectedGrade, state.cascadeDataLoaded, cascadeData]);
 
-  // Actualizar cursos cuando cambia sección
+  // Actualizar cursos cuando cambia sección Y cascadeData está listo
   useEffect(() => {
-    updateCourses();
+    if (state.cascadeDataLoaded && state.selectedSection && cascadeData) {
+      updateCourses(state.selectedGrade, state.selectedSection, cascadeData);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.selectedSection]); // Solo cuando cambia la sección
+  }, [state.selectedSection, state.cascadeDataLoaded, cascadeData]);
 
   // ==================== ACCIONES ====================
 

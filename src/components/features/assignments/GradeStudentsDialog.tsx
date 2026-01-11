@@ -35,6 +35,8 @@ import {
 import { toast } from 'sonner';
 import { assignmentsService } from '@/services/assignments.service';
 import { Badge } from '@/components/ui/badge';
+import { usePermissions } from '@/hooks/usePermissions';
+import { SUBMISSIONS_PERMISSIONS } from '@/constants/modules-permissions/assignments';
 
 interface Student {
   enrollmentId: number;
@@ -67,6 +69,9 @@ export const GradeStudentsDialog: FC<GradeStudentsDialogProps> = ({
   maxScore,
   sectionId,
 }) => {
+  const { can } = usePermissions();
+  const canGrade = can.do(SUBMISSIONS_PERMISSIONS.GRADE.module, SUBMISSIONS_PERMISSIONS.GRADE.action);
+  
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -517,23 +522,25 @@ export const GradeStudentsDialog: FC<GradeStudentsDialogProps> = ({
               </div>
             )}
           </div>
-          <Button
-            onClick={handleSaveGrades}
-            disabled={saving || Object.keys(grades).length === 0}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold shadow-lg disabled:opacity-50"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Guardando...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Guardar Calificaciones
-              </>
-            )}
-          </Button>
+          {canGrade && (
+            <Button
+              onClick={handleSaveGrades}
+              disabled={saving || Object.keys(grades).length === 0}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold shadow-lg disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Guardar Calificaciones
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

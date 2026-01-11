@@ -18,12 +18,15 @@ import {
   Eye,
   Clock,
   PencilIcon,
+  Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { GradeSubmissionModal } from './GradeSubmissionModal';
+import { usePermissions } from '@/hooks/usePermissions';
+import { SUBMISSIONS_PERMISSIONS, ASSIGNMENTS_PERMISSIONS } from '@/constants/modules-permissions/assignments';
 
 interface Submission {
   id: number;
@@ -69,6 +72,11 @@ export const SubmissionsTable: FC<SubmissionsTableProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+
+  // Permisos
+  const { can } = usePermissions();
+  const canRead = can.do(SUBMISSIONS_PERMISSIONS.READ.module, SUBMISSIONS_PERMISSIONS.READ.action);
+  const canDelete = can.do(ASSIGNMENTS_PERMISSIONS.DELETE.module, ASSIGNMENTS_PERMISSIONS.DELETE.action);
 
   // Helper para obtener el nombre del estudiante con fallbacks
   const getStudentName = (submission: Submission): string => {
@@ -291,18 +299,34 @@ export const SubmissionsTable: FC<SubmissionsTableProps> = ({
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-8 h-8 p-0 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-md transition-colors"
-                    title="Calificar"
-                    onClick={() => {
-                      setSelectedSubmission(submission);
-                      setIsGradeModalOpen(true);
-                    }}
-                  >
-                    <PencilIcon className="w-4 h-4" />
-                  </Button>
+                  {canRead && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-8 h-8 p-0 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-md transition-colors"
+                      title="Calificar"
+                      onClick={() => {
+                        setSelectedSubmission(submission);
+                        setIsGradeModalOpen(true);
+                      }}
+                    >
+                      <PencilIcon className="w-4 h-4" />
+                    </Button>
+                  )}
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-8 h-8 p-0 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-md transition-colors"
+                      title="Eliminar"
+                      onClick={() => {
+                        // TODO: Implementar eliminación de entrega
+                        toast.error('Eliminación de entregas aún no implementada');
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

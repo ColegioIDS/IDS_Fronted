@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { AssignmentsCascadeForm } from './AssignmentsCascadeForm';
 import { AssignmentsListTable } from './AssignmentsListTable';
 import { AssignmentsGradesTable } from './AssignmentsGradesTable';
@@ -15,10 +15,29 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAssignmentsList } from '@/hooks/useAssignmentsList';
+import { usePermissions } from '@/hooks/usePermissions';
+import { ASSIGNMENTS_PERMISSIONS, SUBMISSIONS_PERMISSIONS } from '@/constants/modules-permissions/assignments';
 
 export function AssignmentsPageContent() {
   const [activeTab, setActiveTab] = useState<'tasks' | 'grades'>('tasks');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [onRefreshTable, setOnRefreshTable] = useState<(() => Promise<void>) | undefined>(undefined);
+  const { can } = usePermissions();
+  
+  const handleRefreshReady = useCallback((refetchFn: () => Promise<void>) => {
+    setOnRefreshTable(() => refetchFn);
+  }, []);
+  
+  const canCreate = can.do(
+    ASSIGNMENTS_PERMISSIONS.CREATE.module,
+    ASSIGNMENTS_PERMISSIONS.CREATE.action
+  );
+
+  const canReadSubmissions = can.do(
+    SUBMISSIONS_PERMISSIONS.READ.module,
+    SUBMISSIONS_PERMISSIONS.READ.action
+  );
+
   const [selectedData, setSelectedData] = useState<{
     gradeId: number;
     sectionId: number;
@@ -30,7 +49,7 @@ export function AssignmentsPageContent() {
     bimesterName: string;
   } | null>(null);
 
-  const { totalScore, remainingPoints } = useAssignmentsList({
+  const { totalScore, remainingPoints, refetch } = useAssignmentsList({
     courseId: selectedData?.courseId,
     bimesterId: selectedData?.bimesterId,
     limit: 100,
@@ -178,8 +197,8 @@ export function AssignmentsPageContent() {
 
           {/* CONTENIDO DEL TAB */}
           <div className="space-y-4">
-            {/* BOTÓN CREAR TAREA - SOLO EN TAB DE TAREAS */}
-            {activeTab === 'tasks' && (
+            {/* BOTÓN CREAR TAREA - SOLO EN TAB DE TAREAS Y SI TIENE PERMISOS */}
+            {activeTab === 'tasks' && canCreate && (
               <div className="flex justify-end">
                 <Button
                   onClick={() => setIsCreateDialogOpen(true)}
@@ -197,16 +216,25 @@ export function AssignmentsPageContent() {
                 courseId={selectedData.courseId}
                 bimesterId={selectedData.bimesterId}
                 sectionId={selectedData.sectionId}
+                onRefreshReady={handleRefreshReady}
               />
             )}
 
             {/* TABLA DE CALIFICACIONES */}
-            {activeTab === 'grades' && (
+            {activeTab === 'grades' && canReadSubmissions && (
               <AssignmentsGradesTable
                 courseId={selectedData.courseId}
                 bimesterId={selectedData.bimesterId}
                 sectionId={selectedData.sectionId}
               />
+            )}
+
+            {/* MENSAJE SIN PERMISOS */}
+            {activeTab === 'grades' && !canReadSubmissions && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/40 rounded-lg p-6 text-center">
+                <p className="text-yellow-800 dark:text-yellow-200 font-medium">No tienes permisos para ver las calificaciones</p>
+                <p className="text-yellow-700 dark:text-yellow-300 text-sm mt-1">Contacta con tu administrador para solicitar acceso</p>
+              </div>
             )}
           </div>
         </div>
@@ -230,6 +258,7 @@ export function AssignmentsPageContent() {
               onBack={() => setIsCreateDialogOpen(false)}
               totalExistingScore={totalScore}
               remainingPoints={remainingPoints}
+              onCreateSuccess={onRefreshTable}
             />
           )}
         </DialogContent>

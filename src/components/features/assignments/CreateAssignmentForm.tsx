@@ -44,6 +44,7 @@ interface CreateAssignmentFormProps {
   onBack?: () => void;
   totalExistingScore?: number;
   remainingPoints?: number;
+  onCreateSuccess?: (() => Promise<void>) | null;
 }
 
 export const CreateAssignmentForm: FC<CreateAssignmentFormProps> = ({
@@ -52,6 +53,7 @@ export const CreateAssignmentForm: FC<CreateAssignmentFormProps> = ({
   onBack,
   totalExistingScore = 0,
   remainingPoints = 20,
+  onCreateSuccess,
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +110,7 @@ export const CreateAssignmentForm: FC<CreateAssignmentFormProps> = ({
         title: formData.title,
         description: formData.description,
         courseId: cascadeData.courseId,
+        sectionId: cascadeData.sectionId,
         bimesterId: cascadeData.bimesterId,
         dueDate: formData.dueDate,
         maxScore: formData.maxScore,
@@ -117,6 +120,15 @@ export const CreateAssignmentForm: FC<CreateAssignmentFormProps> = ({
 
       toast.success('Tarea creada exitosamente');
       setSuccess(true);
+
+      // Refrescar la lista de tareas
+      if (onCreateSuccess && typeof onCreateSuccess === 'function') {
+        try {
+          await onCreateSuccess();
+        } catch (error) {
+          console.error('Error al refrescar la tabla:', error);
+        }
+      }
 
       // Resetear form
       setFormData({
@@ -243,7 +255,12 @@ export const CreateAssignmentForm: FC<CreateAssignmentFormProps> = ({
                 mode="single"
                 selected={formData.dueDate}
                 onSelect={(date) => date && handleChange('dueDate', date)}
-                disabled={loading}
+                disabled={(date) => {
+                  // Bloquear fechas anteriores a hoy
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return date < today || loading;
+                }}
                 initialFocus
                 locale={es}
               />

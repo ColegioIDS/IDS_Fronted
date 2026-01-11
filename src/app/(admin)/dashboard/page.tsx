@@ -3,13 +3,33 @@
 import type { Metadata } from "next";
 import React, { useEffect, useState } from "react";
 import { Sparkles, Zap, TrendingUp, BarChart3 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { NoPermissionsAssigned } from "@/components/shared/permissions/NoPermissionsAssigned";
 
 export default function Dashboard() {
   const [isVisible, setIsVisible] = useState(false);
+  const { permissions, isLoading } = useAuth();
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  // Si está cargando, mostrar loading
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no tiene permisos, mostrar página especial
+  if (!permissions || permissions.length === 0) {
+    return <NoPermissionsAssigned />;
+  }
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-white dark:bg-slate-900 p-6">

@@ -14,6 +14,8 @@ import { ATTENDANCE_PERMISSIONS } from '@/constants/modules-permissions/attendan
 import { ATTENDANCE_CONFIG_PERMISSIONS } from '@/constants/modules-permissions/attendance-config';
 import { ATTENDANCE_STATUS_PERMISSIONS } from '@/constants/modules-permissions/attendance-status';
 import { ATTENDANCE_PERMISSIONS_PERMISSIONS } from '@/constants/modules-permissions/attendance-permissions';
+import { SIGNATURES_PERMISSIONS } from '@/constants/modules-permissions/signatures';
+import { ASSIGNMENTS_PERMISSIONS } from '@/constants/modules-permissions/assignments';
 import { Palette } from 'lucide-react';
 
 import {
@@ -286,8 +288,17 @@ const navItems: NavItem[] = [
   {
     icon: <FileSignature className="w-5 h-5" />,
     name: "Firmas",
-    path: "/signatures",
     color: "text-violet-300 dark:text-violet-300",
+    requiredAnyPermissions: [
+      SIGNATURES_PERMISSIONS.READ,
+    ],
+    subItems: [
+      {
+        name: "Gestionar Firmas",
+        path: "/signatures",
+        requiredPermission: SIGNATURES_PERMISSIONS.READ
+      },
+    ]
   },
   {
     icon: <BookOpenCheck className="w-5 h-5" />,
@@ -312,6 +323,21 @@ const navItems: NavItem[] = [
         name: "Evaluaciones",
         path: "/erica-evaluations",
       }
+    ]
+  },
+  {
+    icon: <ClipboardList className="w-5 h-5" />,
+    name: "Tareas",
+    color: "text-rose-300 dark:text-rose-300",
+    requiredAnyPermissions: [
+      ASSIGNMENTS_PERMISSIONS.READ,
+    ],
+    subItems: [
+      {
+        name: "Gestionar Tareas",
+        path: "/assignments",
+        requiredPermission: ASSIGNMENTS_PERMISSIONS.READ
+      },
     ]
   },
   {
