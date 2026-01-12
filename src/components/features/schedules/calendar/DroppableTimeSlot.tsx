@@ -15,8 +15,9 @@ interface DroppableTimeSlotProps {
   schedules: (Schedule | TempSchedule)[];
   onDrop: (item: DragItem, day: DayOfWeek, timeSlot: TimeSlot) => void;
   onScheduleEdit: (schedule: Schedule | TempSchedule) => void;
-  onScheduleDelete: (id: string | number) => void;
+  onScheduleDelete: (schedule: Schedule | TempSchedule) => void;
   isBreakTime?: boolean;
+  markedForDeletionIds?: Set<string | number>;
 }
 
 export function DroppableTimeSlot({
@@ -26,7 +27,8 @@ export function DroppableTimeSlot({
   onDrop,
   onScheduleEdit,
   onScheduleDelete,
-  isBreakTime = false
+  isBreakTime = false,
+  markedForDeletionIds = new Set()
 }: DroppableTimeSlotProps) {
   const [isHovered, setIsHovered] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
@@ -54,9 +56,9 @@ export function DroppableTimeSlot({
     }
   }, [day, timeSlot, isHovered, isRecreation, onDrop, getDragState]);
 
-  const handleScheduleDelete = useCallback((scheduleId: string | number) => {
-    onScheduleDelete(scheduleId);
-  }, [onScheduleDelete, day, timeSlot.label]);
+  const handleScheduleDelete = useCallback((schedule: Schedule | TempSchedule) => {
+    onScheduleDelete(schedule);
+  }, [onScheduleDelete]);
 
   const handleScheduleEdit = useCallback((schedule: Schedule | TempSchedule) => {
     onScheduleEdit(schedule);
@@ -114,6 +116,7 @@ export function DroppableTimeSlot({
               onEdit={handleScheduleEdit}
               onDelete={handleScheduleDelete}
               isTemp={('isPending' in schedule) ? (schedule as TempSchedule).isPending : false}
+              isMarkedForDeletion={markedForDeletionIds.has(schedule.id)}
             />
           </div>
         ))}

@@ -25,8 +25,10 @@ interface ScheduleGridProps {
   onDrop?: (item: DragItem, day: DayOfWeek, timeSlot: TimeSlot) => void;
   onScheduleUpdate?: (updatedTempSchedules: TempSchedule[], changes: ScheduleChange[]) => void;
   onScheduleClick?: (schedule: Schedule | TempSchedule) => void;
+  onScheduleDelete?: (schedule: Schedule | TempSchedule) => void;
   canEdit?: boolean;
   canDelete?: boolean;
+  markedForDeletionIds?: Set<string | number>;
 }
 
 export function ScheduleGrid({
@@ -38,8 +40,10 @@ export function ScheduleGrid({
   onDrop,
   onScheduleUpdate,
   onScheduleClick,
+  onScheduleDelete,
   canEdit = true,
   canDelete = true,
+  markedForDeletionIds = new Set(),
 }: ScheduleGridProps) {
   const currentTimeSlots = timeSlots || DEFAULT_TIME_SLOTS;
   
@@ -139,38 +143,24 @@ export function ScheduleGrid({
     }
   };
 
-  const handleScheduleDelete = (id: string | number) => {
+  const handleScheduleDelete = (schedule: Schedule | TempSchedule) => {
     if (!canDelete) return;
     
-    if (typeof id === 'string') {
-      // It's a temp schedule
-      const updatedTemp = tempSchedules.filter(s => s.id !== id);
-      onScheduleUpdate?.(updatedTemp, []);
-    } else {
-      // It's a saved schedule - add to pending changes
-      const schedule = schedules.find(s => s.id === id);
-      if (schedule) {
-        const change: ScheduleChange = {
-          action: 'delete',
-          schedule: schedule,
-          originalSchedule: schedule,
-        };
-        onScheduleUpdate?.(tempSchedules, [change]);
-      }
-    }
+    // Llama el callback con el schedule completo
+    onScheduleDelete?.(schedule);
   };
 
  
 
   return (
-    <Card className="backdrop-blur-sm border-0 shadow-xl overflow-hidden bg-white/95 dark:bg-gray-800/95">
+    <Card className="backdrop-blur-sm border-0 shadow-xl bg-white/95 dark:bg-gray-800/95">
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <div className="min-w-[900px]" style={{ minWidth: '100%' }}>
             {/* Header */}
-            <div className="grid border-b-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-750 border-blue-200 dark:border-gray-700" 
+            <div className="grid border-b-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-750 border-blue-200 dark:border-gray-700 sticky top-0 z-20" 
                  style={{ gridTemplateColumns: `120px repeat(${currentWorkingDays.length}, minmax(0, 1fr))` }}>
-              <div className="p-4 font-semibold border-r flex items-center justify-center text-blue-900 dark:text-blue-300 border-blue-200 dark:border-gray-700 bg-blue-100/40 dark:bg-blue-900/20">
+              <div className="p-4 font-semibold border-r flex items-center justify-center text-blue-900 dark:text-blue-300 border-blue-200 dark:border-gray-700 bg-blue-100/40 dark:bg-blue-900/20 sticky left-0 z-30">
                 <span className="text-xs uppercase tracking-widest font-bold text-blue-900 dark:text-blue-300">⏰ Horario</span>
               </div>
               {currentWorkingDays.map((day, index) => (
@@ -225,7 +215,7 @@ export function ScheduleGrid({
                   {/* Time column */}
                   <div className={`
                     p-3 text-sm font-medium border-r flex items-center justify-center
-                    border-gray-200 dark:border-gray-700
+                    border-gray-200 dark:border-gray-700 sticky left-0 z-10
                     ${isBreakTime 
                       ? 'bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 text-gray-600 dark:text-gray-400' 
                       : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800'
@@ -269,6 +259,7 @@ export function ScheduleGrid({
                         onScheduleEdit={handleScheduleEdit}
                         onScheduleDelete={handleScheduleDelete}
                         isBreakTime={isBreakTime}
+                        markedForDeletionIds={markedForDeletionIds}
                       />
                     );
                   })}

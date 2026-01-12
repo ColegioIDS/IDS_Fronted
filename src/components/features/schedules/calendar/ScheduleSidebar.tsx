@@ -116,7 +116,12 @@ export function ScheduleSidebar({
           </CardTitle>
         </CardHeader>
         <CardContent className="p-3">
-          <ScrollArea className="h-[300px] sm:h-[400px] lg:h-[500px] pr-3">
+          <div className="space-y-2">
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 px-1">
+              💡 Arrastra los cursos a las celdas del horario
+            </p>
+          </div>
+          <ScrollArea className="h-[300px] pr-3 mt-2">
             <div className="space-y-2">
               {courseAssignments?.map((assignment) => (
                 <DraggableCourseAssignment

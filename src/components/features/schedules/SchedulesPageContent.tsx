@@ -20,6 +20,7 @@ import { ScheduleSidebar } from './calendar/ScheduleSidebar';
 import { ScheduleGrid } from './calendar/ScheduleGrid';
 import { ScheduleConfigModal } from './calendar/ScheduleConfigModal';
 import { ConfigurationChangeModal } from './modals/ConfigurationChangeModal';
+import { DeleteScheduleDialog } from './modals/DeleteScheduleDialog';
 
 import type { ScheduleChange, TempSchedule, TimeSlot, ScheduleConfig, CourseAssignment, DayOfWeek, DragItem } from '@/types/schedules.types';
 import { DEFAULT_TIME_SLOTS, ScheduleTimeGenerator } from '@/types/schedules.types';
@@ -78,6 +79,11 @@ export default function SchedulesPageContent({
   const [operationErrors, setOperationErrors] = useState<Array<{ itemId: string | number; error: string }>>([]);
   const [showConfigChangeModal, setShowConfigChangeModal] = useState(false);
   const [validationResult, setValidationResult] = useState<any>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    schedule: TempSchedule | any;
+    isOpen: boolean;
+  }>({ schedule: null, isOpen: false });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // New unified hook
   const {
@@ -682,6 +688,76 @@ export default function SchedulesPageContent({
     setValidationResult(null);
   }, []);
 
+  // Delete Dialog Handlers
+  const handleOpenDeleteDialog = useCallback((schedule: TempSchedule | any) => {
+    setDeleteDialog({ schedule, isOpen: true });
+  }, []);
+
+  const handleDeleteNow = useCallback(async () => {
+    if (!deleteDialog.schedule) return;
+    
+    setIsDeleting(true);
+    try {
+      const schedule = deleteDialog.schedule;
+      const isTemp = 'isPending' in schedule;
+
+      if (isTemp) {
+        // Para schedules temporales, remover del estado local y de pendingChanges
+        setTempSchedules(prev => prev.filter(s => s.id !== schedule.id));
+        
+        // También remover cualquier cambio pendiente relacionado a este schedule
+        setPendingChanges(prev => prev.filter(change => change.schedule.id !== schedule.id));
+        
+        toast.success('✅ Horario temporal eliminado');
+      } else {
+        // Para schedules guardados, eliminar en el servidor
+        const success = await deleteScheduleItem(schedule.id);
+        if (success) {
+          toast.success('✅ Horario eliminado correctamente');
+        } else {
+          toast.error('❌ Error al eliminar el horario');
+        }
+      }
+
+      setDeleteDialog({ schedule: null, isOpen: false });
+    } catch (error) {
+      toast.error('❌ Error al eliminar el horario');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [deleteDialog.schedule, deleteScheduleItem]);
+
+  const handleMarkForDeletion = useCallback(() => {
+    if (!deleteDialog.schedule) return;
+
+    const schedule = deleteDialog.schedule;
+    const isTemp = 'isPending' in schedule;
+
+    // Si es un schedule temporal (nunca guardado), no agregar 'delete' a pendingChanges
+    // Solo remover de tempSchedules
+    if (isTemp) {
+      setTempSchedules(prev => prev.filter(s => s.id !== schedule.id));
+      // También remover el 'create' original de pendingChanges
+      setPendingChanges(prev => prev.filter(change => change.schedule.id !== schedule.id));
+      toast.info('✅ Horario temporal descartado');
+    } else {
+      // Si es un schedule guardado, agregar a cambios pendientes para eliminar
+      const deleteChange: ScheduleChange = {
+        action: 'delete',
+        schedule: schedule
+      };
+
+      setPendingChanges(prev => [...prev, deleteChange]);
+      toast.info('⏳ Horario marcado para eliminar. Haz click en "Guardar Todos" para confirmar');
+    }
+
+    setDeleteDialog({ schedule: null, isOpen: false });
+  }, [deleteDialog.schedule]);
+
+  const handleCancelDelete = useCallback(() => {
+    setDeleteDialog({ schedule: null, isOpen: false });
+  }, []);
+
   const hasUnsavedChanges = pendingChanges.length > 0;
 
   // Compute UI stats
@@ -690,6 +766,20 @@ export default function SchedulesPageContent({
     totalSections: sections.length,
     totalAssignments: courseAssignments.length,
   };
+
+  // Create Set of IDs marked for deletion
+  const markedForDeletionIds = useMemo(() => {
+    const ids = new Set<string | number>();
+    pendingChanges.forEach(change => {
+      if (change.action === 'delete') {
+        const scheduleId = change.schedule.id;
+        ids.add(scheduleId);
+        // Also add as string in case of type mismatch
+        ids.add(String(scheduleId));
+      }
+    });
+    return ids;
+  }, [pendingChanges]);
 
   // ✅ Check permissions
   if (!canReadLocal) {
@@ -984,7 +1074,7 @@ export default function SchedulesPageContent({
       </Card>
 
       {/* Schedule Calendar View */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-max lg:auto-rows-min">
+      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {/* Main Calendar Grid - Takes 2/3 on large screens */}
         <div className="col-span-1 lg:col-span-2 xl:col-span-3 space-y-4 min-w-0">
           <ScheduleHeader
@@ -1048,8 +1138,10 @@ export default function SchedulesPageContent({
                 onScheduleClick={(schedule) => {
                   // TODO: Open edit modal
                 }}
+                onScheduleDelete={handleOpenDeleteDialog}
                 canEdit={canUpdateLocal}
                 canDelete={canDeleteLocal}
+                markedForDeletionIds={markedForDeletionIds}
               />
             )
           ) : (
@@ -1067,18 +1159,31 @@ export default function SchedulesPageContent({
         {/* Sidebar with Course Assignments - 1/3 on large screens */}
         {/* Only show sidebar if section is selected AND has config */}
         {selectedSection > 0 && config && (
-          <div className="col-span-1 lg:col-span-1 min-w-0">
-            <div className="sticky top-4">
-              <ScheduleSidebar
-                courseAssignments={courseAssignments}
-                assignmentHours={assignmentHours}
-                pendingChanges={pendingChanges}
-                hasUnsavedChanges={hasUnsavedChanges}
-              />
-            </div>
+          <div className="col-span-1 lg:col-span-1 min-w-0 hidden lg:block">
+            <ScheduleSidebar
+              courseAssignments={courseAssignments}
+              assignmentHours={assignmentHours}
+              pendingChanges={pendingChanges}
+              hasUnsavedChanges={hasUnsavedChanges}
+            />
           </div>
         )}
       </div>
+
+      {/* Mobile Sidebar - shown on small screens */}
+      {selectedSection > 0 && config && (
+        <div className="lg:hidden">
+          <ScheduleSidebar
+            courseAssignments={courseAssignments}
+            assignmentHours={assignmentHours}
+            pendingChanges={pendingChanges}
+            hasUnsavedChanges={hasUnsavedChanges}
+          />
+        </div>
+      )}
+
+        </> 
+      )}
 
       {/* Loading overlay for save operations */}
       {isSaving && (
@@ -1117,8 +1222,16 @@ export default function SchedulesPageContent({
           isLoading={isSaving}
         />
       )}
-        </>
-      )}
+
+      {/* Delete Schedule Dialog */}
+      <DeleteScheduleDialog
+        isOpen={deleteDialog.isOpen}
+        schedule={deleteDialog.schedule}
+        isDeleting={isDeleting}
+        onDeleteNow={handleDeleteNow}
+        onMarkForDeletion={handleMarkForDeletion}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 }

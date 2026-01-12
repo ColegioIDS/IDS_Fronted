@@ -14,15 +14,17 @@ import { useDragManager } from "@/hooks/useDragManager";
 interface DraggableScheduleProps {
   schedule: Schedule | TempSchedule;
   onEdit: (schedule: Schedule | TempSchedule) => void;
-  onDelete: (id: string | number) => void;
+  onDelete: (schedule: Schedule | TempSchedule) => void;
   isTemp?: boolean;
+  isMarkedForDeletion?: boolean;
 }
 
 export function DraggableSchedule({
   schedule,
   onEdit,
   onDelete,
-  isTemp = false
+  isTemp = false,
+  isMarkedForDeletion = false
 }: DraggableScheduleProps) {
   const { elementRef, startDrag } = useDragManager();
   const { theme } = useTheme();
@@ -80,8 +82,8 @@ export function DraggableSchedule({
 
   const handleDelete = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    onDelete(schedule.id);
-  }, [schedule.id, onDelete]);
+    onDelete(schedule);
+  }, [schedule, onDelete]);
 
   const stop = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -102,13 +104,17 @@ export function DraggableSchedule({
         "cursor-grab active:cursor-grabbing select-none",
         "max-w-full w-full overflow-hidden backdrop-blur-sm",
         isDark ? "hover:shadow-lg shadow-black/20" : "hover:shadow-md",
-        isTemp
+        isMarkedForDeletion
           ? isDark
-            ? "border-orange-500/60 bg-gradient-to-br from-orange-900/30 to-orange-800/30 hover:from-orange-900/40 hover:to-orange-800/40"
-            : "border-orange-400/60 bg-gradient-to-br from-orange-50/80 to-orange-100/80 hover:from-orange-100 hover:to-orange-150"
-          : ""
+            ? "border-dashed border-red-500/80 bg-gradient-to-br from-red-900/40 to-red-800/40 hover:from-red-900/50 hover:to-red-800/50 opacity-70"
+            : "border-dashed border-red-400/80 bg-gradient-to-br from-red-50/90 to-red-100/90 hover:from-red-100 hover:to-red-150 opacity-70"
+          : isTemp
+            ? isDark
+              ? "border-orange-500/60 bg-gradient-to-br from-orange-900/30 to-orange-800/30 hover:from-orange-900/40 hover:to-orange-800/40"
+              : "border-orange-400/60 bg-gradient-to-br from-orange-50/80 to-orange-100/80 hover:from-orange-100 hover:to-orange-150"
+            : ""
       )}
-      style={!isTemp ? {
+      style={!isTemp && !isMarkedForDeletion ? {
         borderColor: `${courseColor}66`,
         backgroundColor: isDark 
           ? `${courseColor}12` 
@@ -127,6 +133,7 @@ export function DraggableSchedule({
           <div className="flex-1 min-w-0 overflow-hidden max-w-full">
             <span className={cn(
               "text-xs font-semibold block truncate max-w-full",
+              isMarkedForDeletion && "line-through opacity-50",
               isTemp
                 ? isDark ? "text-orange-300" : "text-orange-700"
                 : isDark ? "text-gray-100" : "text-gray-800"
@@ -135,7 +142,19 @@ export function DraggableSchedule({
             >
               {courseData?.name || "Sin curso asignado"}
             </span>
-            {isTemp && (
+            {isMarkedForDeletion && (
+              <Badge
+                className={cn(
+                  "mt-1 text-[10px] h-5 px-1.5 font-semibold border",
+                  isDark
+                    ? "bg-red-900/60 text-red-100 border-red-700"
+                    : "bg-red-100 text-red-800 border-red-300"
+                )}
+              >
+                🗑️ Para eliminar
+              </Badge>
+            )}
+            {isTemp && !isMarkedForDeletion && (
               <Badge
                 className={cn(
                   "mt-1 text-[10px] h-5 px-1.5 font-semibold border",
@@ -189,6 +208,7 @@ export function DraggableSchedule({
         {teacherData && (
           <div className={cn(
             "flex items-center gap-1.5 text-[10px] min-w-0 overflow-hidden font-medium",
+            isMarkedForDeletion && "line-through opacity-50",
             isDark ? "text-gray-300" : "text-gray-700"
           )}>
             <User className="h-3 w-3 flex-shrink-0 opacity-70" />
@@ -200,6 +220,7 @@ export function DraggableSchedule({
         {schedule.classroom && (
           <div className={cn(
             "flex items-center gap-1.5 text-[10px] min-w-0 overflow-hidden",
+            isMarkedForDeletion && "line-through opacity-50",
             isDark ? "text-gray-400" : "text-gray-600"
           )}>
             <MapPin className="h-3 w-3 flex-shrink-0 opacity-70" />
@@ -210,6 +231,7 @@ export function DraggableSchedule({
         {/* Time info */}
         <div className={cn(
           "flex items-center gap-1.5 text-[10px] min-w-0 overflow-hidden font-mono border-t pt-1.5",
+          isMarkedForDeletion && "line-through opacity-50",
           isDark ? "border-gray-700 text-gray-400" : "border-gray-200 text-gray-600"
         )}>
           <Clock className="h-3 w-3 flex-shrink-0 opacity-70" />
