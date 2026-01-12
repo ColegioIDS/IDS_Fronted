@@ -11,7 +11,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -25,7 +24,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import {
   Users,
-  Search,
   ChevronLeft,
   ChevronRight,
   Edit2,
@@ -51,6 +49,9 @@ interface StudentListProps {
   onStatsUpdate?: (students: Student[], total: number) => void;
   searchFilter?: string;
   enrollmentFilter?: 'all' | 'enrolled' | 'not-enrolled';
+  sortBy?: 'givenNames' | 'lastNames' | 'codeSIRE' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+  gradeFilter?: number | null;
   canRead?: boolean;
   canReadOne?: boolean;
   canUpdate?: boolean;
@@ -68,6 +69,9 @@ export const StudentsList: React.FC<StudentListProps> = ({
   onStatsUpdate,
   searchFilter = '',
   enrollmentFilter = 'all',
+  sortBy = 'givenNames',
+  sortOrder = 'asc',
+  gradeFilter = null,
   canRead = false,
   canReadOne = false,
   canUpdate = false,
@@ -81,9 +85,6 @@ export const StudentsList: React.FC<StudentListProps> = ({
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState(searchFilter);
-  const [sortBy, setSortBy] = useState<'givenNames' | 'lastNames' | 'codeSIRE' | 'createdAt'>('givenNames');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -103,9 +104,10 @@ export const StudentsList: React.FC<StudentListProps> = ({
       const queryParams: any = {
         page,
         limit,
-        search: search || searchFilter || undefined,
+        search: searchFilter || undefined,
         sortBy,
         sortOrder,
+        gradeId: gradeFilter || undefined,
       };
 
       // Aplicar filtros de scope basados en el rol del usuario
@@ -137,10 +139,9 @@ export const StudentsList: React.FC<StudentListProps> = ({
 
   useEffect(() => {
     loadStudents();
-  }, [page, limit, search, sortBy, sortOrder, enrollmentFilter]);
+  }, [page, limit, searchFilter, sortBy, sortOrder, enrollmentFilter, gradeFilter]);
 
   const handleSearch = (value: string) => {
-    setSearch(value);
     setPage(1);
   };
 
@@ -227,44 +228,6 @@ export const StudentsList: React.FC<StudentListProps> = ({
           </AlertDescription>
         </Alert>
       )}
-
-      {/* Header con búsqueda y controles */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Búsqueda */}
-        <div className="md:col-span-2 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Buscar por nombre o código SIRE..."
-            value={search || searchFilter}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="pl-10 h-10 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/50"
-          />
-        </div>
-
-        {/* Ordenar por */}
-        <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-          <SelectTrigger className="h-10 border-slate-200 dark:border-slate-700">
-            <SelectValue placeholder="Ordenar por" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="givenNames">Nombre</SelectItem>
-            <SelectItem value="lastNames">Apellido</SelectItem>
-            <SelectItem value="codeSIRE">Código SIRE</SelectItem>
-            <SelectItem value="createdAt">Fecha Creación</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* Orden ascendente/descendente */}
-        <Select value={sortOrder} onValueChange={(value: any) => setSortOrder(value)}>
-          <SelectTrigger className="h-10 border-slate-200 dark:border-slate-700">
-            <SelectValue placeholder="Orden" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="asc">Ascendente ↑</SelectItem>
-            <SelectItem value="desc">Descendente ↓</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
 
       {/* Error Alert */}
       {error && (

@@ -18,6 +18,7 @@ export interface StudentsQuery {
   search?: string;
   sortBy?: 'givenNames' | 'lastNames' | 'codeSIRE' | 'createdAt' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
+  gradeId?: number;
 }
 
 // ✅ Response paginada para estudiantes
@@ -160,6 +161,7 @@ export const studentsService = {
     if (query.search) params.append('search', query.search);
     if (query.sortBy) params.append('sortBy', query.sortBy);
     if (query.sortOrder) params.append('sortOrder', query.sortOrder);
+    if (query.gradeId) params.append('gradeId', query.gradeId.toString());
 
     const response = await api.get(`/api/students?${params.toString()}`);
 

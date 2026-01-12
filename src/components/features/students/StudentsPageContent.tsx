@@ -1,19 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Users, GraduationCap, TrendingUp, Filter } from 'lucide-react';
+import { Plus, Users, GraduationCap, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { StudentsList } from './StudentsList';
 import { StudentDetailDialog } from './StudentDetailDialog';
+import { StudentFilters } from './StudentFilters';
 import { Card } from '@/components/ui/card';
-import { Student } from '@/types/students.types';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Student, Grade } from '@/types/students.types';
+import { studentsService } from '@/services/students.service';
 
 interface StudentStats {
   total: number;
@@ -51,6 +45,44 @@ export const StudentsPageContent: React.FC<StudentsPageContentProps> = ({
   });
   const [searchFilter, setSearchFilter] = useState('');
   const [enrollmentFilter, setEnrollmentFilter] = useState<'all' | 'enrolled' | 'not-enrolled'>('all');
+  const [sortBy, setSortBy] = useState<'givenNames' | 'lastNames' | 'codeSIRE' | 'createdAt'>('givenNames');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [gradeFilter, setGradeFilter] = useState<number | null>(null);
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [loadingGrades, setLoadingGrades] = useState(true);
+
+  useEffect(() => {
+    const loadGrades = async () => {
+      try {
+        const enrollmentData = await studentsService.getEnrollmentFormData();
+        // Extraer todos los grados únicos de los ciclos
+        const allGrades: Grade[] = [];
+        const gradeIds = new Set<number>();
+        
+        if (enrollmentData.cycles) {
+          enrollmentData.cycles.forEach(cycle => {
+            if (cycle.grades) {
+              cycle.grades.forEach(grade => {
+                if (!gradeIds.has(grade.id)) {
+                  gradeIds.add(grade.id);
+                  allGrades.push(grade);
+                }
+              });
+            }
+          });
+        }
+        
+        // Ordenar por nivel/orden
+        allGrades.sort((a, b) => (a.order || 0) - (b.order || 0));
+        setGrades(allGrades);
+      } catch (error) {
+        console.error('Error loading grades:', error);
+      } finally {
+        setLoadingGrades(false);
+      }
+    };
+    loadGrades();
+  }, []);
 
   const handleViewStudent = (student: Student) => {
     setSelectedStudent(student);
@@ -175,28 +207,19 @@ export const StudentsPageContent: React.FC<StudentsPageContentProps> = ({
 
         {/* Filters Section */}
         <div className="mb-6 p-4 bg-white dark:bg-slate-800/50 rounded-xl border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-            <h3 className="font-semibold text-slate-900 dark:text-white text-sm">Filtros</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              placeholder="Buscar por nombre, apellido o código SIRE..."
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              className="h-10 bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700"
-            />
-            <Select value={enrollmentFilter} onValueChange={(value: any) => setEnrollmentFilter(value)}>
-              <SelectTrigger className="h-10 bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700">
-                <SelectValue placeholder="Filtrar por estado..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los Estudiantes</SelectItem>
-                <SelectItem value="enrolled">Solo Inscritos</SelectItem>
-                <SelectItem value="not-enrolled">Solo Pendientes</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <StudentFilters
+            search={searchFilter}
+            onSearchChange={setSearchFilter}
+            sortBy={sortBy}
+            onSortByChange={setSortBy}
+            sortOrder={sortOrder}
+            onSortOrderChange={setSortOrder}
+            enrollmentFilter={enrollmentFilter}
+            onEnrollmentFilterChange={setEnrollmentFilter}
+            gradeFilter={gradeFilter}
+            onGradeFilterChange={setGradeFilter}
+            grades={grades}
+          />
         </div>
 
         {/* Students List */}
@@ -205,6 +228,9 @@ export const StudentsPageContent: React.FC<StudentsPageContentProps> = ({
             onStatsUpdate={handleStatsUpdate}
             searchFilter={searchFilter}
             enrollmentFilter={enrollmentFilter}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            gradeFilter={gradeFilter}
             canRead={canRead}
             canReadOne={canReadOne}
             canUpdate={canUpdate}

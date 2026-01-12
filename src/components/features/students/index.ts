@@ -6,4 +6,5 @@ export { StudentDetailDialog } from './StudentDetailDialog';
 export { StudentDetailView } from './StudentDetailView';
 export { StudentTransferDialog } from './StudentTransferDialog';
 export { SearchAdvancedDialog } from './SearchAdvancedDialog';
+export { StudentFilters } from './StudentFilters';
 export * from './sections';
