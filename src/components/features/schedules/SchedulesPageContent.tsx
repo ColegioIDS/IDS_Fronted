@@ -1074,9 +1074,10 @@ export default function SchedulesPageContent({
       </Card>
 
       {/* Schedule Calendar View */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {/* Main Calendar Grid - Takes 2/3 on large screens */}
-        <div className="col-span-1 lg:col-span-2 xl:col-span-3 space-y-4 min-w-0">
+      <div className="flex gap-6">
+        {/* Main Calendar Grid - Scrollable */}
+        <div className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)] scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent hover:scrollbar-thumb-gray-300">
+          <div className="space-y-4 min-w-0">
           <ScheduleHeader
             selectedSection={selectedSection}
             sections={sections}
@@ -1154,18 +1155,21 @@ export default function SchedulesPageContent({
               </CardContent>
             </Card>
           )}
+          </div>
         </div>
 
-        {/* Sidebar with Course Assignments - 1/3 on large screens */}
+        {/* Sidebar with Course Assignments - Sticky */}
         {/* Only show sidebar if section is selected AND has config */}
         {selectedSection > 0 && config && (
-          <div className="col-span-1 lg:col-span-1 min-w-0 hidden lg:block">
-            <ScheduleSidebar
-              courseAssignments={courseAssignments}
-              assignmentHours={assignmentHours}
-              pendingChanges={pendingChanges}
-              hasUnsavedChanges={hasUnsavedChanges}
-            />
+          <div className="hidden lg:block w-80 flex-shrink-0">
+          <div className="sticky top-40 w-80 h-fit max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent hover:scrollbar-thumb-gray-300 border border-border rounded-lg bg-background p-4">
+              <ScheduleSidebar
+                courseAssignments={courseAssignments}
+                assignmentHours={assignmentHours}
+                pendingChanges={pendingChanges}
+                hasUnsavedChanges={hasUnsavedChanges}
+              />
+            </div>
           </div>
         )}
       </div>
