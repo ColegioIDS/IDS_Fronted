@@ -187,6 +187,18 @@
     // ⭐ RELACIONES DE FIRMAS PARA CARTAS DE NOTAS
     signatures Signature[] @relation("UserSignatures")
 
+    // ⭐ RELACIÓN DE COORDINADOR - Grados que coordina
+    coordinatorGrades CoordinatorGrade[] @relation("UserCoordinatorGrades")
+
+    // ⭐ RELACIÓN CON COTEJOS (Consolidación de calificaciones)
+    cotejos            Cotejo[]           @relation("CotejoTeacher")
+
+    // ⭐ RELACIÓN CON AUDITORÍA (Registro de acciones)
+    auditLogs          AuditLog[]         @relation("UserAuditLogs")
+
+    // ⭐ RELACIÓN CON REFRESH TOKENS (Renovación de sesiones)
+    refreshTokens      RefreshToken[]
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
@@ -342,7 +354,6 @@
     emergencyContacts EmergencyContact[]
     siblings          Sibling[]
     pictures          Picture[]
-    submissions       AssignmentSubmission[] @relation("SubmissionStudent")
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -522,6 +533,9 @@
 
     // ⭐ RELACIONES DE FIRMAS PARA CARTAS DE NOTAS
     signatures Signature[] @relation("SignaturesCycle")
+    
+    // ⭐ RELACIÓN CON COTEJOS (Consolidación de calificaciones)
+    cotejos    Cotejo[]    @relation("CotejoCycle")
 
     // ⭐ ÍNDICES PARA ASISTENCIA
     @@index([isActive, isArchived, startDate, endDate], name: "idx_school_cycles_active_dates")
@@ -548,8 +562,12 @@
     ericaEvaluations  EricaEvaluation[]       @relation("EricaBimester")
     ericaAverages     EricaAverage[]          @relation("AverageBimester")
     calculatedResults EricaCalculatedResult[] @relation("CalculatedBimester")
+    evaluationAggregates EricaEvaluationAggregate[] @relation("AggregateBimester")
 
     attendanceReports StudentAttendanceReport[] @relation("ReportBimester")
+    
+    // ⭐ RELACIÓN CON COTEJOS (Consolidación de calificaciones)
+    cotejos           Cotejo[]           @relation("CotejoBimester")
 
     @@unique([cycleId, number])
     // ⭐ ÍNDICES PARA ASISTENCIA
@@ -607,19 +625,35 @@
   * ⭐ ENUMS PARA SISTEMA ERICA
   */
   enum EricaDimension {
-    EJECUTA   // E = Ejecuta
-    RETIENE   // R = Retiene
-    INTERPRETA // I = Interpreta
-    CONOCE    // C = Conoce
-    AMPLIA    // A = Amplía
+    // Letras cortas (para BD y API responses)
+    E           // Ejecuta
+    R           // Retiene
+    I           // Interpreta
+    C           // Conoce
+    A           // Amplía
+    
+    // Nombres completos (para legibilidad en código)
+    EJECUTA
+    RETIENE
+    INTERPRETA
+    CONOCE
+    AMPLIA
   }
 
   enum EricaState {
+    // Letras cortas (para BD y API responses)
     E  // Excelente = 1 pto
     B  // Bien = 0.75 ptos
     P  // Poco = 0.50 ptos
     C  // Casi nada = 0.25 ptos
     N  // Nada = 0 ptos
+    
+    // Nombres completos (para legibilidad en código)
+    EXCELENTE
+    BIEN
+    POCO
+    CASINADA
+    NADA
   }
 
   /**
@@ -662,13 +696,23 @@
   * - CONOCE → Naranja (#FFA500)
   * - AMPLIA → Rojo (#FF0000)
   */
+  /**
+  * ⭐ TABLA DE COLORES PARA DIMENSIONES ERICA
+  * Mapea colores a cada dimensión (E→EJECUTA, R→RETIENE, I→INTERPRETA, C→CONOCE, A→AMPLIA)
+  * 
+  * Estructura:
+  * - dimension: Enum (E, R, I, C, A) + (EJECUTA, RETIENE, INTERPRETA, CONOCE, AMPLIA)
+  * - name: Nombre completo (Ej: "Ejecuta")
+  * - description: Descripción detallada (Ej: "Dimensión de ejecución de tareas")
+  * - hexColor: Color en formato hexadecimal (Ej: "#FF6B6B")
+  */
   model EricaDimensionColor {
-    id        Int            @id @default(autoincrement())
-    dimension EricaDimension @unique // EJECUTA, RETIENE, INTERPRETA, CONOCE, AMPLIA
+    id        Int    @id @default(autoincrement())
+    dimension String @unique @db.VarChar(1) // "E", "R", "I", "C", "A"
     
-    colorCode String @db.VarChar(7) // Ej: #00AA00
-    colorName String                // Ej: "Verde Oscuro"
-    hexCode   String @db.VarChar(7) // Alternativo a colorCode
+    name        String              // "Ejecuta", "Retiene", etc
+    description String              // "Dimensión que mide la capacidad de..."
+    hexColor    String @db.VarChar(7) // #FF6B6B
     
     isActive Boolean @default(true)
     
@@ -691,13 +735,24 @@
   * - C (Casi nada) → Naranja (#FFA500)
   * - N (Nada) → Rojo (#FF0000)
   */
+  /**
+  * ⭐ TABLA DE COLORES PARA ESTADOS ERICA
+  * Mapea colores a cada estado de desempeño (E→EXCELENTE, B→BIEN, P→POCO, C→CASINADA, N→NADA)
+  * 
+  * Estructura:
+  * - state: Enum (E, B, P, C, N) + (EXCELENTE, BIEN, POCO, CASINADA, NADA)
+  * - name: Nombre completo con puntos (Ej: "Excelente (1.0 pts)")
+  * - description: Descripción del nivel de desempeño
+  * - hexColor: Color en formato hexadecimal (Ej: "#4CAF50")
+  */
   model EricaStateColor {
-    id    Int @id @default(autoincrement())
-    state EricaState @unique // E, B, P, C, N
+    id    Int    @id @default(autoincrement())
+    state String @unique @db.VarChar(1) // "E", "B", "P", "C", "N"
     
-    colorCode String @db.VarChar(7) // Ej: #90EE90
-    colorName String                // Ej: "Verde Claro"
-    hexCode   String @db.VarChar(7) // Alternativo a colorCode
+    name        String              // "Excelente (1.0 pts)", "Bien (0.75 pts)", etc
+    description String              // "Desempeño excelente, domina completamente..."
+    hexColor    String @db.VarChar(7) // #4CAF50
+    points      Float @default(0)   // 1.0, 0.75, 0.50, 0.25, 0
     
     isActive Boolean @default(true)
     
@@ -941,6 +996,122 @@
   }
 
   /**
+  * ⭐ AGREGADOS DE EVALUACIONES ERICA
+  * 
+  * Tabla desnormalizada que almacena promedios precalculados por QNA
+  * Se actualiza automáticamente cuando se guardan evaluaciones
+  * Permite filtros y búsquedas rápidas sin recalcular en tiempo real
+  * 
+  * Ejemplo:
+  * - QNA1 (Semanas 1-2): Promedios de cada dimensión
+  * - QNA2 (Semanas 3-4): Promedios de cada dimensión
+  * - TOTAL: Suma de todos los puntos
+  */
+  model EricaEvaluationAggregate {
+    id Int @id @default(autoincrement())
+
+    enrollmentId Int
+    bimesterId   Int
+    courseId     Int
+
+    // ⭐ QNA1 (Semanas 1-2) - Promedios por dimensión
+    qna1_ejecuta     Float?
+    qna1_retiene     Float?
+    qna1_interpreta  Float?
+    qna1_conoce      Float?
+    qna1_amplia      Float?
+    qna1_average     Float?                  // Promedio de las 5 dimensiones
+    qna1_performanceLevel String?            // 'RED' | 'YELLOW' | 'GREEN'
+
+    // ⭐ QNA2 (Semanas 3-4) - Promedios por dimensión
+    qna2_ejecuta     Float?
+    qna2_retiene     Float?
+    qna2_interpreta  Float?
+    qna2_conoce      Float?
+    qna2_amplia      Float?
+    qna2_average     Float?                  // Promedio de las 5 dimensiones
+    qna2_performanceLevel String?            // 'RED' | 'YELLOW' | 'GREEN'
+
+    // ⭐ QNA3 (Semanas 5-6) - Promedios por dimensión
+    qna3_ejecuta     Float?
+    qna3_retiene     Float?
+    qna3_interpreta  Float?
+    qna3_conoce      Float?
+    qna3_amplia      Float?
+    qna3_average     Float?                  // Promedio de las 5 dimensiones
+    qna3_performanceLevel String?            // 'RED' | 'YELLOW' | 'GREEN'
+
+    // ⭐ QNA4 (Semanas 7-8) - Promedios por dimensión
+    qna4_ejecuta     Float?
+    qna4_retiene     Float?
+    qna4_interpreta  Float?
+    qna4_conoce      Float?
+    qna4_amplia      Float?
+    qna4_average     Float?                  // Promedio de las 5 dimensiones
+    qna4_performanceLevel String?            // 'RED' | 'YELLOW' | 'GREEN'
+
+    // ⭐ MES 1 (QNA1 + QNA2) - Promedios mensuales
+    mes1_ejecuta     Float?
+    mes1_retiene     Float?
+    mes1_interpreta  Float?
+    mes1_conoce      Float?
+    mes1_amplia      Float?
+    mes1_average     Float?                  // Promedio mensual de las 5 dimensiones
+    mes1_performanceLevel String?            // 'RED' | 'YELLOW' | 'GREEN'
+
+    // ⭐ MES 2 (QNA3 + QNA4) - Promedios mensuales
+    mes2_ejecuta     Float?
+    mes2_retiene     Float?
+    mes2_interpreta  Float?
+    mes2_conoce      Float?
+    mes2_amplia      Float?
+    mes2_average     Float?                  // Promedio mensual de las 5 dimensiones
+    mes2_performanceLevel String?            // 'RED' | 'YELLOW' | 'GREEN'
+
+    // ⭐ BIMESTRE (Promedio de los 2 meses)
+    bimestre_ejecuta     Float?
+    bimestre_retiene     Float?
+    bimestre_interpreta  Float?
+    bimestre_conoce      Float?
+    bimestre_amplia      Float?
+    bimestre_average     Float?              // Promedio del bimestre completo
+    bimestre_performanceLevel String?        // 'RED' | 'YELLOW' | 'GREEN'
+
+    // ⭐ Totales
+    totalPoints      Float?                  // Suma de todos los puntos
+    weeksEvaluated   Int @default(0)        // Cantidad de semanas evaluadas
+
+    // Auditoría
+    calculatedAt DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+
+    // Relaciones
+    enrollment Enrollment @relation("AggregateEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
+    bimester   Bimester   @relation("AggregateBimester", fields: [bimesterId], references: [id])
+    course     Course     @relation("AggregateCourse", fields: [courseId], references: [id])
+
+    // Índices para búsquedas rápidas
+    @@unique([enrollmentId, bimesterId, courseId])
+    @@index([qna1_average])
+    @@index([qna2_average])
+    @@index([qna3_average])
+    @@index([qna4_average])
+    @@index([mes1_average])
+    @@index([mes2_average])
+    @@index([bimestre_average])
+    @@index([qna1_performanceLevel])
+    @@index([qna2_performanceLevel])
+    @@index([qna3_performanceLevel])
+    @@index([qna4_performanceLevel])
+    @@index([mes1_performanceLevel])
+    @@index([mes2_performanceLevel])
+    @@index([bimestre_performanceLevel])
+    @@index([bimesterId, courseId])
+    @@index([totalPoints])
+    @@map("erica_evaluation_aggregates")
+  }
+
+  /**
   * ============================================
   * SECCIÓN 6: ESTRUCTURA ACADÉMICA
   * ============================================
@@ -956,6 +1127,9 @@
     sections     Section[]
     courseGrades CourseGrade[]
     enrollments  Enrollment[]
+
+    // ⭐ RELACIÓN DE COORDINADORES
+    coordinators CoordinatorGrade[] @relation("GradeCoordinators")
 
     @@map("grades")
   }
@@ -975,6 +1149,10 @@
     enrollments       Enrollment[]
     schedules         Schedule[]
     scheduleConfig    ScheduleConfig?
+    assignments       Assignment[]
+    
+    // ⭐ RELACIÓN CON COTEJOS (Consolidación de calificaciones)
+    cotejos           Cotejo[]           @relation("CotejoSection")
 
     @@map("sections")
   }
@@ -988,6 +1166,34 @@
 
     @@unique([cycleId, gradeId])
     @@map("grade_cycles")
+  }
+
+  /**
+  * ⭐ ASIGNACIÓN DE GRADOS A COORDINADORES
+  * Permite que un coordinador supervise múltiples grados
+  * 
+  * Ejemplo:
+  * - Coordinador de Primaria → Grados 1ro a 6to
+  * - Coordinador de Básicos → Grados 1ro a 3ro Básico
+  */
+  model CoordinatorGrade {
+    id        Int      @id @default(autoincrement())
+    userId    Int
+    gradeId   Int
+    
+    isActive  Boolean  @default(true)
+    notes     String?  // Notas opcionales sobre la asignación
+    
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    user      User     @relation("UserCoordinatorGrades", fields: [userId], references: [id], onDelete: Cascade)
+    grade     Grade    @relation("GradeCoordinators", fields: [gradeId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, gradeId])
+    @@index([userId])
+    @@index([gradeId])
+    @@map("coordinator_grades")
   }
 
   /**
@@ -1013,9 +1219,13 @@
     ericaTopics       EricaTopic[]            @relation("TopicCourse")
     courseAssignments CourseAssignment[]
     calculatedResults EricaCalculatedResult[] @relation("CalculatedCourse")
+    evaluationAggregates EricaEvaluationAggregate[] @relation("AggregateCourse")
     schedules         Schedule[]
 
     attendanceReports StudentAttendanceReport[] @relation("ReportCourse")
+    
+    // ⭐ RELACIÓN CON COTEJOS (Consolidación de calificaciones)
+    cotejos           Cotejo[]           @relation("CotejoCourse")
 
     @@map("courses")
   }
@@ -1567,10 +1777,15 @@
     ericaEvaluations   EricaEvaluation[]        @relation("EricaEnrollment")
     ericaAverages      EricaAverage[]           @relation("AverageEnrollment")
     calculatedResults  EricaCalculatedResult[]  @relation("CalculatedEnrollment")
+    evaluationAggregates EricaEvaluationAggregate[] @relation("AggregateEnrollment")
     grades             StudentGrade[]
     classAttendances   StudentClassAttendance[] @relation("ClassAttendanceEnrollment")
     justifications     StudentJustification[]   @relation("JustificationEnrollment")
     attendanceReport   StudentAttendanceReport? @relation("ReportEnrollment")
+    assignmentSubmissions AssignmentSubmission[] @relation("SubmissionEnrollment")
+    
+    // ⭐ RELACIÓN CON COTEJO (Consolidación de calificaciones)
+    cotejo             Cotejo?                 @relation("CotejoEnrollment")
 
     // Constraints
     @@unique([studentId, cycleId], name: "unique_student_cycle")
@@ -1621,12 +1836,15 @@
   model Assignment {
     id         Int      @id @default(autoincrement())
     courseId   Int
+    sectionId  Int?
     bimesterId Int
     title      String
+    description String?
     dueDate    DateTime
     maxScore   Float
 
     course      Course                 @relation(fields: [courseId], references: [id])
+    section     Section?               @relation(fields: [sectionId], references: [id], onDelete: Cascade)
     bimester    Bimester               @relation(fields: [bimesterId], references: [id])
     submissions AssignmentSubmission[]
 
@@ -1636,17 +1854,93 @@
   model AssignmentSubmission {
     id           Int       @id @default(autoincrement())
     assignmentId Int
-    studentId    Int
+    enrollmentId Int
     teacherId    Int?
     score        Float?
     feedback     String?
     submittedAt  DateTime? @default(now())
 
     assignment Assignment @relation(fields: [assignmentId], references: [id])
-    student    Student    @relation("SubmissionStudent", fields: [studentId], references: [id])
-    teacher    User?      @relation("SubmissionGrader", fields: [teacherId], references: [id])
+    enrollment  Enrollment @relation("SubmissionEnrollment", fields: [enrollmentId], references: [id])
+    teacher     User?      @relation("SubmissionGrader", fields: [teacherId], references: [id])
 
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // ⭐ Composite unique para operaciones UPSERT
+    @@unique([assignmentId, enrollmentId])
     @@map("assignment_submissions")
+  }
+
+  /**
+  * ============================================
+  * SECCIÓN 11: COTEJO (CONSOLIDACIÓN DE CALIFICACIONES)
+  * ============================================
+  */
+
+  /**
+  * ⭐ MODELO COTEJO - CIERRE ACADÉMICO
+  * 
+  * Almacena la consolidación final de calificaciones por estudiante, bimestre y curso
+  * 
+  * Estructura de puntuación (Total: 100 pts máx):
+  * - ERICA (Evaluación formativa): 0-40 pts
+  *   └─ Fuente: EricaEvaluationAggregate.bimestre_average * 40
+  * 
+  * - TAREAS (Entregas): 0-20 pts
+  *   └─ Fuente: Sum(AssignmentSubmission.score) / Sum(maxScore) * 20
+  * 
+  * - ACTITUDINAL (Comportamiento): 0-20 pts
+  *   └─ Ingresado por docente
+  * 
+  * - DECLARATIVO (Conocimiento): 0-30 pts
+  *   └─ Ingresado por docente
+  * 
+  * - TOTAL FINAL = ERICA + TAREAS + ACTITUDINAL + DECLARATIVO
+  *   └─ Máximo: 40 + 20 + 20 + 30 = 100 pts
+  */
+  model Cotejo {
+    id             Int       @id @default(autoincrement())
+    
+    // 🔑 Identificadores principales
+    enrollmentId   Int       @unique
+    sectionId      Int
+    courseId       Int
+    bimesterId     Int
+    cycleId        Int
+    teacherId      Int
+    
+    // ⭐ Puntuaciones componentes
+    ericaScore         Float?    // [0-40] Desde EricaEvaluationAggregate
+    tasksScore         Float?    // [0-20] Suma de AssignmentSubmission
+    actitudinalScore   Float?    // [0-20] Evaluación docente
+    declarativoScore   Float?    // [0-30] Evaluación docente
+    
+    // Total final
+    totalScore         Float?    // [máx 100] ERICA + TAREAS + ACTITUDINAL + DECLARATIVO
+    
+    // Estado y feedback
+    status             String    @default("DRAFT")  // DRAFT, COMPLETED, SUBMITTED
+    feedback           String?
+    
+    // Auditoría
+    createdAt          DateTime  @default(now())
+    updatedAt          DateTime  @updatedAt
+    
+    // Relaciones
+    enrollment         Enrollment @relation("CotejoEnrollment", fields: [enrollmentId], references: [id], onDelete: Cascade)
+    section            Section    @relation("CotejoSection", fields: [sectionId], references: [id], onDelete: Cascade)
+    course             Course     @relation("CotejoCourse", fields: [courseId], references: [id], onDelete: Cascade)
+    bimester           Bimester   @relation("CotejoBimester", fields: [bimesterId], references: [id], onDelete: Cascade)
+    cycle              SchoolCycle @relation("CotejoCycle", fields: [cycleId], references: [id], onDelete: Cascade)
+    teacher            User       @relation("CotejoTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+    
+    // Índices
+    @@unique([enrollmentId, bimesterId, courseId], name: "unique_cotejo_student_bimestre_course")
+    @@index([sectionId, courseId, bimesterId], name: "idx_cotejo_section_course_bimestre")
+    @@index([teacherId], name: "idx_cotejo_teacher")
+    @@index([status], name: "idx_cotejo_status")
+    @@map("cotejos")
   }
 
   /**
@@ -1716,6 +2010,104 @@
     @@index([isActive, isDefault])
     @@map("signatures")
   }
+
+  /**
+  * ============================================
+  * SECCIÓN 14: AUDITORÍA Y SEGURIDAD
+  * ============================================
+  */
+
+  /**
+  * Registro de auditoría de acciones sensibles
+  * Registra todos los cambios en datos críticos del sistema
+  */
+  model AuditLog {
+    id           Int       @id @default(autoincrement())
+    
+    // Usuario que realizó la acción
+    userId       Int?
+    user         User?     @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: SetNull)
+    
+    // Detalles de la acción
+    action       String    // POST, GET, PUT, DELETE, PATCH
+    resource     String    // /api/users, /api/attendance, etc
+    status       String    // SUCCESS, FAILED
+    statusCode   Int?      // HTTP status code
+    errorMessage String?   // Mensaje de error si falló
+    
+    // Rendimiento
+    duration     Int       // en milisegundos
+    
+    // Información de red
+    ip           String?   // IP del cliente
+    userAgent    String?   // User Agent del navegador
+    
+    // Auditoría
+    timestamp    DateTime  @default(now())
+
+    // Índices para búsquedas rápidas
+    @@index([userId])
+    @@index([timestamp])
+    @@index([action])
+    @@index([resource])
+    @@index([status])
+    @@index([statusCode])
+    @@map("audit_logs")
+  }
+
+  /**
+  * Refresh tokens para renovación de sesiones
+  * Permite renovar el access token sin reautenticarse
+  * Los tokens se revocan cuando el usuario cierra sesión o cambia contraseña
+  */
+  model RefreshToken {
+    id        Int       @id @default(autoincrement())
+    
+    // Relación con usuario
+    userId    Int
+    user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    
+    // Token encriptado
+    token     String    @unique
+    
+    // Validez del token
+    expiresAt DateTime
+    revokedAt DateTime?  // Null si aún es válido, fecha si fue revocado
+    
+    // Auditoría
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+
+    // Índices para búsquedas rápidas
+    @@index([userId])
+    @@index([expiresAt])
+    @@index([revokedAt])
+    @@map("refresh_tokens")
+  }
+
+  /**
+  * ============================================
+  * SECCIÓN 12: RANGOS DE CALIFICACIÓN
+  * ============================================
+  */
+
+  model GradeRange {
+    id          Int     @id @default(autoincrement())
+    name        String  @unique
+    description String?
+    minScore    Float
+    maxScore    Float
+    hexColor    String @db.VarChar(7)
+    isActive    Boolean @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([minScore, maxScore])
+    @@map("grade_ranges")
+  }
+
+
 
 
 

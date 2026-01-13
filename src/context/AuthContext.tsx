@@ -6,10 +6,11 @@ import { verifySession, logout as apiLogout, getMyPermissions } from '@/services
 import { UserPermission } from '@/types/permissions.types';
 import { usePathname, useRouter } from 'next/navigation';
 
-// ✅ ACTUALIZADO: Role con permissions
+// ✅ ACTUALIZADO: Role con roleType
 interface Role {
   id: number;
   name: string;
+  roleType?: 'ADMIN' | 'TEACHER' | 'COORDINATOR';
   permissions?: Array<{
     permissionId: number;
     scope: 'all' | 'own' | 'grade';
@@ -73,11 +74,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const data = await getMyPermissions();
       setPermissions(data.permissions);
       
-      // ✅ ACTUALIZADO: Ahora setRole recibe Role con permissions
+      // ✅ ACTUALIZADO: Ahora setRole recibe Role con roleType y permissions
       if (data.role) {
   const roleWithPermissions: Role = {
     id: data.role.id,
     name: data.role.name,
+    roleType: data.role.roleType as 'ADMIN' | 'TEACHER' | 'COORDINATOR',
     permissions: data.permissions.map((p: UserPermission, index: number) => ({
       permissionId: index,
       scope: (p.scope as 'all' | 'own' | 'grade'),
