@@ -159,7 +159,7 @@ export const AttendanceStatusForm = ({
                       onChange={handleChange}
                       placeholder="Ej: P"
                       maxLength={10}
-                      disabled={isLoading || !!initialData}
+                      disabled={isLoading}
                       className={cn(errors.code && "border-destructive focus-visible:ring-destructive")}
                     />
                     {errors.code && (

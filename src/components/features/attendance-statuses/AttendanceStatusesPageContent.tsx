@@ -6,7 +6,7 @@ import { Plus, AlertCircle, Grid3x3, List, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { AttendanceStatus } from '@/types/attendance-status.types';
-import { useAttendanceStatuses } from '@/hooks/data';
+import { useAttendanceStatuses } from '@/hooks/data/attendance-statuses';
 import { attendanceStatusesService } from '@/services/attendance-statuses.service';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
