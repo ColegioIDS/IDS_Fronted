@@ -78,5 +78,6 @@ export interface UserPermissionsResponse {
   role: {
     id: number;
     name: string;
+    roleType?: 'ADMIN' | 'TEACHER' | 'COORDINATOR' | 'STUDENT' | string;
   } | null;
 }
