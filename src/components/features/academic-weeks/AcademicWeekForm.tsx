@@ -44,7 +44,6 @@ const academicWeekFormSchema = z.object({
   weekType: z.nativeEnum(WeekType, { required_error: 'El tipo de semana es requerido' }),
   startDate: z.date({ required_error: 'La fecha de inicio es requerida' }),
   endDate: z.date({ required_error: 'La fecha de fin es requerida' }),
-  isActive: z.boolean(),
   year: z.number().optional(),
   month: z.nativeEnum(AcademicMonth).optional(),
   objectives: z.string().max(500, 'Los objetivos no pueden exceder 500 caracteres').optional(),
@@ -112,7 +111,6 @@ export function AcademicWeekForm({
       year: initialData?.year,
       month: initialData?.month,
       objectives: initialData?.objectives || '',
-      isActive: initialData?.isActive ?? true,
     },
   });
 
@@ -649,34 +647,6 @@ export function AcademicWeekForm({
                 Máximo 500 caracteres
               </FormDescription>
               <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Estado Activo */}
-        <FormField
-          control={form.control}
-          name="isActive"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 p-4">
-              <FormControl>
-                <input
-                  type="checkbox"
-                  checked={field.value}
-                  onChange={field.onChange}
-                  disabled={isSubmitting}
-                  className="h-4 w-4 mt-1 text-emerald-600 focus:ring-emerald-500 dark:focus:ring-emerald-400 border-gray-300 dark:border-gray-600 rounded"
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  Semana activa
-                </FormLabel>
-                <FormDescription>
-                  Si está activa, esta semana será visible para estudiantes y maestros
-                </FormDescription>
-              </div>
             </FormItem>
           )}
         />

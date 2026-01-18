@@ -83,6 +83,17 @@ export type CreateUserFormData = z.infer<typeof createUserSchema>;
 
 // ✅ Update User Schema
 export const updateUserSchema = z.object({
+  email: z
+    .string()
+    .email('Email inválido')
+    .toLowerCase()
+    .optional()
+    .or(z.literal('')),
+  dpi: z
+    .string()
+    .regex(/^\d{13}$/, 'DPI debe tener exactamente 13 dígitos')
+    .optional()
+    .or(z.literal('')),
   givenNames: z
     .string()
     .min(2, 'Nombres deben tener al menos 2 caracteres')

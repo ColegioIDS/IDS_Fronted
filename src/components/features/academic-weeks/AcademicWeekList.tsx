@@ -3,7 +3,7 @@
 'use client';
 
 import React from 'react';
-import { Calendar, Clock, Edit2, Trash2, Eye, CheckCircle2, XCircle, ArrowUpDown } from 'lucide-react';
+import { Calendar, Clock, Edit2, Trash2, Eye, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -114,8 +114,7 @@ export function AcademicWeekList({
           {sortBy === 'startDate' && <ArrowUpDown className="h-3 w-3" />}
         </div>
         <div className="col-span-2">Fin</div>
-        <div className="col-span-1">Estado</div>
-        <div className="col-span-1 text-right">Acciones</div>
+        <div className="col-span-2 text-right">Acciones</div>
       </div>
 
       {/* Filas */}
@@ -132,9 +131,7 @@ export function AcademicWeekList({
               className={cn(
                 'grid grid-cols-12 gap-4 px-4 py-3 rounded-lg border transition-all duration-200',
                 'hover:shadow-md hover:-translate-y-0.5',
-                week.isActive
-                  ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
-                  : 'bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800',
+                'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700',
               )}
             >
               {/* Número */}
@@ -183,23 +180,8 @@ export function AcademicWeekList({
                 </span>
               </div>
 
-              {/* Estado */}
-              <div className="col-span-1 flex items-center">
-                {week.isActive ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                    <CheckCircle2 className="h-4 w-4" />
-                    Activa
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                    <XCircle className="h-4 w-4" />
-                    Inactiva
-                  </span>
-                )}
-              </div>
-
               {/* Acciones */}
-              <div className="col-span-1 flex items-center justify-end gap-1">
+              <div className="col-span-2 flex items-center justify-end gap-1">
                 {canView && onView && (
                   <Button
                     variant="ghost"

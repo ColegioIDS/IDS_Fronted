@@ -3,7 +3,7 @@
 'use client';
 
 import React from 'react';
-import { Calendar, Clock, Edit2, Trash2, Eye, CheckCircle2, XCircle, FileText } from 'lucide-react';
+import { Calendar, Clock, Edit2, Trash2, Eye, FileText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
@@ -54,9 +54,7 @@ export function AcademicWeekCard({
     <Card
       className={cn(
         'group overflow-hidden transition-all duration-300 border-0 shadow-sm hover:shadow-lg hover:-translate-y-1',
-        week.isActive
-          ? 'bg-white dark:bg-gray-900'
-          : 'bg-slate-50 dark:bg-slate-900',
+        'bg-white dark:bg-gray-900',
       )}
     >
       {/* Barra de color superior */}
@@ -76,18 +74,6 @@ export function AcademicWeekCard({
               >
                 {WEEK_TYPE_LABELS[week.weekType]}
               </span>
-              {/* Badge estado */}
-              {week.isActive ? (
-                <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Activa
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                  <XCircle className="h-3.5 w-3.5" />
-                  Inactiva
-                </span>
-              )}
             </div>
 
             {/* Título generado */}

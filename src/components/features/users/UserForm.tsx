@@ -84,6 +84,8 @@ export function UserForm({
     resolver: zodResolver(schema),
     defaultValues: isEditMode
       ? {
+          email: user?.email || '',
+          dpi: user?.dpi || '',
           givenNames: user?.givenNames || '',
           lastNames: user?.lastNames || '',
           phone: user?.phone || '',
@@ -313,51 +315,52 @@ export function UserForm({
 
           {/* Información Tab */}
           <TabsContent value="info" className="space-y-6 mt-6">
-            {/* Email y Username (Solo crear) */}
-            {!isEditMode && (
-              <>
-                <div className="
-                  p-4 rounded-lg
-                  bg-gradient-to-br from-blue-50/50 to-blue-50/30
-                  dark:from-blue-950/20 dark:to-blue-950/10
-                  border border-blue-200/30 dark:border-blue-800/30
-                ">
-                  <h3 className="text-sm font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    Credenciales de Acceso
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2">
-                            <Mail className="w-4 h-4 text-blue-500" />
-                            Email *
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="usuario@colegioids.com"
-                              type="email"
-                              {...field}
-                              disabled={isLoading || isSubmitting}
-                              className="
-                                dark:bg-slate-900/80 dark:border-slate-700/60
-                                dark:text-white dark:placeholder-slate-400
-                                focus:ring-blue-500/20 dark:focus:ring-blue-500/20
-                                transition-all duration-300
-                              "
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="username"
-                      render={({ field }) => (
+            {/* Email y Username */}
+            <div className="
+              p-4 rounded-lg
+              bg-gradient-to-br from-blue-50/50 to-blue-50/30
+              dark:from-blue-950/20 dark:to-blue-950/10
+              border border-blue-200/30 dark:border-blue-800/30
+            ">
+              <h3 className="text-sm font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                {isEditMode ? 'Email' : 'Credenciales de Acceso'}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Email - Disponible en ambos modos */}
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2">
+                        <Mail className="w-4 h-4 text-blue-500" />
+                        Email {!isEditMode && '*'}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="usuario@colegioids.com"
+                          type="email"
+                          {...field}
+                          disabled={isLoading || isSubmitting}
+                          className="
+                            dark:bg-slate-900/80 dark:border-slate-700/60
+                            dark:text-white dark:placeholder-slate-400
+                            focus:ring-blue-500/20 dark:focus:ring-blue-500/20
+                            transition-all duration-300
+                          "
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {/* Username - Solo en crear */}
+                {!isEditMode && (
+                  <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
                         <FormItem>
                           <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2">
                             <Users className="w-4 h-4 text-purple-500" />
@@ -380,43 +383,13 @@ export function UserForm({
                         </FormItem>
                       )}
                     />
-                  </div>
-                </div>
+                )}
+              </div>
+            </div>
 
-                {/* DPI */}
-                <FormField
-                  control={form.control}
-                  name="dpi"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2">
-                        <IdCard className="w-4 h-4 text-amber-500" />
-                        DPI (Documento Personal de Identidad) *
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="1234567890123"
-                          maxLength={13}
-                          {...field}
-                          disabled={isLoading || isSubmitting}
-                          className="
-                            dark:bg-slate-900/80 dark:border-slate-700/60
-                            dark:text-white dark:placeholder-slate-400
-                            focus:ring-blue-500/20 dark:focus:ring-blue-500/20
-                            transition-all duration-300
-                          "
-                        />
-                      </FormControl>
-                      <FormDescription className="dark:text-slate-400">
-                        13 dígitos
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Contraseña */}
-                <div className="
+            {/* Contraseña - Solo en crear */}
+            {!isEditMode && (
+              <div className="
                   p-4 rounded-lg
                   bg-gradient-to-br from-red-50/50 to-red-50/30
                   dark:from-red-950/20 dark:to-red-950/10
@@ -504,19 +477,19 @@ export function UserForm({
                     />
                   </div>
                 </div>
-              </>
             )}
 
-            {/* Nombres y Apellidos */}
+            {/* Nombres y Apellidos - Primer grupo */}
             <div className="
-              p-4 rounded-lg
-              bg-gradient-to-br from-slate-50/50 to-slate-50/30
-              dark:from-slate-900/30 dark:to-slate-900/10
-              border border-slate-200/30 dark:border-slate-700/30
+              p-5 rounded-xl
+              bg-gradient-to-br from-blue-50/50 to-blue-50/30
+              dark:from-blue-950/20 dark:to-blue-950/10
+              border border-blue-200/30 dark:border-blue-800/30
+              shadow-sm
             ">
-              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+              <h3 className="text-sm font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-2">
                 <UserIcon className="w-4 h-4" />
-                Información Personal
+                Datos Personales
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -524,7 +497,7 @@ export function UserForm({
                   name="givenNames"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2">
+                      <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2 text-sm font-medium">
                         <UserIcon className="w-4 h-4 text-blue-500" />
                         Nombres *
                       </FormLabel>
@@ -550,7 +523,7 @@ export function UserForm({
                   name="lastNames"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2">
+                      <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2 text-sm font-medium">
                         <UserIcon className="w-4 h-4 text-purple-500" />
                         Apellidos *
                       </FormLabel>
@@ -574,25 +547,55 @@ export function UserForm({
               </div>
             </div>
 
-            {/* Teléfono, Género, Rol */}
+            {/* DPI, Teléfono, Género - Segundo grupo */}
             <div className="
-              p-4 rounded-lg
-              bg-gradient-to-br from-slate-50/50 to-slate-50/30
-              dark:from-slate-900/30 dark:to-slate-900/10
-              border border-slate-200/30 dark:border-slate-700/30
-              space-y-4
+              p-5 rounded-xl
+              bg-gradient-to-br from-amber-50/50 to-amber-50/30
+              dark:from-amber-950/20 dark:to-amber-950/10
+              border border-amber-200/30 dark:border-amber-800/30
+              shadow-sm
             ">
-              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <Shield className="w-4 h-4" />
-                Configuración Adicional
+              <h3 className="text-sm font-bold text-amber-700 dark:text-amber-300 mb-4 flex items-center gap-2">
+                <IdCard className="w-4 h-4" />
+                Identificación
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="dpi"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2 text-sm font-medium">
+                        <IdCard className="w-4 h-4 text-amber-500" />
+                        DPI {!isEditMode && '*'}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="1234567890123"
+                          maxLength={13}
+                          {...field}
+                          disabled={isLoading || isSubmitting}
+                          className="
+                            dark:bg-slate-900/80 dark:border-slate-700/60
+                            dark:text-white dark:placeholder-slate-400
+                            focus:ring-blue-500/20 dark:focus:ring-blue-500/20
+                            transition-all duration-300
+                          "
+                        />
+                      </FormControl>
+                      <FormDescription className="dark:text-slate-400 text-xs">
+                        13 dígitos
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2">
+                      <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2 text-sm font-medium">
                         <Phone className="w-4 h-4 text-emerald-500" />
                         Teléfono
                       </FormLabel>
@@ -619,7 +622,7 @@ export function UserForm({
                   name="gender"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2">
+                      <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2 text-sm font-medium">
                         <UserIcon className="w-4 h-4 text-pink-500" />
                         Género *
                       </FormLabel>
@@ -644,13 +647,13 @@ export function UserForm({
                           shadow-lg rounded-lg
                         ">
                           <SelectItem value="M" className="hover:bg-blue-50 dark:hover:bg-blue-950/30">
-                            <span className="flex items-center gap-2">👨 Masculino</span>
+                            <span className="flex items-center gap-2"><UserIcon className="w-4 h-4" /> Masculino</span>
                           </SelectItem>
                           <SelectItem value="F" className="hover:bg-pink-50 dark:hover:bg-pink-950/30">
-                            <span className="flex items-center gap-2">👩 Femenino</span>
+                            <span className="flex items-center gap-2"><Users className="w-4 h-4" /> Femenino</span>
                           </SelectItem>
                           <SelectItem value="O" className="hover:bg-purple-50 dark:hover:bg-purple-950/30">
-                            <span className="flex items-center gap-2">⭐ Otro</span>
+                            <span className="flex items-center gap-2"><Circle className="w-4 h-4" /> Otro</span>
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -658,12 +661,28 @@ export function UserForm({
                     </FormItem>
                   )}
                 />
+              </div>
+            </div>
+
+            {/* Rol y Permisos - Tercer grupo */}
+            <div className="
+              p-5 rounded-xl
+              bg-gradient-to-br from-indigo-50/50 to-indigo-50/30
+              dark:from-indigo-950/20 dark:to-indigo-950/10
+              border border-indigo-200/30 dark:border-indigo-800/30
+              shadow-sm
+            ">
+              <h3 className="text-sm font-bold text-indigo-700 dark:text-indigo-300 mb-4 flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Rol y Permisos
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="roleId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2">
+                      <FormLabel className="dark:text-slate-300 flex items-center gap-2 mb-2 text-sm font-medium">
                         <Shield className="w-4 h-4 text-indigo-500" />
                         Rol *
                       </FormLabel>
@@ -709,91 +728,102 @@ export function UserForm({
             </div>
 
             {/* Estado y Acceso */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="isActive"
-                render={({ field }) => (
-                  <FormItem className="
-                    flex items-center justify-between p-4
-                    border border-emerald-200/30 dark:border-emerald-800/30
-                    rounded-lg
-                    bg-gradient-to-br from-emerald-50/50 to-emerald-50/30
-                    dark:from-emerald-950/20 dark:to-emerald-950/10
-                  ">
-                    <div className="space-y-0.5 flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                      <div>
-                        <FormLabel className="dark:text-slate-300 font-semibold">Estado</FormLabel>
-                        <FormDescription className="dark:text-slate-400 text-xs flex items-center gap-1">
-                          {field.value ? (<><Check className="w-3 h-3" /> Activo</>) : (<><Circle className="w-3 h-3" /> Inactivo</>)}
-                        </FormDescription>
+            <div className="
+              p-5 rounded-xl
+              bg-gradient-to-br from-green-50/50 to-green-50/30
+              dark:from-green-950/20 dark:to-green-950/10
+              border border-green-200/30 dark:border-green-800/30
+              shadow-sm
+            ">
+              <h3 className="text-sm font-bold text-green-700 dark:text-green-300 mb-4 flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                Estado y Acceso
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="isActive"
+                  render={({ field }) => (
+                    <FormItem className="
+                      flex items-center justify-between p-4
+                      border border-emerald-200/50 dark:border-emerald-800/50
+                      rounded-lg
+                      bg-white/50 dark:bg-slate-900/40
+                    ">
+                      <div className="space-y-0.5 flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                        <div>
+                          <FormLabel className="dark:text-slate-300 font-semibold text-sm">Estado</FormLabel>
+                          <FormDescription className="dark:text-slate-400 text-xs flex items-center gap-1">
+                            {field.value ? (<><Check className="w-3 h-3" /> Activo</>) : (<><Circle className="w-3 h-3" /> Inactivo</>)}
+                          </FormDescription>
+                        </div>
                       </div>
-                    </div>
-                    <FormControl>
-                      <input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={field.onChange}
-                        disabled={isLoading || isSubmitting}
-                        className="
-                          w-6 h-6 rounded
-                          dark:bg-slate-800 dark:border-slate-600
-                          cursor-pointer
-                          transition-all duration-300
-                        "
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="canAccessPlatform"
-                render={({ field }) => (
-                  <FormItem className="
-                    flex items-center justify-between p-4
-                    border border-blue-200/30 dark:border-blue-800/30
-                    rounded-lg
-                    bg-gradient-to-br from-blue-50/50 to-blue-50/30
-                    dark:from-blue-950/20 dark:to-blue-950/10
-                  ">
-                    <div className="space-y-0.5 flex items-center gap-2">
-                      <Eye className="w-5 h-5 text-blue-500" />
-                      <div>
-                        <FormLabel className="dark:text-slate-300 font-semibold">Acceso Plataforma</FormLabel>
-                        <FormDescription className="dark:text-slate-400 text-xs">
-                          {field.value ? 'Permitido' : 'Bloqueado'}
-                        </FormDescription>
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          disabled={isLoading || isSubmitting}
+                          className="
+                            w-5 h-5 rounded
+                            dark:bg-slate-800 dark:border-slate-600
+                            cursor-pointer
+                            transition-all duration-300
+                          "
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="canAccessPlatform"
+                  render={({ field }) => (
+                    <FormItem className="
+                      flex items-center justify-between p-4
+                      border border-blue-200/50 dark:border-blue-800/50
+                      rounded-lg
+                      bg-white/50 dark:bg-slate-900/40
+                    ">
+                      <div className="space-y-0.5 flex items-center gap-2">
+                        <Eye className="w-5 h-5 text-blue-500" />
+                        <div>
+                          <FormLabel className="dark:text-slate-300 font-semibold text-sm">Acceso Plataforma</FormLabel>
+                          <FormDescription className="dark:text-slate-400 text-xs">
+                            {field.value ? 'Permitido' : 'Bloqueado'}
+                          </FormDescription>
+                        </div>
                       </div>
-                    </div>
-                    <FormControl>
-                      <input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={field.onChange}
-                        disabled={isLoading || isSubmitting}
-                        className="
-                          w-6 h-6 rounded
-                          dark:bg-slate-800 dark:border-slate-600
-                          cursor-pointer
-                          transition-all duration-300
-                        "
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          disabled={isLoading || isSubmitting}
+                          className="
+                            w-5 h-5 rounded
+                            dark:bg-slate-800 dark:border-slate-600
+                            cursor-pointer
+                            transition-all duration-300
+                          "
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             {/* Parent Details Section - Shows when parent role is selected */}
             {isParentRole && (
               <div className="
-                p-6 rounded-lg
+                p-6 rounded-xl
                 bg-gradient-to-br from-emerald-50/50 to-emerald-50/30
                 dark:from-emerald-950/20 dark:to-emerald-950/10
                 border border-emerald-200/50 dark:border-emerald-800/50
                 space-y-4
+                shadow-sm
               ">
                 <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-300 mb-4 flex items-center gap-2">
                   <Users className="w-4 h-4" />
@@ -967,11 +997,12 @@ export function UserForm({
             {/* Teacher Details Section - Shows when teacher role is selected */}
             {isTeacherRole && (
               <div className="
-                p-6 rounded-lg
+                p-6 rounded-xl
                 bg-gradient-to-br from-purple-50/50 to-purple-50/30
                 dark:from-purple-950/20 dark:to-purple-950/10
                 border border-purple-200/50 dark:border-purple-800/50
                 space-y-4
+                shadow-sm
               ">
                 <h3 className="text-sm font-bold text-purple-700 dark:text-purple-300 mb-4 flex items-center gap-2">
                   <GraduationCap className="w-4 h-4" />

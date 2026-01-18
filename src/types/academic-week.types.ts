@@ -138,7 +138,6 @@ export interface UpdateAcademicWeekDto {
   endDate?: string;
   year?: number;
   month?: AcademicMonth;
-  isActive?: boolean;
   notes?: string;
 }
 

@@ -73,7 +73,6 @@ export function AcademicWeekFormDialog({
               year: initialData.year,
               month: initialData.month,
               objectives: initialData.objectives,
-              isActive: initialData.isActive,
             } : (mode === 'create' && (selectedCycleId || selectedBimesterId)) ? {
               cycleId: selectedCycleId || undefined,
               bimesterId: selectedBimesterId || undefined,

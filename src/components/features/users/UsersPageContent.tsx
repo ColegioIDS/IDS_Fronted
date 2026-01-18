@@ -24,6 +24,8 @@ import {
   Plus,
   Loader2,
   AlertCircle,
+  CheckCircle2,
+  Circle,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
@@ -60,6 +62,7 @@ export function UsersPageContent({
   canReadStats = true,
 }: UsersPageContentProps = {}) {
   const [activeTab, setActiveTab] = useState<'list' | 'form'>('list');
+  const [userStatusTab, setUserStatusTab] = useState<'all' | 'active' | 'inactive'>('active');
   const [viewMode, setViewMode] = useState<ViewMode['type']>('grid');
   const [editingUserId, setEditingUserId] = useState<number | undefined>(undefined);
 
@@ -311,6 +314,17 @@ export function UsersPageContent({
     }
   };
 
+  // Filtrar usuarios por estado
+  const filteredUsersByStatus = data?.data.filter(user => {
+    if (userStatusTab === 'all') return true;
+    if (userStatusTab === 'active') return user.isActive;
+    if (userStatusTab === 'inactive') return !user.isActive;
+    return true;
+  }) || [];
+
+  const activeUsersCount = data?.data.filter(u => u.isActive).length || 0;
+  const inactiveUsersCount = data?.data.filter(u => !u.isActive).length || 0;
+
   const handleViewDetails = async (user: User) => {
     if (!canView) {
       toast.error('No tienes permisos para ver detalles de usuarios');
@@ -398,6 +412,7 @@ export function UsersPageContent({
                   query={query}
                   onQueryChange={updateQuery}
                   isLoading={isLoading}
+                  roles={roles}
                 />
               </CardContent>
             </Card>
@@ -443,14 +458,74 @@ export function UsersPageContent({
               </Button>
             </div>
 
+            {/* Status Tabs */}
+            <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700">
+              <button
+                onClick={() => setUserStatusTab('all')}
+                className={`px-4 py-3 font-semibold text-sm transition-all duration-300 border-b-2 ${
+                  userStatusTab === 'all'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span>Todos</span>
+                  <span className="bg-slate-200 dark:bg-slate-700 rounded-full px-2.5 py-0.5 text-xs font-bold">
+                    {data?.meta.total || 0}
+                  </span>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => setUserStatusTab('active')}
+                className={`px-4 py-3 font-semibold text-sm transition-all duration-300 border-b-2 ${
+                  userStatusTab === 'active'
+                    ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Activos</span>
+                  <span className="bg-emerald-200/80 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 rounded-full px-2.5 py-0.5 text-xs font-bold">
+                    {activeUsersCount}
+                  </span>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => setUserStatusTab('inactive')}
+                className={`px-4 py-3 font-semibold text-sm transition-all duration-300 border-b-2 ${
+                  userStatusTab === 'inactive'
+                    ? 'border-slate-500 text-slate-700 dark:text-slate-300'
+                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Circle className="w-4 h-4" />
+                  <span>Inactivos</span>
+                  <span className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full px-2.5 py-0.5 text-xs font-bold">
+                    {inactiveUsersCount}
+                  </span>
+                </div>
+              </button>
+            </div>
+
             {/* Content */}
-            {isLoading && users.length === 0 ? (
+            {isLoading && filteredUsersByStatus.length === 0 ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
               </div>
+            ) : filteredUsersByStatus.length === 0 ? (
+              <div className="text-center py-12">
+                <Circle className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+                <p className="text-slate-500 dark:text-slate-400 font-medium">
+                  {userStatusTab === 'active' ? 'No hay usuarios activos' : userStatusTab === 'inactive' ? 'No hay usuarios inactivos' : 'No hay usuarios'}
+                </p>
+              </div>
             ) : viewMode === 'grid' ? (
               <UsersGrid
-                users={users}
+                users={filteredUsersByStatus}
                 onEdit={handleEdit}
                 onDelete={handleDeleteUser}
                 onViewDetails={handleViewDetails}
@@ -461,7 +536,7 @@ export function UsersPageContent({
               />
             ) : (
               <UserTable
-                users={users}
+                users={filteredUsersByStatus}
                 onEdit={handleEdit}
                 onDelete={handleDeleteUser}
                 onViewDetails={handleViewDetails}
