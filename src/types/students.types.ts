@@ -199,6 +199,7 @@ export interface ParentLink {
 export interface Student {
   id?: number;
   codeSIRE?: string | null;
+  cui?: string | null;
   givenNames: string;
   lastNames: string;
   birthDate: Date | string;

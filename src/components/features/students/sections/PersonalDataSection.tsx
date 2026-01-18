@@ -79,39 +79,58 @@ export const PersonalDataSection = ({ isEditMode = false }: PersonalDataSectionP
         </div>
       </div>
 
-      {/* Sección 0: Código SIRE */}
+      {/* Sección 0: Código SIRE y CUI */}
       <div className="space-y-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           <UserIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
           Identificación del Estudiante
         </h3>
 
-        {/* Código SIRE */}
-        <FormField
-          control={control}
-          name="codeSIRE"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Código SIRE {isEditMode && <span className="text-gray-500 text-xs font-normal">(Solo lectura)</span>}
-              </FormLabel>
-              <FormControl>
-                <Input
-                  placeholder={isEditMode ? "Código SIRE (No se puede editar)" : "Ingrese el código SIRE del estudiante"}
-                  {...field}
-                  value={field.value || ""}
-                  disabled={isEditMode}
-                  className={`h-9 text-sm ${
-                    isEditMode 
-                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 cursor-not-allowed' 
-                      : 'bg-white dark:bg-gray-800'
-                  }`}
-                />
-              </FormControl>
-              <FormMessage className="text-xs" />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Código SIRE */}
+          <FormField
+            control={control}
+            name="codeSIRE"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Código SIRE
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Ingrese el código SIRE del estudiante"
+                    {...field}
+                    value={field.value || ""}
+                    className="h-9 text-sm bg-white dark:bg-gray-800"
+                  />
+                </FormControl>
+                <FormMessage className="text-xs" />
+              </FormItem>
+            )}
+          />
+
+          {/* Código CUI */}
+          <FormField
+            control={control}
+            name="cui"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  CUI <span className="text-gray-500 text-xs font-normal">(Opcional - letras y números)</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Ej: ABC123456 (mínimo 4 caracteres)"
+                    {...field}
+                    value={field.value || ""}
+                    className="h-9 text-sm bg-white dark:bg-gray-800"
+                  />
+                </FormControl>
+                <FormMessage className="text-xs" />
+              </FormItem>
+            )}
+          />
+        </div>
       </div>
 
       {/* Foto de Perfil - OPCIONAL */}

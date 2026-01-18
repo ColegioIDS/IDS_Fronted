@@ -163,6 +163,7 @@ export const StudentEditForm: React.FC<StudentEditFormProps> = ({
         // Preparar datos para el formulario
         const formData = {
           codeSIRE: student.codeSIRE || undefined,
+          cui: student.cui || undefined,
           givenNames: student.givenNames,
           lastNames: student.lastNames,
           birthDate: student.birthDate,

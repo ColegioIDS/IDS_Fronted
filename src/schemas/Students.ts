@@ -172,6 +172,10 @@ export const BusServiceSchema = z.object({
 // === Esquema Base ===
 export const createBaseStudentSchema = () => z.object({
   codeSIRE: z.string().min(3).max(20).nullish(),
+  cui: z.string()
+    .min(4, "CUI debe tener al menos 4 caracteres")
+    .regex(/^[a-zA-Z0-9]+$/, "CUI solo puede contener letras y números")
+    .nullish(),
   givenNames: z.string().min(2, { message: "Los nombres deben tener al menos 2 caracteres" }).max(100),
   lastNames: z.string().min(2, { message: "Los apellidos deben tener al menos 2 caracteres" }).max(100),
   birthDate: z.coerce.date()
@@ -261,6 +265,7 @@ export type CreateStudentDto = Omit<StudentFormValues, 'academicRecords' | 'medi
 // ✅ ACTUALIZADO: defaultValues con enrollment
 export const defaultValues: StudentFormValues = {
   codeSIRE: undefined,
+  cui: undefined,
   givenNames: "",
   lastNames: "",
   birthDate: new Date(),
