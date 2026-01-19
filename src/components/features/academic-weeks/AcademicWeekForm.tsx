@@ -177,7 +177,7 @@ export function AcademicWeekForm({
           year: initialData.year,
           month: initialData.month,
           objectives: initialData.objectives || '',
-          isActive: initialData.isActive ?? true,
+       
         });
 
         setIsInitialized(true);
@@ -211,7 +211,7 @@ export function AcademicWeekForm({
           year: initialData.year,
           month: initialData.month,
           objectives: initialData.objectives || '',
-          isActive: initialData.isActive ?? true,
+        
         });
         setIsInitialized(true);
       } else {

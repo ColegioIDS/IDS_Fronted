@@ -156,8 +156,13 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({ student })
                 </h2>
                 <div className="flex flex-wrap items-center gap-3 mt-2">
                   <Badge variant="outline" className="font-mono bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">
-                    {student.codeSIRE}
+                    SIRE: {student.codeSIRE || 'N/A'}
                   </Badge>
+                  {student.cui && (
+                    <Badge variant="outline" className="font-mono bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800">
+                      CUI: {student.cui}
+                    </Badge>
+                  )}
                   {enrollment && (
                     <Badge className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                       {enrollment.section?.grade?.name} - Sección {enrollment.section?.name}
