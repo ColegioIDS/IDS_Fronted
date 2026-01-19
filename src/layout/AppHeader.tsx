@@ -3,14 +3,23 @@ import { ThemeToggleButton } from "@/components/common/ThemeToggleButton";
 import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { NEWS_PERMISSIONS } from "@/constants/modules-permissions";
 import Image from "next/image";
 import Link from "next/link";
+import { Newspaper } from "lucide-react";
 import React, { useState ,useEffect,useRef} from "react";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
-
+  const { can } = usePermissions();
   const { isMobileOpen, cycleSidebarMode, toggleMobileSidebar } = useSidebar();
+
+  // Verificar permiso de lectura para noticias
+  const canReadNews = can.do(
+    NEWS_PERMISSIONS.READ.module,
+    NEWS_PERMISSIONS.READ.action
+  );
 
   const handleSidebarToggle = () => {
     // En mobile: toggle simple abierto/cerrado
@@ -168,6 +177,18 @@ const AppHeader: React.FC = () => {
             {/* <!-- Dark Mode Toggler --> */}
             <ThemeToggleButton />
             {/* <!-- Dark Mode Toggler --> */}
+
+            {/* <!-- News Icon --> */}
+            {canReadNews && (
+              <Link
+                href="/news"
+                title="Ir a Noticias"
+                className="relative flex items-center justify-center text-gray-500 transition-colors bg-white border border-gray-200 rounded-full hover:text-dark-900 h-11 w-11 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              >
+                <Newspaper className="w-5 h-5" />
+              </Link>
+            )}
+            {/* <!-- News Icon --> */}
 
            <NotificationDropdown /> 
             {/* <!-- Notification Menu Area --> */}
