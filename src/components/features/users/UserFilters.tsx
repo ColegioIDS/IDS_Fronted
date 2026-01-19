@@ -39,9 +39,21 @@ interface UserFiltersProps {
 
 export function UserFilters({ query, onQueryChange, isLoading, roles = [] }: UserFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [searchInput, setSearchInput] = useState(query.search || '');
 
-  const handleSearch = (search: string) => {
-    onQueryChange({ search: search || undefined, page: 1 });
+  const handleSearchClick = () => {
+    onQueryChange({ search: searchInput || undefined, page: 1 });
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearchClick();
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    onQueryChange({ search: undefined, page: 1 });
   };
 
   const handleStatusChange = (value: string) => {
@@ -65,6 +77,7 @@ export function UserFilters({ query, onQueryChange, isLoading, roles = [] }: Use
 
   // Funciones para eliminar filtros individuales
   const removeSearchFilter = () => {
+    setSearchInput('');
     onQueryChange({ search: undefined, page: 1 });
   };
 
@@ -109,14 +122,15 @@ export function UserFilters({ query, onQueryChange, isLoading, roles = [] }: Use
       {/* Main Search Bar */}
       <div className="relative group">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 dark:from-blue-500/10 dark:to-purple-500/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="relative flex items-center">
+        <div className="relative flex items-center gap-2">
           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none">
             <Search className="w-5 h-5" />
           </div>
           <Input
             placeholder="Buscar por nombre, email o DPI..."
-            value={query.search || ''}
-            onChange={(e) => handleSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
             disabled={isLoading}
             className="
               pl-12 pr-4 py-2.5
@@ -132,21 +146,52 @@ export function UserFilters({ query, onQueryChange, isLoading, roles = [] }: Use
               rounded-lg
             "
           />
-          {query.search && (
+          {searchInput && (
             <button
-              onClick={() => handleSearch('')}
+              onClick={handleClearSearch}
               className="
-                absolute right-3 top-1/2 -translate-y-1/2
+                absolute right-[110px] top-1/2 -translate-y-1/2
                 p-1.5 rounded-md
                 hover:bg-slate-100 dark:hover:bg-slate-800
                 text-slate-400 dark:text-slate-500
                 hover:text-slate-600 dark:hover:text-slate-300
                 transition-colors duration-200
               "
+              title="Limpiar búsqueda"
             >
               <X className="w-4 h-4" />
             </button>
           )}
+          <Button
+            onClick={handleSearchClick}
+            disabled={isLoading || !searchInput}
+            className="
+              h-10 px-4
+              bg-gradient-to-r from-blue-500 to-blue-600
+              hover:from-blue-600 hover:to-blue-700
+              dark:from-blue-600 dark:to-blue-700
+              dark:hover:from-blue-700 dark:hover:to-blue-800
+              text-white font-semibold
+              transition-all duration-300
+              rounded-lg
+              shadow-sm hover:shadow-md
+              disabled:opacity-50 disabled:cursor-not-allowed
+              flex items-center gap-2
+              whitespace-nowrap
+            "
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Buscando...
+              </>
+            ) : (
+              <>
+                <Search className="w-4 h-4" />
+                Buscar
+              </>
+            )}
+          </Button>
         </div>
       </div>
 
