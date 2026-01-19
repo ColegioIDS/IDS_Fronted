@@ -8,4 +8,4 @@
  * Exporta los permisos del módulo news para fácil acceso
  */
 
-export { NEWS_PERMISSIONS, default } from './news.permissions';
+export { NEWS_PERMISSIONS } from './news.permissions';
