@@ -19,7 +19,7 @@ export const DIMENSION_ORDER: EricaDimension[] = [
   'RETIENE', 
   'INTERPRETA',
   'CONOCE',
-  'AMPLIA',
+  'APLICA',
 ];
 
 /** Orden de los estados por puntuación (de mayor a menor) */
@@ -31,7 +31,7 @@ export const DIMENSION_SHORT_LABELS: Record<EricaDimension, string> = {
   RETIENE: 'RET',
   INTERPRETA: 'INT',
   CONOCE: 'CON',
-  AMPLIA: 'AMP',
+  APLICA: 'APL',
 };
 
 // =====================================================
@@ -192,7 +192,7 @@ export function gridDataToEvaluationsMap(
     RETIENE: gridData.RETIENE,
     INTERPRETA: gridData.INTERPRETA,
     CONOCE: gridData.CONOCE,
-    AMPLIA: gridData.AMPLIA,
+    APLICA: gridData.APLICA,
   };
 }
 
@@ -205,7 +205,7 @@ export function createEmptyEvaluationsMap(): Record<EricaDimension, DimensionEva
     RETIENE: null,
     INTERPRETA: null,
     CONOCE: null,
-    AMPLIA: null,
+    APLICA: null,
   };
 }
 

@@ -33,7 +33,7 @@ const DIMENSION_COLORS: Record<string, string> = {
   RETIENE: '#3b82f6',
   INTERPRETA: '#a855f7',
   CONOCE: '#22c55e',
-  AMPLIA: '#eab308',
+  APLICA: '#eab308',
 };
 
 const STATE_LABELS: Record<string, string> = {

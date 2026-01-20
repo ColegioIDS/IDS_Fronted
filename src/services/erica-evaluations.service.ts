@@ -93,7 +93,7 @@ export const ericaEvaluationsService = {
         RETIENE: null,
         INTERPRETA: null,
         CONOCE: null,
-        AMPLIA: null,
+        APLICA: null,
       };
       
       // Mapear evaluaciones por dimensión usando el code como clave
@@ -105,7 +105,7 @@ export const ericaEvaluationsService = {
             'R': 'RETIENE',
             'I': 'INTERPRETA',
             'C': 'CONOCE',
-            'A': 'AMPLIA',
+            'A': 'APLICA',
           };
           
           const dimension = dimensionMap[evaluationItem.code];

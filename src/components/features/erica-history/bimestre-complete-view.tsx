@@ -171,7 +171,7 @@ function WeekCard({ week }: { week: BimesterWeek }) {
           <div className="space-y-4">
             <h4 className="font-semibold text-gray-900">Evaluaciones por Dimensión</h4>
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
-              {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => {
+              {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).map((dimension) => {
                 const evaluations = week.evaluations[dimension] || [];
                 return (
                   <Card key={dimension}>

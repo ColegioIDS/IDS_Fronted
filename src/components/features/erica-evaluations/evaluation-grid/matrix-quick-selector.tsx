@@ -44,7 +44,7 @@ export default function MatrixQuickSelector({
     RETIENE: 'R',
     INTERPRETA: 'I',
     CONOCE: 'C',
-    AMPLIA: 'A',
+    APLICA: 'A',
   };
 
   const handleStateClick = (dimension: EricaDimension, state: EricaState) => {

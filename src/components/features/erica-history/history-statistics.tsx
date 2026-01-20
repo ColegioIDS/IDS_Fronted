@@ -17,7 +17,7 @@ const DIMENSION_COLORS: Record<string, { bg: string; text: string }> = {
   RETIENE: { bg: 'bg-blue-100', text: 'text-blue-700' },
   INTERPRETA: { bg: 'bg-purple-100', text: 'text-purple-700' },
   CONOCE: { bg: 'bg-green-100', text: 'text-green-700' },
-  AMPLIA: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+  APLICA: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
 };
 
 const STATE_LABELS: Record<string, string> = {

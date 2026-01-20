@@ -18,7 +18,7 @@ export const ericaDimensionSchema = z.enum([
   'RETIENE',
   'INTERPRETA',
   'CONOCE',
-  'AMPLIA',
+  'APLICA',
 ]);
 
 /**

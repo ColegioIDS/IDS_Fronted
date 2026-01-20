@@ -25,7 +25,7 @@ interface CopyEvaluationsProps {
     RETIENE: DimensionEvaluation | null;
     INTERPRETA: DimensionEvaluation | null;
     CONOCE: DimensionEvaluation | null;
-    AMPLIA: DimensionEvaluation | null;
+    APLICA: DimensionEvaluation | null;
   }>;
   onApplyEvaluations: (enrollmentId: number, dimension: EricaDimension, state: EricaState, notes?: string | null) => void;
   copyOnlyEmpty?: boolean;
@@ -51,7 +51,7 @@ export default function CopyEvaluations({
         RETIENE: student.RETIENE,
         INTERPRETA: student.INTERPRETA,
         CONOCE: student.CONOCE,
-        AMPLIA: student.AMPLIA,
+        APLICA: student.APLICA,
       };
       // Contar solo evaluaciones reales (no nulas)
       const completed = Object.values(evals).filter(e => e !== null).length;
@@ -75,7 +75,7 @@ export default function CopyEvaluations({
       RETIENE: student.RETIENE,
       INTERPRETA: student.INTERPRETA,
       CONOCE: student.CONOCE,
-      AMPLIA: student.AMPLIA,
+      APLICA: student.APLICA,
     };
   };
 

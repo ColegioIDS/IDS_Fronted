@@ -122,7 +122,7 @@ export default function EvaluationGridV2({
         RETIENE: student.RETIENE,
         INTERPRETA: student.INTERPRETA,
         CONOCE: student.CONOCE,
-        AMPLIA: student.AMPLIA,
+        APLICA: student.APLICA,
       };
       return isStudentFullyEvaluated(evaluations);
     }).length;
@@ -133,7 +133,7 @@ export default function EvaluationGridV2({
         RETIENE: student.RETIENE,
         INTERPRETA: student.INTERPRETA,
         CONOCE: student.CONOCE,
-        AMPLIA: student.AMPLIA,
+        APLICA: student.APLICA,
       }) > 0
     ).length;
 
@@ -143,7 +143,7 @@ export default function EvaluationGridV2({
         RETIENE: student.RETIENE,
         INTERPRETA: student.INTERPRETA,
         CONOCE: student.CONOCE,
-        AMPLIA: student.AMPLIA,
+        APLICA: student.APLICA,
       }), 0
     );
 
@@ -157,7 +157,7 @@ export default function EvaluationGridV2({
             RETIENE: student.RETIENE,
             INTERPRETA: student.INTERPRETA,
             CONOCE: student.CONOCE,
-            AMPLIA: student.AMPLIA,
+            APLICA: student.APLICA,
           }), 0
         ) / localGrid.length
       : 0;
@@ -513,7 +513,7 @@ export default function EvaluationGridV2({
                       'RETIENE': 'R',
                       'INTERPRETA': 'I',
                       'CONOCE': 'C',
-                      'AMPLIA': 'A'
+                      'APLICA': 'A'
                     };
                     const dimensionCode = dimensionCodeMap[dimension];
                     
@@ -571,7 +571,7 @@ export default function EvaluationGridV2({
                     RETIENE: student.RETIENE,
                     INTERPRETA: student.INTERPRETA,
                     CONOCE: student.CONOCE,
-                    AMPLIA: student.AMPLIA,
+                    APLICA: student.APLICA,
                   };
                   const average = calculateStudentAverage(evaluations);
                   const completed = countCompletedDimensions(evaluations);

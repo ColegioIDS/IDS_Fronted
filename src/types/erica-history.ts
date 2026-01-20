@@ -27,7 +27,7 @@ export interface EricaHistoryEvaluation {
       name: string;
     };
   };
-  dimension: 'EJECUTA' | 'RETIENE' | 'INTERPRETA' | 'CONOCE' | 'AMPLIA';
+  dimension: 'EJECUTA' | 'RETIENE' | 'INTERPRETA' | 'CONOCE' | 'APLICA';
   state: 'E' | 'B' | 'P' | 'C' | 'N';
   points: number;
   notes: string | null;
@@ -84,7 +84,7 @@ export interface EricaHistoryDimensionStats {
   RETIENE: number;
   INTERPRETA: number;
   CONOCE: number;
-  AMPLIA: number;
+  APLICA: number;
 }
 
 export interface EricaHistoryStateStats {
@@ -124,7 +124,7 @@ export interface BimesterWeekEvaluation {
   id: number;
   enrollmentId: number;
   studentName: string;
-  dimension: 'EJECUTA' | 'RETIENE' | 'INTERPRETA' | 'CONOCE' | 'AMPLIA';
+  dimension: 'EJECUTA' | 'RETIENE' | 'INTERPRETA' | 'CONOCE' | 'APLICA';
   state: 'E' | 'B' | 'P' | 'C' | 'N';
   points: number;
   notes?: string;
@@ -163,7 +163,7 @@ export interface BimesterWeek {
     RETIENE: BimesterWeekEvaluation[];
     INTERPRETA: BimesterWeekEvaluation[];
     CONOCE: BimesterWeekEvaluation[];
-    AMPLIA: BimesterWeekEvaluation[];
+    APLICA: BimesterWeekEvaluation[];
   };
 }
 

@@ -22,7 +22,7 @@ interface SmartSuggestionsProps {
     RETIENE: DimensionEvaluation | null;
     INTERPRETA: DimensionEvaluation | null;
     CONOCE: DimensionEvaluation | null;
-    AMPLIA: DimensionEvaluation | null;
+    APLICA: DimensionEvaluation | null;
   }>;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -47,7 +47,7 @@ export default function SmartSuggestions({
       RETIENE: student.RETIENE,
       INTERPRETA: student.INTERPRETA,
       CONOCE: student.CONOCE,
-      AMPLIA: student.AMPLIA,
+      APLICA: student.APLICA,
     };
   };
 

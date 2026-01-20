@@ -60,7 +60,7 @@ export interface UpdateColorDto {
 /**
  * Tipo para dimensión ERICA
  */
-export type EricaDimension = 'EJECUTA' | 'RETIENE' | 'INTERPRETA' | 'CONOCE' | 'AMPLIA';
+export type EricaDimension = 'EJECUTA' | 'RETIENE' | 'INTERPRETA' | 'CONOCE' | 'APLICA';
 
 /**
  * Tipo para estado de desempeño
@@ -85,7 +85,7 @@ export const ERICA_DIMENSIONS: EricaDimension[] = [
   'RETIENE',
   'INTERPRETA',
   'CONOCE',
-  'AMPLIA',
+  'APLICA',
 ];
 
 /**
@@ -144,8 +144,8 @@ export const DEFAULT_COLORS: EricaColorsResponse = {
     {
       id: 5,
       dimension: 'A',
-      name: 'Amplia',
-      description: 'Dimensión que amplía aplicaciones',
+      name: 'Aplica',
+      description: 'Dimensión que aplica extensiones',
       hexColor: '#FFEAA7',
       rgbColor: 'rgb(255, 234, 167)',
     },

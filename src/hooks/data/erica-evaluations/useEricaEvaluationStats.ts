@@ -86,7 +86,7 @@ export function useEricaEvaluationStats(): UseStatsReturn {
   const getFormattedStats = useCallback((): FormattedDimensionStats[] => {
     if (!state.stats) return [];
     
-    const dimensions: EricaDimension[] = ['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'];
+    const dimensions: EricaDimension[] = ['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'];
     
     return dimensions.map(dimension => {
       const dimStats = state.stats!.dimensionStats[dimension];

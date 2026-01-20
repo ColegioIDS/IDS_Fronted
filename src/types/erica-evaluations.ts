@@ -8,7 +8,7 @@
 export type EricaState = 'E' | 'B' | 'P' | 'C' | 'N';
 
 /** Dimensiones ERICA */
-export type EricaDimension = 'EJECUTA' | 'RETIENE' | 'INTERPRETA' | 'CONOCE' | 'AMPLIA';
+export type EricaDimension = 'EJECUTA' | 'RETIENE' | 'INTERPRETA' | 'CONOCE' | 'APLICA';
 
 /** Mapeo de estados a puntos */
 export const STATE_POINTS: Record<EricaState, number> = {
@@ -34,7 +34,7 @@ export const DIMENSION_LABELS: Record<EricaDimension, string> = {
   RETIENE: 'Retiene - Retención de información y conceptos',
   INTERPRETA: 'Interpreta - Interpretación y análisis crítico',
   CONOCE: 'Conoce - Comprensión de conceptos fundamentales',
-  AMPLIA: 'Amplía - Ampliación y extensión de aprendizaje',
+  APLICA: 'Aplica - Ampliación y extensión de aprendizaje',
 };
 
 // =====================================================
@@ -212,7 +212,7 @@ export interface EvaluationGridData {
   RETIENE: DimensionEvaluation | null;
   INTERPRETA: DimensionEvaluation | null;
   CONOCE: DimensionEvaluation | null;
-  AMPLIA: DimensionEvaluation | null;
+  APLICA: DimensionEvaluation | null;
 }
 
 /** Respuesta del grid por enrollment/week */

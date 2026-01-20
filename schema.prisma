@@ -637,7 +637,7 @@
     RETIENE
     INTERPRETA
     CONOCE
-    AMPLIA
+    APLICA
   }
 
   enum EricaState {
@@ -665,12 +665,12 @@
   * - Martes (2) → RETIENE
   * - Miércoles (3) → INTERPRETA
   * - Jueves (4) → CONOCE
-  * - Viernes (5) → AMPLIA
+  * - Viernes (5) → APLICA
   */
   model EricaDimensionDay {
     id        Int            @id @default(autoincrement())
     dayOfWeek Int            // 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes
-    dimension EricaDimension // EJECUTA, RETIENE, INTERPRETA, CONOCE, AMPLIA
+    dimension EricaDimension // EJECUTA, RETIENE, INTERPRETA, CONOCE, APLICA
     order     Int            // 1, 2, 3, 4, 5
     
     isActive Boolean @default(true)
@@ -694,14 +694,14 @@
   * - RETIENE → Azul (#0000FF)
   * - INTERPRETA → Morado (#800080)
   * - CONOCE → Naranja (#FFA500)
-  * - AMPLIA → Rojo (#FF0000)
+  * - APLICA → Rojo (#FF0000)
   */
   /**
   * ⭐ TABLA DE COLORES PARA DIMENSIONES ERICA
-  * Mapea colores a cada dimensión (E→EJECUTA, R→RETIENE, I→INTERPRETA, C→CONOCE, A→AMPLIA)
+  * Mapea colores a cada dimensión (E→EJECUTA, R→RETIENE, I→INTERPRETA, C→CONOCE, A→APLICA)
   * 
   * Estructura:
-  * - dimension: Enum (E, R, I, C, A) + (EJECUTA, RETIENE, INTERPRETA, CONOCE, AMPLIA)
+  * - dimension: Enum (E, R, I, C, A) + (EJECUTA, RETIENE, INTERPRETA, CONOCE, APLICA)
   * - name: Nombre completo (Ej: "Ejecuta")
   * - description: Descripción detallada (Ej: "Dimensión de ejecución de tareas")
   * - hexColor: Color en formato hexadecimal (Ej: "#FF6B6B")
@@ -820,7 +820,7 @@
   * - Martes (2) → RETIENE → Estado EBPCN → Puntos
   * - Miércoles (3) → INTERPRETA → Estado EBPCN → Puntos
   * - Jueves (4) → CONOCE → Estado EBPCN → Puntos
-  * - Viernes (5) → AMPLIA → Estado EBPCN → Puntos
+  * - Viernes (5) → APLICA → Estado EBPCN → Puntos
   */
   model EricaEvaluation {
     id             Int @id @default(autoincrement())
@@ -833,7 +833,7 @@
     topicId        Int
     teacherId      Int
 
-    // ⭐ Dimensión ERICA (EJECUTA, RETIENE, INTERPRETA, CONOCE, AMPLIA)
+    // ⭐ Dimensión ERICA (EJECUTA, RETIENE, INTERPRETA, CONOCE, APLICA)
     dimension      EricaDimension
     
     // ⭐ Estado (E, B, P, C, N) - reemplaza categoryId + scaleId
@@ -1019,7 +1019,7 @@
     qna1_retiene     Float?
     qna1_interpreta  Float?
     qna1_conoce      Float?
-    qna1_amplia      Float?
+    qna1_aplica      Float?
     qna1_average     Float?                  // Promedio de las 5 dimensiones
     qna1_performanceLevel String?            // 'RED' | 'YELLOW' | 'GREEN'
 
@@ -1028,7 +1028,7 @@
     qna2_retiene     Float?
     qna2_interpreta  Float?
     qna2_conoce      Float?
-    qna2_amplia      Float?
+    qna2_aplica      Float?
     qna2_average     Float?                  // Promedio de las 5 dimensiones
     qna2_performanceLevel String?            // 'RED' | 'YELLOW' | 'GREEN'
 
@@ -1037,7 +1037,7 @@
     qna3_retiene     Float?
     qna3_interpreta  Float?
     qna3_conoce      Float?
-    qna3_amplia      Float?
+    qna3_aplica      Float?
     qna3_average     Float?                  // Promedio de las 5 dimensiones
     qna3_performanceLevel String?            // 'RED' | 'YELLOW' | 'GREEN'
 
@@ -1046,7 +1046,7 @@
     qna4_retiene     Float?
     qna4_interpreta  Float?
     qna4_conoce      Float?
-    qna4_amplia      Float?
+    qna4_aplica      Float?
     qna4_average     Float?                  // Promedio de las 5 dimensiones
     qna4_performanceLevel String?            // 'RED' | 'YELLOW' | 'GREEN'
 
@@ -1055,7 +1055,7 @@
     mes1_retiene     Float?
     mes1_interpreta  Float?
     mes1_conoce      Float?
-    mes1_amplia      Float?
+    mes1_aplica      Float?
     mes1_average     Float?                  // Promedio mensual de las 5 dimensiones
     mes1_performanceLevel String?            // 'RED' | 'YELLOW' | 'GREEN'
 
@@ -1064,7 +1064,7 @@
     mes2_retiene     Float?
     mes2_interpreta  Float?
     mes2_conoce      Float?
-    mes2_amplia      Float?
+    mes2_aplica      Float?
     mes2_average     Float?                  // Promedio mensual de las 5 dimensiones
     mes2_performanceLevel String?            // 'RED' | 'YELLOW' | 'GREEN'
 
@@ -1073,7 +1073,7 @@
     bimestre_retiene     Float?
     bimestre_interpreta  Float?
     bimestre_conoce      Float?
-    bimestre_amplia      Float?
+    bimestre_aplica      Float?
     bimestre_average     Float?              // Promedio del bimestre completo
     bimestre_performanceLevel String?        // 'RED' | 'YELLOW' | 'GREEN'
 

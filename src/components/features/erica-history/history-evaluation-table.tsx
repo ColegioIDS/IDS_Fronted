@@ -49,7 +49,7 @@ interface StudentEvaluationRow {
       RETIENE?: EricaHistoryEvaluation;
       INTERPRETA?: EricaHistoryEvaluation;
       CONOCE?: EricaHistoryEvaluation;
-      AMPLIA?: EricaHistoryEvaluation;
+      APLICA?: EricaHistoryEvaluation;
     };
   };
 }
@@ -88,7 +88,7 @@ const getDimensionShortCode = (dimension: string): string => {
     RETIENE: 'R',
     INTERPRETA: 'I',
     CONOCE: 'C',
-    AMPLIA: 'A',
+    APLICA: 'A',
   };
   return codes[dimension] || '?';
 };
@@ -99,7 +99,7 @@ const getDimensionColor = (dimension: string): string => {
     RETIENE: 'bg-purple-100',
     INTERPRETA: 'bg-green-100',
     CONOCE: 'bg-orange-100',
-    AMPLIA: 'bg-pink-100',
+    APLICA: 'bg-pink-100',
   };
   return colors[dimension] || 'bg-gray-100';
 };
@@ -319,8 +319,8 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                   </React.Fragment>
                 ))}
                 
-                {/* Semanas restantes que no encajan en grupos de 4 */}
-                {weeks.length % 4 !== 0 && (() => {
+                {/* Semanas restantes que no encajan en grupos de 4 (solo si hay más de 4 semanas) */}
+                {weeks.length > 4 && weeks.length % 4 !== 0 && (() => {
                   const remainingStartIndex = Math.floor(weeks.length / 4) * 4;
                   const remainingWeeks = weeks.slice(remainingStartIndex);
                   return remainingWeeks.map((week) => (
@@ -361,7 +361,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                       <>
                         {group.weeks.slice(0, 2).map((week) => (
                           <React.Fragment key={`dimensions-${week.academicWeek.id}`}>
-                            {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => (
+                            {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).map((dimension) => (
                               <TableHead 
                                 key={`${week.academicWeek.id}-${dimension}`}
                                 className="font-semibold text-center min-w-[60px] py-2 text-white"
@@ -382,7 +382,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                           </React.Fragment>
                         ))}
                         
-                        {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension, dimIdx) => (
+                        {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).map((dimension, dimIdx) => (
                           <TableHead 
                             key={`qna1-${group.monthIndex}-${dimension}`}
                             className={`font-semibold text-blue-700 text-center min-w-[60px] py-2 bg-blue-50 ${dimIdx === 4 ? 'border-r-2 border-gray-400' : ''}`}
@@ -398,7 +398,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                       <>
                         {group.weeks.slice(2, 4).map((week) => (
                           <React.Fragment key={`dimensions-${week.academicWeek.id}`}>
-                            {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => (
+                            {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).map((dimension) => (
                               <TableHead 
                                 key={`${week.academicWeek.id}-${dimension}`}
                                 className="font-semibold text-center min-w-[60px] py-2 text-white"
@@ -419,7 +419,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                           </React.Fragment>
                         ))}
                         
-                        {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension, dimIdx) => (
+                        {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).map((dimension, dimIdx) => (
                           <TableHead 
                             key={`qna2-${group.monthIndex}-${dimension}`}
                             className={`font-semibold text-blue-700 text-center min-w-[60px] py-2 bg-blue-50 ${dimIdx === 4 ? 'border-r-2 border-gray-400' : ''}`}
@@ -432,13 +432,13 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                   </React.Fragment>
                 ))}
                 
-                {/* Dimensiones para semanas restantes */}
-                {weeks.length % 4 !== 0 && (() => {
+                {/* Dimensiones para semanas restantes (solo si hay más de 4 semanas) */}
+                {weeks.length > 4 && weeks.length % 4 !== 0 && (() => {
                   const remainingStartIndex = Math.floor(weeks.length / 4) * 4;
                   const remainingWeeks = weeks.slice(remainingStartIndex);
                   return remainingWeeks.map((week) => (
                     <React.Fragment key={`dimensions-${week.academicWeek.id}`}>
-                      {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => (
+                      {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).map((dimension) => (
                         <TableHead 
                           key={`${week.academicWeek.id}-${dimension}`}
                           className="font-semibold text-center min-w-[60px] py-2 text-white"
@@ -500,7 +500,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                         const qna1Totals: Record<string, number> = {};
                         const qna1Counts: Record<string, number> = {};
                         
-                        (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).forEach((dimension) => {
+                        (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).forEach((dimension) => {
                           let total = 0;
                           let count = 0;
                           pair1Weeks.forEach((week) => {
@@ -522,7 +522,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                               const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
                               return (
                                 <React.Fragment key={`row-week-${week.academicWeek.id}-${row.studentId}`}>
-                                  {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => {
+                                  {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).map((dimension) => {
                                     const evaluation = weekEvals[dimension];
                                     return (
                                       <TableCell 
@@ -557,7 +557,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                                   {/* Total para esta semana */}
                                   <TableCell key={`${week.academicWeek.id}-total-${row.studentId}`} className={`text-center font-semibold text-xs p-1 border-r-2 border-gray-400`}>
                                     {(() => {
-                                      const total = (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).reduce((sum, dimension) => {
+                                      const total = (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).reduce((sum, dimension) => {
                                         const dimEval = weekEvals[dimension];
                                         return sum + (dimEval?.points || 0);
                                       }, 0);
@@ -569,7 +569,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                             })}
 
                             {/* Columnas PROMEDIO QNA 1 */}
-                            {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension, dimIdx) => {
+                            {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).map((dimension, dimIdx) => {
                               const average = qna1Totals[dimension] || 0;
                               const performanceColor = getPerformanceLevelColor(average);
                               const performanceLabel = getPerformanceLevelLabel(average);
@@ -601,7 +601,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                         const qna2Totals: Record<string, number> = {};
                         const qna2Counts: Record<string, number> = {};
                         
-                        (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).forEach((dimension) => {
+                        (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).forEach((dimension) => {
                           let total1 = 0, count1 = 0;
                           let total2 = 0, count2 = 0;
                           
@@ -636,7 +636,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                               const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
                               return (
                                 <React.Fragment key={`row-week-${week.academicWeek.id}-${row.studentId}`}>
-                                  {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => {
+                                  {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).map((dimension) => {
                                     const evaluation = weekEvals[dimension];
                                     return (
                                       <TableCell 
@@ -671,7 +671,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                                   {/* Total para esta semana */}
                                   <TableCell key={`${week.academicWeek.id}-total-${row.studentId}`} className={`text-center font-semibold text-xs p-1 border-r-2 border-gray-400`}>
                                     {(() => {
-                                      const total = (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).reduce((sum, dimension) => {
+                                      const total = (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).reduce((sum, dimension) => {
                                         const dimEval = weekEvals[dimension];
                                         return sum + (dimEval?.points || 0);
                                       }, 0);
@@ -683,7 +683,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                             })}
 
                             {/* Columnas PROMEDIO QNA 2 */}
-                            {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension, dimIdx) => {
+                            {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).map((dimension, dimIdx) => {
                               const average = qna2Totals[dimension] || 0;
                               const performanceColor = getPerformanceLevelColor(average);
                               const performanceLabel = getPerformanceLevelLabel(average);
@@ -708,15 +708,15 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                     </React.Fragment>
                   ))}
                   
-                  {/* Semanas restantes */}
-                  {weeks.length % 4 !== 0 && (() => {
+                  {/* Semanas restantes (solo si hay más de 4 semanas) */}
+                  {weeks.length > 4 && weeks.length % 4 !== 0 && (() => {
                     const remainingStartIndex = Math.floor(weeks.length / 4) * 4;
                     const remainingWeeks = weeks.slice(remainingStartIndex);
                     return remainingWeeks.map((week) => {
                       const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
                       return (
                         <React.Fragment key={`row-week-${week.academicWeek.id}-${row.studentId}`}>
-                          {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).map((dimension) => {
+                          {(['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).map((dimension) => {
                             const evaluation = weekEvals[dimension];
                             return (
                               <TableCell 
@@ -751,7 +751,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                           {/* Total para esta semana */}
                           <TableCell key={`${week.academicWeek.id}-total-${row.studentId}`} className={`text-center font-semibold text-xs p-1 border-r-2 border-gray-400`}>
                             {(() => {
-                              const total = (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).reduce((sum, dimension) => {
+                              const total = (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).reduce((sum, dimension) => {
                                 const dimEval = weekEvals[dimension];
                                 return sum + (dimEval?.points || 0);
                               }, 0);
@@ -768,7 +768,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                     {(() => {
                       let totalSum = 0;
                       weeks.forEach((week) => {
-                        (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'AMPLIA'] as const).forEach((dimension) => {
+                        (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).forEach((dimension) => {
                           const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
                           const eval_ = weekEvals[dimension];
                           if (eval_) {

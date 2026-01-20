@@ -40,7 +40,7 @@ interface PatternsSelectorProps {
     RETIENE: DimensionEvaluation | null;
     INTERPRETA: DimensionEvaluation | null;
     CONOCE: DimensionEvaluation | null;
-    AMPLIA: DimensionEvaluation | null;
+    APLICA: DimensionEvaluation | null;
   }>;
   onApplyEvaluations: (enrollmentId: number, dimension: EricaDimension, state: EricaState, notes?: string | null) => void;
   copyOnlyEmpty?: boolean;
@@ -112,7 +112,7 @@ export default function PatternsSelector({
       RETIENE: student.RETIENE,
       INTERPRETA: student.INTERPRETA,
       CONOCE: student.CONOCE,
-      AMPLIA: student.AMPLIA,
+      APLICA: student.APLICA,
     };
   };
 

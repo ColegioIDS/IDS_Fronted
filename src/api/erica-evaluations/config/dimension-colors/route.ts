@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       },
       {
         dimension: 'A',
-        name: 'Amplía',
+        name: 'Aplica',
         description: 'Dimensión que mide la ampliación y expansión de conocimiento más allá de lo básico...',
         hexColor: '#95BDFF',
         isActive: true,
