@@ -92,27 +92,44 @@ export const DEFAULT_TIME_SLOTS: TimeSlot[] = [
 // ============================================================================
 
 /**
- * Break/Recreation slot configuration
+ * Slot type for scheduling
  */
-export interface BreakSlot {
-  start: string;     // Format: "HH:MM" (e.g., "09:00")
-  end: string;       // Format: "HH:MM" (e.g., "09:15")
-  label?: string;    // Optional label (e.g., "RECREO", "ALMUERZO")
+export type SlotType = 'activity' | 'break' | 'lunch' | 'free' | 'class' | 'custom';
+
+/**
+ * Schedule slot configuration (per day)
+ * Can be a break, lunch, activity, or class
+ */
+export interface ScheduleSlot {
+  start: string;              // Format: "HH:MM" (e.g., "09:00")
+  end: string;                // Format: "HH:MM" (e.g., "09:15")
+  label: string;              // Label (e.g., "RECREO", "ALMUERZO", "ACTIVIDAD CÍVICA")
+  type: SlotType;             // Type of slot
+  isClass?: boolean;          // If true, counts towards class duration (default: false)
+  description?: string;       // Optional description
+}
+
+/**
+ * Break/Recreation slot configuration (legacy, kept for compatibility)
+ */
+export interface BreakSlot extends ScheduleSlot {
+  // Backward compatibility - ScheduleSlot is the new name
 }
 
 /**
  * Schedule configuration for a section (1:1 relationship)
+ * Now supports per-day configuration
  */
 export interface ScheduleConfig {
   id: number;
   sectionId: number;
   workingDays: DayOfWeek[];
-  startTime: string;           // Format: "HH:MM"
-  endTime: string;             // Format: "HH:MM"
-  classDuration: number;       // Minutes (e.g., 45)
-  breakSlots: BreakSlot[];
-  createdAt: string;           // ISO 8601
-  updatedAt: string;           // ISO 8601
+  startTime: string;                          // Format: "HH:MM"
+  endTime: string;                            // Format: "HH:MM"
+  classDuration: number;                      // Minutes (e.g., 45)
+  breakSlots: Record<string, ScheduleSlot[]>; // Key: day number (1-7), Value: slots for that day
+  createdAt: string;                          // ISO 8601
+  updatedAt: string;                          // ISO 8601
 }
 
 /**
@@ -124,7 +141,7 @@ export interface CreateScheduleConfigDto {
   startTime: string;
   endTime: string;
   classDuration: number;
-  breakSlots?: BreakSlot[];
+  breakSlots?: Record<string, ScheduleSlot[]>;
 }
 
 /**
@@ -135,7 +152,7 @@ export interface UpdateScheduleConfigDto {
   startTime?: string;
   endTime?: string;
   classDuration?: number;
-  breakSlots?: BreakSlot[];
+  breakSlots?: Record<string, ScheduleSlot[]>;
 }
 
 // ============================================================================
@@ -422,9 +439,15 @@ export interface ScheduleValidationError {
 
 /**
  * Generate time slots based on ScheduleConfig
+ * Now supports per-day configuration
  */
 export class ScheduleTimeGenerator {
-  static generateTimeSlots(config: ScheduleConfig): TimeSlot[] {
+  /**
+   * Generate time slots for a specific day
+   * @param config - ScheduleConfig
+   * @param day - DayOfWeek (1-7)
+   */
+  static generateTimeSlotsForDay(config: ScheduleConfig, day: DayOfWeek): TimeSlot[] {
     const slots: TimeSlot[] = [];
     const [startHour, startMin] = config.startTime.split(':').map(Number);
     const [endHour, endMin] = config.endTime.split(':').map(Number);
@@ -433,8 +456,9 @@ export class ScheduleTimeGenerator {
     let currentMins = startMin;
     const endTotalMins = endHour * 60 + endMin;
 
-    // First, add break slots directly from config
-    const breakSlotsToPush = [...config.breakSlots];
+    // Get slots for this specific day
+    const daySlotsRecord = config.breakSlots as Record<string, ScheduleSlot[]>;
+    const daySlots = daySlotsRecord[day.toString()] || [];
 
     while (currentHours * 60 + currentMins < endTotalMins) {
       const nextMins = currentMins + config.classDuration;
@@ -446,23 +470,21 @@ export class ScheduleTimeGenerator {
       const startStr = `${String(currentHours).padStart(2, '0')}:${String(currentMins).padStart(2, '0')}`;
       const endStr = `${String(nextHours).padStart(2, '0')}:${String(nextMins % 60).padStart(2, '0')}`;
 
-      // Convert times to minutes for comparison
       const slotStartMins = currentHours * 60 + currentMins;
       const slotEndMins = nextTotalMins;
 
-      // Check if this slot overlaps with any break slot
-      const isInBreak = config.breakSlots.some((b) => {
-        const [bStartHour, bStartMin] = b.start.split(':').map(Number);
-        const [bEndHour, bEndMin] = b.end.split(':').map(Number);
-        const breakStartMins = bStartHour * 60 + bStartMin;
-        const breakEndMins = bEndHour * 60 + bEndMin;
+      // Check if this slot overlaps with any slot for this day (including classes)
+      const overlappingSlot = daySlots.find((s) => {
+        const [sStartHour, sStartMin] = s.start.split(':').map(Number);
+        const [sEndHour, sEndMin] = s.end.split(':').map(Number);
+        const slotStartMinsDay = sStartHour * 60 + sStartMin;
+        const slotEndMinsDay = sEndHour * 60 + sEndMin;
 
-        // Check if slot overlaps with break (even partially)
-        return slotStartMins < breakEndMins && slotEndMins > breakStartMins;
+        return slotStartMins < slotEndMinsDay && slotEndMins > slotStartMinsDay;
       });
 
-      // Only add class slots that don't overlap with breaks
-      if (!isInBreak) {
+      // If it's a class slot or doesn't overlap with any configured slot, add it
+      if (!overlappingSlot) {
         slots.push({
           start: startStr,
           end: endStr,
@@ -475,17 +497,17 @@ export class ScheduleTimeGenerator {
       currentMins = nextMins % 60;
     }
 
-    // Now add break slots directly from config
-    breakSlotsToPush.forEach((breakSlot) => {
+    // Add all configured slots for this day
+    daySlots.forEach((slot) => {
       slots.push({
-        start: breakSlot.start,
-        end: breakSlot.end,
-        label: breakSlot.label || 'BREAK',
-        isBreak: true,
+        start: slot.start,
+        end: slot.end,
+        label: slot.label,
+        isBreak: slot.type !== 'class' && !slot.isClass,
       });
     });
 
-    // Sort slots by start time for proper display
+    // Sort slots by start time
     slots.sort((a, b) => {
       const aTime = parseInt(a.start.replace(':', ''));
       const bTime = parseInt(b.start.replace(':', ''));
@@ -493,6 +515,40 @@ export class ScheduleTimeGenerator {
     });
 
     return slots;
+  }
+
+  /**
+   * Generate time slots for all working days with per-day configuration
+   */
+  static generateTimeSlots(config: ScheduleConfig): TimeSlot[] {
+    // If breakSlots is a Record, generate slots for each day and merge
+    if (config.workingDays && config.workingDays.length > 0) {
+      // For per-day config, we need to return the slots for the first day
+      // The ScheduleGrid will handle per-day rendering
+      return this.generateTimeSlotsForDay(config, config.workingDays[0]);
+    }
+    
+    // Fallback to first day (Monday)
+    return this.generateTimeSlotsForDay(config, 1 as DayOfWeek);
+  }
+
+  /**
+   * Generate time slots for all working days, organized by day
+   * Returns Record<DayOfWeek, TimeSlot[]>
+   */
+  static generateTimeSlotsPerDay(config: ScheduleConfig): Record<number, TimeSlot[]> {
+    const slotsByDay: Record<number, TimeSlot[]> = {};
+    
+    if (!config.workingDays || config.workingDays.length === 0) {
+      return slotsByDay;
+    }
+
+    // Generate slots for each working day
+    config.workingDays.forEach(day => {
+      slotsByDay[day] = this.generateTimeSlotsForDay(config, day);
+    });
+
+    return slotsByDay;
   }
 }
 

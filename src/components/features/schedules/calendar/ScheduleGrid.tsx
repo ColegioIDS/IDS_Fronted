@@ -20,6 +20,7 @@ interface ScheduleGridProps {
   schedules: Schedule[];
   tempSchedules: TempSchedule[];
   timeSlots?: TimeSlot[];
+  timeSlotsByDay?: Record<number, TimeSlot[]>;
   workingDays?: number[];
   courseAssignments: CourseAssignment[];
   onDrop?: (item: DragItem, day: DayOfWeek, timeSlot: TimeSlot) => void;
@@ -35,6 +36,7 @@ export function ScheduleGrid({
   schedules,
   tempSchedules,
   timeSlots,
+  timeSlotsByDay,
   workingDays,
   courseAssignments,
   onDrop,
@@ -56,6 +58,40 @@ export function ScheduleGrid({
       .map(day => ALL_DAYS_OF_WEEK.find(d => d.value === day))
       .filter((d): d is DayObject => d !== undefined);
   }, [workingDays]);
+
+  // Calculate which time slots to show
+  // If we have timeSlotsByDay, we need to get the union of all time slots across all days
+  const slotsToRender = useMemo(() => {
+    if (!timeSlotsByDay || Object.keys(timeSlotsByDay).length === 0) {
+      // Fall back to currentTimeSlots
+      console.log('[ScheduleGrid] Using currentTimeSlots (no per-day slots available)');
+      return currentTimeSlots;
+    }
+
+    console.log('[ScheduleGrid] Using timeSlotsByDay for rendering');
+    
+    // Get unique time slots across all days
+    const uniqueSlots = new Map<string, TimeSlot>();
+    
+    Object.values(timeSlotsByDay).forEach(daySlots => {
+      daySlots.forEach(slot => {
+        const key = `${slot.start}-${slot.end}`;
+        if (!uniqueSlots.has(key)) {
+          uniqueSlots.set(key, slot);
+        }
+      });
+    });
+
+    // Convert back to array, preserving time order
+    const sortedSlots = Array.from(uniqueSlots.values()).sort((a, b) => {
+      const [aHour, aMin] = a.start.split(':').map(Number);
+      const [bHour, bMin] = b.start.split(':').map(Number);
+      return (aHour * 60 + aMin) - (bHour * 60 + bMin);
+    });
+
+    console.log('[ScheduleGrid] Merged slots from all days:', sortedSlots);
+    return sortedSlots;
+  }, [timeSlotsByDay, currentTimeSlots]);
 
   // Merge schedules and tempSchedules, group by day and time
   const scheduleGrid = useMemo(() => {
@@ -197,10 +233,11 @@ export function ScheduleGrid({
             </div>
 
             {/* Rows */}
-            {currentTimeSlots.map((timeSlot: TimeSlot, index: number) => {
-              const isBreakTime = (timeSlot.isBreak === true) ||
-                                 (timeSlot.label?.includes("RECREO") ?? false) ||
-                                 (timeSlot.label?.includes("ALMUERZO") ?? false);
+            {slotsToRender.map((timeSlot: TimeSlot, index: number) => {
+              // Calculate isBreakTime for the TIME SLOT itself (from slotsToRender)
+              const slotIsBreakTime = (timeSlot.isBreak === true) ||
+                                     (timeSlot.label?.includes("RECREO") ?? false) ||
+                                     (timeSlot.label?.includes("ALMUERZO") ?? false);
               
               return (
                 <div 
@@ -216,21 +253,21 @@ export function ScheduleGrid({
                   <div className={`
                     p-3 text-sm font-medium border-r flex items-center justify-center
                     border-gray-200 dark:border-gray-700 sticky left-0 z-10
-                    ${isBreakTime 
+                    ${slotIsBreakTime 
                       ? 'bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 text-gray-600 dark:text-gray-400' 
                       : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800'
                     }
                   `}>
                     <div className="text-center text-gray-700 dark:text-gray-300">
                       <div className="font-mono text-xs text-gray-600 dark:text-gray-400">
-                        {!isBreakTime && (
+                        {!slotIsBreakTime && (
                           <>
                             <span className="block">{timeSlot.start}</span>
                             <span className="text-gray-400 dark:text-gray-600">-</span>
                             <span className="block">{timeSlot.end}</span>
                           </>
                         )}
-                        {isBreakTime && (
+                        {slotIsBreakTime && (
                           <>
                             <span className="block">{timeSlot.start}</span>
                             <span className="text-gray-400 dark:text-gray-600">-</span>
@@ -246,6 +283,111 @@ export function ScheduleGrid({
 
                   {/* Time slots for each day */}
                   {currentWorkingDays.map((day) => {
+                    // Check if this timeSlot exists for this specific day
+                    const daySlots = timeSlotsByDay?.[day.value];
+                    const daySlot = daySlots?.find(s => s.start === timeSlot.start && s.end === timeSlot.end);
+                    
+                    // Calculate if THIS SLOT is a break FOR THIS DAY
+                    const isBreakTimeForDay = daySlot?.isBreak ?? slotIsBreakTime;
+                    
+                    // If timeSlotsByDay is defined but:
+                    // 1. This slot doesn't exist for this day, OR
+                    // 2. The slot type differs (e.g., it's a break in slotsToRender but not in this day)
+                    if (timeSlotsByDay && Object.keys(timeSlotsByDay).length > 0) {
+                      // If slot doesn't exist for this day at all
+                      if (!daySlot) {
+                        // Only show empty if it's a break - otherwise show as available class
+                        if (slotIsBreakTime) {
+                          // It's a break only in some days, not in this day - show empty
+                          console.log(`[ScheduleGrid] Slot ${timeSlot.start}-${timeSlot.end} is break but not in day ${day.value}`);
+                          return (
+                            <div
+                              key={`${day.value}-${timeSlot.start}-${timeSlot.end}-empty`}
+                              className="p-2 border-r border-gray-200 dark:border-gray-700"
+                            />
+                          );
+                        } else {
+                          // It's a class/activity only in some days
+                          // For other days, create a virtual slot so it can receive drops
+                          const virtualSlot: TimeSlot = {
+                            start: timeSlot.start,
+                            end: timeSlot.end,
+                            label: `${timeSlot.start} - ${timeSlot.end}`,
+                            isBreak: false,
+                          };
+                          const key = `${day.value}-${virtualSlot.start}`;
+                          const daySchedules = scheduleGrid[key] || [];
+                          
+                          console.log(`[ScheduleGrid] Slot ${timeSlot.start}-${timeSlot.end} is activity/class only in some days, showing as available in day ${day.value}`);
+                          return (
+                            <DroppableTimeSlot
+                              key={`${day.value}-${virtualSlot.start}-${virtualSlot.end}`}
+                              day={day.value as DayOfWeek}
+                              timeSlot={virtualSlot}
+                              schedules={daySchedules}
+                              onDrop={onDrop || (() => {})}
+                              onScheduleEdit={handleScheduleEdit}
+                              onScheduleDelete={handleScheduleDelete}
+                              isBreakTime={false}
+                              markedForDeletionIds={markedForDeletionIds}
+                            />
+                          );
+                        }
+                      }
+                      
+                      // If it's a break in slotsToRender but NOT a break in this day, show as available class
+                      if (slotIsBreakTime && !daySlot.isBreak) {
+                        console.log(`[ScheduleGrid] Slot ${timeSlot.start}-${timeSlot.end} is break in slotsToRender but class in day ${day.value} - showing as available`);
+                        
+                        // Create a virtual slot with class properties instead of break properties
+                        const virtualClassSlot: TimeSlot = {
+                          start: timeSlot.start,
+                          end: timeSlot.end,
+                          label: `${timeSlot.start} - ${timeSlot.end}`,
+                          isBreak: false,
+                        };
+                        
+                        const key = `${day.value}-${virtualClassSlot.start}`;
+                        const daySchedules = scheduleGrid[key] || [];
+                        
+                        return (
+                          <DroppableTimeSlot
+                            key={`${day.value}-${virtualClassSlot.start}-${virtualClassSlot.end}`}
+                            day={day.value as DayOfWeek}
+                            timeSlot={virtualClassSlot}
+                            schedules={daySchedules}
+                            onDrop={onDrop || (() => {})}
+                            onScheduleEdit={handleScheduleEdit}
+                            onScheduleDelete={handleScheduleDelete}
+                            isBreakTime={false}
+                            markedForDeletionIds={markedForDeletionIds}
+                          />
+                        );
+                      }
+                      
+                      // If it's NOT a break in slotsToRender but IS a break in this day, show the break
+                      if (!slotIsBreakTime && daySlot.isBreak) {
+                        console.log(`[ScheduleGrid] Slot ${timeSlot.start}-${timeSlot.end} is class in slotsToRender but break in day ${day.value}`);
+                        // Use the day's slot properties instead
+                        const key = `${day.value}-${daySlot.start}`;
+                        const daySchedules = scheduleGrid[key] || [];
+                        
+                        return (
+                          <DroppableTimeSlot
+                            key={`${day.value}-${daySlot.start}-${daySlot.end}`}
+                            day={day.value as DayOfWeek}
+                            timeSlot={daySlot}
+                            schedules={daySchedules}
+                            onDrop={onDrop || (() => {})}
+                            onScheduleEdit={handleScheduleEdit}
+                            onScheduleDelete={handleScheduleDelete}
+                            isBreakTime={true}
+                            markedForDeletionIds={markedForDeletionIds}
+                          />
+                        );
+                      }
+                    }
+                    
                     const key = `${day.value}-${timeSlot.start}`;
                     const daySchedules = scheduleGrid[key] || [];
                     
@@ -258,7 +400,7 @@ export function ScheduleGrid({
                         onDrop={onDrop || (() => {})}
                         onScheduleEdit={handleScheduleEdit}
                         onScheduleDelete={handleScheduleDelete}
-                        isBreakTime={isBreakTime}
+                        isBreakTime={isBreakTimeForDay}
                         markedForDeletionIds={markedForDeletionIds}
                       />
                     );
@@ -279,15 +421,15 @@ export function ScheduleGrid({
               </div>
               <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 font-semibold">
                 <Clock className="h-4 w-4" />
-                <span><strong>{currentTimeSlots.length}</strong> slots</span>
+                <span><strong>{slotsToRender.length}</strong> slots</span>
               </div>
               <div className="flex items-center gap-2 text-purple-700 dark:text-purple-400 font-semibold">
                 <BookOpen className="h-4 w-4" />
-                <span><strong>{currentTimeSlots.filter(s => !s.isBreak).length}</strong> clases</span>
+                <span><strong>{slotsToRender.filter(s => !s.isBreak).length}</strong> clases</span>
               </div>
               <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 font-semibold">
                 <Coffee className="h-4 w-4" />
-                <span><strong>{currentTimeSlots.filter(s => s.isBreak).length}</strong> recreos</span>
+                <span><strong>{slotsToRender.filter(s => s.isBreak).length}</strong> recreos</span>
               </div>
             </div>
             <div className="flex gap-4">

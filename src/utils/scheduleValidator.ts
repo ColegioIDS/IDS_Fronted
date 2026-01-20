@@ -168,7 +168,12 @@ export class ScheduleConfigValidator {
     }
 
     // Validación 4: Solapea con breaks
-    const overlapsBreak = config.breakSlots.some((b) => {
+    // breakSlots is now Record<string, ScheduleSlot[]>
+    const breakSlotsArray = config.breakSlots 
+      ? Object.values(config.breakSlots).flat() 
+      : [];
+    
+    const overlapsBreak = breakSlotsArray.some((b) => {
       const [bStartHour, bStartMin] = b.start.split(':').map(Number);
       const [bEndHour, bEndMin] = b.end.split(':').map(Number);
       const breakStartMins = bStartHour * 60 + bStartMin;
@@ -215,7 +220,12 @@ export class ScheduleConfigValidator {
       const endStr = `${String(slotEnd).padStart(2, '0')}:${String(slotEndMin).padStart(2, '0')}`;
 
       // Verificar que no solapee con breaks
-      const overlapsBreak = config.breakSlots.some((b) => {
+      // breakSlots is now Record<string, ScheduleSlot[]>
+      const breakSlotsArray = config.breakSlots 
+        ? Object.values(config.breakSlots).flat() 
+        : [];
+      
+      const overlapsBreak = breakSlotsArray.some((b) => {
         const [bStartHour, bStartMin] = b.start.split(':').map(Number);
         const [bEndHour, bEndMin] = b.end.split(':').map(Number);
         const breakStartMins = bStartHour * 60 + bStartMin;

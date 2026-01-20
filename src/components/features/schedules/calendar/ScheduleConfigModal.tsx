@@ -2,10 +2,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Save, Plus, Trash2, Clock, Calendar, BookOpen, Coffee } from "lucide-react";
+import { X, Save, Plus, Trash2, Clock, Calendar, BookOpen, Coffee, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { ScheduleConfig, BreakSlot, DayOfWeek } from "@/types/schedules.types";
+import type { ScheduleConfig, ScheduleSlot, DayOfWeek, SlotType } from "@/types/schedules.types";
+import { ALL_DAYS_OF_WEEK } from "@/types/schedules.types";
 import { toast } from "sonner";
+import { 
+  convertOldConfigToNew, 
+  initializeBreakSlotsForDays,
+  getSlotsForDay,
+  updateSlotsForDay,
+  applySlotsToDays
+} from "@/utils/scheduleConfigConverter";
 
 interface ScheduleConfigModalProps {
   isOpen: boolean;
@@ -71,31 +79,41 @@ export function ScheduleConfigModal({
   onClose
 }: ScheduleConfigModalProps) {
   const [formData, setFormData] = useState({
-    workingDays: [1, 2, 3, 4, 5] as number[],
+    workingDays: [1, 2, 3, 4, 5] as DayOfWeek[],
     startTime: '07:00',
     endTime: '17:00',
     classDuration: 45,
-    breakSlots: [] as BreakSlot[],
+    breakSlots: {} as Record<string, ScheduleSlot[]>,
   });
 
+  const [selectedDay, setSelectedDay] = useState<DayOfWeek>(1);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDayConfig, setShowDayConfig] = useState(false);
 
   // Initialize form with current config
   useEffect(() => {
     if (currentConfig) {
+      let processedConfig = currentConfig;
+      
+      // Convert old format to new if necessary
+      if (Array.isArray(currentConfig.breakSlots)) {
+        processedConfig = convertOldConfigToNew(currentConfig);
+      }
+
       setFormData({
-        workingDays: currentConfig.workingDays || [1, 2, 3, 4, 5],
-        startTime: currentConfig.startTime || '07:00',
-        endTime: currentConfig.endTime || '17:00',
-        classDuration: currentConfig.classDuration || 45,
-        breakSlots: currentConfig.breakSlots || [],
+        workingDays: processedConfig.workingDays || [1, 2, 3, 4, 5],
+        startTime: processedConfig.startTime || '07:00',
+        endTime: processedConfig.endTime || '17:00',
+        classDuration: processedConfig.classDuration || 45,
+        breakSlots: (processedConfig.breakSlots as Record<string, ScheduleSlot[]>) || {},
       });
+      setSelectedDay(processedConfig.workingDays?.[0] || 1);
     }
   }, [currentConfig]);
 
   if (!isOpen) return null;
 
-  const handleDayToggle = (day: number) => {
+  const handleDayToggle = (day: DayOfWeek) => {
     setFormData(prev => ({
       ...prev,
       workingDays: prev.workingDays.includes(day)
@@ -106,52 +124,101 @@ export function ScheduleConfigModal({
 
   const handlePresetLoad = (presetKey: keyof typeof PRESET_CONFIGS) => {
     const preset = PRESET_CONFIGS[presetKey];
+    const defaultSlots: ScheduleSlot[] = preset.breakSlots.map(slot => ({
+      start: slot.start,
+      end: slot.end,
+      label: slot.label || 'BREAK',
+      type: (slot.label?.includes('ALMUERZO') ? 'lunch' : 'break') as SlotType,
+      isClass: false,
+    }));
+
+    const breakSlots = initializeBreakSlotsForDays(preset.workingDays as DayOfWeek[], defaultSlots);
+
     setFormData({
-      workingDays: [...preset.workingDays],
+      workingDays: [...preset.workingDays] as DayOfWeek[],
       startTime: preset.startTime,
       endTime: preset.endTime,
       classDuration: preset.classDuration,
-      breakSlots: preset.breakSlots.map(slot => ({ ...slot })),
+      breakSlots,
     });
+    setSelectedDay(preset.workingDays[0] as DayOfWeek);
   };
 
-  const handleAddBreakSlot = () => {
+  // Funciones para manjar slots por día
+  const currentDaySlots = getSlotsForDay(formData.breakSlots, selectedDay);
+
+  const handleAddSlotToDay = () => {
+    const newSlot: ScheduleSlot = {
+      start: '12:00',
+      end: '12:30',
+      label: 'NUEVO SLOT',
+      type: 'break',
+      isClass: false,
+    };
     setFormData(prev => ({
       ...prev,
-      breakSlots: [
-        ...prev.breakSlots,
-        { start: '12:00', end: '13:00', label: 'DESCANSO' }
-      ]
+      breakSlots: updateSlotsForDay(prev.breakSlots, selectedDay, [...currentDaySlots, newSlot])
     }));
   };
 
-  const handleRemoveBreakSlot = (index: number) => {
+  const handleRemoveSlotFromDay = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      breakSlots: prev.breakSlots.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleBreakSlotChange = (index: number, field: keyof BreakSlot, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      breakSlots: prev.breakSlots.map((slot, i) =>
-        i === index ? { ...slot, [field]: value } : slot
+      breakSlots: updateSlotsForDay(
+        prev.breakSlots,
+        selectedDay,
+        currentDaySlots.filter((_, i) => i !== index)
       )
     }));
   };
 
-  const calculateTotalSlots = () => {
+  const handleUpdateSlot = (index: number, field: keyof ScheduleSlot, value: any) => {
+    const updated = currentDaySlots.map((slot, i) =>
+      i === index ? { ...slot, [field]: value } : slot
+    );
+    setFormData(prev => ({
+      ...prev,
+      breakSlots: updateSlotsForDay(prev.breakSlots, selectedDay, updated)
+    }));
+  };
+
+  const handleCopySlotsToAllDays = () => {
+    setFormData(prev => ({
+      ...prev,
+      breakSlots: applySlotsToDays(
+        prev.breakSlots,
+        prev.workingDays,
+        currentDaySlots
+      )
+    }));
+    toast.success(`Slots del ${DAYS_OF_WEEK.find(d => d.value === selectedDay)?.label} copiados a todos los días`);
+  };
+
+  const handleCopySlotsToOtherDays = (targetDays: DayOfWeek[]) => {
+    setFormData(prev => ({
+      ...prev,
+      breakSlots: applySlotsToDays(
+        prev.breakSlots,
+        targetDays,
+        currentDaySlots
+      )
+    }));
+  };
+
+  const calculateTotalSlotsForDay = (day: DayOfWeek) => {
     try {
       const startTime = new Date(`2000-01-01T${formData.startTime}:00`);
       const endTime = new Date(`2000-01-01T${formData.endTime}:00`);
       const totalMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
       
-      const breakMinutes = formData.breakSlots.reduce((total, slot) => {
+      const daySlots = getSlotsForDay(formData.breakSlots, day);
+      const breakMinutes = daySlots.reduce((total, slot) => {
         try {
-          const breakStart = new Date(`2000-01-01T${slot.start}:00`);
-          const breakEnd = new Date(`2000-01-01T${slot.end}:00`);
-          return total + (breakEnd.getTime() - breakStart.getTime()) / (1000 * 60);
+          const slotStart = new Date(`2000-01-01T${slot.start}:00`);
+          const slotEnd = new Date(`2000-01-01T${slot.end}:00`);
+          const slotDuration = (slotEnd.getTime() - slotStart.getTime()) / (1000 * 60);
+          // Only count if not marked as class
+          return total + (slot.isClass ? 0 : slotDuration);
         } catch {
           return total;
         }
@@ -162,6 +229,13 @@ export function ScheduleConfigModal({
     } catch {
       return 0;
     }
+  };
+
+  // Calculate average slots across all working days
+  const calculateTotalSlots = () => {
+    if (formData.workingDays.length === 0) return 0;
+    const total = formData.workingDays.reduce((sum, day) => sum + calculateTotalSlotsForDay(day), 0);
+    return Math.round(total / formData.workingDays.length);
   };
 
   const handleSave = async () => {
@@ -186,33 +260,38 @@ export function ScheduleConfigModal({
       return;
     }
 
-    // Validate break slots don't overlap
-    if (formData.breakSlots.length > 1) {
-      const sortedBreaks = [...formData.breakSlots].sort((a, b) => a.start.localeCompare(b.start));
+    // Validate slots for all working days
+    for (const day of formData.workingDays) {
+      const daySlots = getSlotsForDay(formData.breakSlots, day);
       
-      for (let i = 0; i < sortedBreaks.length - 1; i++) {
-        const current = sortedBreaks[i];
-        const next = sortedBreaks[i + 1];
+      if (daySlots.length > 1) {
+        const sortedSlots = [...daySlots].sort((a, b) => a.start.localeCompare(b.start));
         
-        if (current.end > next.start) {
-          toast.error(`Los recreos se solapan: ${current.label || 'Recreo ' + (i + 1)} (${current.start}-${current.end}) con ${next.label || 'Recreo ' + (i + 2)} (${next.start}-${next.end})`);
-          return;
+        for (let i = 0; i < sortedSlots.length - 1; i++) {
+          const current = sortedSlots[i];
+          const next = sortedSlots[i + 1];
+          
+          if (current.end > next.start) {
+            const dayName = DAYS_OF_WEEK.find(d => d.value === day)?.label || `Día ${day}`;
+            toast.error(`Los slots en ${dayName} se solapan: "${current.label}" (${current.start}-${current.end}) con "${next.label}" (${next.start}-${next.end})`);
+            return;
+          }
         }
       }
-    }
 
-    // Validate break slots are within working hours
-    for (let i = 0; i < formData.breakSlots.length; i++) {
-      const slot = formData.breakSlots[i];
-      
-      if (slot.start < formData.startTime || slot.end > formData.endTime) {
-        toast.error(`El recreo "${slot.label}" (${slot.start}-${slot.end}) está fuera del horario laboral (${formData.startTime}-${formData.endTime})`);
-        return;
-      }
-      
-      if (slot.start >= slot.end) {
-        toast.error(`El recreo "${slot.label}" tiene una hora de fin inválida`);
-        return;
+      // Validate slots are within working hours
+      for (const slot of daySlots) {
+        if (slot.start < formData.startTime || slot.end > formData.endTime) {
+          const dayName = DAYS_OF_WEEK.find(d => d.value === day)?.label || `Día ${day}`;
+          toast.error(`El slot "${slot.label}" en ${dayName} (${slot.start}-${slot.end}) está fuera del horario laboral (${formData.startTime}-${formData.endTime})`);
+          return;
+        }
+        
+        if (slot.start >= slot.end) {
+          const dayName = DAYS_OF_WEEK.find(d => d.value === day)?.label || `Día ${day}`;
+          toast.error(`El slot "${slot.label}" en ${dayName} tiene una hora de fin inválida`);
+          return;
+        }
       }
     }
 
@@ -221,7 +300,7 @@ export function ScheduleConfigModal({
       const configToSave: ScheduleConfig = {
         id: currentConfig?.id || 0,
         sectionId: sectionId,
-        workingDays: formData.workingDays as DayOfWeek[],
+        workingDays: formData.workingDays,
         startTime: formData.startTime,
         endTime: formData.endTime,
         classDuration: formData.classDuration,
@@ -231,7 +310,11 @@ export function ScheduleConfigModal({
       };
 
       await onSave(configToSave);
+      toast.success('Configuración guardada exitosamente');
+      onClose();
     } catch (error) {
+      toast.error('Error al guardar la configuración');
+      console.error(error);
     } finally {
       setIsSaving(false);
     }
@@ -309,11 +392,11 @@ export function ScheduleConfigModal({
                 <button
                   key={day.value}
                   className={`p-3 rounded-lg border-2 transition-all text-center ${
-                    formData.workingDays.includes(day.value)
+                    formData.workingDays.includes(day.value as DayOfWeek)
                       ? 'border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
                       : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300'
                   }`}
-                  onClick={() => handleDayToggle(day.value)}
+                  onClick={() => handleDayToggle(day.value as DayOfWeek)}
                 >
                   <div className="font-medium">{day.shortLabel}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -372,70 +455,161 @@ export function ScheduleConfigModal({
             </div>
           </div>
 
-          {/* Recreos y Descansos */}
+          {/* Configuración de Slots por Día */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                Recreos y Descansos
-              </h3>
-              <Button
-                onClick={handleAddBreakSlot}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-              >
-                <Plus className="h-4 w-4" />
-                Agregar
-              </Button>
-            </div>
-            
-            <div className="space-y-3">
-              {formData.breakSlots.map((slot, index) => (
-                <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
-                  <div className="space-y-1">
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
-                      Inicio
-                    </label>
-                    <input
-                      type="time"
-                      value={slot.start}
-                      onChange={(e) => handleBreakSlotChange(index, 'start', e.target.value)}
-                      className={inputClasses}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
-                      Fin
-                    </label>
-                    <input
-                      type="time"
-                      value={slot.end}
-                      onChange={(e) => handleBreakSlotChange(index, 'end', e.target.value)}
-                      className={inputClasses}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
-                      Etiqueta
-                    </label>
-                    <input
-                      type="text"
-                      value={slot.label || ''}
-                      onChange={(e) => handleBreakSlotChange(index, 'label', e.target.value)}
-                      placeholder="RECREO, ALMUERZO, etc."
-                      className={inputClasses}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button
-                      onClick={() => handleRemoveBreakSlot(index)}
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50 border-gray-300 dark:border-gray-600"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+              Configurar Slots por Día
+            </h3>
+
+            {/* Tabs de Días */}
+            <div className="flex gap-2 overflow-x-auto pb-2 border-b border-gray-200 dark:border-gray-700">
+              {ALL_DAYS_OF_WEEK.map(day => (
+                <button
+                  key={day.value}
+                  onClick={() => setSelectedDay(day.value as DayOfWeek)}
+                  disabled={!formData.workingDays.includes(day.value as DayOfWeek)}
+                  className={`px-4 py-2 font-medium whitespace-nowrap transition-colors rounded-t-lg ${
+                    selectedDay === day.value
+                      ? 'bg-blue-600 text-white'
+                      : formData.workingDays.includes(day.value as DayOfWeek)
+                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  {day.shortLabel}
+                </button>
               ))}
+            </div>
+
+            {/* Slots del Día Seleccionado */}
+            <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium text-gray-800 dark:text-gray-100">
+                    {ALL_DAYS_OF_WEEK.find(d => d.value === selectedDay)?.label}
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {calculateTotalSlotsForDay(selectedDay)} clases disponibles
+                  </p>
+                </div>
+                <Button
+                  onClick={handleAddSlotToDay}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  Agregar Slot
+                </Button>
+              </div>
+
+              {/* Lista de Slots */}
+              <div className="space-y-3">
+                {currentDaySlots.length === 0 ? (
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-4">
+                    No hay slots configurados para este día
+                  </p>
+                ) : (
+                  currentDaySlots.map((slot, index) => (
+                    <div key={index} className="space-y-3 p-3 rounded-lg bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-600">
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                        <div className="space-y-1">
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                            Inicio
+                          </label>
+                          <input
+                            type="time"
+                            value={slot.start}
+                            onChange={(e) => handleUpdateSlot(index, 'start', e.target.value)}
+                            className={inputClasses}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                            Fin
+                          </label>
+                          <input
+                            type="time"
+                            value={slot.end}
+                            onChange={(e) => handleUpdateSlot(index, 'end', e.target.value)}
+                            className={inputClasses}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                            Etiqueta
+                          </label>
+                          <input
+                            type="text"
+                            value={slot.label}
+                            onChange={(e) => handleUpdateSlot(index, 'label', e.target.value)}
+                            placeholder="RECREO, ALMUERZO, etc."
+                            className={inputClasses}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                            Tipo
+                          </label>
+                          <select
+                            value={slot.type}
+                            onChange={(e) => handleUpdateSlot(index, 'type', e.target.value)}
+                            className={inputClasses}
+                          >
+                            <option value="activity">Actividad</option>
+                            <option value="break">Descanso</option>
+                            <option value="lunch">Almuerzo</option>
+                            <option value="free">Libre</option>
+                            <option value="class">Clase</option>
+                            <option value="custom">Personalizado</option>
+                          </select>
+                        </div>
+                        <div className="flex items-end gap-2">
+                          <Button
+                            onClick={() => handleRemoveSlotFromDay(index)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50 border-gray-300 dark:border-gray-600 flex-1"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 pt-2 border-t border-gray-200 dark:border-gray-600">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={slot.isClass || false}
+                            onChange={(e) => handleUpdateSlot(index, 'isClass', e.target.checked)}
+                            className="w-4 h-4 text-blue-600 dark:text-blue-400 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Es Clase
+                          </span>
+                        </label>
+                        {slot.description && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 flex-1">
+                            <span className="font-medium">Descripción:</span> {slot.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Opciones de Copia */}
+              {currentDaySlots.length > 0 && (
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-600 flex gap-2">
+                  <Button
+                    onClick={handleCopySlotsToAllDays}
+                    variant="outline"
+                    size="sm"
+                    className="text-blue-600 dark:text-blue-400"
+                  >
+                    Copiar a Todos los Días
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 

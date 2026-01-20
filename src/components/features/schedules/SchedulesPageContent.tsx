@@ -24,6 +24,7 @@ import { DeleteScheduleDialog } from './modals/DeleteScheduleDialog';
 
 import type { ScheduleChange, TempSchedule, TimeSlot, ScheduleConfig, CourseAssignment, DayOfWeek, DragItem } from '@/types/schedules.types';
 import { DEFAULT_TIME_SLOTS, ScheduleTimeGenerator } from '@/types/schedules.types';
+import { convertOldConfigToNew } from '@/utils/scheduleConfigConverter';
 
 /**
  * PASO 4: Main schedules page component with calendar integration
@@ -186,13 +187,73 @@ export default function SchedulesPageContent({
   // Generate time slots from config or use defaults
   const timeSlots = useMemo((): TimeSlot[] => {
     if (!config || selectedSection === 0) {
+      console.log('TimeSlots: No config or selectedSection is 0');
       return DEFAULT_TIME_SLOTS;
     }
 
     try {
-      return ScheduleTimeGenerator.generateTimeSlots(config);
+      // Convert old format to new if necessary
+      const modernConfig = convertOldConfigToNew(config);
+      console.log('=== TimeSlots useMemo Debug ===');
+      console.log('Original config breakSlots:', config.breakSlots);
+      console.log('Converted config breakSlots:', modernConfig.breakSlots);
+      console.log('First working day:', modernConfig.workingDays?.[0]);
+      
+      // Use first working day to generate time slots
+      const slots = ScheduleTimeGenerator.generateTimeSlots(modernConfig);
+      console.log('Generated timeSlots count:', slots.length);
+      console.log('Break/Lunch slots:', slots.filter(s => s.isBreak).length);
+      console.log('Class slots:', slots.filter(s => !s.isBreak).length);
+      console.log('Full timeSlots array:', slots);
+      console.log('=== End TimeSlots Debug ===');
+      
+      return slots;
     } catch (error) {
+      console.error('Error generating time slots:', error);
       return DEFAULT_TIME_SLOTS;
+    }
+  }, [config, selectedSection]);
+
+  // Generate time slots per day (for ScheduleGrid to use day-specific slots)
+  const timeSlotsByDay = useMemo((): Record<number, TimeSlot[]> => {
+    if (!config || selectedSection === 0) {
+      console.log('TimeSlotsByDay: No config or selectedSection is 0');
+      // Return default slots for all working days
+      const defaultSlotsByDay: Record<number, TimeSlot[]> = {};
+      const workingDays = config?.workingDays || [1, 2, 3, 4, 5];
+      workingDays.forEach(day => {
+        defaultSlotsByDay[day] = DEFAULT_TIME_SLOTS;
+      });
+      return defaultSlotsByDay;
+    }
+
+    try {
+      const modernConfig = convertOldConfigToNew(config);
+      console.log('=== TimeSlotsByDay useMemo Debug ===');
+      console.log('Config workingDays:', modernConfig.workingDays);
+      
+      // Generate slots for each working day with per-day configuration
+      const slotsByDay = ScheduleTimeGenerator.generateTimeSlotsPerDay(modernConfig);
+      console.log('Generated timeSlotsByDay:', slotsByDay);
+      console.log('Days with slots:', Object.keys(slotsByDay));
+      
+      // Log details for each day
+      Object.entries(slotsByDay).forEach(([day, slots]) => {
+        const breakSlots = slots.filter(s => s.isBreak).length;
+        const classSlots = slots.filter(s => !s.isBreak).length;
+        console.log(`Day ${day}: ${classSlots} classes + ${breakSlots} breaks = ${slots.length} total`);
+      });
+      console.log('=== End TimeSlotsByDay Debug ===');
+      
+      return slotsByDay;
+    } catch (error) {
+      console.error('Error generating time slots by day:', error);
+      const defaultSlotsByDay: Record<number, TimeSlot[]> = {};
+      const workingDays = config?.workingDays || [1, 2, 3, 4, 5];
+      workingDays.forEach(day => {
+        defaultSlotsByDay[day] = DEFAULT_TIME_SLOTS;
+      });
+      return defaultSlotsByDay;
     }
   }, [config, selectedSection]);
 
@@ -1126,9 +1187,11 @@ export default function SchedulesPageContent({
               </Card>
             ) : (
               <ScheduleGrid
+                key={`schedule-${config?.id}-${config?.updatedAt}`}
                 schedules={schedules}
                 tempSchedules={tempSchedules}
                 timeSlots={timeSlots}
+                timeSlotsByDay={timeSlotsByDay}
                 workingDays={config?.workingDays || [1, 2, 3, 4, 5]}
                 courseAssignments={courseAssignments}
                 onDrop={handleDrop}
