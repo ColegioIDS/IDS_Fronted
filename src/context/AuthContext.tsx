@@ -132,8 +132,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     // Solo ejecutar la verificación una vez al montar
-    if (!hasCheckedAuth && pathname) {
+    // Excluir rutas públicas que no necesitan autenticación
+    const publicRoutes = ['/choose'];
+    const isPublicRoute = publicRoutes.includes(pathname);
+    
+    if (!hasCheckedAuth && pathname && !isPublicRoute) {
       checkAuth(true);
+      setHasCheckedAuth(true);
+    }
+    
+    if (isPublicRoute) {
+      setIsLoading(false);
       setHasCheckedAuth(true);
     }
   }, []); // Dependencias vacías - solo ejecutar una vez
