@@ -98,10 +98,10 @@ export const ERICA_STATES: EricaState[] = ['E', 'B', 'P', 'C', 'N'];
  */
 export const STATE_LABELS: Record<EricaState, string> = {
   E: 'Excelente',
-  B: 'Bueno',
-  P: 'Proficiente',
-  C: 'En Construcción',
-  N: 'No Logrado',
+  B: 'Bien',
+  P: 'Poco',
+  C: 'Casi Nada',
+  N: 'Nada',
 };
 
 /**
@@ -111,7 +111,7 @@ export const DEFAULT_COLORS: EricaColorsResponse = {
   dimensions: [
     {
       id: 1,
-      dimension: 'E',
+      dimension: 'EJECUTA',
       name: 'Ejecuta',
       description: 'Dimensión que ejecuta acciones',
       hexColor: '#FF6B6B',

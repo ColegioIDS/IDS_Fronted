@@ -13,19 +13,19 @@ export type EricaDimension = 'EJECUTA' | 'RETIENE' | 'INTERPRETA' | 'CONOCE' | '
 /** Mapeo de estados a puntos */
 export const STATE_POINTS: Record<EricaState, number> = {
   E: 1.0,   // Excelente
-  B: 0.75,  // Bueno
-  P: 0.5,   // Proficiente
-  C: 0.25,  // En Construcción
-  N: 0.0,   // No Logrado
+  B: 0.75,  // Bien
+  P: 0.5,   // Poco
+  C: 0.25,  // Casi Nada
+  N: 0.0,   // Nada
 };
 
 /** Etiquetas de estados */
 export const STATE_LABELS: Record<EricaState, string> = {
   E: 'Excelente',
-  B: 'Bueno',
-  P: 'Proficiente',
-  C: 'En Construcción',
-  N: 'No Logrado',
+  B: 'Bien',
+  P: 'Poco',
+  C: 'Casi Nada',
+  N: 'Nada',
 };
 
 /** Etiquetas de dimensiones */
