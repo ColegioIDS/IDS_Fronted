@@ -10,6 +10,7 @@ import { getActiveEnrollmentsBySectionAndCycle } from '@/services/attendance.ser
 
 export interface StudentData {
   id: number;
+  enrollmentId: number;  // ✅ Agregado: ID de la matrícula (enrollment)
   name: string;
   enrollmentNumber?: string;
   email?: string;
@@ -67,6 +68,7 @@ export const useStudentsBySection = (
           
           return {
             id: Number(student?.id ?? e.id),
+            enrollmentId: Number(e.enrollmentId),  // ✅ Mapear enrollmentId del backend
             name: fullName || String(student?.name ?? student?.fullName ?? e.name ?? ''),
             enrollmentNumber: String(e.enrollmentNumber ?? e.id ?? ''),
             email: String(student?.email ?? e.email ?? ''),

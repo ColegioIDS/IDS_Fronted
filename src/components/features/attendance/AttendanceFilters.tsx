@@ -36,6 +36,15 @@ interface FilterSectionProps {
   getItemLabel: (item: any) => string;
 }
 
+interface StudentData {
+  id?: number;
+  enrollmentId: number;
+  name?: string;
+  enrollmentNumber?: string;
+  email?: string;
+  identificationNumber?: string;
+}
+
 function FilterSection({
   title,
   description,
@@ -220,7 +229,7 @@ export function AttendanceFilters() {
     if (studentsData.students?.length && !studentsLoadedRef.current) {
       const convertedStudents = studentsData.students.map(student => ({
         id: student.id,
-        enrollmentId: student.id,
+        enrollmentId: student.enrollmentId,  // ✅ Usar enrollmentId del hook (viene del backend)
         name: student.name,
         enrollmentNumber: student.enrollmentNumber,
         email: student.email,
