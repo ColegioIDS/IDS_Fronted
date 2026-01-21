@@ -12,6 +12,7 @@ export function WebSocketDebugger() {
 
   const { socket, notifications, unreadCount } = useNotificationsContext();
   const [wsStatus, setWsStatus] = useState<string>("Cargando...");
+  const [isVisible, setIsVisible] = useState<boolean>(true);
 
   // Usar socket?.connected como fuente de verdad
   const actuallyConnected = socket?.connected ?? false;
@@ -50,6 +51,34 @@ export function WebSocketDebugger() {
     return () => clearInterval(interval);
   }, [actuallyConnected, socket?.id, notifications.length, unreadCount]);
 
+  if (!isVisible) {
+    return (
+      <button
+        onClick={() => setIsVisible(true)}
+        style={{
+          position: "fixed",
+          bottom: "70px",
+          right: "10px",
+          width: "40px",
+          height: "40px",
+          borderRadius: "50%",
+          backgroundColor: actuallyConnected ? "#4ade80" : "#ff6b6b",
+          border: "none",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "20px",
+          zIndex: 9998,
+          boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
+        }}
+        title="Mostrar WebSocket Debugger"
+      >
+        🔌
+      </button>
+    );
+  }
+
   return (
     <div
       style={{
@@ -69,8 +98,27 @@ export function WebSocketDebugger() {
         overflowY: "auto",
         zIndex: 9998,
         boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+        <span>WebSocket Debug</span>
+        <button
+          onClick={() => setIsVisible(false)}
+          style={{
+            background: "none",
+            border: "none",
+            color: "inherit",
+            cursor: "pointer",
+            fontSize: "12px",
+            fontWeight: "bold",
+          }}
+          title="Ocultar"
+        >
+          ✕
+        </button>
+      </div>
       {wsStatus}
     </div>
   );
