@@ -377,3 +377,45 @@ export const useSubmitCotejo = () => {
 
   return { mutate, loading, error };
 };
+
+/**
+ * Hook para generar cotejos en bulk para una sección y curso
+ */
+export const useGenerateCotejosBulk = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<ApiError | null>(null);
+
+  const mutate = useCallback(
+    async (sectionId: number, courseId: number, bimesterId: number, cycleId: number) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await CotejosService.generateCotejosBulk(
+          sectionId,
+          courseId,
+          bimesterId,
+          cycleId,
+        );
+        setLoading(false);
+        return result;
+      } catch (err) {
+        const cotejosError = extractCotejosError(err);
+        logCotejosError(
+          cotejosError.errorCode,
+          `useGenerateCotejosBulk(section=${sectionId})`,
+          cotejosError.detail,
+        );
+        setError({
+          message: cotejosError.message,
+          code: cotejosError.errorCode,
+          detail: cotejosError.detail,
+        });
+        setLoading(false);
+        throw cotejosError;
+      }
+    },
+    [],
+  );
+
+  return { mutate, loading, error };
+};

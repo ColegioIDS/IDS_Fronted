@@ -94,6 +94,38 @@ export const generateCotejo = async (
   }
 };
 
+// ==================== GENERAR COTEJOS EN BULK ====================
+
+/**
+ * Genera cotejos en bulk para todos los estudiantes de una sección y curso
+ */
+export const generateCotejosBulk = async (
+  sectionId: number,
+  courseId: number,
+  bimesterId: number,
+  cycleId: number,
+): Promise<{ message: string; totalGenerated: number }> => {
+  try {
+    const response = await api.post<{
+      success: boolean;
+      message: string;
+      data: { totalGenerated: number };
+    }>(`${BASE_URL}/bulk/generate`, {
+      sectionId,
+      courseId,
+      bimesterId,
+      cycleId,
+    });
+    validateApiResponse(response.data);
+    return {
+      message: response.data.message,
+      totalGenerated: response.data.data?.totalGenerated || 0,
+    };
+  } catch (error) {
+    throw extractCotejosError(error);
+  }
+};
+
 // ==================== OBTENER COTEJO ====================
 
 /**

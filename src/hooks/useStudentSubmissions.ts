@@ -7,6 +7,7 @@ import { StudentSubmissionsResponse } from '@/types/assignments.types';
 interface UseStudentSubmissionsProps {
   courseId?: number;
   bimesterId?: number;
+  sectionId?: number;
   enabled?: boolean;
 }
 
@@ -24,6 +25,7 @@ interface UseStudentSubmissionsReturn {
 export function useStudentSubmissions({
   courseId,
   bimesterId,
+  sectionId,
   enabled = true,
 }: UseStudentSubmissionsProps): UseStudentSubmissionsReturn {
   const [data, setData] = useState<StudentSubmissionsResponse | null>(null);
@@ -41,7 +43,7 @@ export function useStudentSubmissions({
       setLoading(true);
       setError(null);
 
-      const response = await assignmentsService.getStudentSubmissions(courseId, bimesterId);
+      const response = await assignmentsService.getStudentSubmissions(courseId, bimesterId, sectionId);
       setData(response);
     } catch (err: any) {
       const errorMsg = err.message || 'Error al obtener calificaciones de estudiantes';
@@ -49,7 +51,7 @@ export function useStudentSubmissions({
     } finally {
       setLoading(false);
     }
-  }, [courseId, bimesterId, enabled]);
+  }, [courseId, bimesterId, sectionId, enabled]);
 
   useEffect(() => {
     fetchData();

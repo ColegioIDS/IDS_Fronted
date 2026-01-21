@@ -423,6 +423,9 @@ export const assignmentsService = {
    * Obtiene todos los estudiantes con sus calificaciones por tarea
    * GET /api/assignments/course/:courseId/bimester/:bimesterId/students-submissions
    * 
+   * Query Parameters (opcionales):
+   * - sectionId: Filtrar por sección específica
+   * 
    * Retorna:
    * - Todos los estudiantes inscritos en el curso
    * - Todas las tareas del curso-bimestre
@@ -432,13 +435,18 @@ export const assignmentsService = {
    */
   async getStudentSubmissions(
     courseId: number,
-    bimesterId: number
+    bimesterId: number,
+    sectionId?: number
   ): Promise<StudentSubmissionsResponse> {
    
+    let url = `/api/assignments/course/${courseId}/bimester/${bimesterId}/students-submissions`;
+    
+    // Agregar query parameter si se proporciona sectionId
+    if (sectionId) {
+      url += `?sectionId=${sectionId}`;
+    }
 
-    const response = await api.get(
-      `/api/assignments/course/${courseId}/bimester/${bimesterId}/students-submissions`
-    );
+    const response = await api.get(url);
 
 
     if (!response.data?.success) {

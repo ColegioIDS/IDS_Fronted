@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { AlertCircle, Loader2, Plus } from 'lucide-react';
+import { AlertCircle, Loader2, Plus, Zap } from 'lucide-react';
 import {
   Alert,
   AlertDescription,
@@ -15,11 +15,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { CotejosFilters } from './CotejosFilters';
 import { CotejosTable } from './CotejosTable';
 import { CotejoForm } from './CotejoForm';
-import { useCascade, useCotejosBySection } from '@/hooks/useCotejos';
+import { useCascade, useCotejosBySection, useGenerateCotejosBulk } from '@/hooks/useCotejos';
 import { CotejoResponse } from '@/types/cotejos.types';
+import { toast } from 'sonner';
 
 /**
  * Componente principal para gestionar cotejos
@@ -27,6 +37,7 @@ import { CotejoResponse } from '@/types/cotejos.types';
  */
 export const CotejosContent = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false);
   const [filters, setFilters] = useState({
     cycleId: null as number | null,
     bimesterId: null as number | null,
@@ -36,6 +47,7 @@ export const CotejosContent = () => {
   });
 
   const { cascade, loading: cascadeLoading, error: cascadeError } = useCascade();
+  const { mutate: generateCotejosBulk, loading: bulkLoading } = useGenerateCotejosBulk();
 
   // Auto-seleccionar ciclo activo y bimestre activo cuando cascade carga
   useEffect(() => {
@@ -83,6 +95,27 @@ export const CotejosContent = () => {
     refetchCotejos();
   };
 
+  const handleGenerateBulk = async () => {
+    if (!filters.sectionId || !filters.courseId || !filters.bimesterId || !filters.cycleId) {
+      toast.error('Por favor completa todos los filtros');
+      return;
+    }
+
+    try {
+      const result = await generateCotejosBulk(
+        filters.sectionId,
+        filters.courseId,
+        filters.bimesterId,
+        filters.cycleId,
+      );
+      toast.success(`${result.totalGenerated} cotejos generados exitosamente`);
+      setIsBulkConfirmOpen(false);
+      refetchCotejos();
+    } catch (error: any) {
+      toast.error(error?.message || 'Error al generar cotejos en bulk');
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -93,13 +126,23 @@ export const CotejosContent = () => {
             Consolidación de calificaciones por estudiante y curso
           </p>
         </div>
-        <Button
-          onClick={() => setIsCreateDialogOpen(true)}
-          disabled={!isFiltersComplete || cascadeLoading}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Generar Cotejo
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            onClick={() => setIsCreateDialogOpen(true)}
+            disabled={!isFiltersComplete || cascadeLoading}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Generar Cotejo
+          </Button>
+          <Button
+            onClick={() => setIsBulkConfirmOpen(true)}
+            disabled={!isFiltersComplete || cascadeLoading || bulkLoading}
+            variant="outline"
+          >
+            <Zap className="w-4 h-4 mr-2" />
+            Generar Todos
+          </Button>
+        </div>
       </div>
 
       {/* Sección de Ciclo y Bimestre Activos */}
@@ -181,6 +224,38 @@ export const CotejosContent = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* AlertDialog para confirmar generación en bulk */}
+      <AlertDialog open={isBulkConfirmOpen} onOpenChange={setIsBulkConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Generar cotejos para todos los estudiantes</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="space-y-3">
+            <div className="text-sm text-foreground">
+              Esto generará cotejos para todos los estudiantes de la sección{' '}
+              <span className="font-semibold">
+                {cascade?.data?.gradesSections &&
+                  filters.sectionId &&
+                  Object.values(cascade.data.gradesSections)
+                    .flat()
+                    .find((s) => s.id === filters.sectionId)?.name}
+              </span>
+              {' '}en el curso seleccionado.
+            </div>
+            <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-2 rounded">
+              Los componentes ERICA y TAREAS se calcularán automáticamente para cada estudiante.
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <AlertDialogCancel disabled={bulkLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleGenerateBulk} disabled={bulkLoading}>
+              {bulkLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {bulkLoading ? 'Generando...' : 'Generar Cotejos'}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Tabla de Cotejos */}
       {!hasNoActiveCycle && (
