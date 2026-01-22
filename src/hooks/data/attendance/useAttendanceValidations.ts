@@ -373,13 +373,13 @@ export function useAttendanceValidations(): [ValidationState, ValidationActions]
    * Valida que hay horarios configurados para la sección en el día especificado
    */
   const validateSectionSchedules = useCallback(
-    async (sectionId: number, date: string): Promise<ValidationResult> => {
+    async (sectionId: number, date: string, teacherId?: number): Promise<ValidationResult> => {
       const id = 9;
       const name = 'Horarios de la Sección';
 
       try {
         const isoDay = getIsoDayOfWeek(date);
-        const schedules = await validateSectionSchedulesByDay(sectionId, isoDay);
+        const schedules = await validateSectionSchedulesByDay(sectionId, isoDay, teacherId);
 
         if (schedules && schedules.length > 0) {
           return {

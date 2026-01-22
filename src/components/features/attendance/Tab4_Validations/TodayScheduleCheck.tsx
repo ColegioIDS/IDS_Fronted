@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAttendanceContext } from '@/context/AttendanceContext';
+import { useAuth } from '@/context/AuthContext';
 import { validateSectionSchedulesByDay } from '@/services/attendance.service';
 import { getIsoDayOfWeek } from '@/utils/dateUtils';
 import { DAY_NAMES, type DayOfWeek } from '@/types/schedules.types';
@@ -26,6 +27,7 @@ export function TodayScheduleCheck({
   isLoading = false,
 }: TodayScheduleCheckProps) {
   const { state: attendanceState } = useAttendanceContext();
+  const { user } = useAuth();
   const [scheduleData, setScheduleData] = useState<{
     hasSchedules: boolean;
     scheduleCount: number;
@@ -56,7 +58,8 @@ export function TodayScheduleCheck({
         // ✅ NUEVO: Usar endpoint de sección con formato ISO 8601
         const schedules = await validateSectionSchedulesByDay(
           targetSectionId,
-          isoDay
+          isoDay,
+          user?.id
         );
 
         if (schedules && schedules.length > 0) {
@@ -83,7 +86,7 @@ export function TodayScheduleCheck({
     };
 
     validate();
-  }, [date, sectionId, attendanceState.selectedSectionId]);
+  }, [date, sectionId, attendanceState.selectedSectionId, user?.id]);
 
   const passed = !error && scheduleData;
 

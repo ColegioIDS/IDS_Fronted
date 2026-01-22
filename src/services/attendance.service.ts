@@ -569,13 +569,16 @@ export const validateTeacherSchedules = async (
 /**
  * Validar horarios de sección por día
  * GET /api/attendance/schedules/section/:sectionId/day/:dayOfWeek
+ * Opcionalmente filtra por teacherId para obtener solo los horarios del profesor
  */
 export const validateSectionSchedulesByDay = async (
   sectionId: number,
-  dayOfWeek: number
+  dayOfWeek: number,
+  teacherId?: number
 ): Promise<Record<string, unknown>[]> => {
+  const params = teacherId ? `?teacherId=${teacherId}` : '';
   const response = await api.get<ApiResponse<Record<string, unknown>[]>>(
-    `${BASE_URL}/schedules/section/${sectionId}/day/${dayOfWeek}`
+    `${BASE_URL}/schedules/section/${sectionId}/day/${dayOfWeek}${params}`
   );
 
   if (!response.data.success) {
@@ -869,10 +872,12 @@ export const getSectionAttendanceByDateAndCycle = async (
  */
 export const getSectionAttendanceConsolidatedView = async (
   sectionId: number,
-  date: string
+  date: string,
+  teacherId?: number
 ): Promise<Record<string, unknown>> => {
+  const params = teacherId ? `?teacherId=${teacherId}` : '';
   const response = await api.get<ApiResponse<Record<string, unknown>>>(
-    `${BASE_URL}/section/${sectionId}/date/${date}/consolidated-view`
+    `${BASE_URL}/section/${sectionId}/date/${date}/consolidated-view${params}`
   );
 
   if (!response.data.success) {

@@ -123,7 +123,8 @@ export function DailyRegistration({ canCreate = true, canCreateBulk = true }: Da
     try {
       const data = await getSectionAttendanceConsolidatedView(
         attendanceState.selectedSectionId!,
-        attendanceState.selectedDate
+        attendanceState.selectedDate,
+        user?.id
       );
       
       const consolidatedView = data as unknown as ConsolidatedAttendanceView;
@@ -137,12 +138,15 @@ export function DailyRegistration({ canCreate = true, canCreateBulk = true }: Da
       consolidatedView.students.forEach(student => {
         if (student.courses.length > 0) {
           const firstCourse = student.courses[0];
-          const allowedStatus = allowedStatuses.find(s => s.code === firstCourse.currentStatus);
-          
-          attendanceMap.set(student.enrollmentId, {
-            statusId: allowedStatus?.id || 0,
-            isEarlyExit: false,
-          });
+          // Solo agregar si hay un estatus registrado (currentStatus no es null)
+          if (firstCourse.currentStatus) {
+            const allowedStatus = allowedStatuses.find(s => s.code === firstCourse.currentStatus);
+            
+            attendanceMap.set(student.enrollmentId, {
+              statusId: allowedStatus?.id || 0,
+              isEarlyExit: false,
+            });
+          }
         }
       });
       
@@ -153,7 +157,7 @@ export function DailyRegistration({ canCreate = true, canCreateBulk = true }: Da
     } finally {
       setIsLoadingExisting(false);
     }
-  }, [attendanceState.selectedSectionId, attendanceState.selectedDate, allowedStatuses]);
+  }, [attendanceState.selectedSectionId, attendanceState.selectedDate, allowedStatuses, user?.id]);
 
   // Cargar asistencias existentes cuando cambia la sección o fecha
   useEffect(() => {
