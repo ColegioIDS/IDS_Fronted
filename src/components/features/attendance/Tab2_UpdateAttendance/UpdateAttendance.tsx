@@ -55,9 +55,9 @@ export function UpdateAttendance() {
       
       try {
         const data = await getSectionAttendanceConsolidatedView(
-          attendanceState.selectedSectionId!,
+          Number(attendanceState.selectedSectionId),
           attendanceState.selectedDate,
-          user?.id
+          user?.id ? Number(user.id) : undefined
         );
         
         setConsolidatedData(data as unknown as ConsolidatedAttendanceView);

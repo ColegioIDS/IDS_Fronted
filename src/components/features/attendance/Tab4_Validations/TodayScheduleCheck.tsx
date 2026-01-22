@@ -57,9 +57,9 @@ export function TodayScheduleCheck({
 
         // ✅ NUEVO: Usar endpoint de sección con formato ISO 8601
         const schedules = await validateSectionSchedulesByDay(
-          targetSectionId,
+          Number(targetSectionId),
           isoDay,
-          user?.id
+          user?.id ? Number(user.id) : undefined
         );
 
         if (schedules && schedules.length > 0) {
