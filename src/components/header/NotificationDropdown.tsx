@@ -21,11 +21,7 @@ export default function NotificationDropdown() {
 
   // Mostrar estado de conexión WebSocket en consola
   useEffect(() => {
-    console.log(
-      notifications.length > 0
-        ? '✅ WebSocket conectado'
-        : '❌ WebSocket desconectado'
-    );
+    
   }, [notifications.length]);
 
   function toggleDropdown() {

@@ -122,9 +122,9 @@ export function DailyRegistration({ canCreate = true, canCreateBulk = true }: Da
     setIsLoadingExisting(true);
     try {
       const data = await getSectionAttendanceConsolidatedView(
-        attendanceState.selectedSectionId!,
+        Number(attendanceState.selectedSectionId),
         attendanceState.selectedDate,
-        user?.id
+        user?.id ? Number(user.id) : undefined
       );
       
       const consolidatedView = data as unknown as ConsolidatedAttendanceView;

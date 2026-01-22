@@ -61,7 +61,7 @@ export interface AttendanceActions {
   // Selecciones
   selectCycle: (cycleId: number) => void;
   selectBimester: (bimesterId: number) => void;
-  selectSection: (sectionId: number) => void;
+  selectSection: (sectionId: number | undefined) => void;
   selectDate: (date: string) => void;
 
   // Carga de datos
@@ -124,10 +124,10 @@ export function useAttendance(): [AttendanceState, AttendanceActions] {
     }));
   }, []);
 
-  const selectSection = useCallback((sectionId: number) => {
+  const selectSection = useCallback((sectionId: number | undefined) => {
     setState(prev => ({
       ...prev,
-      selectedSectionId: sectionId,
+      selectedSectionId: sectionId ?? null,
       error: null,
     }));
   }, []);

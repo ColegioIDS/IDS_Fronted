@@ -43,7 +43,7 @@ interface ConsolidatedAttendanceViewProps {
  * "Completo" si todos los cursos tienen mismo status
  * "Mixto" si hay diferentes statuses
  */
-function getStudentOverallStatus(student: ConsolidatedStudentAttendance): {
+function getStudentOverallStatus(student: ConsolidatedStudentAttendance, allowedStatuses?: AttendanceStatus[]): {
   type: 'complete' | 'mixed';
   label: string;
   icon: React.ReactNode;
@@ -51,9 +51,13 @@ function getStudentOverallStatus(student: ConsolidatedStudentAttendance): {
   const statuses = new Set(student.courses.map(c => c.currentStatus));
   
   if (statuses.size === 1) {
+    // Obtener el nombre del status desde allowedStatuses o usar el código
+    const statusCode = student.courses[0].currentStatus;
+    const statusName = allowedStatuses?.find(s => s.code === statusCode)?.name || student.courses[0].currentStatusName || statusCode;
+    
     return {
       type: 'complete',
-      label: `${student.courses[0].currentStatusName} (${student.courses.length} cursos)`,
+      label: `${statusName} (${student.courses.length} cursos)`,
       icon: <CheckCircle2 className="h-4 w-4 text-green-600" />,
     };
   }
@@ -61,7 +65,8 @@ function getStudentOverallStatus(student: ConsolidatedStudentAttendance): {
   // Contar tipos de status para mostrar resumen
   const statusCounts: Record<string, number> = {};
   student.courses.forEach(c => {
-    statusCounts[c.currentStatusName] = (statusCounts[c.currentStatusName] || 0) + 1;
+    const statusName = allowedStatuses?.find(s => s.code === c.currentStatus)?.name || c.currentStatusName || c.currentStatus;
+    statusCounts[statusName] = (statusCounts[statusName] || 0) + 1;
   });
 
   const summary = Object.entries(statusCounts)
@@ -76,7 +81,16 @@ function getStudentOverallStatus(student: ConsolidatedStudentAttendance): {
 }
 
 /**
- * Obtener color para un status dinámico
+ * Obtener el nombre del día en español a partir de una fecha
+ */
+function getDayNameInSpanish(dateString: string): string {
+  const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const date = new Date(dateString + 'T00:00:00Z'); // Agregar hora para evitar problemas de zona horaria
+  return dayNames[date.getUTCDay()] || 'Desconocido';
+}
+
+/**
+ * Obtener el color para un status dinámico
  */
 function getStatusColor(colorCode?: string): string {
   if (!colorCode) return '#808080'; // gray por defecto
@@ -116,7 +130,7 @@ function StudentRow({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [editingCourse, setEditingCourse] = useState<EditingState | null>(null);
-  const overallStatus = getStudentOverallStatus(student);
+  const overallStatus = getStudentOverallStatus(student, allowedStatuses);
   const hasModifications = student.courses.some(c => c.hasModifications);
 
   const handleEditClick = (courseId: number, currentStatusId: number) => {
@@ -327,7 +341,7 @@ function StudentRow({
                           />
                         )}
                         <span className="font-medium text-gray-700 dark:text-gray-300">
-                          {course.originalStatusName}
+                          {course.originalStatusName || originalStatus?.name || course.originalStatus || 'N/A'}
                         </span>
                       </div>
                     </div>
@@ -343,7 +357,7 @@ function StudentRow({
                           />
                         )}
                         <span className="font-bold text-gray-900 dark:text-gray-100">
-                          {course.currentStatusName}
+                          {course.currentStatusName || currentStatus?.name || course.currentStatus || 'N/A'}
                         </span>
                       </div>
                     </div>
@@ -437,6 +451,11 @@ export function ConsolidatedAttendanceViewComponent({
     s.courses?.some((c: any) => c.hasModifications)
   );
 
+  // Filtrar solo estudiantes que tienen al menos un curso con asistencia registrada
+  const studentsWithAttendance = data.students.filter(student =>
+    student.courses?.some((course: any) => course.currentStatus !== null && course.currentStatus !== undefined && course.currentStatus !== '')
+  );
+
   return (
     <div className="space-y-6">
       {/* Header con información general */}
@@ -448,15 +467,17 @@ export function ConsolidatedAttendanceViewComponent({
           </div>
           <div className="group rounded-lg border border-indigo-200 bg-white p-4 shadow-md transition-all hover:shadow-lg dark:border-indigo-700 dark:bg-slate-800">
             <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Día</div>
-            <div className="mt-1 text-xl font-bold text-indigo-600 dark:text-indigo-400">{data.dayName}</div>
+            <div className="mt-1 text-xl font-bold text-indigo-600 dark:text-indigo-400">
+              {data.dayName || getDayNameInSpanish(data.date)}
+            </div>
           </div>
           <div className="group rounded-lg border border-emerald-200 bg-white p-4 shadow-md transition-all hover:shadow-lg dark:border-emerald-700 dark:bg-slate-800">
             <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Estudiantes</div>
             <div className="mt-1 text-xl font-bold text-emerald-600 dark:text-emerald-400">{data.totalStudents}</div>
           </div>
           <div className="group rounded-lg border border-violet-200 bg-white p-4 shadow-md transition-all hover:shadow-lg dark:border-violet-700 dark:bg-slate-800">
-            <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Registros</div>
-            <div className="mt-1 text-xl font-bold text-violet-600 dark:text-violet-400">{data.totalRecords}</div>
+            <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Registros Actuales</div>
+            <div className="mt-1 text-xl font-bold text-violet-600 dark:text-violet-400">{studentsWithAttendance.length}</div>
           </div>
         </div>
 
@@ -485,7 +506,7 @@ export function ConsolidatedAttendanceViewComponent({
             </TableRow>
           </TableHeader>
           <TableBody className="bg-white dark:bg-gray-900">
-            {data.students.length === 0 ? (
+            {studentsWithAttendance.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="py-12 text-center">
                   <div className="flex flex-col items-center gap-3">
@@ -495,7 +516,7 @@ export function ConsolidatedAttendanceViewComponent({
                 </TableCell>
               </TableRow>
             ) : (
-              data.students.map((student) => (
+              studentsWithAttendance.map((student) => (
                 <StudentRow
                   key={student.enrollmentId}
                   student={student}

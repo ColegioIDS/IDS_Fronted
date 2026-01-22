@@ -335,7 +335,6 @@ export const getActiveCycle = async (): Promise<Record<string, unknown>> => {
     if (cachedActiveCycle && cacheTimestamp) {
       const now = Date.now();
       if ((now - cacheTimestamp) < CACHE_TTL) {
-        console.log('📦 Retornando ciclo del caché (TTL válido)');
         return cachedActiveCycle;
       }
     }
@@ -343,7 +342,6 @@ export const getActiveCycle = async (): Promise<Record<string, unknown>> => {
     // ✅ Si ya hay una solicitud en vuelo, devolver esa misma promesa
     // Esto previene múltiples solicitudes simultáneas
     if (pendingActiveCycleRequest) {
-      console.log('⏳ Solicitud en vuelo, reutilizando promesa...');
       return pendingActiveCycleRequest;
     }
 
@@ -351,11 +349,9 @@ export const getActiveCycle = async (): Promise<Record<string, unknown>> => {
     pendingActiveCycleRequest = (async () => {
       try {
         const url = `${BASE_URL}/cycle/active`;
-        console.log('🔄 Fetching active cycle from:', url);
         
         const response = await api.get<ApiResponse<Record<string, unknown>>>(url);
 
-        console.log('✅ Active cycle response:', response.data);
 
         if (!response.data.success) {
           throw new Error(response.data.message || 'Error al obtener ciclo activo');
@@ -366,7 +362,6 @@ export const getActiveCycle = async (): Promise<Record<string, unknown>> => {
         // Guardar en caché
         cachedActiveCycle = data;
         cacheTimestamp = Date.now();
-        console.log('💾 Ciclo guardado en caché');
 
         return data;
       } catch (error) {
@@ -403,11 +398,9 @@ export const invalidateActiveCycleCache = (): void => {
 export const getGradesFromActiveCycle = async (): Promise<Record<string, unknown>[]> => {
   try {
     const url = `${BASE_URL}/cycle/active/grades`;
-    console.log('🔄 Fetching grades from active cycle:', url);
     
     const response = await api.get<ApiResponse<Record<string, unknown>[]>>(url);
 
-    console.log('✅ Grades response:', response.data);
 
     if (!response.data.success) {
       throw new Error(response.data.message || 'Error al obtener grados');
@@ -651,7 +644,6 @@ export const getActiveBimester = async (): Promise<Record<string, unknown>> => {
     // ✅ Si ya hay una solicitud en vuelo, devolver esa misma promesa
     // Esto previene múltiples solicitudes simultáneas
     if (pendingActiveBimesterRequest) {
-      console.log('⏳ Solicitud de bimestre en vuelo, reutilizando promesa...');
       return pendingActiveBimesterRequest;
     }
 
@@ -659,11 +651,9 @@ export const getActiveBimester = async (): Promise<Record<string, unknown>> => {
     pendingActiveBimesterRequest = (async () => {
       try {
         const url = `${BASE_URL}/bimester/active`;
-        console.log('🔄 Fetching active bimester from:', url);
         
         const response = await api.get<ApiResponse<Record<string, unknown>>>(url);
 
-        console.log('✅ Active bimester response:', response.data);
 
         if (!response.data.success) {
           throw new Error(response.data.message || 'Error al obtener bimestre activo');
@@ -674,7 +664,6 @@ export const getActiveBimester = async (): Promise<Record<string, unknown>> => {
         // Guardar en caché
         cachedActiveBimester = data;
         bimesterCacheTimestamp = Date.now();
-        console.log('💾 Bimestre guardado en caché');
 
         return data;
       } catch (error) {

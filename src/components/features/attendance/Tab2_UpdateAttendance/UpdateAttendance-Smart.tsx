@@ -57,8 +57,9 @@ export function UpdateAttendanceTabSmartEdit({
 
       // Obtener datos consolidados
       const data = await attendanceService.getSectionAttendanceConsolidatedView(
-        attendanceState.selectedSectionId,
-        attendanceState.selectedDate
+        Number(attendanceState.selectedSectionId),
+        attendanceState.selectedDate,
+        user?.id ? Number(user.id) : undefined
       ) as unknown as ConsolidatedAttendanceView;
       setConsolidatedData(data);
 
@@ -72,7 +73,7 @@ export function UpdateAttendanceTabSmartEdit({
     } finally {
       setIsReloading(false);
     }
-  }, [attendanceState.selectedSectionId, attendanceState.selectedDate, user?.role?.id]);
+  }, [attendanceState.selectedSectionId, attendanceState.selectedDate, user?.role?.id, user?.id]);
 
   // Cargar datos consolidados y estatuses permitidos
   useEffect(() => {

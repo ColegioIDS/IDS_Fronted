@@ -34,6 +34,7 @@ interface FilterSectionProps {
   onSelect: (id: number) => void;
   isAutoSelected: boolean;
   getItemLabel: (item: any) => string;
+  forceShowAsCards?: boolean; // Forzar mostrar como tarjetas incluso si hay 1 item
 }
 
 interface StudentData {
@@ -54,6 +55,7 @@ function FilterSection({
   onSelect,
   isAutoSelected,
   getItemLabel,
+  forceShowAsCards = false,
 }: FilterSectionProps) {
   if (loading) {
     return (
@@ -68,8 +70,8 @@ function FilterSection({
     return null;
   }
 
-  // Si hay solo 1 opción, mostrar como pequeño chip/badge compacto
-  if (items.length === 1) {
+  // Si hay solo 1 opción Y no forzamos tarjetas, mostrar como chip compacto
+  if (items.length === 1 && !forceShowAsCards) {
     return (
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">{title}:</span>
@@ -81,7 +83,7 @@ function FilterSection({
     );
   }
 
-  // Si hay múltiples opciones, mostrar como tarjetas seleccionables
+  // Si hay múltiples opciones O forzamos tarjetas, mostrar como tarjetas seleccionables
   return (
     <div className="space-y-3">
       <div>
@@ -179,54 +181,48 @@ export function AttendanceFilters() {
   // Efecto para auto-seleccionar grado si hay solo 1
   useEffect(() => {
     if (
-      gradesData.grades?.length &&
+      gradesData.grades?.length === 1 &&
       attendanceState.selectedBimesterId &&
       !selectedGradeId &&
       !gradeLoadedRef.current
     ) {
       gradeLoadedRef.current = true;
-      
-      if (gradesData.grades.length === 1) {
-        setSelectedGradeId(gradesData.grades[0].id);
-      }
+      setSelectedGradeId(gradesData.grades[0].id);
     }
   }, [gradesData.grades?.length, attendanceState.selectedBimesterId, selectedGradeId]);
 
-  // Efecto para auto-seleccionar sección si hay solo 1
-  useEffect(() => {
-    if (
-      sectionsData.sections?.length &&
-      selectedGradeId &&
-      !attendanceState.selectedSectionId &&
-      !sectionLoadedRef.current
-    ) {
-      sectionLoadedRef.current = true;
-      
-      if (sectionsData.sections.length === 1) {
-        const sectionId = parseInt(sectionsData.sections[0].id.toString(), 10);
-        attendanceActions.selectSection(sectionId);
-      }
-    }
-  }, [sectionsData.sections?.length, selectedGradeId, attendanceState.selectedSectionId]);
+  // ❌ NO AUTO-SELECT PARA SECCIÓN - Usuario SIEMPRE debe seleccionar manualmente
 
-  // Efecto para resetear el ref cuando cambia la sección
+  // Efecto DIRECTO para limpiar estudiantes cuando la sección se pone en undefined
+  // Esto evita mostrar datos de la sección anterior
   useEffect(() => {
-    // Cuando selectedSectionId cambia, resetear el ref para forzar recarga de estudiantes
-    studentsLoadedRef.current = false;
+    console.log('🔍 [EFECTO LIMPIEZA] selectedSectionId cambió:', attendanceState.selectedSectionId);
+    if (!attendanceState.selectedSectionId) {
+      console.log('❌ [LIMPIEZA] No hay sección, limpiando estudiantes');
+      attendanceActions.setStudents([]);
+    }
   }, [attendanceState.selectedSectionId]);
 
   // Efecto para cargar estudiantes cuando se selecciona una sección
+  // Este efecto actualiza automáticamente cuando el hook trae nuevos datos
   useEffect(() => {
+    console.log('🔍 [EFECTO ESTUDIANTES] Ejecutándose:', {
+      selectedSectionId: attendanceState.selectedSectionId,
+      selectedGradeId,
+      studentsCount: studentsData.students?.length ?? 0,
+      isLoading: studentsData.loading,
+      firstStudent: studentsData.students?.[0]?.name,
+    });
+
+    // Si no hay sección seleccionada, salir (ya fue limpiado arriba)
     if (!attendanceState.selectedSectionId) {
-      attendanceActions.setStudents([]);
+      console.log('⚠️ [EFECTO ESTUDIANTES] Sin sección, retornando');
       return;
     }
 
-    if (studentsData.loading) {
-      return;
-    }
-
-    if (studentsData.students?.length && !studentsLoadedRef.current) {
+    // Actualizar con los nuevos datos del hook
+    if (studentsData.students && studentsData.students.length > 0) {
+      console.log('✅ [EFECTO ESTUDIANTES] Cargando', studentsData.students.length, 'estudiantes');
       const convertedStudents = studentsData.students.map(student => ({
         id: student.id,
         enrollmentId: student.enrollmentId,  // ✅ Usar enrollmentId del hook (viene del backend)
@@ -243,13 +239,15 @@ export function AttendanceFilters() {
         recordedBy: '',
         recordedAt: new Date().toISOString(),
       }));
-      studentsLoadedRef.current = true;
       attendanceActions.setStudents(convertedStudents);
-    } else if (!studentsData.students?.length && !studentsData.loading && studentsLoadedRef.current) {
-      studentsLoadedRef.current = false;
+    } else if (!studentsData.loading) {
+      // Solo limpiar si no está cargando
+      console.log('⚠️ [EFECTO ESTUDIANTES] Sin estudiantes y no cargando, limpiando');
       attendanceActions.setStudents([]);
+    } else {
+      console.log('⏳ [EFECTO ESTUDIANTES] Aún cargando...');
     }
-  }, [studentsData.students, studentsData.loading, attendanceState.selectedSectionId, attendanceState.selectedDate]);
+  }, [studentsData.students, attendanceState.selectedSectionId, selectedGradeId]);
 
   const handleCycleChange = (cycleId: number) => {
     attendanceActions.selectCycle(cycleId);
@@ -271,9 +269,17 @@ export function AttendanceFilters() {
   };
 
   const handleGradeChange = (gradeId: number) => {
-    setSelectedGradeId(gradeId);
-    attendanceActions.setStudents([]);
+    console.log('🎓 [handleGradeChange] Cambiando a grado:', gradeId);
+    // Resetear el ref PRIMERO para permitir re-selección de sección
     sectionLoadedRef.current = false;
+    console.log('🔄 [handleGradeChange] Resetear sectionLoadedRef');
+    // Cambiar el grado
+    setSelectedGradeId(gradeId);
+    // Limpiar sección y estudiantes cuando cambia de grado
+    console.log('📍 [handleGradeChange] Poniendo sección en undefined');
+    attendanceActions.selectSection(undefined);
+    console.log('👥 [handleGradeChange] Limpiando estudiantes');
+    attendanceActions.setStudents([]);
     studentsLoadedRef.current = false;
   };
 
@@ -282,6 +288,11 @@ export function AttendanceFilters() {
     attendanceActions.selectSection(sectionId);
     studentsLoadedRef.current = false;
   };
+
+  // Resetear el ref de estudiantes cuando cambia la sección
+  useEffect(() => {
+    studentsLoadedRef.current = false;
+  }, [attendanceState.selectedSectionId]);
 
   const selectedGrade = gradesData.grades.find((g) => g.id === selectedGradeId);
   const selectedSection = sectionsData.sections.find((s) => s.id === attendanceState.selectedSectionId);
@@ -354,20 +365,6 @@ export function AttendanceFilters() {
               getItemLabel={(item: any) => item.name}
             />
           )}
-
-          {/* Sección */}
-          {selectedGradeId && sectionsData.sections && sectionsData.sections.length === 1 && !sectionsData.loading && (
-            <FilterSection
-              title="Sección"
-              description=""
-              loading={sectionsData.loading}
-              items={sectionsData.sections}
-              selectedId={attendanceState.selectedSectionId}
-              onSelect={handleSectionChange}
-              isAutoSelected={true}
-              getItemLabel={(item: any) => `Sección ${item.name}`}
-            />
-          )}
         </div>
 
         {/* Ciclo Escolar - selectable if > 1 */}
@@ -412,18 +409,35 @@ export function AttendanceFilters() {
           />
         )}
 
-        {/* Sección - selectable if > 1 */}
-        {selectedGradeId && sectionsData.sections && sectionsData.sections.length > 1 && (
-          <FilterSection
-            title="Sección"
-            description={sectionsData.sections && sectionsData.sections.length === 1 ? "Seleccionado automáticamente" : "Elige la sección"}
-            loading={sectionsData.loading}
-            items={sectionsData.sections}
-            selectedId={attendanceState.selectedSectionId}
-            onSelect={handleSectionChange}
-            isAutoSelected={false}
-            getItemLabel={(item: any) => `Sección ${item.name}`}
-          />
+        {/* Sección - selectable (FORCE CARDS) - Solo mostrar si hay 1 grado o múltiples grados */}
+        {selectedGradeId && sectionsData.sections && (
+          // Si hay múltiples grados, mostrar con mensaje de selección manual requerida
+          gradesData.grades && gradesData.grades.length > 1 ? (
+            <FilterSection
+              title="Sección"
+              description="Elige la sección (selección manual requerida)"
+              loading={sectionsData.loading}
+              items={sectionsData.sections}
+              selectedId={attendanceState.selectedSectionId}
+              onSelect={handleSectionChange}
+              isAutoSelected={false}
+              getItemLabel={(item: any) => `Sección ${item.name}`}
+              forceShowAsCards={true}
+            />
+          ) : (
+            // Si hay 1 grado, mostrar normalmente
+            <FilterSection
+              title="Sección"
+              description="Elige la sección"
+              loading={sectionsData.loading}
+              items={sectionsData.sections}
+              selectedId={attendanceState.selectedSectionId}
+              onSelect={handleSectionChange}
+              isAutoSelected={false}
+              getItemLabel={(item: any) => `Sección ${item.name}`}
+              forceShowAsCards={true}
+            />
+          )
         )}
       </div>
 

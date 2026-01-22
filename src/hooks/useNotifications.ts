@@ -76,7 +76,6 @@ export function useNotifications() {
         });
         
         const notifs = response?.data || [];
-        console.log(`📦 Notificaciones cargadas: ${notifs.length}`);
         setNotifications(notifs);
       } catch (error) {
         retries++;
@@ -102,7 +101,6 @@ export function useNotifications() {
   useEffect(() => {
     // ✅ SOLO conectar si hay autenticación válida
     if (!isAuthenticated) {
-      console.log('⏭️ No autenticado - desconectando WebSocket');
       setIsConnected(false);
       if (socket) {
         socket.disconnect();
@@ -128,20 +126,16 @@ export function useNotifications() {
         return;
       }
       
-      console.log('🔌 === INICIANDO CONEXIÓN WEBSOCKET ===');
       // ✅ SEGURIDAD: Solo mostrar token info en desarrollo
       if (process.env.NODE_ENV === 'development') {
-        console.log('   Token:', token === 'cookie' ? 'HttpOnly Cookies' : `${token.substring(0, 20)}...`);
-        console.log('   Cookies disponibles:', document.cookie ? 'Sí' : 'No');
+        
       } else {
-        console.log('   Autenticación: Configurada');
       }
 
       // Obtener URL base del API
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
       const wsUrl = `${apiBase}/notifications`;
       if (process.env.NODE_ENV === 'development') {
-        console.log('   URL:', wsUrl);
       }
 
       const socketConfig: any = {
@@ -158,10 +152,8 @@ export function useNotifications() {
         socketConfig.auth = {
           Authorization: token, // Socket.io lo espera sin "Bearer" aquí
         };
-        console.log('   Autenticación: Bearer token');
       } else {
         // Las cookies se enviarán automáticamente con withCredentials
-        console.log('   Autenticación: HttpOnly cookies');
       }
 
       const newSocket = io(wsUrl, socketConfig);
@@ -169,42 +161,31 @@ export function useNotifications() {
       // ✅ ORDEN: Registrar handlers de forma centralizada y limpia
       registerWebSocketHandlers(newSocket, {
         onConnect: (socket) => {
-          console.log('✅ WebSocket conectado exitosamente');
-          console.log('   Socket ID:', socket.id);
-          console.log('   Estado:', socket.connected ? 'Conectado' : 'No conectado');
+         
           setIsConnected(true);
         },
 
         onDisconnect: (reason, socket) => {
-          console.log('❌ Desconectado - Razón:', reason);
           setIsConnected(false);
           
           // Auto-reconectar según la razón
           if (reason === 'io server disconnect') {
-            console.log('   → Desconexión del servidor. Reintentando en 3 segundos...');
             setTimeout(() => {
               if (socket && !socket.connected) {
-                console.log('   🔄 Intentando reconectar...');
                 socket.connect();
               }
             }, 3000);
           } else if (reason === 'transport close' || reason === 'io client disconnect') {
-            console.log('   → Desconexión limpia (no es error)');
           } else {
-            console.warn(`   ⚠️ Desconexión inesperada: ${reason}`);
           }
         },
 
         onConnectError: (error) => {
-          console.error('❌ Error de conexión WebSocket:');
-          console.error('   Mensaje:', error.message);
           if (process.env.NODE_ENV === 'development') {
-            console.error('   Stack:', error.stack);
           }
         },
 
         onError: (data) => {
-          console.error('❌ Error del servidor WebSocket:', data);
           if (data?.code === 'NO_AUTH') {
             console.error('   → Sin autenticación. Por favor inicia sesión.');
             newSocket.disconnect();
@@ -218,11 +199,9 @@ export function useNotifications() {
         },
 
         onConnected: (data) => {
-          console.log('✅ Sesión iniciada:', data);
         },
 
         onNotificationNew: (data) => {
-          console.log('📬 [WS] Nueva notificación recibida:', data);
           const notification = data.data;
           if (notification) {
             setNotifications((prev) => [notification, ...prev]);

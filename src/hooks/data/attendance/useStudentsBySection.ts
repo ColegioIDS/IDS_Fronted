@@ -41,9 +41,12 @@ export const useStudentsBySection = (
 
   const fetchStudents = useCallback(async () => {
     if (!sectionId || !cycleId) {
+      console.log('🚫 [useStudentsBySection] Sin sectionId o cycleId, limpiando');
       setStudents([]);
       return;
     }
+
+    console.log('📡 [useStudentsBySection] Cargando estudiantes para sectionId:', sectionId, 'cycleId:', cycleId, 'date:', date);
 
     try {
       setLoading(true);
@@ -57,6 +60,7 @@ export const useStudentsBySection = (
       );
 
       if (Array.isArray(data)) {
+        console.log('✅ [useStudentsBySection] Recibido', data.length, 'estudiantes');
         const studentsList = data.map((enrollment: unknown) => {
           const e = enrollment as Record<string, unknown>;
           const student = (e.student || e.user || e) as Record<string, unknown>;
@@ -75,8 +79,10 @@ export const useStudentsBySection = (
             identificationNumber: String(student?.codeSIRE ?? student?.identificationNumber ?? e.identificationNumber ?? ''),
           };
         });
+        console.log('📥 [useStudentsBySection] Seteando estado con', studentsList.length, 'estudiantes');
         setStudents(studentsList);
       } else {
+        console.log('❌ [useStudentsBySection] Data no es un array');
         setStudents([]);
       }
     } catch (err: unknown) {

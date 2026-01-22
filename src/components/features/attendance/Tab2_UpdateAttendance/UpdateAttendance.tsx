@@ -56,7 +56,8 @@ export function UpdateAttendance() {
       try {
         const data = await getSectionAttendanceConsolidatedView(
           attendanceState.selectedSectionId!,
-          attendanceState.selectedDate
+          attendanceState.selectedDate,
+          user?.id
         );
         
         setConsolidatedData(data as unknown as ConsolidatedAttendanceView);
@@ -70,7 +71,7 @@ export function UpdateAttendance() {
     };
 
     loadConsolidatedView();
-  }, [attendanceState.selectedSectionId, attendanceState.selectedDate]);
+  }, [attendanceState.selectedSectionId, attendanceState.selectedDate, user?.id]);
 
   // Validar selecciones
   if (!attendanceState.selectedSectionId || !attendanceState.selectedDate) {
