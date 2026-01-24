@@ -1,2 +1,0 @@
-export { DetailedTab } from './DetailedTab';
-

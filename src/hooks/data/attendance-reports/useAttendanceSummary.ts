@@ -8,7 +8,6 @@ import { useEffect } from 'react';
 interface UseAttendanceSummaryParams {
   gradeId?: number;
   sectionId?: number;
-  courseId?: number;
   bimesterId?: number | null;
   academicWeekId?: number | null;
 }
@@ -21,7 +20,6 @@ interface UseAttendanceSummaryParams {
 export function useAttendanceSummary({
   gradeId,
   sectionId,
-  courseId,
   bimesterId = null,
   academicWeekId = null,
 }: UseAttendanceSummaryParams) {
@@ -30,7 +28,6 @@ export function useAttendanceSummary({
     'attendance-summary',
     gradeId,
     sectionId,
-    courseId,
     bimesterId,
     academicWeekId,
   ];
@@ -39,12 +36,11 @@ export function useAttendanceSummary({
     console.log('🔍 useAttendanceSummary params changed:', {
       gradeId,
       sectionId,
-      courseId,
       bimesterId,
       academicWeekId,
-      willExecute: !!(gradeId && sectionId && courseId),
+      willExecute: !!(gradeId && sectionId),
     });
-  }, [gradeId, sectionId, courseId, bimesterId, academicWeekId]);
+  }, [gradeId, sectionId, bimesterId, academicWeekId]);
 
   const { data, isLoading, error, isError } = useQuery<AttendanceSummary>({
     queryKey,
@@ -52,19 +48,17 @@ export function useAttendanceSummary({
       console.log('🚀 useAttendanceSummary queryFn executing with:', {
         gradeId,
         sectionId,
-        courseId,
         bimesterId,
         academicWeekId,
       });
       return attendanceReportsService.getAttendanceSummary(
         gradeId!,
         sectionId!,
-        courseId!,
         bimesterId,
         academicWeekId
       );
     },
-    enabled: !!(gradeId && sectionId && courseId),
+    enabled: !!(gradeId && sectionId),
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 0, // Sin reintentos automáticos (el QueryProvider maneja esto)
   });

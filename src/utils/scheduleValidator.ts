@@ -168,12 +168,12 @@ export class ScheduleConfigValidator {
     }
 
     // Validación 4: Solapea con breaks
-    // breakSlots is now Record<string, ScheduleSlot[]>
-    const breakSlotsArray = config.breakSlots 
-      ? Object.values(config.breakSlots).flat() 
+    // breakSlots is now Record<string, ScheduleSlot[]> - validate only against the specific day's breaks
+    const dayBreakSlots = (config.breakSlots && config.breakSlots[schedule.dayOfWeek.toString()]) 
+      ? config.breakSlots[schedule.dayOfWeek.toString()] 
       : [];
     
-    const overlapsBreak = breakSlotsArray.some((b) => {
+    const overlapsBreak = dayBreakSlots.some((b) => {
       const [bStartHour, bStartMin] = b.start.split(':').map(Number);
       const [bEndHour, bEndMin] = b.end.split(':').map(Number);
       const breakStartMins = bStartHour * 60 + bStartMin;

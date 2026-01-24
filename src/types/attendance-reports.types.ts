@@ -192,11 +192,9 @@ export interface CourseInfo {
  */
 export interface StudentsAttendanceResponse {
   section: SectionInfo;
-  course: CourseInfo;
   filters?: {
     gradeId: number;
     sectionId: number;
-    courseId: number;
     bimesterId?: number | null;
     academicWeekId?: number | null;
   };
@@ -227,7 +225,6 @@ export interface AttendanceSummary {
   filters: {
     gradeId: number;
     sectionId: number;
-    courseId: number;
     bimesterId?: number | null;
     academicWeekId?: number | null;
   };
@@ -248,10 +245,112 @@ export type ExportFormat = 'excel' | 'pdf' | 'csv';
 export interface ExportParams {
   gradeId: number;
   sectionId: number;
-  courseId: number;
   format?: ExportFormat;
   bimesterId?: number | null;
   academicWeekId?: number | null;
   startDate?: string; // YYYY-MM-DD
   endDate?: string; // YYYY-MM-DD
+}
+
+/**
+ * Period Type
+ */
+export type PeriodType = 'day' | 'week' | 'bimonthly';
+
+/**
+ * Daily Attendance Record
+ */
+export interface DailyAttendanceRecord {
+  date: string;
+  status: string; // "A", "I", "T", "J"
+  statusName: string; // "Presente", "Ausente", "Tardía", "Justificado"
+}
+
+/**
+ * Student Attendance History (Day/Week view)
+ */
+export interface StudentAttendanceHistory {
+  studentId: number;
+  givenNames: string;
+  lastNames: string;
+  attendances: DailyAttendanceRecord[];
+  totalAttended: number;
+  totalDays: number;
+  percentage: number;
+}
+
+/**
+ * Weekly Attendance Summary
+ */
+export interface WeeklyAttendanceSummary {
+  week: number;
+  weekRange: string;
+  status: 'GOOD' | 'MEDIUM' | 'LOW';
+  percentage: number;
+  totalAttended: number;
+  totalDays: number;
+}
+
+/**
+ * Student Bimonthly Attendance History
+ */
+export interface StudentBimonthlyAttendanceHistory {
+  studentId: number;
+  givenNames: string;
+  lastNames: string;
+  weeklyAttendances: WeeklyAttendanceSummary[];
+  totalPercentage: number;
+  totalAttended: number;
+  totalDays: number;
+}
+
+/**
+ * Course Attendance History Records
+ */
+export interface CourseAttendanceHistoryRecords {
+  courseId: number;
+  courseName: string;
+  courseCode: string;
+  teacherName: string;
+  records: StudentAttendanceHistory[];
+}
+
+/**
+ * Course Bimonthly Attendance History Records
+ */
+export interface CourseBimonthlyAttendanceHistoryRecords {
+  courseId: number;
+  courseName: string;
+  courseCode: string;
+  teacherName: string;
+  bimonthlyRecords: StudentBimonthlyAttendanceHistory[];
+}
+
+/**
+ * Period Information
+ */
+export interface PeriodInfo {
+  type: PeriodType;
+  startDate?: string;
+  endDate?: string;
+  displayName: string;
+  bimesterId?: number;
+}
+
+/**
+ * Attendance History Response (Day/Week)
+ */
+export interface AttendanceHistoryResponse {
+  section: SectionInfo;
+  period: PeriodInfo;
+  courses: CourseAttendanceHistoryRecords[];
+}
+
+/**
+ * Attendance History Response (Bimonthly)
+ */
+export interface AttendanceBimonthlyHistoryResponse {
+  section: SectionInfo;
+  period: PeriodInfo;
+  courses: CourseBimonthlyAttendanceHistoryRecords[];
 }

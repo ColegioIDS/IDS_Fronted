@@ -5,7 +5,6 @@ import { StudentsAttendanceResponse } from '@/types/attendance-reports.types';
 interface UseStudentsAttendanceParams {
   gradeId?: number;
   sectionId?: number;
-  courseId?: number;
   bimesterId?: number | null;
   academicWeekId?: number | null;
 }
@@ -13,7 +12,6 @@ interface UseStudentsAttendanceParams {
 export function useStudentsAttendance({
   gradeId,
   sectionId,
-  courseId,
   bimesterId,
   academicWeekId,
 }: UseStudentsAttendanceParams) {
@@ -22,7 +20,6 @@ export function useStudentsAttendance({
       'students-attendance',
       gradeId,
       sectionId,
-      courseId,
       bimesterId,
       academicWeekId,
     ],
@@ -30,11 +27,10 @@ export function useStudentsAttendance({
       attendanceReportsService.getStudentsAttendance(
         gradeId!,
         sectionId!,
-        courseId!,
         bimesterId,
         academicWeekId
       ),
-    enabled: !!(gradeId && sectionId && courseId),
+    enabled: !!(gradeId && sectionId),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }

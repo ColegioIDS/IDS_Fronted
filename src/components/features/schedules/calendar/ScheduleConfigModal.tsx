@@ -100,14 +100,25 @@ export function ScheduleConfigModal({
         processedConfig = convertOldConfigToNew(currentConfig);
       }
 
+      // Ensure breakSlots is initialized for all working days
+      const workingDays = processedConfig.workingDays || [1, 2, 3, 4, 5];
+      const initializedBreakSlots = initializeBreakSlotsForDays(workingDays as DayOfWeek[], []);
+      
+      // Merge with existing breakSlots data from config
+      const breakSlotsFromConfig = (processedConfig.breakSlots as Record<string, ScheduleSlot[]>) || {};
+      const mergedBreakSlots = {
+        ...initializedBreakSlots,
+        ...breakSlotsFromConfig
+      };
+
       setFormData({
-        workingDays: processedConfig.workingDays || [1, 2, 3, 4, 5],
+        workingDays: workingDays as DayOfWeek[],
         startTime: processedConfig.startTime || '07:00',
         endTime: processedConfig.endTime || '17:00',
         classDuration: processedConfig.classDuration || 45,
-        breakSlots: (processedConfig.breakSlots as Record<string, ScheduleSlot[]>) || {},
+        breakSlots: mergedBreakSlots,
       });
-      setSelectedDay(processedConfig.workingDays?.[0] || 1);
+      setSelectedDay(workingDays[0] || 1);
     }
   }, [currentConfig]);
 

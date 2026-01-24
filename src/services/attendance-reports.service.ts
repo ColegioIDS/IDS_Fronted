@@ -12,6 +12,9 @@ import {
   AttendanceSummary,
   StudentsAttendanceResponse,
   ExportParams,
+  AttendanceHistoryResponse,
+  AttendanceBimonthlyHistoryResponse,
+  PeriodType,
 } from '@/types/attendance-reports.types';
 
 const BASE_URL = '/api/attendance-reports';
@@ -137,7 +140,6 @@ class AttendanceReportsService {
   async getAttendanceSummary(
     gradeId: number,
     sectionId: number,
-    courseId: number,
     bimesterId?: number | null,
     academicWeekId?: number | null
   ): Promise<AttendanceSummary> {
@@ -145,7 +147,6 @@ class AttendanceReportsService {
       const params = new URLSearchParams({
         gradeId: gradeId.toString(),
         sectionId: sectionId.toString(),
-        courseId: courseId.toString(),
       });
 
       if (bimesterId !== null && bimesterId !== undefined) {
@@ -157,7 +158,7 @@ class AttendanceReportsService {
       }
 
       const url = `${BASE_URL}/sections/${sectionId}/attendance-summary?${params.toString()}`;
-      console.log('📊 Fetching attendance summary:', { url, gradeId, sectionId, courseId, bimesterId, academicWeekId });
+      console.log('📊 Fetching attendance summary:', { url, gradeId, sectionId, bimesterId, academicWeekId });
 
       const response = await api.get<ApiResponse<AttendanceSummary>>(url);
 
@@ -180,7 +181,6 @@ class AttendanceReportsService {
   async getStudentsAttendance(
     gradeId: number,
     sectionId: number,
-    courseId: number,
     bimesterId?: number | null,
     academicWeekId?: number | null
   ): Promise<StudentsAttendanceResponse> {
@@ -188,7 +188,6 @@ class AttendanceReportsService {
       const params = new URLSearchParams({
         gradeId: gradeId.toString(),
         sectionId: sectionId.toString(),
-        courseId: courseId.toString(),
       });
 
       if (bimesterId !== null && bimesterId !== undefined) {
@@ -200,7 +199,7 @@ class AttendanceReportsService {
       }
 
       const url = `${BASE_URL}/sections/${sectionId}/students-attendance?${params.toString()}`;
-      console.log('👥 Fetching students attendance:', { url, gradeId, sectionId, courseId, bimesterId, academicWeekId });
+      console.log('👥 Fetching students attendance:', { url, gradeId, sectionId, bimesterId, academicWeekId });
 
       const response = await api.get<ApiResponse<StudentsAttendanceResponse>>(url);
 
@@ -218,89 +217,67 @@ class AttendanceReportsService {
   }
 
   /**
-   * Export student attendance report (Excel, PDF, CSV)
+   * Get attendance history for a section (Day/Week/Bimonthly)
    */
-  async exportStudentReport(
-    studentId: number,
-    params: ExportParams
-  ): Promise<Blob> {
+  async getAttendanceHistory(
+    gradeId: number,
+    sectionId: number,
+    periodType: PeriodType,
+    date?: string, // YYYY-MM-DD for day view
+    weekStart?: string, // YYYY-MM-DD for week view
+    bimesterId?: number
+  ): Promise<AttendanceHistoryResponse | AttendanceBimonthlyHistoryResponse> {
     try {
       const queryParams = new URLSearchParams({
-        gradeId: params.gradeId.toString(),
-        courseId: params.courseId.toString(),
-        sectionId: params.sectionId.toString(),
+        gradeId: gradeId.toString(),
+        periodType: periodType,
       });
 
-      if (params.bimesterId !== null && params.bimesterId !== undefined) {
-        queryParams.append('bimesterId', params.bimesterId.toString());
+      if (periodType === 'day' && date) {
+        queryParams.append('date', date);
       }
 
-      if (params.academicWeekId !== null && params.academicWeekId !== undefined) {
-        queryParams.append('academicWeekId', params.academicWeekId.toString());
+      if (periodType === 'week' && weekStart) {
+        queryParams.append('weekStart', weekStart);
       }
 
-      if (params.startDate) {
-        queryParams.append('startDate', params.startDate);
+      if (periodType === 'bimonthly' && bimesterId) {
+        queryParams.append('bimesterId', bimesterId.toString());
       }
 
-      if (params.endDate) {
-        queryParams.append('endDate', params.endDate);
-      }
-
-      queryParams.append('format', params.format || 'excel');
-
-      const response = await api.get<Blob>(
-        `${BASE_URL}/export/student/${studentId}?${queryParams.toString()}`,
-        {
-          responseType: 'blob',
-        }
+      const response = await api.get<ApiResponse<AttendanceHistoryResponse | AttendanceBimonthlyHistoryResponse>>(
+        `${BASE_URL}/sections/${sectionId}/attendance-history?${queryParams.toString()}`
       );
 
-      return response.data;
+      console.log('📊 Attendance history response:', response.data);
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Error al obtener historial de asistencia');
+      }
+
+      return response.data.data;
     } catch (error) {
+      console.error('❌ Error fetching attendance history:', error);
       throw error;
     }
   }
 
   /**
-   * Export section attendance report (Excel, PDF, CSV)
+   * Get academic weeks for the current cycle/bimester
    */
-  async exportSectionReport(
-    sectionId: number,
-    params: Omit<ExportParams, 'sectionId'>
-  ): Promise<Blob> {
+  async getAcademicWeeks() {
     try {
-      const queryParams = new URLSearchParams({
-        gradeId: params.gradeId.toString(),
-        courseId: params.courseId.toString(),
-      });
+      const response = await api.get<ApiResponse<{
+        schoolCycle: SchoolCycle;
+        bimester: Bimester;
+        weeks: AcademicWeek[];
+      }>>(`${BASE_URL}/academic-weeks`);
 
-      if (params.bimesterId !== null && params.bimesterId !== undefined) {
-        queryParams.append('bimesterId', params.bimesterId.toString());
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Error al obtener semanas académicas');
       }
 
-      if (params.academicWeekId !== null && params.academicWeekId !== undefined) {
-        queryParams.append('academicWeekId', params.academicWeekId.toString());
-      }
-
-      if (params.startDate) {
-        queryParams.append('startDate', params.startDate);
-      }
-
-      if (params.endDate) {
-        queryParams.append('endDate', params.endDate);
-      }
-
-      queryParams.append('format', params.format || 'excel');
-
-      const response = await api.get<Blob>(
-        `${BASE_URL}/export/section/${sectionId}?${queryParams.toString()}`,
-        {
-          responseType: 'blob',
-        }
-      );
-
-      return response.data;
+      return response.data.data;
     } catch (error) {
       throw error;
     }

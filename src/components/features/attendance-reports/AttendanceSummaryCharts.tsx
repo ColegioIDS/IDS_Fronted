@@ -209,6 +209,66 @@ export function AttendanceSummaryCharts({
         </CardContent>
       </Card>
 
+      {/* Pie Chart */}
+      <Card className="border-gray-200 dark:border-gray-700">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5" />
+            Distribución de Asistencia
+          </CardTitle>
+          <CardDescription>Gráfica visual de los porcentajes</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                <Pie
+                  data={summaryPercentages}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {summaryPercentages.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value) => `${parseFloat(String(value)).toFixed(1)}%`}
+                  contentStyle={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#fff',
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            
+            {/* Leyenda personalizada sin sobreposición */}
+            <div className="grid grid-cols-2 gap-4 mt-4 w-full">
+              {summaryPercentages.map((item) => (
+                <div key={item.name} className="flex items-center gap-3">
+                  <div 
+                    className="w-4 h-4 rounded-full flex-shrink-0" 
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {item.name}
+                    </p>
+                    <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                      {item.value.toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Tendencia Diaria */}
       {dailyTrendData.length > 0 && (
         <Card className="border-gray-200 dark:border-gray-700">

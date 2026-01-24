@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { attendanceReportsService } from '@/services/attendance-reports.service';
-import { useAttendanceSummary, useStudentsAttendance } from '@/hooks/data/attendance-reports';
+import { useAttendanceSummary, useAttendanceHistory, useAcademicWeeks } from '@/hooks/data/attendance-reports';
 import { AttendanceSummaryCharts } from './AttendanceSummaryCharts';
-import { ExportStudentsTab } from './ExportStudentsTab';
-import { GradesSelector, SectionsSelector, CoursesSelector, BimestersSelector, AcademicWeeksSelector, StudentsTable } from './shared';
+import { AttendanceHistoryView } from './shared/AttendanceHistoryView';
+import { GradesSelector, SectionsSelector, BimestersSelector, AcademicWeeksSelector, StudentsTable } from './shared';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -17,12 +17,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, BookOpen, TrendingUp, AlertTriangle, Clock, Layers, ChevronDown, ChevronUp, Users, BarChart3, FileText, Download, X } from 'lucide-react';
+import { Calendar, BookOpen, TrendingUp, AlertTriangle, Clock, Layers, ChevronDown, ChevronUp, Users, BarChart3, FileText, X } from 'lucide-react';
+import { PeriodType } from '@/types/attendance-reports.types';
 
 export function AttendanceReportsPageContent() {
   const [selectedGradeId, setSelectedGradeId] = useState<number | undefined>();
   const [selectedSectionId, setSelectedSectionId] = useState<number | undefined>();
-  const [selectedCourseId, setSelectedCourseId] = useState<number | undefined>();
   const [selectedBimesterId, setSelectedBimesterId] = useState<number | undefined>();
   const [selectedWeekId, setSelectedWeekId] = useState<number | undefined>();
   const [isFilterOpen, setIsFilterOpen] = useState(true);
@@ -30,12 +30,22 @@ export function AttendanceReportsPageContent() {
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
 
-  // Contraer automáticamente cuando los 3 primeros selectores se completen
+  // History view state
+  const [historyPeriodType, setHistoryPeriodType] = useState<PeriodType>('day');
+  const [historySelectedDate, setHistorySelectedDate] = useState<Date>(new Date());
+  const [historySelectedWeekId, setHistorySelectedWeekId] = useState<string>('');
+  const [historyBimesterId, setHistoryBimesterId] = useState<string>('');
+  const [historySearchCounter, setHistorySearchCounter] = useState(0); // Increment to trigger search
+
+  // Fetch academic weeks
+  const { data: academicWeeksData } = useAcademicWeeks();
+
+  // Contraer automáticamente cuando Grado y Sección se completen
   useEffect(() => {
-    if (selectedGradeId && selectedSectionId && selectedCourseId && isFilterOpen) {
+    if (selectedGradeId && selectedSectionId && isFilterOpen) {
       setIsFilterOpen(false);
     }
-  }, [selectedGradeId, selectedSectionId, selectedCourseId, isFilterOpen]);
+  }, [selectedGradeId, selectedSectionId, isFilterOpen]);
 
   const { data: cycle, isLoading, error } = useQuery({
     queryKey: ['attendance-reports', 'active-cycle'],
@@ -43,7 +53,79 @@ export function AttendanceReportsPageContent() {
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  // Hook para obtener el resumen de asistencia
+  // Ensure hook params are properly formatted
+  const hookParams = {
+    gradeId: selectedGradeId,
+    sectionId: selectedSectionId,
+    periodType: historyPeriodType,
+    date: historyPeriodType === 'day' ? format(historySelectedDate, 'yyyy-MM-dd') : undefined,
+    weekId: historyPeriodType === 'week' ? historySelectedWeekId : undefined,
+    bimesterId: historyPeriodType === 'bimonthly' && historyBimesterId ? parseInt(historyBimesterId) : undefined,
+    searchCounter: historySearchCounter, // Increment this to trigger a new search
+  };
+
+  console.log('📥 Passing to hook:', hookParams);
+
+  // Hook para obtener el historial de asistencia
+  const {
+    data: attendanceHistory,
+    isLoading: isHistoryLoading,
+    error: historyError,
+    isError: historyIsError,
+    refetch: refetchHistory,
+  } = useAttendanceHistory(hookParams);
+  // Handlers para cambios de período
+  const handleHistoryPeriodTypeChange = (newType: PeriodType) => {
+    setHistoryPeriodType(newType);
+  };
+
+  const handleHistoryDateChange = (date: Date | undefined) => {
+    if (date) {
+      setHistorySelectedDate(date);
+    }
+  };
+
+  const handleHistoryWeekChange = (weekId: string) => {
+    setHistorySelectedWeekId(weekId);
+  };
+
+  const handleHistoryBimesterChange = (bimesterId: string) => {
+    setHistoryBimesterId(bimesterId);
+  };
+
+  const handleHistoryApplyFilter = (
+    periodType: PeriodType,
+    selectedDate?: Date,
+    weekId?: string | number,
+    bimesterId?: number
+  ) => {
+    console.log('📌 handleHistoryApplyFilter called with:', {
+      periodType,
+      selectedDate,
+      weekId,
+      bimesterId,
+    });
+    
+    // Always update period type first
+    setHistoryPeriodType(periodType);
+    
+    // Then update specific date/week/bimester based on period type
+    if (periodType === 'day' && selectedDate) {
+      console.log('Setting day mode with selectedDate:', selectedDate);
+      setHistorySelectedDate(selectedDate);
+    } else if (periodType === 'week' && weekId) {
+      console.log('Setting week mode with weekId:', weekId);
+      setHistorySelectedWeekId(weekId.toString());
+    } else if (periodType === 'bimonthly' && bimesterId) {
+      console.log('Setting bimonthly mode with bimesterId:', bimesterId);
+      setHistoryBimesterId(bimesterId.toString());
+    }
+    
+    // Trigger the API call by incrementing counter
+    console.log('🔍 Triggering manual search...');
+    setHistorySearchCounter(prev => prev + 1);
+  };
+
   const {
     data: attendanceSummary,
     isLoading: isSummaryLoading,
@@ -52,7 +134,6 @@ export function AttendanceReportsPageContent() {
   } = useAttendanceSummary({
     gradeId: selectedGradeId,
     sectionId: selectedSectionId,
-    courseId: selectedCourseId,
     bimesterId: selectedBimesterId,
     academicWeekId: selectedWeekId,
   });
@@ -61,43 +142,32 @@ export function AttendanceReportsPageContent() {
     console.log('📊 Summary hook triggered:', {
       gradeId: selectedGradeId,
       sectionId: selectedSectionId,
-      courseId: selectedCourseId,
       bimesterId: selectedBimesterId,
       academicWeekId: selectedWeekId,
     });
-  }, [selectedGradeId, selectedSectionId, selectedCourseId, selectedBimesterId, selectedWeekId]);
+  }, [selectedGradeId, selectedSectionId, selectedBimesterId, selectedWeekId]);
 
   useEffect(() => {
     console.log('📊 Summary data updated:', { data: attendanceSummary, loading: isSummaryLoading, error: summaryError });
   }, [attendanceSummary, isSummaryLoading, summaryError]);
 
-  // Hook para obtener los detalles de asistencia de estudiantes
-  const {
-    data: studentsAttendance,
-    isLoading: isStudentsLoading,
-    error: studentsError,
-    isError: studentsIsError,
-  } = useStudentsAttendance({
-    gradeId: selectedGradeId,
-    sectionId: selectedSectionId,
-    courseId: selectedCourseId,
-    bimesterId: selectedBimesterId,
-    academicWeekId: selectedWeekId,
+
+
+  const { data: bimestersData } = useQuery({
+    queryKey: ['attendance-reports', 'bimesters', cycle?.id],
+    queryFn: async () => {
+      if (!cycle?.id) return [];
+      try {
+        // Fetch bimesters for the cycle using the correct endpoint
+        return await attendanceReportsService.getBimestersByCycle?.(cycle.id) || [];
+      } catch (error) {
+        console.error('Error fetching bimesters:', error);
+        return [];
+      }
+    },
+    enabled: !!(cycle?.id),
+    staleTime: 10 * 60 * 1000,
   });
-
-  useEffect(() => {
-    console.log('👥 Students hook triggered:', {
-      gradeId: selectedGradeId,
-      sectionId: selectedSectionId,
-      courseId: selectedCourseId,
-      bimesterId: selectedBimesterId,
-      academicWeekId: selectedWeekId,
-    });
-  }, [selectedGradeId, selectedSectionId, selectedCourseId, selectedBimesterId, selectedWeekId]);
-
-  useEffect(() => {
-    console.log('👥 Students data updated:', { data: studentsAttendance, loading: isStudentsLoading, error: studentsError });
-  }, [studentsAttendance, isStudentsLoading, studentsError]);
 
   const calculateProgress = () => {
     if (!cycle) return 0;
@@ -271,10 +341,10 @@ export function AttendanceReportsPageContent() {
       {/* Selectors Section */}
       {cycle && (
         <div className="space-y-4">
-          {/* SECTION 1: Grades, Sections, Courses */}
+          {/* SECTION 1: Grades, Sections */}
           <div className="space-y-4">
-            {/* Collapsed View - When first 3 filters are selected */}
-            {selectedGradeId && selectedSectionId && selectedCourseId && !isFilterOpen && (
+            {/* Collapsed View - When filters are selected */}
+            {selectedGradeId && selectedSectionId && !isFilterOpen && (
               <Card className="border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4 flex-1">
@@ -286,7 +356,7 @@ export function AttendanceReportsPageContent() {
                     <div className="flex-1">
                       <p className="font-semibold text-green-900 dark:text-green-100">Filtros Base Aplicados</p>
                       <p className="text-sm text-green-700 dark:text-green-300">
-                        Grado • Sección • Curso seleccionados
+                        Grado • Sección seleccionados
                       </p>
                     </div>
                   </div>
@@ -297,7 +367,6 @@ export function AttendanceReportsPageContent() {
                       setIsFilterOpen(true);
                       setSelectedGradeId(undefined);
                       setSelectedSectionId(undefined);
-                      setSelectedCourseId(undefined);
                     }}
                     className="text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/40"
                   >
@@ -323,8 +392,8 @@ export function AttendanceReportsPageContent() {
                 <Card className="border-gray-200 dark:border-gray-700 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
                   <CardContent className="p-8">
                     <div className="space-y-6">
-                      {/* Row: Grades, Sections, Courses */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Row: Grades and Sections only */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Grades Selector */}
                         <div className="space-y-4">
                           <div className="flex items-center gap-3">
@@ -397,57 +466,10 @@ export function AttendanceReportsPageContent() {
                             </div>
                           )}
                         </div>
-
-                        {/* Courses Selector */}
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm transition-all ${
-                                selectedSectionId
-                                  ? 'bg-purple-500 text-white'
-                                  : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
-                              }`}
-                            >
-                              3
-                            </div>
-                            <div>
-                              <h3 className={`font-semibold transition-colors ${
-                                selectedSectionId ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
-                              }`}>
-                                Curso
-                              </h3>
-                              <p className={`text-xs transition-colors ${
-                                selectedSectionId ? 'text-gray-600 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'
-                              }`}>
-                                {selectedSectionId ? 'Materia a consultar' : 'Selecciona sección primero'}
-                              </p>
-                            </div>
-                          </div>
-                          <div
-                            className={`rounded-lg p-4 border-2 transition-all ${
-                              selectedSectionId
-                                ? 'bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600'
-                                : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600'
-                            }`}
-                          >
-                            <CoursesSelector
-                              sectionId={selectedSectionId}
-                              value={selectedCourseId}
-                              onChange={setSelectedCourseId}
-                              disabled={!selectedSectionId}
-                            />
-                          </div>
-                          {selectedCourseId && (
-                            <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-2">
-                              <span className="inline-block w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full"></span>
-                              Seleccionado
-                            </div>
-                          )}
-                        </div>
                       </div>
 
-                      {/* Summary - First 3 selectors */}
-                      {selectedGradeId && selectedSectionId && selectedCourseId && (
+                      {/* Summary - First 2 selectors */}
+                      {selectedGradeId && selectedSectionId && (
                         <div className="pt-4 border-t border-gray-300 dark:border-gray-700">
                           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                             <div className="flex items-start gap-3">
@@ -459,7 +481,7 @@ export function AttendanceReportsPageContent() {
                               <div className="flex-1">
                                 <h4 className="font-semibold text-blue-900 dark:text-blue-100 text-sm">Filtros Base Completos</h4>
                                 <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                                  Ahora selecciona bimestre y semana en la siguiente sección
+                                  Viendo todos los cursos de la sección. Puedes refinar con bimestre y semana en la siguiente sección
                                 </p>
                               </div>
                             </div>
@@ -474,13 +496,13 @@ export function AttendanceReportsPageContent() {
           </div>
 
           {/* SECTION 2: Bimesters and Academic Weeks (only visible when Section 1 is complete) */}
-          {selectedGradeId && selectedSectionId && selectedCourseId && (
+          {selectedGradeId && selectedSectionId && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <div className="bg-amber-100 dark:bg-amber-900 p-2 rounded-lg">
                   <Calendar className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Filtros Temporales</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Filtros Temporales (Opcionales)</h2>
               </div>
 
               <Card className="border-gray-200 dark:border-gray-700 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
@@ -600,18 +622,8 @@ export function AttendanceReportsPageContent() {
         </Alert>
       )}
 
-      {/* Students Attendance Details Error */}
-      {studentsIsError && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            {studentsError?.message || 'Error al cargar el detalle de estudiantes'}
-          </AlertDescription>
-        </Alert>
-      )}
-
       {/* Tabs for Reports */}
-      {selectedGradeId && selectedSectionId && selectedCourseId && (
+      {selectedGradeId && selectedSectionId && (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Tabs Header */}
           <div className="flex items-center gap-2 mb-6">
@@ -621,7 +633,7 @@ export function AttendanceReportsPageContent() {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mr-auto">Análisis de Asistencia</h2>
           </div>
 
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="summary" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               <span>Resumen</span>
@@ -629,10 +641,6 @@ export function AttendanceReportsPageContent() {
             <TabsTrigger value="detailed" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               <span>Estudiantes</span>
-            </TabsTrigger>
-            <TabsTrigger value="export" className="flex items-center gap-2">
-              <Download className="w-4 h-4" />
-              <span>Descargar</span>
             </TabsTrigger>
           </TabsList>
 
@@ -651,54 +659,35 @@ export function AttendanceReportsPageContent() {
 
           {/* Detailed Tab */}
           <TabsContent value="detailed" className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center gap-2">
-              <div className="bg-purple-100 dark:bg-purple-900 p-2 rounded-lg">
-                <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Asistencia Detallada por Estudiante</h3>
-            </div>
-
-            {isStudentsLoading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-12 rounded-lg" />
-                {[...Array(8)].map((_, i) => (
-                  <Skeleton key={i} className="h-16 rounded-lg" />
-                ))}
-              </div>
-            ) : studentsAttendance ? (
-              <StudentsTable
-                students={studentsAttendance.students}
-                totalClasses={studentsAttendance.summary.totalClasses}
-                averageAttendance={studentsAttendance.summary.averageAttendance}
-                isLoading={isStudentsLoading}
-              />
-            ) : null}
-          </TabsContent>
-          {/* Export Tab */}
-          <TabsContent value="export" className="space-y-6">
-            <ExportStudentsTab
-              students={studentsAttendance?.students || []}
-              isLoading={isStudentsLoading}
+            <AttendanceHistoryView
               gradeId={selectedGradeId}
               sectionId={selectedSectionId}
-              courseId={selectedCourseId}
-              bimesterId={selectedBimesterId}
-              academicWeekId={selectedWeekId}
-              cycleId={cycle?.id}
+              bimesters={(bimestersData || []) as any}
+              academicWeeks={academicWeeksData?.weeks || []}
+              isLoading={isHistoryLoading}
+              data={attendanceHistory}
+              periodType={historyPeriodType}
+              selectedDate={historySelectedDate}
+              selectedWeekId={historySelectedWeekId}
+              selectedBimesterId={historyBimesterId}
+              onPeriodTypeChange={handleHistoryPeriodTypeChange}
+              onDateChange={handleHistoryDateChange}
+              onWeekChange={handleHistoryWeekChange}
+              onBimesterChange={handleHistoryBimesterChange}
+              onApplyFilter={handleHistoryApplyFilter}
             />
           </TabsContent>
         </Tabs>
       )}
 
       {/* Placeholder for future content */}
-      {(!selectedGradeId || !selectedSectionId || !selectedCourseId) && (
+      {(!selectedGradeId || !selectedSectionId) && (
         <Card className="border-gray-200 dark:border-gray-700 border-dashed">
           <CardContent className="p-12 text-center">
             <div className="space-y-2">
               <TrendingUp className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto" />
               <p className="text-gray-500 dark:text-gray-400 font-medium">Completa los filtros base</p>
-              <p className="text-sm text-gray-400 dark:text-gray-500">Selecciona grado, sección y curso para ver el reporte</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">Selecciona grado y sección para ver el reporte de todos los cursos</p>
             </div>
           </CardContent>
         </Card>
