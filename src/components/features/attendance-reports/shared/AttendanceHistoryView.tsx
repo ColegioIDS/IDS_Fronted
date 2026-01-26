@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   Card,
@@ -392,7 +392,7 @@ export const AttendanceHistoryView: React.FC<AttendanceHistoryViewProps> = ({
                     {academicWeeks.length > 0 ? (
                       academicWeeks.map(week => (
                         <SelectItem key={week.id} value={week.id.toString()}>
-                          Sem {week.number}: {format(new Date(week.startDate), 'dd/MM', { locale: es })} - {format(new Date(week.endDate), 'dd/MM/yyyy', { locale: es })}
+                          Sem {week.number}: {format(parseISO(week.startDate), 'dd/MM', { locale: es })} - {format(parseISO(week.endDate), 'dd/MM/yyyy', { locale: es })}
                         </SelectItem>
                       ))
                     ) : (
