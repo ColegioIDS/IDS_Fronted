@@ -111,7 +111,7 @@ const CourseAttendanceTable = ({ course, academicWeeks, selectedWeekId, periodTy
     if (!selectedWeekId || periodType !== 'week') return null;
     const week = academicWeeks?.find(w => w.id.toString() === selectedWeekId);
     if (!week) return null;
-    return `${format(new Date(week.startDate), 'dd/MM/yyyy', { locale: es })} - ${format(new Date(week.endDate), 'dd/MM/yyyy', { locale: es })}`;
+    return `${format(parseISO(week.startDate), 'dd/MM/yyyy', { locale: es })} - ${format(parseISO(week.endDate), 'dd/MM/yyyy', { locale: es })}`;
   };
 
   const weekRangeText = getWeekRangeText();
@@ -130,7 +130,7 @@ const CourseAttendanceTable = ({ course, academicWeeks, selectedWeekId, periodTy
           <TableRow className="bg-gray-100 dark:bg-gray-800 border-b-2 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800">
             <TableHead className="min-w-[200px] py-4 px-6 font-semibold text-gray-900 dark:text-white">Estudiante</TableHead>
             {allDates.map(date => {
-              const dateObj = new Date(date);
+              const dateObj = parseISO(date);
               const dayName = format(dateObj, 'EEEE', { locale: es });
               const capitalizedDayName = dayName.charAt(0).toUpperCase() + dayName.slice(1);
               return (
