@@ -11,24 +11,17 @@ import type { ScheduleConfig, ScheduleSlot, DayOfWeek } from '@/types/schedules.
 export function convertOldConfigToNew(config: any): ScheduleConfig {
   if (!config) return config;
   
-  console.log('[convertOldConfigToNew] Input config.breakSlots type:', typeof config.breakSlots);
-  console.log('[convertOldConfigToNew] Is array?', Array.isArray(config.breakSlots));
-  
   // If already in new format (Record with numeric string keys), return as-is
   if (config.breakSlots && typeof config.breakSlots === 'object' && !Array.isArray(config.breakSlots)) {
     // Check if it has any numeric string keys (1-7)
     const keys = Object.keys(config.breakSlots);
-    console.log('[convertOldConfigToNew] breakSlots keys:', keys);
     if (keys.length > 0 && keys.some(k => !isNaN(Number(k)))) {
-      console.log('[convertOldConfigToNew] Config already in new format, returning as-is');
-      console.log('[convertOldConfigToNew] breakSlots content:', JSON.stringify(config.breakSlots, null, 2));
       return config;
     }
   }
 
   // If in old format (array), convert to new format
   if (config.breakSlots && Array.isArray(config.breakSlots)) {
-    console.log('[convertOldConfigToNew] Converting old format config to new format');
     const newBreakSlots: Record<string, ScheduleSlot[]> = {};
 
     // Apply the same slots to all working days
@@ -50,7 +43,6 @@ export function convertOldConfigToNew(config: any): ScheduleConfig {
   }
 
   // If no breakSlots, initialize empty
-  console.log('[convertOldConfigToNew] No breakSlots found, initializing empty');
   return {
     ...config,
     breakSlots: {},

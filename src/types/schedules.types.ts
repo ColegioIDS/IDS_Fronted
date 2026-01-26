@@ -458,7 +458,8 @@ export class ScheduleTimeGenerator {
 
     // Get slots for this specific day
     const daySlotsRecord = config.breakSlots as Record<string, ScheduleSlot[]>;
-    const daySlots = daySlotsRecord[day.toString()] || [];
+    const dayKey = day.toString();
+    const daySlots = daySlotsRecord[dayKey] || [];
 
     while (currentHours * 60 + currentMins < endTotalMins) {
       const nextMins = currentMins + config.classDuration;

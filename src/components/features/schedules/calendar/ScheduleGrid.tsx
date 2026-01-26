@@ -64,20 +64,24 @@ export function ScheduleGrid({
   const slotsToRender = useMemo(() => {
     if (!timeSlotsByDay || Object.keys(timeSlotsByDay).length === 0) {
       // Fall back to currentTimeSlots
-      console.log('[ScheduleGrid] Using currentTimeSlots (no per-day slots available)');
       return currentTimeSlots;
     }
 
-    console.log('[ScheduleGrid] Using timeSlotsByDay for rendering');
     
-    // Get unique time slots across all days
+    // Get unique TIME SLOTS across all days (just the time, not the label)
     const uniqueSlots = new Map<string, TimeSlot>();
     
     Object.values(timeSlotsByDay).forEach(daySlots => {
       daySlots.forEach(slot => {
         const key = `${slot.start}-${slot.end}`;
         if (!uniqueSlots.has(key)) {
-          uniqueSlots.set(key, slot);
+          // Store a generic slot with just time info, label will come from day-specific slots
+          uniqueSlots.set(key, {
+            start: slot.start,
+            end: slot.end,
+            label: `${slot.start} - ${slot.end}`,  // Generic label, will be overridden per day
+            isBreak: false,  // Will be determined per day
+          });
         }
       });
     });
@@ -89,7 +93,6 @@ export function ScheduleGrid({
       return (aHour * 60 + aMin) - (bHour * 60 + bMin);
     });
 
-    console.log('[ScheduleGrid] Merged slots from all days:', sortedSlots);
     return sortedSlots;
   }, [timeSlotsByDay, currentTimeSlots]);
 
@@ -299,7 +302,6 @@ export function ScheduleGrid({
                         // Only show empty if it's a break - otherwise show as available class
                         if (slotIsBreakTime) {
                           // It's a break only in some days, not in this day - show empty
-                          console.log(`[ScheduleGrid] Slot ${timeSlot.start}-${timeSlot.end} is break but not in day ${day.value}`);
                           return (
                             <div
                               key={`${day.value}-${timeSlot.start}-${timeSlot.end}-empty`}
@@ -318,7 +320,6 @@ export function ScheduleGrid({
                           const key = `${day.value}-${virtualSlot.start}`;
                           const daySchedules = scheduleGrid[key] || [];
                           
-                          console.log(`[ScheduleGrid] Slot ${timeSlot.start}-${timeSlot.end} is activity/class only in some days, showing as available in day ${day.value}`);
                           return (
                             <DroppableTimeSlot
                               key={`${day.value}-${virtualSlot.start}-${virtualSlot.end}`}
@@ -337,7 +338,6 @@ export function ScheduleGrid({
                       
                       // If it's a break in slotsToRender but NOT a break in this day, show as available class
                       if (slotIsBreakTime && !daySlot.isBreak) {
-                        console.log(`[ScheduleGrid] Slot ${timeSlot.start}-${timeSlot.end} is break in slotsToRender but class in day ${day.value} - showing as available`);
                         
                         // Create a virtual slot with class properties instead of break properties
                         const virtualClassSlot: TimeSlot = {
@@ -367,7 +367,6 @@ export function ScheduleGrid({
                       
                       // If it's NOT a break in slotsToRender but IS a break in this day, show the break
                       if (!slotIsBreakTime && daySlot.isBreak) {
-                        console.log(`[ScheduleGrid] Slot ${timeSlot.start}-${timeSlot.end} is class in slotsToRender but break in day ${day.value}`);
                         // Use the day's slot properties instead
                         const key = `${day.value}-${daySlot.start}`;
                         const daySchedules = scheduleGrid[key] || [];
@@ -391,11 +390,14 @@ export function ScheduleGrid({
                     const key = `${day.value}-${timeSlot.start}`;
                     const daySchedules = scheduleGrid[key] || [];
                     
+                    // Use daySlot if available (for correct day-specific labels), otherwise use the generic timeSlot
+                    const slotToRender = daySlot || timeSlot;
+                    
                     return (
                       <DroppableTimeSlot
-                        key={`${day.value}-${timeSlot.start}-${timeSlot.end}`}
+                        key={`${day.value}-${slotToRender.start}-${slotToRender.end}`}
                         day={day.value as DayOfWeek}
-                        timeSlot={timeSlot}
+                        timeSlot={slotToRender}
                         schedules={daySchedules}
                         onDrop={onDrop || (() => {})}
                         onScheduleEdit={handleScheduleEdit}
