@@ -1,21 +1,18 @@
 /**
  * ====================================================================
- * TIMEZONE CONFIGURATION
+ * TIMEZONE CONFIGURATION - Horario de Guatemala
  * ====================================================================
- * 
- * Configuración centralizada de timezone para toda la aplicación
- * Asegura que las fechas se manejen consistentemente en toda la app
- * 
- * Por defecto: "America/Guatemala" (UTC-6)
- * Puede ser sobrescrito con NEXT_PUBLIC_TIMEZONE en .env.local
+ *
+ * La aplicación usa un único tipo de horario: Horario de Guatemala (UTC-6).
+ * Todas las fechas se formatean y muestran en esta zona horaria.
+ *
+ * Variable en .env: NEXT_PUBLIC_TIMEZONE=America/Guatemala
+ * Por defecto: America/Guatemala (UTC-6)
  */
 
 /**
- * Timezone configurado en la aplicación
- * Valor por defecto: America/Guatemala (UTC-6)
- * 
- * @example
- * NEXT_PUBLIC_TIMEZONE=America/Guatemala
+ * Zona horaria IANA usada en toda la app (formateo de fechas, etc.)
+ * Valor por defecto: America/Guatemala (Horario de Guatemala).
  */
 export const TIMEZONE = process.env.NEXT_PUBLIC_TIMEZONE || 'America/Guatemala';
 

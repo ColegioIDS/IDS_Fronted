@@ -328,14 +328,13 @@ export function PermissionDetailDialog({
             </ScrollArea>
 
             {/* Footer */}
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-              <div className="flex justify-end gap-3">
+            <footer className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <div className="flex justify-end">
                 <Button onClick={onClose} variant="outline">
                   Cerrar
                 </Button>
-                {/* Aquí puedes agregar más acciones si tienes permisos de edición */}
               </div>
-            </div>
+            </footer>
           </>
         ) : null}
       </DialogContent>

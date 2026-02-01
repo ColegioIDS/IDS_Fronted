@@ -27,6 +27,7 @@
 import dynamic from 'next/dynamic';
 import Breadcrumb from '@/components/common/Breadcrumb';
 import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton';
+import { MailCheck } from 'lucide-react';
 
 const VerifyEmailPageContent = dynamic(
   () =>
@@ -41,14 +42,14 @@ const VerifyEmailPageContent = dynamic(
 
 export default function AdminVerifyEmailPage() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Breadcrumb
         pageTitle="Verificación de Emails"
+        icon={<MailCheck className="h-6 w-6" />}
         items={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Administración', href: '/admin' },
-          { label: 'Configuración', href: '/admin/settings' },
-          { label: 'Verificación de Emails', href: '/admin/settings/verify-email' },
+          { label: 'Configuración', href: '/settings' },
+          { label: 'Verificación de Emails', href: '/settings/verify-email' },
         ]}
       />
       <VerifyEmailPageContent />

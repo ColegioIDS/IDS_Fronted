@@ -34,12 +34,12 @@ export function NotificationFilters({ query, onQueryChange, onReset }: Notificat
   ].filter(Boolean).length;
 
   return (
-    <Card>
+    <Card className="border shadow-sm">
       <CardContent className="pt-6">
         <div className="space-y-4">
           {/* Search */}
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">Búsqueda</label>
+            <label className="text-sm font-medium text-foreground block mb-2">Búsqueda</label>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
               <Input

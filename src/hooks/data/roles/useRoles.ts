@@ -1,7 +1,7 @@
-// src/hooks/data/useRoles.ts
+// src/hooks/data/roles/useRoles.ts
 import { useState, useEffect, useCallback } from 'react';
 import { rolesService } from '@/services/roles.service';
-import { Role, RolesQuery, PaginatedRoles } from '@/types/roles.types';
+import { RolesQuery, PaginatedRoles } from '@/types/roles.types';
 
 export function useRoles(initialQuery: RolesQuery = {}) {
   const [data, setData] = useState<PaginatedRoles | null>(null);
@@ -10,7 +10,6 @@ export function useRoles(initialQuery: RolesQuery = {}) {
   const [query, setQuery] = useState<RolesQuery>(initialQuery);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // ✅ FIX: Usar useEffect con query serializado
   useEffect(() => {
     let isMounted = true;
 
@@ -19,7 +18,7 @@ export function useRoles(initialQuery: RolesQuery = {}) {
         setIsLoading(true);
         setError(null);
         const result = await rolesService.getRoles(query);
-        
+
         if (isMounted) {
           setData(result);
         }
@@ -49,13 +48,13 @@ export function useRoles(initialQuery: RolesQuery = {}) {
     query.sortBy,
     query.sortOrder,
     refreshKey,
-  ]); // ✅ Dependencias específicas en lugar del objeto completo
+  ]);
 
   const updateQuery = useCallback((newQuery: Partial<RolesQuery>) => {
     setQuery((prev) => ({ ...prev, ...newQuery }));
   }, []);
 
- const refresh = useCallback(() => {
+  const refresh = useCallback(() => {
     setRefreshKey((k) => k + 1);
   }, []);
 

@@ -1,7 +1,7 @@
-// src/hooks/data/useVerifyEmailPublic.ts
+// src/hooks/data/verify-email/useVerifyEmailPublic.ts
 /**
  * Hook simplificado para la página pública de verificación de email
- * 
+ *
  * Solo necesita verificar con token, sin cargas iniciales
  * Esto evita requests innecesarios en la página /verify-email?token=...
  */

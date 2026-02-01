@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useVerifyEmailPublic } from '@/hooks/data/useVerifyEmailPublic';
+import { useVerifyEmailPublic } from '@/hooks/data/verify-email';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';

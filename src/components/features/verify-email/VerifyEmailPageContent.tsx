@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
-import { useVerifyEmail } from '@/hooks/data/useVerifyEmail';
+import { useVerifyEmail } from '@/hooks/data/verify-email';
 import { useAuth } from '@/hooks/useAuth';
 import { ProtectedPage } from '@/components/shared/permissions/ProtectedPage';
 import { VerifyEmailStatus } from './VerifyEmailStatus';

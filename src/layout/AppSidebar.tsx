@@ -16,6 +16,9 @@ import { ATTENDANCE_STATUS_PERMISSIONS } from '@/constants/modules-permissions/a
 import { ATTENDANCE_PERMISSIONS_PERMISSIONS } from '@/constants/modules-permissions/attendance-permissions';
 import { SIGNATURES_PERMISSIONS } from '@/constants/modules-permissions/signatures';
 import { ASSIGNMENTS_PERMISSIONS } from '@/constants/modules-permissions/assignments';
+import { PERMISSION_PERMISSIONS } from '@/constants/modules-permissions/permission/permission.permissions';
+import { ROLE_PERMISSIONS } from '@/constants/modules-permissions/role/role.permissions';
+import { VERIFY_EMAIL_PERMISSIONS } from '@/constants/modules-permissions/verify-email/verify-email.permissions';
 import { Palette } from 'lucide-react';
 
 import {
@@ -66,19 +69,19 @@ const navItems: NavItem[] = [
     color: "text-purple-300 dark:text-purple-300",
     // Mostrar si tiene AL MENOS UNO de estos permisos
     requiredAnyPermissions: [
-      { module: 'role', action: 'read' },
-      { module: 'permission', action: 'read' }
+      ROLE_PERMISSIONS.READ,
+      PERMISSION_PERMISSIONS.READ,
     ],
     subItems: [
       {
         name: "Permisos",
         path: "/permissions",
-        requiredPermission: { module: 'permission', action: 'read' }
+        requiredPermission: PERMISSION_PERMISSIONS.READ,
       },
       {
         name: "Roles",
         path: "/roles",
-        requiredPermission: { module: 'role', action: 'read' }
+        requiredPermission: ROLE_PERMISSIONS.READ,
       }
 
     ],
@@ -135,6 +138,7 @@ const navItems: NavItem[] = [
     // Mostrar si tiene AL MENOS UNO de estos permisos
     requiredAnyPermissions: [
       { module: 'user', action: 'read' },
+      VERIFY_EMAIL_PERMISSIONS.READ,
     ],
 
     subItems: [
@@ -143,10 +147,12 @@ const navItems: NavItem[] = [
         path: "/users",
         requiredPermission: { module: 'user', action: 'read' }
       },
-
+      {
+        name: "Verificación de Emails",
+        path: "/settings/verify-email",
+        requiredPermission: VERIFY_EMAIL_PERMISSIONS.READ
+      },
     ]
-
-
   },
 
   {

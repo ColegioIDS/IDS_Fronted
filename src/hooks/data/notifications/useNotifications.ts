@@ -58,5 +58,107 @@ export function useNotifications(initialQuery: NotificationsQuery = {}) {
     setRefreshKey((k) => k + 1);
   }, []);
 
-  return { data, isLoading, error, query, updateQuery, refresh };
+  /**
+   * Marcar/desmarcar notificación como favorita (star)
+   * Actualiza el estado local inmediatamente, luego sincroniza con el backend
+   */
+  const toggleStar = useCallback(async (notificationId: number) => {
+    try {
+      // Optimistic update: actualizar inmediatamente en el estado local
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          data: prev.data.map((n) =>
+            n.id === notificationId ? { ...n, isStarred: !n.isStarred } : n
+          ),
+        };
+      });
+
+      // Llamar al backend
+      await notificationsService.toggleStar(notificationId);
+    } catch (err: any) {
+      // Si hay error, revertir el cambio local
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          data: prev.data.map((n) =>
+            n.id === notificationId ? { ...n, isStarred: !n.isStarred } : n
+          ),
+        };
+      });
+      throw err;
+    }
+  }, []);
+
+  /**
+   * Archivar notificación
+   * Actualiza el estado local inmediatamente, luego sincroniza con el backend
+   */
+  const archive = useCallback(async (notificationId: number) => {
+    try {
+      // Optimistic update
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          data: prev.data.map((n) =>
+            n.id === notificationId ? { ...n, isArchived: true } : n
+          ),
+        };
+      });
+
+      // Llamar al backend
+      await notificationsService.archive(notificationId);
+    } catch (err: any) {
+      // Si hay error, revertir el cambio local
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          data: prev.data.map((n) =>
+            n.id === notificationId ? { ...n, isArchived: false } : n
+          ),
+        };
+      });
+      throw err;
+    }
+  }, []);
+
+  /**
+   * Desarchivar notificación
+   * Actualiza el estado local inmediatamente, luego sincroniza con el backend
+   */
+  const unarchive = useCallback(async (notificationId: number) => {
+    try {
+      // Optimistic update
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          data: prev.data.map((n) =>
+            n.id === notificationId ? { ...n, isArchived: false } : n
+          ),
+        };
+      });
+
+      // Llamar al backend
+      await notificationsService.unarchive(notificationId);
+    } catch (err: any) {
+      // Si hay error, revertir el cambio local
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          data: prev.data.map((n) =>
+            n.id === notificationId ? { ...n, isArchived: true } : n
+          ),
+        };
+      });
+      throw err;
+    }
+  }, []);
+
+  return { data, isLoading, error, query, updateQuery, refresh, toggleStar, archive, unarchive };
 }

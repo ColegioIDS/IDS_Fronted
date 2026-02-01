@@ -114,15 +114,20 @@ const AppHeader: React.FC = () => {
           </Link>
 
           <button
+            type="button"
             onClick={toggleApplicationMenu}
             className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg z-40 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden"
+            aria-label="Abrir menú de aplicación"
+            title="Abrir menú de aplicación"
           >
+            <span className="sr-only">Abrir menú de aplicación</span>
             <svg
               width="24"
               height="24"
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
+              aria-hidden
             >
               <path
                 fillRule="evenodd"
@@ -186,6 +191,19 @@ const AppHeader: React.FC = () => {
                 className="relative flex items-center justify-center text-gray-500 transition-colors bg-white border border-gray-200 rounded-full hover:text-dark-900 h-11 w-11 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
               >
                 <Newspaper className="w-5 h-5" />
+                {/* Breathing dot indicator */}
+                <span 
+                  className="absolute top-1 right-1 w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse"
+                  style={{
+                    animation: 'breathing 2s ease-in-out infinite',
+                  }}
+                />
+                <style>{`
+                  @keyframes breathing {
+                    0%, 100% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.6; transform: scale(0.8); }
+                  }
+                `}</style>
               </Link>
             )}
             {/* <!-- News Icon --> */}

@@ -1,4 +1,3 @@
-// src/components/features/permissions/PermissionsPageContent.tsx
 'use client';
 
 import { usePermissions } from '@/hooks/data/usePermissions';
@@ -45,84 +44,80 @@ export function PermissionsPageContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ✅ Verificar si hay filtros activos
   const hasActiveFilters = !!(
-    query.search || 
-    query.module || 
-    query.isActive !== undefined || 
+    query.search ||
+    query.module ||
+    query.isActive !== undefined ||
     query.isSystem !== undefined
   );
 
-  // Calcular stats
-  // Calcular stats
-const totalPermissions = groupedData.reduce(
-  (sum, module) => sum + module.totalPermissions,
-  0
-);
-
-const activePermissions = groupedData.reduce(
-  (sum, module) => sum + module.activePermissions,
-  0
-);
-
-const inactivePermissions = totalPermissions - activePermissions;
-
+  const totalPermissions = groupedData.reduce(
+    (sum, mod) => sum + mod.totalPermissions,
+    0
+  );
+  const activePermissions = groupedData.reduce(
+    (sum, mod) => sum + mod.activePermissions,
+    0
+  );
+  const inactivePermissions = totalPermissions - activePermissions;
   const totalModules = modules.length;
+
   return (
     <ProtectedPage {...PERMISSION_PERMISSIONS.READ}>
-      <div className="space-y-6 p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+      <div className="space-y-6 p-6 max-w-7xl mx-auto">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
               Gestión de Permisos
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Administra y visualiza todos los permisos del sistema
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
+              Visualiza y filtra todos los permisos del sistema
             </p>
           </div>
-
           <Button
             onClick={refresh}
             variant="outline"
             size="sm"
             disabled={isLoading}
-            className="gap-2"
+            className="gap-2 shrink-0"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
-        </div>
+        </header>
 
-        {/* Stats Cards */}
-        <PermissionStats
-          total={totalPermissions}
-          active={activePermissions}
-          inactive={inactivePermissions}
-          modules={totalModules}
-        />
+        <section aria-label="Estadísticas">
+          <PermissionStats
+            total={totalPermissions}
+            active={activePermissions}
+            inactive={inactivePermissions}
+            modules={totalModules}
+          />
+        </section>
 
-        {/* Filtros */}
-        <PermissionFilters
-          modules={modules}
-          query={query}
-          onQueryChange={updateQuery}
-          onReset={handleReset}
-          totalResults={data?.meta.total || 0}
-        />
+        <section aria-label="Filtros">
+          <PermissionFilters
+            modules={modules}
+            query={query}
+            onQueryChange={updateQuery}
+            onReset={handleReset}
+            totalResults={data?.meta.total || 0}
+          />
+        </section>
 
-        {/* Grid con paginación */}
-        <PermissionsGrid
-          modules={groupedData}
-          isLoading={isLoading}
-          error={error}
-          currentPage={data?.meta.page || 1}
-          totalPages={data?.meta.totalPages || 1}
-          totalResults={data?.meta.total || 0}
-          onPageChange={handlePageChange}
-          hasActiveFilters={hasActiveFilters} // ✅ NUEVO
-          onClearFilters={handleReset} // ✅ NUEVO
-        />
+        <section aria-label="Listado de permisos">
+          <PermissionsGrid
+            modules={groupedData}
+            isLoading={isLoading}
+            error={error}
+            currentPage={data?.meta.page || 1}
+            totalPages={data?.meta.totalPages || 1}
+            totalResults={data?.meta.total || 0}
+            onPageChange={handlePageChange}
+            hasActiveFilters={hasActiveFilters}
+            onClearFilters={handleReset}
+          />
+        </section>
       </div>
     </ProtectedPage>
   );

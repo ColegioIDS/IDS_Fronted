@@ -20,8 +20,8 @@ interface PermissionsGridProps {
   totalPages: number;
   totalResults: number;
   onPageChange: (page: number) => void;
-  hasActiveFilters?: boolean; // ✅ NUEVO
-  onClearFilters?: () => void; // ✅ NUEVO
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
 }
 
 export function PermissionsGrid({
@@ -32,8 +32,8 @@ export function PermissionsGrid({
   totalPages,
   totalResults,
   onPageChange,
-  hasActiveFilters = false, // ✅ NUEVO
-  onClearFilters, // ✅ NUEVO
+  hasActiveFilters = false,
+  onClearFilters,
 }: PermissionsGridProps) {
   // Loading state
   if (isLoading) {
@@ -75,14 +75,10 @@ export function PermissionsGrid({
     );
   }
 
-  // ✅ Empty state mejorado
   if (modules.length === 0) {
-    // Si tiene filtros activos, mostrar "no se encontraron resultados"
     if (hasActiveFilters) {
       return <EmptySearchResults onClearFilters={onClearFilters} />;
     }
-    
-    // Si no tiene filtros, mostrar "no hay permisos"
     return <EmptyPermissionsState />;
   }
 

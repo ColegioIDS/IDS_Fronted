@@ -19,7 +19,7 @@ import { Role } from '@/types/roles.types';
 import { toast } from 'sonner';
 
 interface DeleteRoleDialogProps {
-  role: Role;
+  role: Role & { _count?: { users: number; permissions: number } };
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
@@ -35,11 +35,13 @@ export function DeleteRoleDialog({ role, open, onClose, onSuccess }: DeleteRoleD
     try {
       setIsLoading(true);
       await rolesService.deleteRole(role.id);
-      toast.success('Rol eliminado exitosamente');
+      const hadUsers = (role._count?.users ?? 0) > 0;
+      toast.success(hadUsers ? 'Rol desactivado correctamente' : 'Rol eliminado permanentemente');
       onSuccess?.();
       onClose();
-    } catch (err: any) {
-      toast.error(err.message || 'Error al eliminar el rol');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al eliminar el rol';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -81,16 +83,22 @@ export function DeleteRoleDialog({ role, open, onClose, onSuccess }: DeleteRoleD
               <p className="text-sm text-amber-800 dark:text-amber-200 font-medium flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <span>
-                  Este es un rol del sistema. No se recomienda eliminarlo ya que puede afectar el funcionamiento de la aplicación.
+                  Los roles del sistema no se pueden eliminar. Están protegidos para garantizar el funcionamiento de la aplicación.
                 </span>
               </p>
             </div>
           )}
 
           <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              <strong className="text-gray-900 dark:text-gray-100">Nota:</strong> Esta acción marcará el rol como inactivo. Los usuarios que tienen este rol asignado no podrán acceder a los permisos asociados.
-            </p>
+            {(role._count?.users ?? 0) > 0 ? (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <strong className="text-gray-900 dark:text-gray-100">Desactivar:</strong> Este rol tiene {role._count?.users} usuario(s) asignado(s). Solo se desactivará; no se eliminará del sistema. Los usuarios con este rol no podrán usar sus permisos hasta que se les reasigne otro rol.
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <strong className="text-gray-900 dark:text-gray-100">Eliminar permanentemente:</strong> Este rol no tiene usuarios asignados. Se eliminará por completo del sistema y no podrá recuperarse.
+              </p>
+            )}
           </div>
         </div>
 

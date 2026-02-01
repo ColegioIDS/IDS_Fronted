@@ -25,12 +25,17 @@ export interface Notification {
   priority: NotificationPriority;
   sendToAll: boolean;
   targetRoleId?: number | null;
+  templateId?: number | null;
+  templateVariables?: any | null;
+  metadata?: any | null;
   scheduleFor?: string | null;
   expiresAt?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  status?: 'SENT' | 'DELIVERED' | 'READ' | 'ARCHIVED'; // ✅ Nuevo: estado del recipient para el usuario actual
+  status?: 'SENT' | 'DELIVERED' | 'READ' | 'ARCHIVED'; // ✅ Estado del recipient para el usuario actual
+  isStarred?: boolean; // ✅ Si está marcado con estrella
+  isArchived?: boolean; // ✅ Si está archivado
   createdBy?: {
     id: number;
     givenNames: string;
@@ -68,6 +73,8 @@ export interface NotificationRecipient {
   readAt?: string | null;
   archivedAt?: string | null;
   sentAt?: string | null;
+  isStarred?: boolean;
+  isArchived?: boolean;
   user?: {
     id: number;
     givenNames: string;

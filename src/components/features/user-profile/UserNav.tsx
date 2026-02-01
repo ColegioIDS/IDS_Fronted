@@ -14,7 +14,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { User, Settings, LogOut, FileText, CheckCircle2 } from 'lucide-react';
-import { useUserProfile } from '@/hooks/user-profile';
+import { useUserProfile } from '@/hooks/data/user-profile';
+import { useAuth } from '@/context/AuthContext';
+import { USER_PROFILE_PERMISSIONS } from '@/constants/modules-permissions/user-profile/user-profile.permissions';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
@@ -25,7 +27,9 @@ interface UserNavProps {
 export function UserNav({ className }: UserNavProps) {
   const router = useRouter();
   const { profile, isLoading } = useUserProfile();
+  const { hasPermission } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const canViewProfile = hasPermission(USER_PROFILE_PERMISSIONS.READ.module, USER_PROFILE_PERMISSIONS.READ.action);
 
   const handleLogout = async () => {
     try {
@@ -116,33 +120,37 @@ export function UserNav({ className }: UserNavProps) {
         </DropdownMenuLabel>
 
         <div className="space-y-1 px-1">
-          <DropdownMenuItem asChild>
-            <Link href="/user-profile" className="cursor-pointer group">
-              <div className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-200">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-200 shadow-sm">
-                  <User className="w-5 h-5" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Mi Perfil</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Ver y editar información</p>
-                </div>
-              </div>
-            </Link>
-          </DropdownMenuItem>
+          {canViewProfile && (
+            <>
+              <DropdownMenuItem asChild>
+                <Link href="/profile" className="cursor-pointer group">
+                  <div className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-200">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-200 shadow-sm">
+                      <User className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Mi Perfil</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Ver y editar información</p>
+                    </div>
+                  </div>
+                </Link>
+              </DropdownMenuItem>
 
-          <DropdownMenuItem asChild>
-            <Link href="/user-profile?tab=settings" className="cursor-pointer group">
-              <div className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-teal-50 dark:hover:bg-teal-950/30 transition-all duration-200">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 to-teal-200 dark:from-teal-900/40 dark:to-teal-800/40 text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform duration-200 shadow-sm">
-                  <Settings className="w-5 h-5" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">Configuración</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Preferencias y privacidad</p>
-                </div>
-              </div>
-            </Link>
-          </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/profile?tab=settings" className="cursor-pointer group">
+                  <div className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-teal-50 dark:hover:bg-teal-950/30 transition-all duration-200">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 to-teal-200 dark:from-teal-900/40 dark:to-teal-800/40 text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform duration-200 shadow-sm">
+                      <Settings className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">Configuración</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Preferencias y privacidad</p>
+                    </div>
+                  </div>
+                </Link>
+              </DropdownMenuItem>
+            </>
+          )}
 
           <DropdownMenuItem asChild>
             <Link href="/documents" className="cursor-pointer group">

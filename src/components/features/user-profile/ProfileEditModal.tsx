@@ -32,7 +32,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { User, Camera, GraduationCap, Loader2, Calendar as CalendarIcon, MapPin, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useUserProfile } from '@/hooks/user-profile';
+import { useUserProfile } from '@/hooks/data/user-profile';
 import { locationsService, type Department, type Municipality } from '@/services/locations.service';
 
 interface ProfileEditModalProps {

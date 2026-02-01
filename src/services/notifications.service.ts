@@ -199,6 +199,112 @@ export const notificationsService = {
   },
 
   /**
+   * Marcar/desmarcar notificación como favorita
+   */
+  async toggleStar(id: number): Promise<{ success: boolean; message: string }> {
+    const response = await api.patch(`/api/notifications/${id}/star`);
+    
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || 'Error al marcar como favorita');
+    }
+
+    return response.data.data;
+  },
+
+  /**
+   * Archivar notificación
+   */
+  async archive(id: number): Promise<{ success: boolean; message: string }> {
+    const response = await api.patch(`/api/notifications/${id}/archive`);
+    
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || 'Error al archivar');
+    }
+
+    return response.data.data;
+  },
+
+  /**
+   * Desarchivar notificación
+   */
+  async unarchive(id: number): Promise<{ success: boolean; message: string }> {
+    const response = await api.patch(`/api/notifications/${id}/unarchive`);
+    
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || 'Error al desarchivar');
+    }
+
+    return response.data.data;
+  },
+
+  /**
+   * Obtener notificaciones con estrella
+   */
+  async getStarred(query: NotificationsQuery = {}): Promise<PaginatedNotifications> {
+    // Llamar a getNotifications sin parámetros específicos
+    // El filtrado de starred debe hacerse en el backend o localmente
+    return this.getNotifications({
+      page: query.page || 1,
+      limit: query.limit || 50,
+    });
+  },
+
+  /**
+   * Obtener notificaciones archivadas
+   */
+  async getArchived(query: NotificationsQuery = {}): Promise<PaginatedNotifications> {
+    // Llamar a getNotifications sin parámetros específicos
+    // El filtrado de archivadas debe hacerse en el backend o localmente
+    return this.getNotifications({
+      page: query.page || 1,
+      limit: query.limit || 50,
+    });
+  },
+
+  /**
+   * Obtener notificaciones de basura/eliminadas
+   */
+  async getTrash(query: NotificationsQuery = {}): Promise<PaginatedNotifications> {
+    // Llamar a getNotifications sin parámetros específicos
+    // El filtrado de basura debe hacerse en el backend o localmente
+    return this.getNotifications({
+      page: query.page || 1,
+      limit: query.limit || 50,
+    });
+  },
+
+  /**
+   * Obtener notificaciones enviadas (creadas por el usuario actual)
+   */
+  async getSent(query: NotificationsQuery = {}): Promise<PaginatedNotifications> {
+    // Llamar a getNotifications sin parámetros específicos
+    // El filtrado de enviadas debe hacerse en el backend o localmente
+    return this.getNotifications({
+      page: query.page || 1,
+      limit: query.limit || 50,
+    });
+  },
+
+  /**
+   * ============================================
+   * ESTADÍSTICAS Y RESÚMENES
+   * ============================================
+   */
+
+  /**
+   * Obtener resumen de categorías (conteos por categoría)
+   */
+  async getCategoriesSummary(): Promise<{ inbox: number; unread: number; starred: number; important: number; archived: number; total: number }> {
+    const response = await api.get('/api/notifications/categories/summary');
+    
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || 'Error al obtener resumen de categorías');
+    }
+
+    return response.data.data;
+  },
+
+  /**
    * ============================================
    * PREFERENCIAS
    * ============================================
@@ -295,5 +401,20 @@ export const notificationsService = {
   async getUsersByRole(): Promise<any> {
     const response = await api.get('/api/notifications/info/users-by-role');
     return response.data.data || response.data;
+  },
+
+  /**
+   * Obtener log de lectura de una notificación específica
+   */
+  async getReadLog(notificationId: number, page: number = 1, limit: number = 10): Promise<any> {
+    const response = await api.get(`/api/notifications/${notificationId}/read-log`, {
+      params: { page, limit },
+    });
+
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || 'Error al obtener log de lectura');
+    }
+
+    return response.data.data;
   },
 };

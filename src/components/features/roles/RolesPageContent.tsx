@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useRoles } from '@/hooks/data/useRoles';
+import { useRoles } from '@/hooks/data/roles';
 import { useAuth } from '@/context/AuthContext';
 import { RoleStats } from './RoleStats';
 import { RoleFilters } from './RoleFilters';

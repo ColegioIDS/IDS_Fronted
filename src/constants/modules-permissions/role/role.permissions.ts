@@ -55,4 +55,11 @@ export const ROLE_PERMISSIONS = {
     description: 'Remover permisos de un rol',
     scope: 'all',
   } as PermissionConfig,
+
+  RESTORE: {
+    module: 'role',
+    action: 'restore',
+    description: 'Restaurar un rol desactivado',
+    scope: 'all',
+  } as PermissionConfig,
 } as const;

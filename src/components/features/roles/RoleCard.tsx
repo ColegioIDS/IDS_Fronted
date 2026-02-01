@@ -2,7 +2,9 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { rolesService } from '@/services/roles.service';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -70,6 +72,10 @@ export function RoleCard({ role, onUpdate, onEdit }: RoleCardProps) {
     MODULES_PERMISSIONS.ROLE.ASSIGN_PERMISSIONS.module,
     MODULES_PERMISSIONS.ROLE.ASSIGN_PERMISSIONS.action
   );
+  const canRestore = hasPermission(
+    MODULES_PERMISSIONS.ROLE.RESTORE.module,
+    MODULES_PERMISSIONS.ROLE.RESTORE.action
+  );
 
   const handleSuccess = () => {
     onUpdate?.();
@@ -77,13 +83,28 @@ export function RoleCard({ role, onUpdate, onEdit }: RoleCardProps) {
     setShowDelete(false);
   };
 
+  const handleRestore = async () => {
+    try {
+      await rolesService.restoreRole(role.id);
+      toast.success('Rol restaurado correctamente');
+      onUpdate?.();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al restaurar el rol';
+      toast.error(message);
+    }
+  };
+
+  const isInactive = !role.isActive;
+
   return (
     <TooltipProvider>
-      <Card className="group relative overflow-hidden border-2 border-gray-200 dark:border-gray-800
-        hover:border-purple-400 dark:hover:border-purple-600
-        shadow-lg hover:shadow-2xl hover:-translate-y-1
+      <Card className={`group relative overflow-hidden border-2
         transition-all duration-300 ease-out
-        animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+        animate-in fade-in-0 slide-in-from-bottom-4 duration-500
+        ${isInactive
+          ? 'border-gray-400 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/80 opacity-90 hover:opacity-95 shadow-md'
+          : 'border-gray-200 dark:border-gray-800 hover:border-purple-400 dark:hover:border-purple-600 shadow-lg hover:shadow-2xl hover:-translate-y-1'
+        }`}>
 
         {/* System Role Ribbon */}
         {role.isSystem && (
@@ -94,7 +115,7 @@ export function RoleCard({ role, onUpdate, onEdit }: RoleCardProps) {
           </div>
         )}
 
-        {/* Activity Indicator */}
+        {/* Activity Indicator - Activo */}
         {role.isActive && (
           <div className="absolute top-3 left-3 z-10">
             <div className="relative">
@@ -103,6 +124,15 @@ export function RoleCard({ role, onUpdate, onEdit }: RoleCardProps) {
               <div className="absolute inset-0 bg-emerald-500 dark:bg-emerald-400 rounded-full
                 animate-ping opacity-75" />
             </div>
+          </div>
+        )}
+
+        {/* Inactivo ribbon */}
+        {isInactive && !role.isSystem && (
+          <div className="absolute top-4 -right-10 w-36 h-8 bg-gray-500 dark:bg-gray-600
+            rotate-45 flex items-center justify-center shadow-lg z-20">
+            <XCircle className="w-4 h-4 text-white mr-1" strokeWidth={2.5} />
+            <span className="text-xs font-bold text-white uppercase tracking-wider">Inactivo</span>
           </div>
         )}
 
@@ -172,43 +202,47 @@ export function RoleCard({ role, onUpdate, onEdit }: RoleCardProps) {
                   </DropdownMenuItem>
                 )}
 
-                {canUpdate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start px-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                {canUpdate && !role.isSystem && role.isActive && (
+                  <DropdownMenuItem
                     onClick={() => onEdit?.(role.id)}
+                    className="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Editar
-                  </Button>
+                  </DropdownMenuItem>
                 )}
 
-                {!role.isActive && canUpdate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start px-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onClick={() => {/* TODO: Implement restore */}}
+                {!role.isActive && canRestore && !role.isSystem && (
+                  <DropdownMenuItem
+                    onClick={() => handleRestore()}
+                    className="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Restaurar
-                  </Button>
+                  </DropdownMenuItem>
                 )}
 
                 {canDelete && (
                   <>
                     <DropdownMenuSeparator />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start px-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                      onClick={() => setShowDelete(true)}
-                      disabled={role.isSystem}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Eliminar
-                    </Button>
+                    {role.isSystem ? (
+                      <DropdownMenuItem
+                        disabled
+                        className="text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-80"
+                        title="Los roles del sistema no se pueden eliminar"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Eliminar (no permitido)
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        onClick={() => setShowDelete(true)}
+                        className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer focus:bg-red-50 focus:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {role.isActive ? 'Eliminar' : 'Eliminar por completo'}
+                      </DropdownMenuItem>
+                    )}
                   </>
                 )}
               </DropdownMenuContent>

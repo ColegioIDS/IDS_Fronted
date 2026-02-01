@@ -171,14 +171,18 @@ export const rolesService = {
   async assignMultiplePermissions(
     roleId: number,
     data: AssignMultiplePermissionsDto
-  ): Promise<{ assigned: number; skipped: number }> {
+  ): Promise<{ assigned: number; errors: string[] }> {
     const response = await api.post(`/api/roles/${roleId}/permissions/bulk`, data);
     
     if (!response.data?.success) {
       throw new Error(response.data?.message || 'Error al asignar permisos');
     }
 
-    return response.data.data;
+    const payload = response.data.data ?? {};
+    return {
+      assigned: payload.assigned ?? 0,
+      errors: Array.isArray(payload.errors) ? payload.errors : [],
+    };
   },
 
   /**
@@ -198,14 +202,19 @@ export const rolesService = {
   async removeMultiplePermissions(
     roleId: number,
     data: RemoveMultiplePermissionsDto
-  ): Promise<{ removed: number }> {
+  ): Promise<{ total: number; removed: number; skipped: number }> {
     const response = await api.post(`/api/roles/${roleId}/permissions/remove-bulk`, data);
     
     if (!response.data?.success) {
       throw new Error(response.data?.message || 'Error al remover permisos');
     }
 
-    return response.data.data;
+    const payload = response.data.data ?? {};
+    return {
+      total: payload.total ?? data.permissionIds.length,
+      removed: payload.removed ?? 0,
+      skipped: payload.skipped ?? 0,
+    };
   },
 
   /**

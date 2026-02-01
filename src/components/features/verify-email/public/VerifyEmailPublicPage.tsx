@@ -17,7 +17,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useVerifyEmailPublic } from '@/hooks/data/useVerifyEmailPublic';
+import { useVerifyEmailPublic } from '@/hooks/data/verify-email';
 import { toast } from 'sonner';
 
 import { VerifyEmailContainer } from './VerifyEmailContainer';

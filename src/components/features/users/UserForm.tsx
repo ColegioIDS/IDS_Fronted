@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createUserSchema, updateUserSchema, CreateUserFormData, UpdateUserFormData } from '@/schemas/users.schema';
 import { User, UserWithRelations } from '@/types/users.types';
-import { useRoles } from '@/hooks/data/useRoles';
+import { useRoles } from '@/hooks/data/roles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -765,6 +765,8 @@ export function UserForm({
                           checked={field.value}
                           onChange={field.onChange}
                           disabled={isLoading || isSubmitting}
+                          aria-label="Estado del usuario (activo o inactivo)"
+                          title="Estado"
                           className="
                             w-5 h-5 rounded
                             dark:bg-slate-800 dark:border-slate-600
@@ -801,6 +803,8 @@ export function UserForm({
                           checked={field.value}
                           onChange={field.onChange}
                           disabled={isLoading || isSubmitting}
+                          aria-label="Acceso a la plataforma (permitido o bloqueado)"
+                          title="Acceso plataforma"
                           className="
                             w-5 h-5 rounded
                             dark:bg-slate-800 dark:border-slate-600
@@ -1209,6 +1213,8 @@ export function UserForm({
                   type="file"
                   accept="image/*"
                   onChange={handleFileSelect}
+                  aria-label="Seleccionar imagen de perfil"
+                  title="Seleccionar imagen"
                   className="hidden"
                 />
 

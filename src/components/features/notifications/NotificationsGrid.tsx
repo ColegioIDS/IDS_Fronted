@@ -17,6 +17,10 @@ interface NotificationsGridProps {
   onDelete?: (id: number) => void;
   onActivate?: (id: number) => void;
   onDeactivate?: (id: number) => void;
+  canView?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canActivate?: boolean;
 }
 
 export function NotificationsGrid({
@@ -31,12 +35,16 @@ export function NotificationsGrid({
   onDelete,
   onActivate,
   onDeactivate,
+  canView = true,
+  canEdit = true,
+  canDelete = true,
+  canActivate = true,
 }: NotificationsGridProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-64 bg-gray-200 rounded-lg animate-pulse" />
+          <div key={i} className="h-64 rounded-xl bg-muted/50 animate-pulse border" />
         ))}
       </div>
     );
@@ -44,8 +52,9 @@ export function NotificationsGrid({
 
   if (notifications.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">No se encontraron notificaciones</p>
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/30 py-16 px-4">
+        <p className="text-muted-foreground text-center">No se encontraron notificaciones</p>
+        <p className="text-sm text-muted-foreground mt-1">Crea una o ajusta los filtros</p>
       </div>
     );
   }
@@ -64,6 +73,10 @@ export function NotificationsGrid({
             onDelete={onDelete}
             onActivate={onActivate}
             onDeactivate={onDeactivate}
+            canView={canView}
+            canEdit={canEdit}
+            canDelete={canDelete}
+            canActivate={canActivate}
           />
         ))}
       </div>

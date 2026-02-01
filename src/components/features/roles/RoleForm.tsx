@@ -79,6 +79,8 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
   const [globalError, setGlobalError] = useState<null | { title?: string; message: string; details?: string[] }>(null);
   const [missingDependencies, setMissingDependencies] = useState<Set<number>>(new Set());
   const [roleTypes, setRoleTypes] = useState<Array<{ value: RoleType; label: string; description: string }>>([]);
+  const [isSystemRole, setIsSystemRole] = useState(false);
+  const [isInactiveRole, setIsInactiveRole] = useState(false);
   const { hasPermission } = useAuth();
 
   const isCreating = !roleId;
@@ -117,6 +119,8 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
     if (isEdit && roleId) {
       loadRoleData();
     } else {
+      setIsSystemRole(false);
+      setIsInactiveRole(false);
       reset({
         name: '',
         description: '',
@@ -156,7 +160,16 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
   const loadRoleData = async () => {
     try {
       setIsLoadingData(true);
+      setIsSystemRole(false);
+      setIsInactiveRole(false);
       const role = await rolesService.getRoleById(roleId!);
+
+      if (role.isSystem) {
+        setIsSystemRole(true);
+      }
+      if (!role.isActive) {
+        setIsInactiveRole(true);
+      }
 
       reset({
         name: role.name,
@@ -165,7 +178,7 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
       });
 
       const existingPermissions = new Map<number, PermissionSelection>();
-      role.permissions.forEach((rp) => {
+      (role.permissions ?? []).forEach((rp) => {
         const normalizedScope = (typeof rp.scope === 'string' ? rp.scope.toLowerCase() : 'all') as 'all' | 'own' | 'grade' | 'section' | 'coordinator';
         existingPermissions.set(rp.permissionId, {
           permissionId: rp.permissionId,
@@ -286,6 +299,7 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
 
   const onSubmit = async (data: RoleFormData) => {
     setGlobalError(null);
+    if (isSystemRole || isInactiveRole) return;
 
     // Validar que no haya dependencias faltantes
     if (missingDependencies.size > 0) {
@@ -400,6 +414,8 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
     );
   }
 
+  const formDisabled = isSystemRole || isInactiveRole || isLoading;
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {globalError && (
@@ -408,6 +424,36 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
           message={globalError.message}
           details={globalError.details}
         />
+      )}
+
+      {/* Rol de sistema: no editable */}
+      {isSystemRole && (
+        <Alert className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <AlertDescription>
+            <p className="font-semibold text-amber-800 dark:text-amber-200">
+              Este rol es del sistema y no se puede editar
+            </p>
+            <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+              Los roles del sistema están protegidos. No puedes modificar su información ni sus permisos.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Rol inactivo: no editable */}
+      {isInactiveRole && !isSystemRole && (
+        <Alert className="border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/80">
+          <AlertTriangle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+          <AlertDescription>
+            <p className="font-semibold text-gray-800 dark:text-gray-200">
+              Este rol está inactivo y no se puede editar
+            </p>
+            <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+              Restaura el rol desde la lista de roles para poder modificarlo.
+            </p>
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Alerta de dependencias faltantes */}
@@ -477,7 +523,7 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
               {...register('name')}
               placeholder="Ej: Coordinador Académico"
               className="bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700"
-              disabled={isLoading}
+              disabled={formDisabled}
             />
             {errors.name && (
               <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
@@ -497,7 +543,7 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
               placeholder="Describe las responsabilidades y funciones del rol..."
               rows={4}
               className="bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700 resize-none"
-              disabled={isLoading}
+              disabled={formDisabled}
             />
             {errors.description && (
               <p className="text-sm text-red-600 dark:text-red-400">
@@ -513,7 +559,7 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
             <Select 
               value={selectedRoleType || 'CUSTOM'} 
               onValueChange={(value) => setValue('roleType', value as RoleType)}
-              disabled={isLoading}
+              disabled={formDisabled}
             >
               <SelectTrigger className="bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700">
                 <SelectValue placeholder="Selecciona un tipo de rol" />
@@ -550,7 +596,7 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
               id="isActive"
               checked={isActive}
               onCheckedChange={(checked) => setValue('isActive', checked)}
-              disabled={isLoading}
+              disabled={formDisabled}
             />
           </div>
         </CardContent>
@@ -650,7 +696,7 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
                                   id={`permission-${permission.id}`}
                                   checked={isSelected}
                                   onCheckedChange={() => handlePermissionToggle(permission.id)}
-                                  disabled={isLoading}
+                                  disabled={formDisabled}
                                 />
 
                                 <div className="flex-1 min-w-0">
@@ -692,7 +738,9 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
                                       e.target.value as 'all' | 'own' | 'grade' | 'section' | 'coordinator'
                                     )
                                   }
-                                  disabled={isLoading}
+                                  disabled={formDisabled}
+                                  aria-label={`Scope del permiso ${permission.action}`}
+                                  title="Scope del permiso"
                                   className="ml-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500"
                                 >
                                   {permission.allowedScopes && permission.allowedScopes.length > 0 ? (
@@ -740,14 +788,14 @@ export function RoleForm({ roleId, onSuccess, onCancel }: RoleFormProps) {
               type="button"
               variant="outline"
               onClick={onCancel}
-              disabled={isLoading}
+              disabled={formDisabled}
             >
               <X className="w-4 h-4 mr-2" />
               Cancelar
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || hasErrors}
+              disabled={formDisabled || hasErrors}
               className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
             >
               {isLoading ? (

@@ -2,10 +2,10 @@
 'use client';
 
 import React, { useCallback, useState, useEffect } from 'react';
-import { useVerifyEmail } from '@/hooks/data/useVerifyEmail';
+import { useVerifyEmail } from '@/hooks/data/verify-email';
 import { verifyEmailService } from '@/services/verify-email.service';
 import { useAuth } from '@/hooks/useAuth';
-import { ProtectedPage } from '@/components/shared/permissions/ProtectedPage';
+import { VERIFY_EMAIL_PERMISSIONS } from '@/constants/modules-permissions/verify-email/verify-email.permissions';
 import { VerifyEmailStatus } from './VerifyEmailStatus';
 import { VerificationStats } from './VerificationStats';
 import { UnverifiedUsersTable } from './UnverifiedUsersTable';
@@ -28,7 +28,12 @@ type TabType = 'status' | 'users' | 'verified' | 'stats';
  * - Estadísticas de verificación (Admin)
  */
 export function VerifyEmailPageContent() {
-  const { user } = useAuth();
+  const { hasPermission, isLoading: authLoading } = useAuth();
+  const canAccessAdmin = hasPermission(
+    VERIFY_EMAIL_PERMISSIONS.READ.module,
+    VERIFY_EMAIL_PERMISSIONS.READ.action
+  );
+
   const {
     userStatus,
     userStatusLoading,
@@ -46,43 +51,50 @@ export function VerifyEmailPageContent() {
     statsError,
     refreshStats,
     refreshAll,
-  } = useVerifyEmail({
-    page: 1,
-    limit: 10,
-    isVerified: false,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-  });
+  } = useVerifyEmail(
+    {
+      page: 1,
+      limit: 10,
+      isVerified: false,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    },
+    { skipAdmin: !canAccessAdmin }
+  );
 
-  // Estado para usuarios verificados
+  // Estado para usuarios verificados (solo se carga si tiene permiso)
   const [verifiedUsersData, setVerifiedUsersData] = useState<PaginatedUnverifiedUsers | null>(null);
   const [verifiedUsersLoading, setVerifiedUsersLoading] = useState(false);
   const [verifiedUsersPage, setVerifiedUsersPage] = useState(1);
 
-  // 🔄 Cargar usuarios verificados
-  const loadVerifiedUsers = useCallback(async (page: number = 1) => {
-    try {
-      setVerifiedUsersLoading(true);
-      const result = await verifyEmailService.getUnverifiedUsers({
-        page,
-        limit: 10,
-        isVerified: true,
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
-      });
-      setVerifiedUsersData(result);
-      setVerifiedUsersPage(page);
-    } catch (err: any) {
-      toast.error('Error al cargar usuarios verificados');
-    } finally {
-      setVerifiedUsersLoading(false);
-    }
-  }, []);
+  // 🔄 Cargar usuarios verificados (solo si tiene permiso admin)
+  const loadVerifiedUsers = useCallback(
+    async (page: number = 1) => {
+      if (!canAccessAdmin) return;
+      try {
+        setVerifiedUsersLoading(true);
+        const result = await verifyEmailService.getUnverifiedUsers({
+          page,
+          limit: 10,
+          isVerified: true,
+          sortBy: 'createdAt',
+          sortOrder: 'desc',
+        });
+        setVerifiedUsersData(result);
+        setVerifiedUsersPage(page);
+      } catch (err: any) {
+        toast.error('Error al cargar usuarios verificados');
+      } finally {
+        setVerifiedUsersLoading(false);
+      }
+    },
+    [canAccessAdmin]
+  );
 
-  // Cargar usuarios verificados al montar
+  // Cargar usuarios verificados al montar solo si tiene permiso
   useEffect(() => {
-    loadVerifiedUsers(1);
-  }, [loadVerifiedUsers]);
+    if (canAccessAdmin) loadVerifiedUsers(1);
+  }, [canAccessAdmin, loadVerifiedUsers]);
 
   const [activeTab, setActiveTab] = useState<TabType>('status');
   const [requestLoading, setRequestLoading] = useState(false);
@@ -115,101 +127,106 @@ export function VerifyEmailPageContent() {
   }, [resendVerification]);
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Verificación de Emails
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Gestiona y monitorea la verificación de emails de los usuarios
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Barra: descripción breve + actualizar */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Gestiona tu correo y, si tienes permiso, la verificación de otros usuarios.
+        </p>
         <Button
           onClick={() => {
             refreshAll();
-            loadVerifiedUsers(verifiedUsersPage);
+            if (canAccessAdmin) loadVerifiedUsers(verifiedUsersPage);
           }}
           variant="outline"
           size="sm"
-          className="gap-2"
+          className="gap-2 shrink-0"
         >
           <RefreshCw className="h-4 w-4" />
           Actualizar
         </Button>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="status" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            Mi Email
-          </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            Pendientes
-          </TabsTrigger>
-          <TabsTrigger value="verified" className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4" />
-            Verificados
-          </TabsTrigger>
-          <TabsTrigger value="stats" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Estadísticas
-          </TabsTrigger>
-        </TabsList>
+      {/* Contenedor principal con pestañas */}
+      <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
+          <div className="border-b px-4 pt-4 sm:px-6">
+            <TabsList
+              className={
+                canAccessAdmin
+                  ? 'grid w-full grid-cols-4 h-11 bg-muted/50 p-1'
+                  : 'grid w-full grid-cols-1 h-11 bg-muted/50 p-1 max-w-xs'
+              }
+            >
+              <TabsTrigger value="status" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Mail className="h-4 w-4 shrink-0" />
+                Mi Email
+              </TabsTrigger>
+              {canAccessAdmin && (
+                <>
+                  <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <Mail className="h-4 w-4 shrink-0" />
+                    Pendientes
+                  </TabsTrigger>
+                  <TabsTrigger value="verified" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    Verificados
+                  </TabsTrigger>
+                  <TabsTrigger value="stats" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <BarChart3 className="h-4 w-4 shrink-0" />
+                    Estadísticas
+                  </TabsTrigger>
+                </>
+              )}
+            </TabsList>
+          </div>
 
-        {/* Tab 1: Estado del Usuario Autenticado */}
-        <TabsContent value="status" className="space-y-4">
-          <VerifyEmailStatus
-            status={userStatus}
-            isLoading={userStatusLoading}
-            error={userStatusError}
-            onRequestVerification={handleRequestVerification}
-            onResendVerification={handleResendVerification}
-            requestLoading={requestLoading}
-            resendLoading={resendLoading}
-          />
-        </TabsContent>
+          {/* Contenido de cada pestaña */}
+          <div className="p-4 sm:p-6">
+            <TabsContent value="status" className="mt-0 space-y-4">
+              <VerifyEmailStatus
+                status={userStatus}
+                isLoading={userStatusLoading}
+                error={userStatusError}
+                onRequestVerification={handleRequestVerification}
+                onResendVerification={handleResendVerification}
+                requestLoading={requestLoading}
+                resendLoading={resendLoading}
+              />
+            </TabsContent>
 
-        {/* Tab 2: Gestión de Usuarios Pendientes (Admin) */}
-        <TabsContent value="users" className="space-y-4">
-          <ProtectedPage module="verify-email" action="read">
-            <UnverifiedUsersTable
-              users={unverifiedUsers?.data || []}
-              isLoading={usersLoading}
-              currentPage={unverifiedUsers?.meta.page || 1}
-              totalPages={unverifiedUsers?.meta.totalPages || 1}
-              onPageChange={(page) => updateQuery({ page })}
-            />
-          </ProtectedPage>
-        </TabsContent>
-
-        {/* Tab 3: Gestión de Usuarios Verificados (Admin) */}
-        <TabsContent value="verified" className="space-y-4">
-          <ProtectedPage module="verify-email" action="read">
-            <VerifiedUsersTable
-              users={verifiedUsersData?.data || []}
-              isLoading={verifiedUsersLoading}
-              currentPage={verifiedUsersData?.meta.page || 1}
-              totalPages={verifiedUsersData?.meta.totalPages || 1}
-              onPageChange={(page) => loadVerifiedUsers(page)}
-            />
-          </ProtectedPage>
-        </TabsContent>
-
-        {/* Tab 4: Estadísticas (Admin) */}
-        <TabsContent value="stats" className="space-y-4">
-          <ProtectedPage module="verify-email" action="read">
-            <VerificationStats
-              stats={stats}
-              isLoading={statsLoading}
-            />
-          </ProtectedPage>
-        </TabsContent>
-      </Tabs>
+            {/* Tabs de admin: solo se renderizan si tiene permiso verify-email:read */}
+            {canAccessAdmin && (
+              <>
+                <TabsContent value="users" className="mt-0 space-y-4">
+                  <UnverifiedUsersTable
+                    users={unverifiedUsers?.data || []}
+                    isLoading={usersLoading}
+                    currentPage={unverifiedUsers?.meta.page || 1}
+                    totalPages={unverifiedUsers?.meta.totalPages || 1}
+                    onPageChange={(page) => updateQuery({ page })}
+                  />
+                </TabsContent>
+                <TabsContent value="verified" className="mt-0 space-y-4">
+                  <VerifiedUsersTable
+                    users={verifiedUsersData?.data || []}
+                    isLoading={verifiedUsersLoading}
+                    currentPage={verifiedUsersData?.meta.page || 1}
+                    totalPages={verifiedUsersData?.meta.totalPages || 1}
+                    onPageChange={(page) => loadVerifiedUsers(page)}
+                  />
+                </TabsContent>
+                <TabsContent value="stats" className="mt-0 space-y-4">
+                  <VerificationStats
+                    stats={stats}
+                    isLoading={statsLoading}
+                  />
+                </TabsContent>
+              </>
+            )}
+          </div>
+        </Tabs>
+      </div>
     </div>
   );
 }

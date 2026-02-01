@@ -1,3 +1,4 @@
+// src/hooks/data/user-profile/useUserProfile.ts
 import { useState, useEffect, useCallback } from 'react';
 import { userProfileService } from '@/services/user-profile.service';
 import { UpdateUserProfileDto } from '@/schemas/user-profile.schema';
@@ -19,7 +20,7 @@ export function useUserProfile(): UseUserProfileReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { isAuthenticated } = useAuth(); // ✅ Esperar autenticación
+  const { isAuthenticated } = useAuth();
 
   // Cargar perfil
   const fetchProfile = useCallback(async () => {
@@ -52,7 +53,6 @@ export function useUserProfile(): UseUserProfileReturn {
               'user-profiles'
             );
 
-            // ✅ Reemplazar el File con el objeto de Cloudinary
             processedData.profilePicture = {
               url: cloudinaryResponse.url,
               publicId: cloudinaryResponse.publicId,
@@ -76,7 +76,6 @@ export function useUserProfile(): UseUserProfileReturn {
     []
   );
 
-  // ✅ SOLO cargar perfil si el usuario está autenticado
   useEffect(() => {
     if (isAuthenticated) {
       fetchProfile();

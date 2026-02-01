@@ -30,18 +30,25 @@ import {
   History,
   Sparkles,
 } from 'lucide-react';
-import { useUserProfile } from '@/hooks/user-profile';
+import { useUserProfile } from '@/hooks/data/user-profile';
+import { useAuth } from '@/context/AuthContext';
+import { USER_PROFILE_PERMISSIONS } from '@/constants/modules-permissions/user-profile/user-profile.permissions';
+import { TIMEZONE } from '@/config/timezone';
 
 export function UserProfilePageContent() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { profile, isLoading, error, refetch } = useUserProfile();
+  const { hasPermission } = useAuth();
+  const canUpdate = hasPermission(USER_PROFILE_PERMISSIONS.UPDATE.module, USER_PROFILE_PERMISSIONS.UPDATE.action);
 
+  /** Formatea fechas en Horario de Guatemala (TIMEZONE desde .env) */
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('es-GT', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      timeZone: TIMEZONE,
     });
   };
 
@@ -85,32 +92,43 @@ export function UserProfilePageContent() {
     );
   }
 
+  const emptyLabel = (value: string | undefined | null) => (value?.trim() ? value : '—');
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 dark:from-slate-950 dark:via-blue-950/20 dark:to-slate-950">
+      {/* Page title - visible above hero */}
+      <div className="px-6 pt-2 pb-4">
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
+          Mi Perfil
+        </h1>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+          Consulta y actualiza tu información personal
+        </p>
+      </div>
+
       {/* Hero Header Section */}
       <div className="relative">
         {/* Gradient Background with Animation */}
-        <div className="absolute inset-0 h-80 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 dark:from-blue-800 dark:via-blue-700 dark:to-indigo-800 overflow-hidden">
-          {/* Animated Gradient Overlay */}
+        <div className="absolute inset-0 h-72 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 dark:from-blue-800 dark:via-blue-700 dark:to-indigo-800 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
-          {/* Decorative Circles */}
-          <div className="absolute -top-10 -right-10 w-72 h-72 bg-blue-400/30 dark:bg-blue-600/30 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute top-20 -left-20 w-96 h-96 bg-indigo-400/20 dark:bg-indigo-600/20 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute -top-10 -right-10 w-64 h-64 bg-blue-400/25 dark:bg-blue-600/25 rounded-full blur-3xl" />
+          <div className="absolute top-16 -left-16 w-80 h-80 bg-indigo-400/15 dark:bg-indigo-600/15 rounded-full blur-3xl" />
         </div>
 
-        {/* Decorative Wave */}
-        <div className="absolute inset-0 h-80 overflow-hidden">
+        {/* Wave */}
+        <div className="absolute inset-0 h-72 overflow-hidden">
           <svg
             className="absolute bottom-0 left-0 w-full drop-shadow-lg"
             viewBox="0 0 1440 120"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             preserveAspectRatio="none"
+            aria-hidden
           >
             <path
               d="M0 120L48 110C96 100 192 80 288 75C384 70 480 80 576 85C672 90 768 90 864 85C960 80 1056 70 1152 70C1248 70 1344 80 1392 85L1440 90V120H1392C1344 120 1248 120 1152 120C1056 120 960 120 864 120C768 120 672 120 576 120C480 120 384 120 288 120C192 120 96 120 48 120H0Z"
               className="fill-slate-50 dark:fill-slate-950"
-              fillOpacity="0.8"
+              fillOpacity="0.9"
             />
             <path
               d="M0 120L48 115C96 110 192 100 288 95C384 90 480 90 576 92C672 94 768 98 864 98C960 98 1056 94 1152 90C1248 86 1344 82 1392 80L1440 78V120H1392C1344 120 1248 120 1152 120C1056 120 960 120 864 120C768 120 672 120 576 120C480 120 384 120 288 120C192 120 96 120 48 120H0Z"
@@ -119,23 +137,25 @@ export function UserProfilePageContent() {
           </svg>
         </div>
 
-        <div className="relative pt-8 px-6 z-20">
+        <div className="relative pt-6 px-6 z-20">
           {/* Top Actions */}
           <div className="flex justify-end pb-6 relative z-30">
-            <Button
-              onClick={() => setIsEditModalOpen(true)}
-              className="bg-white dark:bg-slate-900 border-2 border-white dark:border-slate-800 text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 shadow-lg hover:shadow-xl rounded-xl font-semibold transition-all duration-300 group cursor-pointer relative z-40"
-            >
-              <Pencil className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform duration-300" />
-              Editar Perfil
-            </Button>
+            {canUpdate && (
+              <Button
+                onClick={() => setIsEditModalOpen(true)}
+                className="bg-white dark:bg-slate-900 border-2 border-white dark:border-slate-800 text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 shadow-lg hover:shadow-xl rounded-xl font-semibold transition-all duration-300 group cursor-pointer relative z-40"
+              >
+                <Pencil className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform duration-300" />
+                Editar Perfil
+              </Button>
+            )}
           </div>
 
           {/* Profile Card */}
           <Card className="relative overflow-visible border-0 shadow-2xl hover:shadow-3xl bg-white dark:bg-slate-900 rounded-3xl transition-all duration-500 backdrop-blur-sm">
             <CardContent className="relative pt-0">
-              {/* Avatar flotante que sobresale */}
-              <div className="flex flex-col items-center -mt-20 gap-6 lg:flex-row lg:items-start lg:gap-8 lg:-mt-16 lg:pl-8">
+              {/* Avatar flotante */}
+              <div className="flex flex-col items-center -mt-16 gap-6 lg:flex-row lg:items-start lg:gap-8 lg:-mt-14 lg:pl-8">
                 <div className="relative z-10 flex-shrink-0 group">
                   <div className="rounded-full p-1 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 dark:from-blue-600 dark:via-blue-700 dark:to-indigo-700 shadow-2xl group-hover:shadow-blue-500/50 dark:group-hover:shadow-blue-700/50 transition-all duration-300 group-hover:scale-105">
                     <div className="rounded-full bg-white dark:bg-slate-900 p-1">
@@ -244,7 +264,7 @@ export function UserProfilePageContent() {
                         <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
                           Correo Electrónico
                         </p>
-                        <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">{profile?.email}</p>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">{emptyLabel(profile?.email)}</p>
                         <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
                           <CheckCircle className="h-3 w-3" /> No editable
                         </p>
@@ -260,7 +280,7 @@ export function UserProfilePageContent() {
                         <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
                           Teléfono
                         </p>
-                        <p className="font-semibold text-slate-900 dark:text-slate-100">{profile?.phone}</p>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">{emptyLabel(profile?.phone)}</p>
                         <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Número principal</p>
                       </div>
                     </div>
@@ -306,7 +326,7 @@ export function UserProfilePageContent() {
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
                       Género
                     </p>
-                    <p className="font-bold text-slate-900 dark:text-slate-100">{profile?.gender}</p>
+                    <p className="font-bold text-slate-900 dark:text-slate-100">{emptyLabel(profile?.gender)}</p>
                   </div>
 
                   <div className="overflow-hidden rounded-xl border-2 border-teal-200/30 dark:border-teal-800/30 bg-white/30 dark:bg-slate-800/20 backdrop-blur-sm p-5 transition-all hover:shadow-md hover:border-amber-300/50 dark:hover:border-amber-700/50 hover:bg-white/50 dark:hover:bg-slate-800/40">
@@ -314,7 +334,7 @@ export function UserProfilePageContent() {
                       <CreditCard className="h-5 w-5 text-white" />
                     </div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">DPI</p>
-                    <p className="font-bold text-slate-900 dark:text-slate-100">{profile?.dpi}</p>
+                    <p className="font-bold text-slate-900 dark:text-slate-100">{emptyLabel(profile?.dpi)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -378,7 +398,7 @@ export function UserProfilePageContent() {
                         Título Académico
                       </p>
                       <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                        {profile?.teacherDetails?.academicDegree}
+                        {emptyLabel(profile?.teacherDetails?.academicDegree)}
                       </p>
                     </div>
                   </div>
@@ -424,7 +444,7 @@ export function UserProfilePageContent() {
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
                         Lugar de Trabajo
                       </p>
-                      <p className="font-bold text-slate-900 dark:text-slate-100">{profile?.parentDetails?.workplace}</p>
+                      <p className="font-bold text-slate-900 dark:text-slate-100">{emptyLabel(profile?.parentDetails?.workplace)}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -461,7 +481,7 @@ export function UserProfilePageContent() {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Calle</p>
                       <p className="font-semibold text-slate-900 dark:text-slate-100 break-words">
-                        {profile?.address?.street || 'N/A'}
+                        {emptyLabel(profile?.address?.street)}
                       </p>
                     </div>
                   </div>
@@ -472,7 +492,7 @@ export function UserProfilePageContent() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Zona</p>
-                      <p className="font-semibold text-slate-900 dark:text-slate-100">{profile?.address?.zone || 'N/A'}</p>
+                      <p className="font-semibold text-slate-900 dark:text-slate-100">{emptyLabel(profile?.address?.zone)}</p>
                     </div>
                   </div>
 
@@ -483,10 +503,10 @@ export function UserProfilePageContent() {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Municipio</p>
                       <p className="font-semibold text-slate-900 dark:text-slate-100">
-                        {profile?.address?.municipality?.name || 'N/A'}
+                        {emptyLabel(profile?.address?.municipality?.name)}
                       </p>
                       <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                        {profile?.address?.municipality?.department?.name}
+                        {emptyLabel(profile?.address?.municipality?.department?.name)}
                       </p>
                     </div>
                   </div>

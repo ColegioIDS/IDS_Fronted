@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUsers } from '@/hooks/data/useUsers';
-import { useRoles } from '@/hooks/data/useRoles';
+import { useRoles } from '@/hooks/data/roles';
 import { User, UserWithRelations } from '@/types/users.types';
 import { CreateUserFormData, UpdateUserFormData } from '@/schemas/users.schema';
 import { UserStats } from './UserStats';

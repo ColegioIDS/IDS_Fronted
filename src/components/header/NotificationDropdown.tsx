@@ -8,9 +8,18 @@ import { notificationsService } from "@/services/notifications.service";
 import { Notification } from "@/types/notifications.types";
 import { Loader2 } from "lucide-react";
 import { useNotificationsContext } from "@/context/NotificationsContext";
+import { useAuth } from "@/context/AuthContext";
+import { NOTIFICATIONS_PERMISSIONS } from "@/constants/modules-permissions/notifications/notifications.permissions";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const { hasPermission } = useAuth();
   const {
     notifications,
     unreadCount,
@@ -18,6 +27,9 @@ export default function NotificationDropdown() {
     markAllAsRead,
   } = useNotificationsContext();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Verificar permiso para ver notificaciones
+  const canReadNotifications = hasPermission(NOTIFICATIONS_PERMISSIONS.READ.module, NOTIFICATIONS_PERMISSIONS.READ.action);
 
   // Mostrar estado de conexión WebSocket en consola
   useEffect(() => {
@@ -50,15 +62,17 @@ export default function NotificationDropdown() {
   };
 
   // Marcar notificación como leída
-  const handleNotificationClick = async (notificationId: number, status: string | undefined) => {
-    if (status !== "READ") {
+  const handleNotificationClick = async (notification: Notification) => {
+    setSelectedNotification(notification);
+    setPreviewOpen(true);
+    
+    if (notification.status !== "READ") {
       try {
-        await markAsRead(notificationId);
+        await markAsRead(notification.id);
       } catch (error) {
         console.error("Error marking notification as read:", error);
       }
     }
-    closeDropdown();
   };
 
   // Marcar todas como leídas
@@ -69,38 +83,58 @@ export default function NotificationDropdown() {
       console.error("Error marking all as read:", error);
     }
   };
+
+  // Si no tiene permiso, no renderizar nada
+  if (!canReadNotifications) {
+    return null;
+  }
+
   return (
     <div className="relative">
+      <style>{`
+        @keyframes breathing {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(0.8); }
+        }
+      `}</style>
       <button
-        className="relative dropdown-toggle flex items-center justify-center text-gray-500 transition-colors bg-white border border-gray-200 rounded-full hover:text-gray-700 h-11 w-11 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-        onClick={handleClick}
-      >
-        <span
-          className={`absolute right-0 top-0.5 z-10 h-2 w-2 rounded-full bg-orange-400 ${
-            unreadCount === 0 ? "hidden" : "flex"
-          }`}
-        >
-          <span className="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
-          {/* Badge con contador */}
-          <span className="absolute -top-1 -right-2 inline-flex items-center justify-center h-5 w-5 text-xs font-bold text-white bg-red-500 rounded-full">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
-        </span>
-        <svg
-          className="fill-current"
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M10.75 2.29248C10.75 1.87827 10.4143 1.54248 10 1.54248C9.58583 1.54248 9.25004 1.87827 9.25004 2.29248V2.83613C6.08266 3.20733 3.62504 5.9004 3.62504 9.16748V14.4591H3.33337C2.91916 14.4591 2.58337 14.7949 2.58337 15.2091C2.58337 15.6234 2.91916 15.9591 3.33337 15.9591H4.37504H15.625H16.6667C17.0809 15.9591 17.4167 15.6234 17.4167 15.2091C17.4167 14.7949 17.0809 14.4591 16.6667 14.4591H16.375V9.16748C16.375 5.9004 13.9174 3.20733 10.75 2.83613V2.29248ZM14.875 14.4591V9.16748C14.875 6.47509 12.6924 4.29248 10 4.29248C7.30765 4.29248 5.12504 6.47509 5.12504 9.16748V14.4591H14.875ZM8.00004 17.7085C8.00004 18.1228 8.33583 18.4585 8.75004 18.4585H11.25C11.6643 18.4585 12 18.1228 12 17.7085C12 17.2943 11.6643 16.9585 11.25 16.9585H8.75004C8.33583 16.9585 8.00004 17.2943 8.00004 17.7085Z"
-            fill="currentColor"
-          />
-        </svg>
-      </button>
+            className="relative dropdown-toggle flex items-center justify-center text-gray-500 transition-colors bg-white border border-gray-200 rounded-full hover:text-gray-700 h-11 w-11 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+            onClick={handleClick}
+          >
+            {/* Breathing indicator dot */}
+            <span 
+              className="absolute top-1 right-1 w-2.5 h-2.5 bg-green-500 rounded-full"
+              style={{
+                animation: 'breathing 2s ease-in-out infinite',
+              }}
+            />
+            
+            <span
+              className={`absolute right-0 top-0.5 z-10 h-2 w-2 rounded-full bg-orange-400 ${
+                unreadCount === 0 ? "hidden" : "flex"
+              }`}
+            >
+              <span className="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
+              {/* Badge con contador */}
+              <span className="absolute -top-1 -right-2 inline-flex items-center justify-center h-5 w-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            </span>
+            <svg
+              className="fill-current"
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M10.75 2.29248C10.75 1.87827 10.4143 1.54248 10 1.54248C9.58583 1.54248 9.25004 1.87827 9.25004 2.29248V2.83613C6.08266 3.20733 3.62504 5.9004 3.62504 9.16748V14.4591H3.33337C2.91916 14.4591 2.58337 14.7949 2.58337 15.2091C2.58337 15.6234 2.91916 15.9591 3.33337 15.9591H4.37504H15.625H16.6667C17.0809 15.9591 17.4167 15.6234 17.4167 15.2091C17.4167 14.7949 17.0809 14.4591 16.6667 14.4591H16.375V9.16748C16.375 5.9004 13.9174 3.20733 10.75 2.83613V2.29248ZM14.875 14.4591V9.16748C14.875 6.47509 12.6924 4.29248 10 4.29248C7.30765 4.29248 5.12504 6.47509 5.12504 9.16748V14.4591H14.875ZM8.00004 17.7085C8.00004 18.1228 8.33583 18.4585 8.75004 18.4585H11.25C11.6643 18.4585 12 18.1228 12 17.7085C12 17.2943 11.6643 16.9585 11.25 16.9585H8.75004C8.33583 16.9585 8.00004 17.2943 8.00004 17.7085Z"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
@@ -152,7 +186,7 @@ export default function NotificationDropdown() {
             {notifications.map((notification) => (
               <li key={notification.id}>
                 <button
-                  onClick={() => handleNotificationClick(notification.id, notification.status)}
+                  onClick={() => handleNotificationClick(notification)}
                   className={`w-full flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 text-left transition-colors ${
                     notification.status !== "READ" ? "bg-blue-50 dark:bg-blue-900/20" : ""
                   }`}
@@ -197,13 +231,95 @@ export default function NotificationDropdown() {
           </ul>
         )}
         <Link
-          href="/admin/management/notifications"
+          href="/notifications"
           onClick={closeDropdown}
           className="block px-4 py-2 mt-3 text-sm font-medium text-center text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
         >
-          View All Notifications
+          Todas las notificaciones
         </Link>
       </Dropdown>
+
+      {/* Dialog para vista previa */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-2xl max-h-96 overflow-y-auto">
+          {selectedNotification && (
+            <>
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedNotification.title}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">Mensaje</h3>
+                  <p className="text-gray-600 dark:text-gray-400">{selectedNotification.message}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-1">Prioridad</h3>
+                    <Badge
+                      className={`text-xs font-medium ${
+                        selectedNotification.priority === "HIGH"
+                          ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                          : selectedNotification.priority === "CRITICAL"
+                            ? "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
+                            : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400"
+                      }`}
+                    >
+                      {selectedNotification.priority}
+                    </Badge>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-1">Tipo</h3>
+                    <Badge variant="secondary" className="text-xs">
+                      {selectedNotification.type}
+                    </Badge>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-1">Estado</h3>
+                    <Badge variant={selectedNotification.status === "READ" ? "secondary" : "default"} className="text-xs">
+                      {selectedNotification.status}
+                    </Badge>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-1">Creada</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {format(new Date(selectedNotification.createdAt), "dd MMM yyyy HH:mm", { locale: es })}
+                    </p>
+                  </div>
+                </div>
+
+                {selectedNotification.scheduleFor && (
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-1">Programada para</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {format(new Date(selectedNotification.scheduleFor), "dd MMM yyyy HH:mm", { locale: es })}
+                    </p>
+                  </div>
+                )}
+
+                {selectedNotification.createdBy && (
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-1">Creada por</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {selectedNotification.createdBy.givenNames} {selectedNotification.createdBy.lastNames}
+                    </p>
+                    {selectedNotification.createdBy.role && (
+                      <Badge variant="secondary" className="text-xs mt-2">
+                        {selectedNotification.createdBy.role.name}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

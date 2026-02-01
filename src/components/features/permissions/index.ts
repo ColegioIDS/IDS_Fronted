@@ -1,4 +1,3 @@
-// src/components/features/permissions/index.ts
 export { PermissionsPageContent } from './PermissionsPageContent';
 export { PermissionsGrid } from './PermissionsGrid';
 export { PermissionModuleCard } from './PermissionModuleCard';

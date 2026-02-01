@@ -1,4 +1,4 @@
-// src/hooks/data/useVerifyEmail.ts
+// src/hooks/data/verify-email/useVerifyEmail.ts
 import { useState, useEffect, useCallback } from 'react';
 import { verifyEmailService } from '@/services/verify-email.service';
 import {
@@ -8,11 +8,20 @@ import {
   VerifyEmailQuery,
 } from '@/types/verify-email.types';
 
+export type UseVerifyEmailOptions = {
+  /** Si true, no se llaman las APIs de admin (usuarios pendientes, stats). Evita 403 cuando el usuario no tiene verify-email:read. */
+  skipAdmin?: boolean;
+};
+
 /**
  * Hook para gestionar la verificación de emails
  * Combina estado del usuario autenticado + datos administrativos
  */
-export function useVerifyEmail(initialQuery: VerifyEmailQuery = {}) {
+export function useVerifyEmail(
+  initialQuery: VerifyEmailQuery = {},
+  options: UseVerifyEmailOptions = {}
+) {
+  const { skipAdmin = false } = options;
   // 👤 Estado del usuario autenticado
   const [userStatus, setUserStatus] = useState<EmailVerificationStatus | null>(null);
   const [userStatusLoading, setUserStatusLoading] = useState(false);
@@ -128,22 +137,24 @@ export function useVerifyEmail(initialQuery: VerifyEmailQuery = {}) {
 
   const refreshAll = useCallback(() => {
     loadUserStatus();
-    loadUnverifiedUsers();
-    loadStats();
-  }, [loadUserStatus, loadUnverifiedUsers, loadStats]);
+    if (!skipAdmin) {
+      loadUnverifiedUsers();
+      loadStats();
+    }
+  }, [skipAdmin, loadUserStatus, loadUnverifiedUsers, loadStats]);
 
-  // ⏳ Cargas iniciales
+  // ⏳ Cargas iniciales: estado del usuario siempre; admin solo si no skipAdmin
   useEffect(() => {
     loadUserStatus();
   }, [loadUserStatus]);
 
   useEffect(() => {
-    loadUnverifiedUsers();
-  }, [loadUnverifiedUsers]);
+    if (!skipAdmin) loadUnverifiedUsers();
+  }, [skipAdmin, loadUnverifiedUsers]);
 
   useEffect(() => {
-    loadStats();
-  }, [loadStats]);
+    if (!skipAdmin) loadStats();
+  }, [skipAdmin, loadStats]);
 
   return {
     // 👤 Usuario autenticado

@@ -1,5 +1,4 @@
-// src/app/(admin)/permissions/page.tsx
-import { PermissionsPageContent } from '@/components/features/permissions/PermissionsPageContent';
+import { PermissionsPageContent } from '@/components/features/permissions';
 
 export const metadata = {
   title: 'Permisos | Sistema de Gestión',
