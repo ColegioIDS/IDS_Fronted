@@ -15,6 +15,40 @@ import {
   CascadeCourseAssignment,
 } from '@/types/erica-evaluations';
 
+// Helper: Convertir gradesSections (objeto) a array de sections
+const flattenGradesSections = (gradesSections: Record<string, any>): CascadeSection[] => {
+  const sections: CascadeSection[] = [];
+  
+  if (!gradesSections || typeof gradesSections !== 'object') {
+    return sections;
+  }
+  
+  Object.values(gradesSections).forEach((gradeSections: any) => {
+    if (Array.isArray(gradeSections)) {
+      sections.push(...gradeSections);
+    }
+  });
+  
+  return sections;
+};
+
+// Helper: Normalizar el formato de respuesta del endpoint
+const normalizeCascadeData = (data: any): CascadeResponse => {
+  return {
+    ...data,
+    // Si viene activeBimester, convertir a array bimesters
+    bimesters: data.bimesters || (data.activeBimester ? [data.activeBimester] : []),
+    // Si viene weeks, renombrar a academicWeeks
+    academicWeeks: data.academicWeeks || data.weeks || [],
+    // Si viene gradesSections, convertir a array sections
+    sections: data.sections || flattenGradesSections(data.gradesSections || {}),
+    // Guardar grades
+    grades: data.grades || [],
+    // Guardar courses
+    courses: data.courses || [],
+  };
+};
+
 interface CascadeError {
   message: string;
   errorCode?: string;
@@ -81,7 +115,8 @@ export function useEricaHistoryCascade(): UseEricaHistoryCascadeReturn {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      const data = await ericaHistoryService.getCascadeData();
+      const rawData = await ericaHistoryService.getCascadeData();
+      const data = normalizeCascadeData(rawData);
       
       // Validate required data exists
       if (!data.bimesters || data.bimesters.length === 0) {
