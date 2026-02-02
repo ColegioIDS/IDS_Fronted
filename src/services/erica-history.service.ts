@@ -2,13 +2,13 @@
 
 import axios from 'axios';
 import { API_BASE_URL } from '@/config/api';
-import { ericaEvaluationsService } from './erica-evaluations.service';
 import { 
   EricaHistoryFilters, 
   EricaHistoryFilterResponse, 
   EricaHistoryReport,
   BimesterCompleteResponse,
   BimesterCompleteReport,
+  CascadeResponse,
 } from '@/types/erica-history';
 import { ApiResponse } from '@/types/api';
 
@@ -35,10 +35,28 @@ const handleApiError = (error: any, fallbackMessage: string) => {
 // ==================== CASCADE ENDPOINT ====================
 
 /**
- * Reutiliza el cascade de evaluations
+ * Obtener datos en cascada para ERICA History
+ * Endpoint centralizado: GET /api/erica-history/cascade
+ *
+ * @param includeInactive - Incluir items inactivos en la respuesta
+ * @returns Estructura de cascada con ciclo, bimestres, semanas, grados, secciones y cursos
  */
-export const getCascadeData = async () => {
-  return ericaEvaluationsService.getCascadeData();
+export const getCascadeData = async (includeInactive = false): Promise<CascadeResponse> => {
+  try {
+    const params = includeInactive ? '?includeInactive=true' : '';
+    const { data } = await apiClient.get<ApiResponse<CascadeResponse>>(
+      `/api/erica-history/cascade${params}`
+    );
+
+    if (!data.success) {
+      throw new Error(data.message || 'Error al obtener datos de cascada');
+    }
+
+    return data.data;
+  } catch (error) {
+    handleApiError(error, 'Error al obtener datos de cascada de ERICA History');
+    throw error;
+  }
 };
 
 // ==================== REPORTS ENDPOINT ====================

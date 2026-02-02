@@ -2,9 +2,11 @@
 // Reutiliza la cascada de evaluations pero orientada a history
 
 import { useState, useEffect, useCallback } from 'react';
-import { ericaEvaluationsService } from '@/services/erica-evaluations.service';
+import { ericaHistoryService } from '@/services/erica-history.service';
 import {
   CascadeResponse,
+} from '@/types/erica-history';
+import {
   CascadeBimester,
   CascadeWeek,
   CascadeGrade,
@@ -79,15 +81,15 @@ export function useEricaHistoryCascade(): UseEricaHistoryCascadeReturn {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      const data = await ericaEvaluationsService.getCascadeData();
+      const data = await ericaHistoryService.getCascadeData();
       
       // Validate required data exists
-      if (!data.activeBimester) {
+      if (!data.bimesters || data.bimesters.length === 0) {
         setState({
           cascadeData: data,
           isLoading: false,
           error: {
-            message: 'No hay un bimestre activo para el ciclo escolar actual',
+            message: 'No hay bimestres registrados para el ciclo escolar actual',
             errorCode: 'NO_ACTIVE_BIMESTER',
             errorType: 'CONFIGURATION_ERROR',
           },
@@ -95,7 +97,7 @@ export function useEricaHistoryCascade(): UseEricaHistoryCascadeReturn {
         return;
       }
       
-      if (!data.weeks || data.weeks.length === 0) {
+      if (!data.academicWeeks || data.academicWeeks.length === 0) {
         setState({
           cascadeData: data,
           isLoading: false,
@@ -208,36 +210,34 @@ export function useEricaHistoryCascade(): UseEricaHistoryCascadeReturn {
 
   // Derived getters
   const getBimesters = useCallback((): CascadeBimester[] => {
-    // Si hay un array de bimesters, usarlo; si no, usar activeBimester como array
-    if (state.cascadeData?.bimesters && state.cascadeData.bimesters.length > 0) {
-      return state.cascadeData.bimesters;
-    }
-    if (state.cascadeData?.activeBimester) {
-      return [state.cascadeData.activeBimester];
-    }
-    return [];
+    // El nuevo endpoint devuelve bimesters como array plano
+    return (state.cascadeData?.bimesters || []) as CascadeBimester[];
   }, [state.cascadeData]);
 
   const getWeeks = useCallback((): CascadeWeek[] => {
-    if (!selected.bimester || !state.cascadeData?.weeks) return [];
-    return state.cascadeData.weeks.filter(
-      (week: CascadeWeek) => week.bimesterId === selected.bimester!.id
-    );
+    if (!selected.bimester || !state.cascadeData?.academicWeeks) return [];
+    // Filtrar semanas que pertenecen al bimestre seleccionado
+    return state.cascadeData.academicWeeks.filter((week: any) => {
+      // Asumiendo que week tiene bimesterId o similaridad con estructura CascadeWeek
+      return week.bimesterId === selected.bimester!.id;
+    }) as CascadeWeek[];
   }, [selected.bimester, state.cascadeData]);
 
   const getGrades = useCallback((): CascadeGrade[] => {
-    return state.cascadeData?.grades || [];
+    return (state.cascadeData?.grades || []) as CascadeGrade[];
   }, [state.cascadeData]);
 
   const getSections = useCallback((): CascadeSection[] => {
-    if (!selected.grade || !state.cascadeData?.gradesSections) return [];
-    return state.cascadeData.gradesSections[selected.grade.id] || [];
+    if (!selected.grade || !state.cascadeData?.sections) return [];
+    // Filtrar secciones que pertenecen al grado seleccionado
+    return state.cascadeData.sections.filter((section: any) => section.gradeId === selected.grade!.id) as CascadeSection[];
   }, [selected.grade, state.cascadeData]);
 
   const getCourses = useCallback((): CascadeCourse[] => {
-    if (!selected.section || !selected.section.courseAssignments) return [];
-    return selected.section.courseAssignments.map((assignment: CascadeCourseAssignment) => assignment.course);
-  }, [selected.section]);
+    if (!selected.section || !state.cascadeData?.courses) return [];
+    // Filtrar cursos que pertenecen a la sección seleccionada
+    return state.cascadeData.courses.filter((course: any) => course.sectionId === selected.section!.id) as CascadeCourse[];
+  }, [selected.section, state.cascadeData]);
 
   const isSelectionComplete = Boolean(
     selected.bimester &&
