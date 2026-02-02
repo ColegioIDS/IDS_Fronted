@@ -207,15 +207,19 @@ export interface CascadeOption {
   startDate?: string;
   endDate?: string;
   isActive?: boolean;
+  weeksCount?: number;
+  bimesterId?: number;
+  gradeId?: number;
+  sectionId?: number;
   [key: string]: any;
 }
 
 export interface CascadeResponse {
-  cycles: CascadeOption[];
+  cycles?: CascadeOption[];
   bimesters: CascadeOption[];
   academicWeeks: CascadeOption[];
   grades: CascadeOption[];
   sections: CascadeOption[];
   courses: CascadeOption[];
-  topics: CascadeOption[];
+  topics?: CascadeOption[];
 }

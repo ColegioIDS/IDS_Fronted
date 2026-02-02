@@ -38,6 +38,7 @@ export { SIGNATURES_PERMISSIONS } from './signatures/signatures.permissions';
 export { ASSIGNMENTS_PERMISSIONS } from './assignments/assignments.permissions';
 export { NOTIFICATIONS_PERMISSIONS } from './notifications/notifications.permissions';
 export { NEWS_PERMISSIONS } from './news/news.permissions';
+export { ERICA_HISTORY_PERMISSIONS } from './erica-history/erica-history.permissions';
 
 /**
  * Objeto centralizado con todos los permisos por módulo
@@ -73,4 +74,5 @@ export const MODULES_PERMISSIONS = {
   ASSIGNMENTS: require('./assignments/assignments.permissions').ASSIGNMENTS_PERMISSIONS,
   NOTIFICATIONS: require('./notifications/notifications.permissions').NOTIFICATIONS_PERMISSIONS,
   NEWS: require('./news/news.permissions').NEWS_PERMISSIONS,
+  ERICA_HISTORY: require('./erica-history/erica-history.permissions').ERICA_HISTORY_PERMISSIONS,
 } as const;
