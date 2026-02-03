@@ -197,7 +197,8 @@ export const AssignmentsListTable: FC<AssignmentsListTableProps> = ({
 
               {/* BOTONES DE ACCIÓN */}
               <div className="flex items-center gap-2 flex-shrink-0">
-                <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                {/* BOTONES VISIBLES EN DESKTOP - OCULTOS EN MOBILE */}
+                <div className="hidden sm:flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -263,10 +264,85 @@ export const AssignmentsListTable: FC<AssignmentsListTableProps> = ({
                   )}
                 </div>
 
-                {/* INDICADOR VISUAL EN ESTADO NORMAL */}
-                <div className="text-gray-300 dark:text-gray-700 group-hover:hidden">
-                  <MoreVertical className="w-5 h-5" />
-                </div>
+                {/* MENÚ DESPLEGABLE EN MOBILE */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-8 h-8 p-0 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                    >
+                      <MoreVertical className="w-5 h-5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-48 p-2 dark:bg-gray-950 dark:border-gray-800">
+                    <div className="flex flex-col gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                        onClick={() => {
+                          setSelectedAssignment(assignment);
+                          setIsDialogOpen(true);
+                        }}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Ver detalles
+                      </Button>
+
+                      {canUpdateAssignment && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40"
+                          onClick={() => {
+                            setSelectedAssignment(assignment);
+                            setEditFormData({
+                              title: assignment.title,
+                              description: assignment.description || '',
+                              dueDate: new Date(assignment.dueDate),
+                              maxScore: assignment.maxScore,
+                            });
+                            setIsEditMode(true);
+                          }}
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Editar
+                        </Button>
+                      )}
+                      
+                      {canReadSubmissions && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                          onClick={() => {
+                            setSelectedAssignment(assignment);
+                            setIsSubmissionsDialogOpen(true);
+                          }}
+                        >
+                          <PencilIcon className="w-4 h-4 mr-2" />
+                          Calificar
+                        </Button>
+                      )}
+                      
+                      {canDeleteAssignment && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
+                          onClick={() => {
+                            setAssignmentToDelete(assignment);
+                            setIsDeleteConfirmOpen(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Eliminar
+                        </Button>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
