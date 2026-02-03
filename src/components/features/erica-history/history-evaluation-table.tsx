@@ -137,16 +137,21 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
     // Procesar cada semana
     weeks.forEach((week) => {
       week.evaluations.forEach((evaluation) => {
-        const studentId = evaluation.student.id;
+        const studentId = evaluation.studentId;
         
         if (!grouped[studentId]) {
+          // Dividir el nombre para obtener givenNames y lastNames
+          const nameParts = evaluation.studentName.split(',').map(part => part.trim());
+          const lastNames = nameParts[0] || '';
+          const givenNames = nameParts[1] || '';
+          
           grouped[studentId] = {
             studentId: studentId,
-            studentName: `${evaluation.student.lastNames}, ${evaluation.student.givenNames}`,
-            givenNames: evaluation.student.givenNames,
-            lastNames: evaluation.student.lastNames,
-            sectionName: evaluation.section?.name,
-            gradeName: evaluation.section?.grade?.name,
+            studentName: evaluation.studentName,
+            givenNames: givenNames,
+            lastNames: lastNames,
+            sectionName: undefined,
+            gradeName: undefined,
             weekEvaluations: {},
           };
         }
@@ -507,7 +512,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                             const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
                             const eval_ = weekEvals[dimension];
                             if (eval_) {
-                              total += eval_.points;
+                              total += eval_.score;
                               count++;
                             }
                           });
@@ -544,7 +549,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                                               {evaluation.state}
                                             </Badge>
                                             <div className="text-xs text-gray-700 mt-0.5 font-semibold">
-                                              {evaluation.points.toFixed(2)}
+                                              {evaluation.score.toFixed(2)}
                                             </div>
                                           </div>
                                         ) : (
@@ -559,7 +564,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                                     {(() => {
                                       const total = (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).reduce((sum, dimension) => {
                                         const dimEval = weekEvals[dimension];
-                                        return sum + (dimEval?.points || 0);
+                                        return sum + (dimEval?.score || 0);
                                       }, 0);
                                       return total > 0 ? `${total.toFixed(2)}` : '—';
                                     })()}
@@ -609,7 +614,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                             const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
                             const eval_ = weekEvals[dimension];
                             if (eval_) {
-                              total1 += eval_.points;
+                              total1 += eval_.score;
                               count1++;
                             }
                           });
@@ -618,7 +623,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                             const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
                             const eval_ = weekEvals[dimension];
                             if (eval_) {
-                              total2 += eval_.points;
+                              total2 += eval_.score;
                               count2++;
                             }
                           });
@@ -658,7 +663,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                                               {evaluation.state}
                                             </Badge>
                                             <div className="text-xs text-gray-700 mt-0.5 font-semibold">
-                                              {evaluation.points.toFixed(2)}
+                                              {evaluation.score.toFixed(2)}
                                             </div>
                                           </div>
                                         ) : (
@@ -673,7 +678,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                                     {(() => {
                                       const total = (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).reduce((sum, dimension) => {
                                         const dimEval = weekEvals[dimension];
-                                        return sum + (dimEval?.points || 0);
+                                        return sum + (dimEval?.score || 0);
                                       }, 0);
                                       return total > 0 ? `${total.toFixed(2)}` : '—';
                                     })()}
@@ -738,7 +743,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                                       {evaluation.state}
                                     </Badge>
                                     <div className="text-xs text-gray-700 mt-0.5 font-semibold">
-                                      {evaluation.points.toFixed(2)}
+                                      {evaluation.score.toFixed(2)}
                                     </div>
                                   </div>
                                 ) : (
@@ -753,7 +758,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                             {(() => {
                               const total = (['EJECUTA', 'RETIENE', 'INTERPRETA', 'CONOCE', 'APLICA'] as const).reduce((sum, dimension) => {
                                 const dimEval = weekEvals[dimension];
-                                return sum + (dimEval?.points || 0);
+                                return sum + (dimEval?.score || 0);
                               }, 0);
                               return total > 0 ? `${total.toFixed(2)}` : '—';
                             })()}
@@ -772,7 +777,7 @@ export function HistoryEvaluationTable({ weeks, isLoading }: HistoryEvaluationTa
                           const weekEvals = row.weekEvaluations[week.academicWeek.id] || {};
                           const eval_ = weekEvals[dimension];
                           if (eval_) {
-                            totalSum += eval_.points;
+                            totalSum += eval_.score;
                           }
                         });
                       });

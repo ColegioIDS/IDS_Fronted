@@ -47,7 +47,7 @@ export const HistoryContent: React.FC<HistoryContentProps> = ({ cascadeData }) =
       if (response.weeks.length === 0) {
         toast.info('No hay evaluaciones que coincidan con los filtros seleccionados');
       } else {
-        toast.success(`Se encontraron ${response.stats.totalEvaluations} evaluaciones`);
+        toast.success(`Se encontraron ${response.summary.totalEvaluations} evaluaciones`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al cargar evaluaciones';
@@ -68,7 +68,7 @@ export const HistoryContent: React.FC<HistoryContentProps> = ({ cascadeData }) =
       />
 
       {/* Estadísticas */}
-      {data && <HistoryStatistics stats={data.stats} />}
+      {data && <HistoryStatistics stats={data.summary} />}
 
       {/* Errores */}
       {error && (
@@ -110,7 +110,7 @@ export const HistoryContent: React.FC<HistoryContentProps> = ({ cascadeData }) =
             Evaluaciones por Semana
           </h2>
           {data.weeks.map((weekData) => (
-            <HistoryWeekSection key={weekData.academicWeek.id} weekData={weekData} />
+            <HistoryWeekSection key={weekData.weekId} weekData={weekData} />
           ))}
         </div>
       )}
