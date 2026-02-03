@@ -23,10 +23,9 @@ import {
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useEricaHistoryCascade } from '@/hooks/data/erica-history';
 import { ericaHistoryService } from '@/services/erica-history.service';
-import { EricaHistoryFilterResponse, BimesterCompleteResponse } from '@/types/erica-history';
+import { EricaHistoryFilterResponse } from '@/types/erica-history';
 import { SelectionGrid } from '@/components/features/erica-evaluations';
-import { HistoryEvaluationTable } from '@/components/features/erica-history/history-evaluation-table';
-import { BimesterCompleteView } from '@/components/features/erica-history/bimestre-complete-view';
+import { EvaluationTable } from '@/components/features/erica-history/evaluation-table';
 
 /**
  * Componente de contenido para la página de Historial ERICA
@@ -55,10 +54,9 @@ export function EricaHistoryPageContent() {
 
   // Estado para evaluaciones históricas
   const [historyData, setHistoryData] = useState<EricaHistoryFilterResponse | null>(null);
-  const [bimesterData, setBimesterData] = useState<BimesterCompleteResponse | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
-  const [skipWeek, setSkipWeek] = useState(false); // Para saltar selección de semana
+  const [skipWeek, setSkipWeek] = useState(true); // Por defecto: todas las semanas
 
   // Determinar paso actual
   const currentStep = useMemo(() => {
@@ -79,11 +77,10 @@ export function EricaHistoryPageContent() {
     selected.course
   );
 
-  // Función para recargar datos de historial
+    // Función para recargar datos de historial
   const reloadHistoryData = useCallback(async () => {
     if (!isReadyToLoadHistory) {
       setHistoryData(null);
-      setBimesterData(null);
       setHistoryError(null);
       return;
     }
@@ -100,7 +97,6 @@ export function EricaHistoryPageContent() {
         courseId: selected.course?.id,
       });
       setHistoryData(result);
-      setBimesterData(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al cargar historial';
       setHistoryError(errorMessage);
@@ -121,12 +117,6 @@ export function EricaHistoryPageContent() {
       selectSection(null);
     } else if (selected.grade) {
       selectGrade(null);
-    } else if (skipWeek || selected.week) {
-      if (selected.week) {
-        selectWeek(null);
-      } else {
-        setSkipWeek(false);
-      }
     } else if (selected.bimester) {
       selectBimester(null);
     }
@@ -210,7 +200,7 @@ export function EricaHistoryPageContent() {
               </h1>
             </div>
             <p className="text-sm text-gray-500">
-              {cascadeData?.cycles?.[0]?.name} - Ciclo Activo
+              {cascadeData?.cycles?.[0]?.name || cascadeData?.cycle?.name} - Ciclo Activo
             </p>
           </div>
         </div>
@@ -222,53 +212,48 @@ export function EricaHistoryPageContent() {
       </div>
 
       {/* Breadcrumb de selección */}
-      <div className="flex items-center gap-2 text-sm flex-wrap">
+      <div className="flex items-center gap-2 text-sm flex-wrap py-3 px-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
         {selected.bimester && (
           <>
-            <Badge variant="outline" className="bg-blue-50">
-              <Calendar className="h-3 w-3 mr-1" />
+            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300">
+              <Calendar className="h-3 w-3 mr-1.5" />
               {selected.bimester.name}
             </Badge>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-600" />
           </>
         )}
         {selected.week && (
           <>
-            <Badge variant="outline" className="bg-purple-50">
+            <Badge variant="outline" className="bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300">
+              <Clock className="h-3 w-3 mr-1.5" />
               Semana {selected.week.number}
             </Badge>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-600" />
           </>
         )}
-        {skipWeek && !selected.week && selected.bimester && (
-          <>
-            <Badge variant="outline" className="bg-purple-50">
-              Todas las semanas
-            </Badge>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
-          </>
-        )}
+        {/* Por defecto: todas las semanas (no mostrar en breadcrumb) */}
+
         {selected.grade && (
           <>
-            <Badge variant="outline" className="bg-green-50">
-              <GraduationCap className="h-3 w-3 mr-1" />
+            <Badge variant="outline" className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300">
+              <GraduationCap className="h-3 w-3 mr-1.5" />
               {selected.grade.name}
             </Badge>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-600" />
           </>
         )}
         {selected.section && (
           <>
-            <Badge variant="outline" className="bg-yellow-50">
-              <Users className="h-3 w-3 mr-1" />
+            <Badge variant="outline" className="bg-cyan-50 dark:bg-cyan-950 border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300">
+              <Users className="h-3 w-3 mr-1.5" />
               {selected.section.name}
             </Badge>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-600" />
           </>
         )}
         {selected.course && (
-          <Badge variant="outline" className="bg-orange-50">
-            <BookOpen className="h-3 w-3 mr-1" />
+          <Badge variant="outline" className="bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300">
+            <BookOpen className="h-3 w-3 mr-1.5" />
             {selected.course.name}
           </Badge>
         )}
@@ -288,33 +273,7 @@ export function EricaHistoryPageContent() {
         />
       )}
 
-      {currentStep === 2 && (
-        <div className="space-y-4">
-          <SelectionGrid
-            title="Selecciona una Semana (Opcional)"
-            icon={<Calendar className="h-5 w-5" />}
-            items={getWeeks().map(w => ({
-              id: w.id,
-              name: `Semana ${w.number}`,
-              subtitle: `${new Date(w.startDate).toLocaleDateString()} - ${new Date(w.endDate).toLocaleDateString()}`,
-              onClick: () => selectWeek(w),
-            }))}
-          />
-          
-          <Card>
-            <CardContent className="pt-6">
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => setSkipWeek(true)}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Ver todas las semanas del bimestre
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Paso 2: Selector de semana - OMITIDO (por defecto: todas las semanas) */}
 
       {currentStep === 3 && (
         <SelectionGrid
@@ -395,7 +354,7 @@ export function EricaHistoryPageContent() {
               <CardContent className="py-12">
                 <div className="flex items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                  <span className="ml-2 text-gray-500">Cargando historial...</span>
+                  <span className="ml-2 text-gray-500">Cargando evaluaciones...</span>
                 </div>
               </CardContent>
             </Card>
@@ -404,39 +363,36 @@ export function EricaHistoryPageContent() {
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{historyError}</AlertDescription>
             </Alert>
-          ) : bimesterData ? (
-            // Mostrar vista completa del bimestre
-            <BimesterCompleteView data={bimesterData} />
           ) : historyData ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="space-y-6">
+              {/* Resumen */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <p className="text-xs text-gray-600 mb-1">Total Evaluaciones</p>
+                  <p className="text-xs text-gray-600 mb-1">Total Semanas</p>
                   <p className="text-2xl font-bold text-blue-900">
-                    {historyData.stats.totalEvaluations}
+                    {historyData.summary.totalWeeks}
                   </p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <p className="text-xs text-gray-600 mb-1">Total Estudiantes</p>
+                  <p className="text-xs text-gray-600 mb-1">Total Evaluaciones</p>
                   <p className="text-2xl font-bold text-green-900">
-                    {historyData.stats.totalStudents}
+                    {historyData.summary.totalEvaluations}
                   </p>
                 </div>
                 <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                  <p className="text-xs text-gray-600 mb-1">Semanas Evaluadas</p>
+                  <p className="text-xs text-gray-600 mb-1">Total Estudiantes</p>
                   <p className="text-2xl font-bold text-purple-900">
-                    {historyData.stats.totalWeeks}
-                  </p>
-                </div>
-                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                  <p className="text-xs text-gray-600 mb-1">Promedio Puntos</p>
-                  <p className="text-2xl font-bold text-orange-900">
-                    {historyData.stats.averagePoints.toFixed(2)}
+                    {historyData.summary.totalStudents}
                   </p>
                 </div>
               </div>
-              <HistoryEvaluationTable 
+
+              {/* Tabla de evaluaciones */}
+              <EvaluationTable 
                 weeks={historyData.weeks}
+                qnas={historyData.qnas}
+                months={historyData.months}
+                bimester={historyData.bimester}
                 isLoading={historyLoading}
               />
             </div>

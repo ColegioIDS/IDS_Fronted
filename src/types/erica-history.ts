@@ -13,95 +13,85 @@ export interface EricaHistoryFilters {
 
 // ==================== EVALUATION TYPES ====================
 
+export type DimensionType = 'EJECUTA' | 'RETIENE' | 'INTERPRETA' | 'CONOCE' | 'APLICA';
+
 export interface EricaHistoryEvaluation {
   id: number;
-  student: {
-    id: number;
-    givenNames: string;
-    lastNames: string;
-  };
-  section: {
-    id: number;
-    name: string;
-    grade?: {
-      name: string;
-    };
-  };
-  dimension: 'EJECUTA' | 'RETIENE' | 'INTERPRETA' | 'CONOCE' | 'APLICA';
-  state: 'E' | 'B' | 'P' | 'C' | 'N';
-  points: number;
-  notes: string | null;
-  evaluatedBy: {
-    id: number;
-    givenNames: string;
-    lastNames: string;
-  };
-  course: {
-    id: number;
-    name: string;
-    code: string;
-  };
-  bimester: {
-    id: number;
-    name: string;
-    number: number;
-  };
-  evaluatedAt: string;
-  createdAt: string;
-  updatedAt: string;
+  studentId: number;
+  studentName: string;
+  dimension: DimensionType;
+  state: string; // E | B | P | C | N
+  score: number;
+  observation?: string | null;
+  evaluationDate: string;
+  teacherId?: number;
+  teacherName?: string;
 }
 
-// ==================== TOPIC TYPES ====================
+// ==================== DIMENSION SCORES ====================
 
-export interface EricaHistoryTopic {
-  id: number;
-  title: string;
-  weekTheme: string;
-  description?: string;
+export interface DimensionScores {
+  ejecuta?: number;
+  retiene?: number;
+  interpreta?: number;
+  conoce?: number;
+  aplica?: number;
+  average: number;
 }
 
-// ==================== ACADEMIC WEEK TYPES ====================
+// ==================== STUDENT EVALUATION DATA ====================
 
-export interface EricaHistoryAcademicWeek {
-  id: number;
-  number: number;
-  startDate: string;
-  endDate: string;
+export interface StudentPeriodData {
+  studentId: number;
+  studentName: string;
+  totalScore: number;
+  averageScore: number;
+  evaluationCount?: number;
+  dimensions?: DimensionScores;
+  evaluations?: EricaHistoryEvaluation[];
 }
 
-// ==================== WEEK DATA TYPES ====================
-
-export interface EricaHistoryWeekData {
-  academicWeek: EricaHistoryAcademicWeek;
-  topic: EricaHistoryTopic;
+export interface StudentWeekData extends StudentPeriodData {
   evaluations: EricaHistoryEvaluation[];
 }
 
-// ==================== STATISTICS TYPES ====================
+// ==================== PERIOD TYPES ====================
 
-export interface EricaHistoryDimensionStats {
-  EJECUTA: number;
-  RETIENE: number;
-  INTERPRETA: number;
-  CONOCE: number;
-  APLICA: number;
+export interface EricaHistoryWeekData {
+  weekId: number;
+  weekNumber: number;
+  weekTheme: string;
+  startDate: string;
+  endDate: string;
+  students: StudentWeekData[];
 }
 
-export interface EricaHistoryStateStats {
-  E: number;
-  B: number;
-  P: number;
-  C: number;
-  N: number;
+export interface QnaData {
+  qnaId: string;
+  qnaNumber: number;
+  weeks: number[];
+  students: Array<{
+    studentId: number;
+    studentName: string;
+    ejecuta: number;
+    retiene: number;
+    interpreta: number;
+    conoce: number;
+    aplica: number;
+    average: number;
+  }>;
 }
 
-export interface EricaHistoryStats {
-  totalEvaluations: number;
-  totalStudents: number;
-  totalWeeks: number;
-  averagePoints: number;
-  byDimension: EricaHistoryDimensionStats;
-  byState: EricaHistoryStateStats;
+export interface MonthData {
+  monthId: string;
+  monthNumber: number;
+  qnas: string[];
+  students: StudentPeriodData[];
+}
+
+export interface BimesterData {
+  months: string[];
+  students: StudentPeriodData[];
 }
 
 // ==================== RESPONSE TYPES ====================
@@ -109,13 +99,26 @@ export interface EricaHistoryStats {
 export interface EricaHistoryFilterResponse {
   filters: EricaHistoryFilters;
   weeks: EricaHistoryWeekData[];
-  stats: EricaHistoryStats;
+  qnas: QnaData[];
+  months: MonthData[];
+  bimester: BimesterData;
+  summary: EricaHistorySummary;
 }
 
-export interface EricaHistoryReport {
-  success: boolean;
-  message: string;
-  data: EricaHistoryFilterResponse;
+// ==================== SUMMARY TYPES ====================
+
+export interface EricaHistorySummary {
+  totalWeeks: number;
+  totalEvaluations: number;
+  totalStudents: number;
+}
+
+// ==================== RESPONSE TYPES ====================
+
+export interface EricaHistoryFilterResponse {
+  filters: EricaHistoryFilters;
+  weeks: EricaHistoryWeekData[];
+  summary: EricaHistorySummary;
 }
 
 // ==================== BIMESTRE COMPLETO TYPES ====================
@@ -215,7 +218,8 @@ export interface CascadeOption {
 }
 
 export interface CascadeResponse {
-  cycles?: CascadeOption[];
+  cycle?: CascadeOption; // Singular (como viene del endpoint)
+  cycles?: CascadeOption[]; // Array (normalizado en el hook)
   bimesters: CascadeOption[];
   academicWeeks: CascadeOption[];
   grades: CascadeOption[];

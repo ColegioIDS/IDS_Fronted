@@ -32,20 +32,52 @@ const flattenGradesSections = (gradesSections: Record<string, any>): CascadeSect
   return sections;
 };
 
+// Helper: Extraer cursos de los courseAssignments de todas las secciones
+const flattenCourses = (sections: CascadeSection[]): CascadeCourse[] => {
+  const coursesMap = new Map<number, CascadeCourse>();
+  
+  sections.forEach((section: any) => {
+    if (section.courseAssignments && Array.isArray(section.courseAssignments)) {
+      section.courseAssignments.forEach((assignment: any) => {
+        if (assignment.course && !coursesMap.has(assignment.course.id)) {
+          coursesMap.set(assignment.course.id, {
+            id: assignment.course.id,
+            name: assignment.course.name,
+            code: assignment.course.code,
+            area: assignment.course.area,
+            color: assignment.course.color,
+            isActive: assignment.course.isActive,
+          });
+        }
+      });
+    }
+  });
+  
+  return Array.from(coursesMap.values());
+};
+
 // Helper: Normalizar el formato de respuesta del endpoint
 const normalizeCascadeData = (data: any): CascadeResponse => {
+  // Primero extraer secciones
+  const sections = data.sections || flattenGradesSections(data.gradesSections || {});
+  
+  // Luego extraer cursos de las secciones
+  const courses = data.courses || flattenCourses(sections);
+  
   return {
     ...data,
+    // Si viene cycle singular, convertir a array cycles
+    cycles: data.cycles || (data.cycle ? [data.cycle] : []),
     // Si viene activeBimester, convertir a array bimesters
     bimesters: data.bimesters || (data.activeBimester ? [data.activeBimester] : []),
     // Si viene weeks, renombrar a academicWeeks
     academicWeeks: data.academicWeeks || data.weeks || [],
     // Si viene gradesSections, convertir a array sections
-    sections: data.sections || flattenGradesSections(data.gradesSections || {}),
+    sections: sections,
     // Guardar grades
     grades: data.grades || [],
-    // Guardar courses
-    courses: data.courses || [],
+    // Extraer cursos de los courseAssignments
+    courses: courses,
   };
 };
 
@@ -209,6 +241,17 @@ export function useEricaHistoryCascade(): UseEricaHistoryCascadeReturn {
     });
   }, []);
 
+  // Auto-seleccionar el bimestre activo si existe
+  useEffect(() => {
+    if (state.cascadeData?.bimesters && state.cascadeData.bimesters.length > 0 && !selected.bimester) {
+      // Buscar bimestre activo
+      const activeBimester = state.cascadeData.bimesters.find((b: any) => b.isActive === true);
+      if (activeBimester) {
+        selectBimester(activeBimester as CascadeBimester);
+      }
+    }
+  }, [state.cascadeData?.bimesters, selected.bimester, selectBimester]);
+
   const selectWeek = useCallback((week: CascadeWeek | null) => {
     setSelected(prev => ({
       ...prev,
@@ -269,9 +312,28 @@ export function useEricaHistoryCascade(): UseEricaHistoryCascadeReturn {
   }, [selected.grade, state.cascadeData]);
 
   const getCourses = useCallback((): CascadeCourse[] => {
-    if (!selected.section || !state.cascadeData?.courses) return [];
-    // Filtrar cursos que pertenecen a la sección seleccionada
-    return state.cascadeData.courses.filter((course: any) => course.sectionId === selected.section!.id) as CascadeCourse[];
+    if (!selected.section) return [];
+    
+    // Obtener la sección seleccionada de las secciones del estado
+    const section = state.cascadeData?.sections?.find((s: any) => s.id === selected.section!.id);
+    
+    if (!section || !section.courseAssignments || !Array.isArray(section.courseAssignments)) {
+      return [];
+    }
+    
+    // Extraer cursos de los courseAssignments de la sección
+    const courses = section.courseAssignments
+      .filter((assignment: any) => assignment.course && assignment.isActive !== false)
+      .map((assignment: any) => ({
+        id: assignment.course.id,
+        name: assignment.course.name,
+        code: assignment.course.code,
+        area: assignment.course.area,
+        color: assignment.course.color,
+        isActive: assignment.course.isActive,
+      }));
+    
+    return courses as CascadeCourse[];
   }, [selected.section, state.cascadeData]);
 
   const isSelectionComplete = Boolean(

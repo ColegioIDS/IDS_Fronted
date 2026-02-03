@@ -10,6 +10,7 @@ import { CalendarPlus, GraduationCap, CalendarCheck, ClipboardList, CalendarChec
 import { ProtectedNavItem } from '@/components/navigation/ProtectedNavItem';
 import { ERICA_TOPICS_PERMISSIONS } from '@/constants/erica-topics.permissions';
 import { ERICA_COLORS_PERMISSIONS } from '@/constants/erica-colors.permissions';
+import { ERICA_HISTORY_PERMISSIONS } from '@/constants/modules-permissions/erica-history/erica-history.permissions';
 import { ATTENDANCE_PERMISSIONS } from '@/constants/modules-permissions/attendance';
 import { ATTENDANCE_CONFIG_PERMISSIONS } from '@/constants/modules-permissions/attendance-config';
 import { ATTENDANCE_STATUS_PERMISSIONS } from '@/constants/modules-permissions/attendance-status';
@@ -313,8 +314,10 @@ const navItems: NavItem[] = [
     requiredAnyPermissions: [
       ERICA_TOPICS_PERMISSIONS.READ,
       ERICA_COLORS_PERMISSIONS.READ,
+      ERICA_HISTORY_PERMISSIONS.READ,
     ],
     subItems: [
+      
       {
         name: "Temas ERICA",
         path: "/erica-topics",
@@ -328,7 +331,12 @@ const navItems: NavItem[] = [
       {
         name: "Evaluaciones",
         path: "/erica-evaluations",
-      }
+      },
+      {
+        name: "Historial ERICA",
+        path: "/erica-history",
+        requiredPermission: ERICA_HISTORY_PERMISSIONS.READ
+      },
     ]
   },
   {

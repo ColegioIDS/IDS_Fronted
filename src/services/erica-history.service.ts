@@ -4,8 +4,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '@/config/api';
 import { 
   EricaHistoryFilters, 
-  EricaHistoryFilterResponse, 
-  EricaHistoryReport,
+  EricaHistoryFilterResponse,
   BimesterCompleteResponse,
   BimesterCompleteReport,
   CascadeResponse,
@@ -63,10 +62,10 @@ export const getCascadeData = async (includeInactive = false): Promise<CascadeRe
 
 /**
  * Obtener evaluaciones filtradas por diversos criterios
- * Las evaluaciones se agrupan por semana académica con estadísticas completas
+ * Nuevo endpoint que devuelve evaluaciones agrupadas por semana
  *
- * @param filters - Filtros opcionales (bimesterId, courseId, sectionId, weekId, teacherId)
- * @returns Evaluaciones agrupadas por semana con estadísticas
+ * @param filters - Filtros (bimesterId, courseId, sectionId, gradeId, weekId)
+ * @returns Evaluaciones agrupadas por semana con resumen
  */
 export const getEvaluationsByFilters = async (
   filters: EricaHistoryFilters
@@ -74,21 +73,20 @@ export const getEvaluationsByFilters = async (
   try {
     const params = new URLSearchParams();
 
-    // Mapear los IDs correctamente
+    // Mapear los filtros
     if (filters.bimesterId) params.append('bimesterId', filters.bimesterId.toString());
     if (filters.courseId) params.append('courseId', filters.courseId.toString());
     if (filters.sectionId) params.append('sectionId', filters.sectionId.toString());
-    if (filters.weekId) params.append('weekId', filters.weekId.toString());
     if (filters.gradeId) params.append('gradeId', filters.gradeId.toString());
-    if (filters.teacherId) params.append('teacherId', filters.teacherId.toString());
+    if (filters.weekId) params.append('weekId', filters.weekId.toString());
 
     const queryString = params.toString();
-    const url = `/api/erica-evaluations/reports/by-filters${queryString ? `?${queryString}` : ''}`;
+    const url = `/api/erica-history/evaluations${queryString ? `?${queryString}` : ''}`;
 
-    const { data } = await apiClient.get<EricaHistoryReport>(url);
+    const { data } = await apiClient.get<{ success: boolean; data: EricaHistoryFilterResponse }>(url);
 
     if (!data.success) {
-      throw new Error(data.message || 'Error al obtener evaluaciones');
+      throw new Error('Error al obtener evaluaciones');
     }
 
     return data.data;
@@ -127,10 +125,75 @@ export const getBimesterComplete = async (
   }
 };
 
+// ==================== COLOR ENDPOINTS ====================
+
+/**
+ * Obtener colores para dimensiones ERICA (E, R, I, C, A)
+ * Endpoint: GET /api/erica-history/dimension-colors
+ *
+ * @returns Array de objetos con información de colores para cada dimensión
+ */
+export const getDimensionColors = async (): Promise<Array<{
+  id: number;
+  dimension: string;
+  name: string;
+  description: string;
+  hexColor: string;
+  isActive: boolean;
+}>> => {
+  try {
+    const { data } = await apiClient.get<ApiResponse<any>>(
+      `/api/erica-history/dimension-colors`
+    );
+
+    if (!data.success) {
+      throw new Error(data.message || 'Error al obtener colores de dimensiones');
+    }
+
+    return data.data.data || [];
+  } catch (error) {
+    handleApiError(error, 'Error al obtener colores de dimensiones');
+    throw error;
+  }
+};
+
+/**
+ * Obtener colores para estados de evaluación (E, B, P, C, N)
+ * Endpoint: GET /api/erica-history/state-colors
+ *
+ * @returns Array de objetos con información de colores para cada estado
+ */
+export const getStateColors = async (): Promise<Array<{
+  id: number;
+  state: string;
+  name: string;
+  description: string;
+  hexColor: string;
+  points: number;
+  isActive: boolean;
+}>> => {
+  try {
+    const { data } = await apiClient.get<ApiResponse<any>>(
+      `/api/erica-history/state-colors`
+    );
+
+    if (!data.success) {
+      throw new Error(data.message || 'Error al obtener colores de estados');
+    }
+
+    return data.data.data || [];
+  } catch (error) {
+    handleApiError(error, 'Error al obtener colores de estados');
+    throw error;
+  }
+};
+
 // ==================== EXPORT SERVICE ====================
 
 export const ericaHistoryService = {
   getCascadeData,
   getEvaluationsByFilters,
   getBimesterComplete,
+  getDimensionColors,
+  getStateColors,
 };
