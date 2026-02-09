@@ -289,7 +289,16 @@ const navItems: NavItem[] = [
         path: "/attendance-reports",
         requiredPermission: ATTENDANCE_PERMISSIONS.READ
       },
-      
+      {
+        name: "Asistencia Planta",
+        path: "/attendance-plant",
+        requiredPermission: { module: 'attendance-plant', action: 'read' }
+      },
+      {
+        name: "Historial Asistencia Planta",
+        path: "/attendance-plant-history",
+        requiredPermission: { module: 'attendance-plant', action: 'read' }
+      },
     ]
   },
   {
