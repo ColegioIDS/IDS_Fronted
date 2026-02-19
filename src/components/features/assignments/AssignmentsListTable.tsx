@@ -72,6 +72,7 @@ interface Assignment {
 interface AssignmentsListTableProps {
   courseId?: number;
   bimesterId?: number;
+  gradeId?: number;
   sectionId?: number;
   onRefreshReady?: (refetch: () => Promise<void>) => void;
 }
@@ -79,12 +80,15 @@ interface AssignmentsListTableProps {
 export const AssignmentsListTable: FC<AssignmentsListTableProps> = ({
   courseId,
   bimesterId,
+  gradeId,
   sectionId,
   onRefreshReady,
 }) => {
   const { assignments, loading, error, refetch } = useAssignmentsList({
     courseId,
     bimesterId,
+    gradeId,
+    sectionId,
     limit: 100,
     enabled: !!courseId && !!bimesterId,
   });

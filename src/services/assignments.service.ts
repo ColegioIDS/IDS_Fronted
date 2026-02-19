@@ -85,11 +85,13 @@ export const assignmentsService = {
 
   /**
    * Obtiene la lista de tareas con filtros opcionales
-   * GET /api/assignments?courseId=5&bimesterId=2&page=1&limit=10
+   * GET /api/assignments?courseId=5&bimesterId=2&gradeId=1&sectionId=10&page=1&limit=10
    */
   async listAssignments(filters?: {
     courseId?: number;
     bimesterId?: number;
+    gradeId?: number;
+    sectionId?: number;
     page?: number;
     limit?: number;
   }): Promise<PaginatedResponse<AssignmentResponse>> {

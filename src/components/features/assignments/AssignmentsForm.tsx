@@ -45,6 +45,8 @@ export const AssignmentsForm: FC<AssignmentsFormProps> = ({ onSuccess }) => {
   const { totalScore, remainingPoints } = useAssignmentsList({
     courseId: selectedData?.courseId,
     bimesterId: selectedData?.bimesterId,
+    gradeId: selectedData?.gradeId,
+    sectionId: selectedData?.sectionId,
     limit: 100,
     enabled: !!selectedData,
   });
@@ -166,6 +168,7 @@ export const AssignmentsForm: FC<AssignmentsFormProps> = ({ onSuccess }) => {
               <AssignmentsListTable
                 courseId={selectedData.courseId}
                 bimesterId={selectedData.bimesterId}
+                gradeId={selectedData.gradeId}
                 sectionId={selectedData.sectionId}
               />
             </div>

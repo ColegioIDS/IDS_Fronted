@@ -52,6 +52,8 @@ export function AssignmentsPageContent() {
   const { totalScore, remainingPoints, refetch } = useAssignmentsList({
     courseId: selectedData?.courseId,
     bimesterId: selectedData?.bimesterId,
+    gradeId: selectedData?.gradeId,
+    sectionId: selectedData?.sectionId,
     limit: 100,
     enabled: !!selectedData,
   });
@@ -215,6 +217,7 @@ export function AssignmentsPageContent() {
               <AssignmentsListTable
                 courseId={selectedData.courseId}
                 bimesterId={selectedData.bimesterId}
+                gradeId={selectedData.gradeId}
                 sectionId={selectedData.sectionId}
                 onRefreshReady={handleRefreshReady}
               />

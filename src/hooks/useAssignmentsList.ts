@@ -34,6 +34,8 @@ interface Assignment {
 interface UseAssignmentsListProps {
   courseId?: number;
   bimesterId?: number;
+  gradeId?: number;
+  sectionId?: number;
   limit?: number;
   enabled?: boolean; // Para desactivar la llamada si es necesario
 }
@@ -50,6 +52,8 @@ interface UseAssignmentsListReturn {
 export function useAssignmentsList({
   courseId,
   bimesterId,
+  gradeId,
+  sectionId,
   limit = 100,
   enabled = true,
 }: UseAssignmentsListProps): UseAssignmentsListReturn {
@@ -74,6 +78,8 @@ export function useAssignmentsList({
       const response = await assignmentsService.listAssignments({
         courseId,
         bimesterId,
+        gradeId,
+        sectionId,
         limit,
       });
 
@@ -102,7 +108,7 @@ export function useAssignmentsList({
     } finally {
       setLoading(false);
     }
-  }, [courseId, bimesterId, limit, enabled]);
+  }, [courseId, bimesterId, gradeId, sectionId, limit, enabled]);
 
   // Cargar tareas cuando cambian los parámetros
   useEffect(() => {
