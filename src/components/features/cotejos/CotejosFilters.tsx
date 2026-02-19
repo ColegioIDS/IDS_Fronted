@@ -118,25 +118,25 @@ export const CotejosFilters = ({
 
   return (
     <div className="space-y-2">
-      {/* Contenedor principal con estilo mejorado */}
-      <div className="grid grid-cols-3 gap-5 p-6 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+      {/* Contenedor principal con estilo mejorado y responsivo */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-5 p-4 md:p-5 lg:p-6 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm hover:shadow-md transition-shadow">
         {/* Grado */}
         <div className="space-y-3 group">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors">
+            <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors flex-shrink-0">
               <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Grado</label>
+            <div className="min-w-0">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Grado</label>
               {filters.gradeId && activeGrades.find(g => g.id === filters.gradeId) && (
-                <p className="text-xs text-slate-400 dark:text-slate-500">
+                <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
                   {activeGrades.find(g => g.id === filters.gradeId)?.name}
                 </p>
               )}
             </div>
           </div>
           <Select value={filters.gradeId?.toString() ?? ''} onValueChange={handleGradeChange}>
-            <SelectTrigger className="h-11 border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:border-blue-400 dark:hover:border-blue-600 focus:border-blue-500 dark:focus:border-blue-500 transition-all rounded-lg font-medium" disabled={loading || activeGrades.length === 0}>
+            <SelectTrigger className="w-full h-11 border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:border-blue-400 dark:hover:border-blue-600 focus:border-blue-500 dark:focus:border-blue-500 transition-all rounded-lg font-medium text-sm" disabled={loading || activeGrades.length === 0}>
               <SelectValue placeholder="Selecciona un grado" />
             </SelectTrigger>
             <SelectContent>
@@ -152,20 +152,20 @@ export const CotejosFilters = ({
         {/* Sección */}
         <div className="space-y-3 group">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-purple-50 dark:bg-purple-950/30 rounded-lg group-hover:bg-purple-100 dark:group-hover:bg-purple-900/40 transition-colors">
+            <div className="p-2 bg-purple-50 dark:bg-purple-950/30 rounded-lg group-hover:bg-purple-100 dark:group-hover:bg-purple-900/40 transition-colors flex-shrink-0">
               <Layers className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sección</label>
+            <div className="min-w-0">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Sección</label>
               {filters.sectionId && filteredSections.find(s => s.id === filters.sectionId) && (
-                <p className="text-xs text-slate-400 dark:text-slate-500">
+                <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
                   {filteredSections.find(s => s.id === filters.sectionId)?.name}
                 </p>
               )}
             </div>
           </div>
           <Select value={filters.sectionId?.toString() ?? ''} onValueChange={handleSectionChange}>
-            <SelectTrigger className="h-11 border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:border-purple-400 dark:hover:border-purple-600 focus:border-purple-500 dark:focus:border-purple-500 transition-all rounded-lg font-medium disabled:opacity-50" disabled={loading || !filters.gradeId || filteredSections.length === 0}>
+            <SelectTrigger className="w-full h-11 border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:border-purple-400 dark:hover:border-purple-600 focus:border-purple-500 dark:focus:border-purple-500 transition-all rounded-lg font-medium text-sm disabled:opacity-50" disabled={loading || !filters.gradeId || filteredSections.length === 0}>
               <SelectValue placeholder="Selecciona una sección" />
             </SelectTrigger>
             <SelectContent>
@@ -179,22 +179,22 @@ export const CotejosFilters = ({
         </div>
 
         {/* Curso */}
-        <div className="space-y-3 group">
+        <div className="col-span-1 md:col-span-2 lg:col-span-1 space-y-3 group">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40 transition-colors">
+            <div className="p-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40 transition-colors flex-shrink-0">
               <BookMarked className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Curso</label>
+            <div className="min-w-0">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Curso</label>
               {filters.courseId && filteredCourses.find(ca => ca.course.id === filters.courseId) && (
-                <p className="text-xs text-slate-400 dark:text-slate-500">
+                <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
                   {filteredCourses.find(ca => ca.course.id === filters.courseId)?.course.name}
                 </p>
               )}
             </div>
           </div>
           <Select value={filters.courseId?.toString() ?? ''} onValueChange={handleCourseChange}>
-            <SelectTrigger className="h-11 border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:border-amber-400 dark:hover:border-amber-600 focus:border-amber-500 dark:focus:border-amber-500 transition-all rounded-lg font-medium disabled:opacity-50" disabled={loading || !filters.sectionId || filteredCourses.length === 0}>
+            <SelectTrigger className="w-full h-11 border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:border-amber-400 dark:hover:border-amber-600 focus:border-amber-500 dark:focus:border-amber-500 transition-all rounded-lg font-medium text-sm disabled:opacity-50" disabled={loading || !filters.sectionId || filteredCourses.length === 0}>
               <SelectValue placeholder="Selecciona un curso" />
             </SelectTrigger>
             <SelectContent>
