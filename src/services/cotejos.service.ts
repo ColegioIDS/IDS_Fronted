@@ -296,3 +296,29 @@ export const getStudentsByFilters = async (query: CotejosStudentsFiltersQuery) =
     throw extractCotejosError(error);
   }
 };
+
+// ==================== RECALCULAR COTEJO ====================
+
+/**
+ * Recalcula un cotejo individual con los valores actuales de ERICA y TAREAS
+ * PATCH /api/cotejos/:id/recalculate
+ * 
+ * Se usa cuando un cotejo está marcado como desactualizado (isUpToDate = false)
+ * Actualiza:
+ * - ericaScore: Obtiene promedio actual de EricaEvaluationAggregate
+ * - tasksScore: Recalcula desde AssignmentSubmissions
+ * - totalScore: Suma de todos los componentes
+ * - isUpToDate: true (marca como actualizado)
+ * - lastRecalculatedAt: fecha/hora actual
+ */
+export const recalculateCotejo = async (id: number): Promise<CotejoResponse> => {
+  try {
+    const response = await api.patch<{ success: boolean; data: CotejoResponse; message: string }>(
+      `${BASE_URL}/${id}/recalculate`,
+    );
+    validateApiResponse(response.data);
+    return response.data.data;
+  } catch (error) {
+    throw extractCotejosError(error);
+  }
+};

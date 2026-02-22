@@ -419,3 +419,37 @@ export const useGenerateCotejosBulk = () => {
 
   return { mutate, loading, error };
 };
+
+/**
+ * Hook para recalcular un cotejo con valores actuales de ERICA y TAREAS
+ */
+export const useRecalculateCotejo = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<ApiError | null>(null);
+
+  const mutate = useCallback(async (id: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await CotejosService.recalculateCotejo(id);
+      setLoading(false);
+      return result;
+    } catch (err) {
+      const cotejosError = extractCotejosError(err);
+      logCotejosError(
+        cotejosError.errorCode,
+        `useRecalculateCotejo(${id})`,
+        cotejosError.detail,
+      );
+      setError({
+        message: cotejosError.message,
+        code: cotejosError.errorCode,
+        detail: cotejosError.detail,
+      });
+      setLoading(false);
+      throw cotejosError;
+    }
+  }, []);
+
+  return { mutate, loading, error };
+};

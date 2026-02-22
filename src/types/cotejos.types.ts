@@ -22,6 +22,8 @@ export interface Cotejo {
   totalScore: number | null;
   status: CotejoStatus;
   feedback?: string;
+  isUpToDate?: boolean;                    // ⭐ NUEVO: ¿Está actualizado?
+  lastRecalculatedAt?: string | null;      // ⭐ NUEVO: Última fecha de recalculation
   createdAt: Date;
   updatedAt: Date;
 }

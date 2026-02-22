@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { AlertCircle, Loader2, Plus, Zap } from 'lucide-react';
+import { AlertCircle, Loader2, Plus, Zap, RefreshCw } from 'lucide-react';
 import {
   Alert,
   AlertDescription,
@@ -127,6 +127,16 @@ export const CotejosContent = () => {
           </p>
         </div>
         <div className="flex gap-3">
+          <Button
+            onClick={() => refetchCotejos()}
+            disabled={cotejosLoading}
+            variant="outline"
+            size="sm"
+            title="Actualizar tabla de cotejos"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${cotejosLoading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </Button>
           <Button
             onClick={() => setIsCreateDialogOpen(true)}
             disabled={!isFiltersComplete || cascadeLoading}

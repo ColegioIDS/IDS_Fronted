@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Loader2, Eye, EyeOff, BookOpen, Target, BarChart3, Brain, Award } from 'lucide-react';
+import { Loader2, Eye, EyeOff, BookOpen, Target, BarChart3, Brain, Award, AlertCircle, CheckCircle2 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -199,6 +199,7 @@ export const CotejosTable = ({
                 </div>
               </TableHead>
               <TableHead className="text-center font-semibold text-slate-700 dark:text-slate-300">Estado</TableHead>
+              <TableHead className="text-center font-semibold text-slate-700 dark:text-slate-300">Actualización</TableHead>
               <TableHead className="text-right font-semibold text-slate-700 dark:text-slate-300">Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -297,6 +298,36 @@ export const CotejosTable = ({
                   <Badge className={getStatusColor(cotejo.status)}>
                     {getStatusLabel(cotejo.status)}
                   </Badge>
+                </TableCell>
+
+                {/* Estado de Actualización */}
+                <TableCell className="text-center">
+                  {cotejo.isUpToDate === false ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800">
+                        Desactualizado
+                      </Badge>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      <Badge variant="outline" className="bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
+                        Actualizado
+                      </Badge>
+                    </div>
+                  )}
+                  {cotejo.lastRecalculatedAt && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      {new Date(cotejo.lastRecalculatedAt).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  )}
                 </TableCell>
 
                 {/* Acciones */}
