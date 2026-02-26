@@ -206,7 +206,7 @@ export default function BimestralReport({ data }: BimestralReportProps) {
       },
       background: 'transparent',
     },
-    colors: statusColors.map((color) => hexToRgba(color, 0.8)),
+    colors: statusColors.map((color: string) => hexToRgba(color, 0.8)),
     labels: statusChartData.labels,
     legend: {
       position: 'bottom',
