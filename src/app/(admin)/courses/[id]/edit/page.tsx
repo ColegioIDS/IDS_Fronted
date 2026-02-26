@@ -23,11 +23,15 @@ export default function EditCoursePage({ params }: EditCoursePageProps) {
 
   useEffect(() => {
     const resolveParams = async () => {
-      const { id } = await params;
-      setCourseId(parseInt(id));
+      try {
+        const { id } = await params;
+        setCourseId(parseInt(id));
+      } catch (error) {
+        console.error('Error resolving params:', error);
+      }
     };
     resolveParams();
-  }, [params]);
+  }, []);
 
   useEffect(() => {
     if (courseId === null) return;
