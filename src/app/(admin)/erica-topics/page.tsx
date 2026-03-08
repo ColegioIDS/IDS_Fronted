@@ -92,7 +92,7 @@ export default function EricaTopicsPage() {
   const [filterWeekId, setFilterWeekId] = useState<string>('');
   const [filterGradeId, setFilterGradeId] = useState<string>('');
   const [filterSectionId, setFilterSectionId] = useState<string>('');
-  const [filterTeacherId, setFilterTeacherId] = useState<string>('');
+  const [filterCourseId, setFilterCourseId] = useState<string>('');
   const [loadingStats, setLoadingStats] = useState(false);
 
   // Estados para diálogos
@@ -176,11 +176,11 @@ export default function EricaTopicsPage() {
 
     return sortedEntries;
   }, [filteredAndSortedTopics, cascadeData?.weeks]);
-  const { sections, teachers } = useMemo(() => {
-    if (!cascadeData) return { sections: [], teachers: [] };
+  const { sections, courses } = useMemo(() => {
+    if (!cascadeData) return { sections: [], courses: [] };
     
     const sectionsMap = new Map<number, { id: number; name: string; gradeId: number; gradeName: string }>();
-    const teachersMap = new Map<number, { id: number; name: string }>();
+    const coursesMap = new Map<number, { id: number; name: string; code: string }>();
     
     Object.entries(cascadeData.gradesSections).forEach(([gradeId, sectionsList]) => {
       const grade = cascadeData.grades.find(g => g.id === parseInt(gradeId));
@@ -195,10 +195,11 @@ export default function EricaTopicsPage() {
           
           if (section.courseAssignments && Array.isArray(section.courseAssignments)) {
             section.courseAssignments.forEach((ca: any) => {
-              if (ca.teacher) {
-                teachersMap.set(ca.teacher.id, {
-                  id: ca.teacher.id,
-                  name: `${ca.teacher.givenNames} ${ca.teacher.lastNames}`,
+              if (ca.course) {
+                coursesMap.set(ca.course.id, {
+                  id: ca.course.id,
+                  name: ca.course.name,
+                  code: ca.course.code || '',
                 });
               }
             });
@@ -209,7 +210,7 @@ export default function EricaTopicsPage() {
     
     return {
       sections: Array.from(sectionsMap.values()),
-      teachers: Array.from(teachersMap.values()),
+      courses: Array.from(coursesMap.values()),
     };
   }, [cascadeData]);
 
@@ -225,19 +226,9 @@ export default function EricaTopicsPage() {
     if (filterWeekId) count++;
     if (filterGradeId) count++;
     if (filterSectionId) count++;
-    if (filterTeacherId) count++;
+    if (filterCourseId) count++;
     return count;
-  }, [filterWeekId, filterGradeId, filterSectionId, filterTeacherId]);
-
-  // Cargar estadísticas cuando se selecciona un docente
-  useEffect(() => {
-    if (filterTeacherId) {
-      setLoadingStats(true);
-      fetchTeacherStats(parseInt(filterTeacherId))
-        .catch(() => {})
-        .finally(() => setLoadingStats(false));
-    }
-  }, [filterTeacherId, fetchTeacherStats]);
+  }, [filterWeekId, filterGradeId, filterSectionId, filterCourseId]);
 
   // Efecto principal para cargar temas con filtros
   useEffect(() => {
@@ -248,16 +239,16 @@ export default function EricaTopicsPage() {
       search: search || undefined,
       sectionId: filterSectionId ? parseInt(filterSectionId) : undefined,
       academicWeekId: filterWeekId ? parseInt(filterWeekId) : undefined,
-      teacherId: filterTeacherId ? parseInt(filterTeacherId) : undefined,
+      courseId: filterCourseId ? parseInt(filterCourseId) : undefined,
     });
-  }, [page, search, filterWeekId, filterSectionId, filterTeacherId, fetchTopics]);
+  }, [page, search, filterWeekId, filterSectionId, filterCourseId, fetchTopics]);
 
   // Limpiar filtros
   const clearFilters = () => {
     setFilterWeekId('');
     setFilterGradeId('');
     setFilterSectionId('');
-    setFilterTeacherId('');
+    setFilterCourseId('');
     setPage(1);
   };
 
@@ -574,21 +565,21 @@ export default function EricaTopicsPage() {
                       </Select>
                     </div>
 
-                    {/* Filtro por Docente */}
+                    {/* Filtro por Curso */}
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                        <User className="w-4 h-4 text-teal-600" />
-                        Docente
+                        <BookOpen className="w-4 h-4 text-teal-600" />
+                        Curso
                       </label>
-                      <Select value={filterTeacherId || 'all'} onValueChange={(v) => { setFilterTeacherId(v === 'all' ? '' : v); setPage(1); }}>
+                      <Select value={filterCourseId || 'all'} onValueChange={(v) => { setFilterCourseId(v === 'all' ? '' : v); setPage(1); }}>
                         <SelectTrigger className="w-full h-10 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                          <SelectValue placeholder="Todos los docentes" />
+                          <SelectValue placeholder="Todos los cursos" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Todos los docentes</SelectItem>
-                          {teachers.map((teacher) => (
-                            <SelectItem key={teacher.id} value={teacher.id.toString()}>
-                              {teacher.name}
+                          <SelectItem value="all">Todos los cursos</SelectItem>
+                          {courses.map((course) => (
+                            <SelectItem key={course.id} value={course.id.toString()}>
+                              {course.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -615,9 +606,9 @@ export default function EricaTopicsPage() {
             </CardContent>
           </Card>
 
-          {/* Teacher Statistics Card */}
+          {/* Course Statistics Card */}
           <ProtectedContent {...ERICA_TOPICS_PERMISSIONS.READ_STATS} hideOnNoPermission>
-            {filterTeacherId && stats && (
+            {filterCourseId && stats && (
               <Card className="mb-6 border-slate-200 dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-slate-950/50">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-6">
@@ -626,7 +617,7 @@ export default function EricaTopicsPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-900 dark:text-white">
-                        Estadísticas del Docente
+                        Estadísticas del Curso
                       </h3>
                       <p className="text-sm text-slate-500 dark:text-slate-400">
                         Resumen de progreso académico
