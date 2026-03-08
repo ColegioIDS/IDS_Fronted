@@ -31,7 +31,8 @@ import {
   ChevronsRight,
   BookOpenCheck,
   TrendingUp,
-  Target
+  Target,
+  ArrowUpDown,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -107,7 +108,74 @@ export default function EricaTopicsPage() {
   const [completeNewState, setCompleteNewState] = useState(true);
   const [completing, setCompleting] = useState(false);
 
-  // Extraer listas únicas de secciones y docentes desde cascadeData
+  // Ordenamiento y filtros rápidos
+  const [sortBy, setSortBy] = useState<'week' | 'status' | 'recent' | 'title'>('week');
+  const [quickFilter, setQuickFilter] = useState<'all' | 'pending' | 'completed' | 'thisWeek'>('all');
+
+  // Obtener fecha de hoy para comparar semanas
+  const today = new Date();
+  const currentWeekId = useMemo(() => {
+    if (!cascadeData) return null;
+    return cascadeData.weeks.find(w => {
+      const startDate = new Date(w.startDate);
+      const endDate = new Date(w.endDate);
+      return today >= startDate && today <= endDate;
+    })?.id;
+  }, [cascadeData, today]);
+
+  // Aplicar filtro rápido y ordenamiento
+  const filteredAndSortedTopics = useMemo(() => {
+    let filtered = [...topics];
+
+    // Aplicar filtro rápido
+    if (quickFilter === 'pending') {
+      filtered = filtered.filter(t => !t.isCompleted);
+    } else if (quickFilter === 'completed') {
+      filtered = filtered.filter(t => t.isCompleted);
+    } else if (quickFilter === 'thisWeek') {
+      filtered = filtered.filter(t => t.academicWeekId === currentWeekId);
+    }
+
+    // Aplicar ordenamiento
+    if (sortBy === 'status') {
+      // Pendientes primero, después completados
+      filtered.sort((a, b) => {
+        if (a.isCompleted === b.isCompleted) {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+        return a.isCompleted ? 1 : -1;
+      });
+    } else if (sortBy === 'recent') {
+      filtered.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    } else if (sortBy === 'title') {
+      filtered.sort((a, b) => a.title.localeCompare(b.title, 'es'));
+    }
+
+    return filtered;
+  }, [topics, quickFilter, sortBy, currentWeekId]);
+
+  // Agrupar temas por semana
+  const topicsByWeek = useMemo(() => {
+    const grouped = new Map<number, typeof topics>();
+    
+    filteredAndSortedTopics.forEach(topic => {
+      if (!grouped.has(topic.academicWeekId)) {
+        grouped.set(topic.academicWeekId, []);
+      }
+      grouped.get(topic.academicWeekId)!.push(topic);
+    });
+
+    // Ordenar semanas
+    const weeks = cascadeData?.weeks || [];
+    const sortedEntries = Array.from(grouped.entries()).sort((a, b) => {
+      const weekA = weeks.find(w => w.id === a[0]);
+      const weekB = weeks.find(w => w.id === b[0]);
+      if (!weekA || !weekB) return 0;
+      return weekA.number - weekB.number;
+    });
+
+    return sortedEntries;
+  }, [filteredAndSortedTopics, cascadeData?.weeks]);
   const { sections, teachers } = useMemo(() => {
     if (!cascadeData) return { sections: [], teachers: [] };
     
@@ -274,14 +342,13 @@ export default function EricaTopicsPage() {
 
   return (
     <ProtectedPage {...ERICA_TOPICS_PERMISSIONS.READ}>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <div className="min-h-screen bg-white dark:bg-slate-950">
         {/* Hero Header */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 dark:from-teal-800 dark:via-emerald-800 dark:to-cyan-800">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzBoLTJ2LTJoMnYyem0wLTRoLTJ2LTJoMnYyem0tNC00aC0ydi0yaDJ2MnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30"></div>
+        <div className="relative overflow-hidden bg-teal-600 dark:bg-teal-900">
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
+                <div className="p-3 bg-teal-700 dark:bg-teal-800 rounded-lg">
                   <BookOpenCheck className="w-8 h-8 text-white" />
                 </div>
                 <div>
@@ -298,7 +365,7 @@ export default function EricaTopicsPage() {
                 <Button
                   variant="outline"
                   onClick={() => router.back()}
-                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm"
+                  className="bg-teal-700 hover:bg-teal-800 border-teal-500 text-white"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Volver
@@ -306,7 +373,7 @@ export default function EricaTopicsPage() {
                 <ProtectedContent {...ERICA_TOPICS_PERMISSIONS.CREATE} hideOnNoPermission>
                   <Button
                     onClick={() => router.push('/erica-topics/create')}
-                    className="bg-white text-teal-700 hover:bg-teal-50 shadow-lg shadow-teal-900/20"
+                    className="bg-white text-teal-700 hover:bg-slate-100 font-medium"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Nuevo Tema
@@ -317,9 +384,9 @@ export default function EricaTopicsPage() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 -mt-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
           {/* Search and Filters Card */}
-          <Card className="mb-6 shadow-lg shadow-slate-200/50 dark:shadow-slate-950/50 border-0 bg-white dark:bg-slate-900">
+          <Card className="mb-6 shadow border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
             <CardContent className="p-4 md:p-6">
               {/* Search Row */}
               <div className="flex flex-col md:flex-row gap-4">
@@ -335,13 +402,28 @@ export default function EricaTopicsPage() {
                     className="pl-10 h-11 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500/20"
                   />
                 </div>
+
+                {/* Dropdown Ordenamiento */}
+                <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                  <SelectTrigger className="w-full md:w-48 h-11 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                    <ArrowUpDown className="w-4 h-4 mr-2" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="week">Por Semana</SelectItem>
+                    <SelectItem value="status">Pendientes Primero</SelectItem>
+                    <SelectItem value="recent">Más Recientes</SelectItem>
+                    <SelectItem value="title">Alfabético (A-Z)</SelectItem>
+                  </SelectContent>
+                </Select>
+
                 <Button
                   variant={showFilters ? "default" : "outline"}
                   onClick={() => setShowFilters(!showFilters)}
                   className={cn(
                     "gap-2 h-11 px-5 transition-all",
                     showFilters 
-                      ? "bg-teal-600 hover:bg-teal-700 text-white shadow-lg shadow-teal-600/25" 
+                      ? "bg-teal-600 hover:bg-teal-700 text-white border-teal-600" 
                       : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
                   )}
                 >
@@ -359,6 +441,65 @@ export default function EricaTopicsPage() {
                       {activeFiltersCount}
                     </Badge>
                   )}
+                </Button>
+              </div>
+
+              {/* Quick Filter Chips */}
+              <div className="mt-6 flex flex-wrap gap-2">
+                <Button
+                  variant={quickFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('all')}
+                  className={cn(
+                    "h-8 px-3 text-xs font-medium transition-all",
+                    quickFilter === 'all'
+                      ? "bg-teal-600 hover:bg-teal-700 text-white border-teal-600"
+                      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  )}
+                >
+                  Todos los temas
+                </Button>
+                <Button
+                  variant={quickFilter === 'pending' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('pending')}
+                  className={cn(
+                    "h-8 px-3 text-xs font-medium transition-all flex items-center gap-1",
+                    quickFilter === 'pending'
+                      ? "bg-orange-600 hover:bg-orange-700 text-white border-orange-600"
+                      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  )}
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  Pendientes
+                </Button>
+                <Button
+                  variant={quickFilter === 'completed' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('completed')}
+                  className={cn(
+                    "h-8 px-3 text-xs font-medium transition-all flex items-center gap-1",
+                    quickFilter === 'completed'
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
+                      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  )}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Completados
+                </Button>
+                <Button
+                  variant={quickFilter === 'thisWeek' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('thisWeek')}
+                  className={cn(
+                    "h-8 px-3 text-xs font-medium transition-all flex items-center gap-1",
+                    quickFilter === 'thisWeek'
+                      ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  )}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  Esta semana
                 </Button>
               </div>
 
@@ -477,51 +618,45 @@ export default function EricaTopicsPage() {
           {/* Teacher Statistics Card */}
           <ProtectedContent {...ERICA_TOPICS_PERMISSIONS.READ_STATS} hideOnNoPermission>
             {filterTeacherId && stats && (
-              <Card className="mb-6 overflow-hidden border-0 shadow-lg shadow-slate-200/50 dark:shadow-slate-950/50">
-                <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px]">
-                  <CardContent className="bg-white dark:bg-slate-900 p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
-                        <BarChart3 className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900 dark:text-white">
-                          Estadísticas del Docente
-                        </h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          Resumen de progreso académico
-                        </p>
-                      </div>
-                      {loadingStats && <Loader2 className="w-4 h-4 animate-spin text-indigo-600 ml-auto" />}
+              <Card className="mb-6 border-slate-200 dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-slate-950/50">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-teal-600 dark:bg-teal-700 rounded-lg">
+                      <BarChart3 className="w-5 h-5 text-white" />
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="relative overflow-hidden p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-800/50 rounded-xl group hover:shadow-md transition-all">
-                        <div className="absolute top-0 right-0 w-16 h-16 bg-slate-200/50 dark:bg-slate-700/30 rounded-full -translate-y-6 translate-x-6"></div>
-                        <BookOpen className="w-6 h-6 text-slate-500 mb-2" />
-                        <p className="text-3xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Total Temas</p>
-                      </div>
-                      <div className="relative overflow-hidden p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-xl group hover:shadow-md transition-all">
-                        <div className="absolute top-0 right-0 w-16 h-16 bg-green-200/50 dark:bg-green-800/30 rounded-full -translate-y-6 translate-x-6"></div>
-                        <CheckCircle2 className="w-6 h-6 text-green-600 mb-2" />
-                        <p className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.completed}</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Completados</p>
-                      </div>
-                      <div className="relative overflow-hidden p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-xl group hover:shadow-md transition-all">
-                        <div className="absolute top-0 right-0 w-16 h-16 bg-amber-200/50 dark:bg-amber-800/30 rounded-full -translate-y-6 translate-x-6"></div>
-                        <Clock className="w-6 h-6 text-amber-600 mb-2" />
-                        <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">{stats.pending}</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">En Progreso</p>
-                      </div>
-                      <div className="relative overflow-hidden p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl group hover:shadow-md transition-all">
-                        <div className="absolute top-0 right-0 w-16 h-16 bg-blue-200/50 dark:bg-blue-800/30 rounded-full -translate-y-6 translate-x-6"></div>
-                        <Target className="w-6 h-6 text-blue-600 mb-2" />
-                        <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{Math.round(stats.completionRate)}%</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Progreso</p>
-                      </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-900 dark:text-white">
+                        Estadísticas del Docente
+                      </h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Resumen de progreso académico
+                      </p>
                     </div>
-                  </CardContent>
-                </div>
+                    {loadingStats && <Loader2 className="w-4 h-4 animate-spin text-teal-600 ml-auto" />}
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <BookOpen className="w-5 h-5 text-slate-600 dark:text-slate-400 mb-2" />
+                      <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Total Temas</p>
+                    </div>
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mb-2" />
+                      <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.completed}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Completados</p>
+                    </div>
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <Clock className="w-5 h-5 text-orange-600 dark:text-orange-400 mb-2" />
+                      <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.pending}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">En Progreso</p>
+                    </div>
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <Target className="w-5 h-5 text-blue-600 dark:text-blue-400 mb-2" />
+                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{Math.round(stats.completionRate)}%</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Progreso</p>
+                    </div>
+                  </div>
+                </CardContent>
               </Card>
             )}
           </ProtectedContent>
@@ -557,7 +692,7 @@ export default function EricaTopicsPage() {
 
           {/* Content */}
           {loading && topics.length === 0 ? (
-            <Card className="border-0 shadow-lg shadow-slate-200/50 dark:shadow-slate-950/50">
+            <Card className="border shadow bg-white dark:bg-slate-900">
               <CardContent className="flex items-center justify-center py-20">
                 <div className="text-center">
                   <Loader2 className="w-10 h-10 animate-spin text-teal-600 mx-auto mb-4" />
@@ -565,22 +700,141 @@ export default function EricaTopicsPage() {
                 </div>
               </CardContent>
             </Card>
+          ) : filteredAndSortedTopics.length === 0 && !loading ? (
+            <Card className="border shadow bg-white dark:bg-slate-900">
+              <CardContent className="flex items-center justify-center py-20">
+                <div className="text-center">
+                  <BookOpen className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+                  <p className="text-slate-600 dark:text-slate-400 font-medium">No hay temas que mostrar</p>
+                  <p className="text-slate-500 dark:text-slate-500 text-sm mt-1">
+                    {quickFilter !== 'all' ? 'Intenta cambiar el filtro rápido' : 'Crea uno nuevo para comenzar'}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           ) : (
             <>
-              <EricaTopicsListEnhanced
-                topics={topics}
-                loading={loading}
-                cascadeData={cascadeData}
-                cascadeLoading={loadingCascade}
-                onEdit={(topic) => router.push(`/erica-topics/${topic.id}/edit`)}
-                onDelete={handleDelete}
-                onDuplicate={handleDuplicateClick}
-                onComplete={handleCompleteClick}
-              />
+              {/* Vista Agrupada por Semana */}
+              <div className="space-y-6">
+                {topicsByWeek.map(([weekId, weekTopics]) => {
+                  const week = cascadeData?.weeks.find(w => w.id === weekId);
+                  if (!week) return null;
+
+                  const isCurrentWeek = weekId === currentWeekId;
+                  const completedCount = weekTopics.filter(t => t.isCompleted).length;
+                  const completionPercent = Math.round((completedCount / weekTopics.length) * 100);
+
+                  return (
+                    <div
+                      key={weekId}
+                      className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden"
+                    >
+                      {/* Week Header */}
+                      <div
+                        className={cn(
+                          "px-6 py-4 border-b border-slate-200 dark:border-slate-700",
+                          isCurrentWeek
+                            ? "bg-blue-50 dark:bg-blue-950/20"
+                            : "bg-slate-50 dark:bg-slate-800/50"
+                        )}
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={cn(
+                                "w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm",
+                                isCurrentWeek
+                                  ? "bg-blue-600 text-white"
+                                  : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+                              )}
+                            >
+                              {week.number}
+                            </div>
+                            <div>
+                              <h3
+                                className={cn(
+                                  "font-semibold",
+                                  isCurrentWeek
+                                    ? "text-blue-900 dark:text-blue-100"
+                                    : "text-slate-900 dark:text-slate-100"
+                                )}
+                              >
+                                Semana {week.number}
+                                {isCurrentWeek && (
+                                  <span className="ml-2 text-xs font-medium px-2 py-1 rounded bg-blue-600 text-white">
+                                    ACTUAL
+                                  </span>
+                                )}
+                              </h3>
+                              <p
+                                className={cn(
+                                  "text-sm",
+                                  isCurrentWeek
+                                    ? "text-blue-700 dark:text-blue-200"
+                                    : "text-slate-500 dark:text-slate-400"
+                                )}
+                              >
+                                {new Date(week.startDate).toLocaleDateString("es-ES", {
+                                  day: "numeric",
+                                  month: "short",
+                                })}
+                                {" - "}
+                                {new Date(week.endDate).toLocaleDateString("es-ES", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                              {completedCount}/{weekTopics.length}
+                            </div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                              {completionPercent}% completado
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="mt-3 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div
+                            className={cn(
+                              "h-full transition-all duration-300",
+                              completedCount === weekTopics.length
+                                ? "bg-emerald-600"
+                                : "bg-teal-600"
+                            )}
+                            style={{ width: `${completionPercent}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Week Topics */}
+                      <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                        {weekTopics.map((topic) => (
+                          <EricaTopicsListEnhanced
+                            key={topic.id}
+                            topics={[topic]}
+                            loading={loading}
+                            cascadeData={cascadeData}
+                            cascadeLoading={loadingCascade}
+                            onEdit={(t) => router.push(`/erica-topics/${t.id}/edit`)}
+                            onDelete={handleDelete}
+                            onDuplicate={handleDuplicateClick}
+                            onComplete={handleCompleteClick}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
 
               {/* Modern Pagination */}
               {pagination.totalPages > 1 && (
-                <Card className="mt-6 border-0 shadow-lg shadow-slate-200/50 dark:shadow-slate-950/50">
+                <Card className="mt-6 shadow border bg-white dark:bg-slate-900">
                   <CardContent className="p-4">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                       {/* Page Info */}
