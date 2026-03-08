@@ -5,7 +5,6 @@ import { Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 import { useUpdateActitudinal } from '@/hooks/useCotejos';
 import { useCotejosErrorToast } from '@/hooks/useCotejosErrorToast';
 import { CotejoResponse } from '@/types/cotejos.types';
@@ -17,7 +16,7 @@ interface CotejoEditActitudinalProps {
 }
 
 /**
- * Componente para editar la puntuación actitudinal (0-20 pts)
+ * Componente para editar la puntuación actitudinal (0-10 pts)
  */
 export const CotejoEditActitudinal = ({
   cotejo,
@@ -29,15 +28,19 @@ export const CotejoEditActitudinal = ({
   const { mutate: updateActitudinal, loading, error } = useUpdateActitudinal();
   const { showError } = useCotejosErrorToast();
 
-  const handleSliderChange = (value: number[]) => {
-    setScore(value[0]);
+  const handleScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 0;
+    // Restringir entre 0 y 10
+    if (value >= 0 && value <= 10) {
+      setScore(value);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (score < 0 || score > 20) {
-      toast.error('La puntuación debe estar entre 0 y 20');
+    if (score < 0 || score > 10) {
+      toast.error('La puntuación debe estar entre 0 y 10');
       return;
     }
 
@@ -58,34 +61,38 @@ export const CotejoEditActitudinal = ({
           Componente de Comportamiento (ACTITUDINAL)
         </p>
         <p className="text-xs text-blue-800 dark:text-blue-200 mt-1">
-          Ingresa la puntuación de comportamiento y disciplina del estudiante (0-20 pts)
+          Ingresa la puntuación de comportamiento y disciplina del estudiante (0-10 pts)
         </p>
       </div>
 
-      {/* Puntuación con Slider */}
+      {/* Puntuación con Input */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <label className="text-sm font-medium">Puntuación</label>
-          <span className="text-2xl font-bold text-blue-600">{score.toFixed(2)}</span>
+          <label htmlFor="actitudinal-score" className="text-sm font-medium">Puntuación</label>
+          <span className="text-2xl font-bold text-blue-600">{score}</span>
         </div>
-        <Slider
-          value={[score]}
-          onValueChange={handleSliderChange}
+        <Input
+          id="actitudinal-score"
+          type="number"
           min={0}
-          max={20}
-          step={0.1}
+          max={10}
+          step={1}
+          value={score}
+          onChange={handleScoreChange}
+          placeholder="Ingresa un valor entre 0 y 10"
           className="w-full"
         />
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>0</span>
-          <span>Máximo: 20 pts</span>
+          <span>Mínimo: 0</span>
+          <span>Máximo: 10 pts</span>
         </div>
       </div>
 
       {/* Feedback */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">Comentarios (Opcional)</label>
+        <label htmlFor="actitudinal-feedback" className="text-sm font-medium">Comentarios (Opcional)</label>
         <Textarea
+          id="actitudinal-feedback"
           placeholder="Ej: Excelente comportamiento en clase, participa activamente, respetuoso con sus compañeros..."
           value={feedback}
           onChange={(e) => setFeedback(e.target.value)}

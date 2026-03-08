@@ -5,7 +5,6 @@ import { Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 import { useUpdateDeclarativo } from '@/hooks/useCotejos';
 import { useCotejosErrorToast } from '@/hooks/useCotejosErrorToast';
 import { CotejoResponse } from '@/types/cotejos.types';
@@ -29,8 +28,12 @@ export const CotejoEditDeclarativo = ({
   const { mutate: updateDeclarativo, loading, error } = useUpdateDeclarativo();
   const { showError } = useCotejosErrorToast();
 
-  const handleSliderChange = (value: number[]) => {
-    setScore(value[0]);
+  const handleScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 0;
+    // Restringir entre 0 y 30
+    if (value >= 0 && value <= 30) {
+      setScore(value);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -62,30 +65,34 @@ export const CotejoEditDeclarativo = ({
         </p>
       </div>
 
-      {/* Puntuación con Slider */}
+      {/* Puntuación con Input */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <label className="text-sm font-medium">Puntuación</label>
-          <span className="text-2xl font-bold text-purple-600">{score.toFixed(2)}</span>
+          <label htmlFor="declarativo-score" className="text-sm font-medium">Puntuación</label>
+          <span className="text-2xl font-bold text-purple-600">{score}</span>
         </div>
-        <Slider
-          value={[score]}
-          onValueChange={handleSliderChange}
+        <Input
+          id="declarativo-score"
+          type="number"
           min={0}
           max={30}
-          step={0.1}
+          step={1}
+          value={score}
+          onChange={handleScoreChange}
+          placeholder="Ingresa un valor entre 0 y 30"
           className="w-full"
         />
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>0</span>
+          <span>Mínimo: 0</span>
           <span>Máximo: 30 pts</span>
         </div>
       </div>
 
       {/* Feedback */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">Comentarios (Opcional)</label>
+        <label htmlFor="declarativo-feedback" className="text-sm font-medium">Comentarios (Opcional)</label>
         <Textarea
+          id="declarativo-feedback"
           placeholder="Ej: Excelente dominio de conceptos, resuelve problemas complejos, demuestra creatividad en aplicaciones..."
           value={feedback}
           onChange={(e) => setFeedback(e.target.value)}
