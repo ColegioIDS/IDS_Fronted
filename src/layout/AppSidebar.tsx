@@ -163,7 +163,8 @@ const navItems: NavItem[] = [
     requiredAnyPermissions: [
       { module: 'grade', action: 'read' },
       { module: 'section', action: 'read' },
-      { module: 'grade-cycle', action: 'read' }
+      { module: 'grade-cycle', action: 'read' },
+      { module: 'grade-range', action: 'read' }
     ],
     subItems: [
       {
@@ -176,6 +177,9 @@ const navItems: NavItem[] = [
       },
       { name: "Asignacion Grados - Ciclos", path: "/grade-cycles",
         requiredPermission: { module: 'grade-cycle', action: 'read' }
+      },
+      { name: "Rangos de Calificaciones", path: "/grade-ranges",
+        requiredPermission: { module: 'grade-range', action: 'read' }
       },
 
     ]

@@ -19,6 +19,7 @@ export { ROLE_PERMISSIONS } from './role/role.permissions';
 export { SCHOOL_CYCLE_PERMISSIONS } from './school-cycle/school-cycle.permissions';
 export { BIMESTER_PERMISSIONS } from './bimester/bimester.permissions';
 export { GRADE_PERMISSIONS } from './grade/grade.permissions';
+export { GRADE_RANGE_PERMISSIONS } from './grade-range/grade-range.permissions';
 export { GRADE_CYCLE_PERMISSIONS } from './grade-cycle/grade-cycle.permissions';
 export { SECTION_PERMISSIONS } from './section/section.permissions';
 export { HOLIDAY_PERMISSIONS } from './holiday/holiday.permissions';
@@ -56,6 +57,7 @@ export const MODULES_PERMISSIONS = {
   SCHOOL_CYCLE: require('./school-cycle/school-cycle.permissions').SCHOOL_CYCLE_PERMISSIONS,
   BIMESTER: require('./bimester/bimester.permissions').BIMESTER_PERMISSIONS,
   GRADE: require('./grade/grade.permissions').GRADE_PERMISSIONS,
+  GRADE_RANGE: require('./grade-range/grade-range.permissions').GRADE_RANGE_PERMISSIONS,
   GRADE_CYCLE: require('./grade-cycle/grade-cycle.permissions').GRADE_CYCLE_PERMISSIONS,
   SECTION: require('./section/section.permissions').SECTION_PERMISSIONS,
   HOLIDAY: require('./holiday/holiday.permissions').HOLIDAY_PERMISSIONS,
