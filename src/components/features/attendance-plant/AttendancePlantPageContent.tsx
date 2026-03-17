@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { AttendancePlantCascadeSelector } from './AttendancePlantCascadeSelector';
 import { SectionStudentsTable } from './SectionStudentsTable';
+import { useAttendancePlantCascadeData } from '@/hooks/data/attendance-plant';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -25,9 +26,12 @@ interface Selection {
 
 export function AttendancePlantPageContent() {
   const [selection, setSelection] = useState<Selection>({});
-  const [cycleId] = useState(3); // Ciclo 2026 (obtenido del cascade data)
-  const [bimesterId] = useState(6); // Primer bimestre (obtenido del cascade data)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  
+  const { data } = useAttendancePlantCascadeData();
+  
+  const cycleId = data?.cycle?.id;
+  const bimesterId = data?.activeBimester?.id;
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -84,7 +88,7 @@ export function AttendancePlantPageContent() {
       )}
 
       {/* TABLA DE ESTUDIANTES - Se muestra solo si hay grado y sección seleccionados */}
-      {selection.gradeId && selection.sectionId && (
+      {selection.gradeId && selection.sectionId && cycleId && bimesterId && (
         <SectionStudentsTable
           date={dateString}
           cycleId={cycleId}
