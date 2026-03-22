@@ -7,12 +7,37 @@ import { toast } from 'sonner';
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:5000';
 
 /**
+ * Serializa parámetros con soporte para arrays como parámetros repetidos
+ * Ejemplo: { id: [1, 2], name: 'test' } → "id=1&id=2&name=test"
+ */
+const paramsSerializer = (params: any): string => {
+  const parts: string[] = [];
+  
+  Object.keys(params).forEach(key => {
+    const value = params[key];
+    
+    if (Array.isArray(value)) {
+      // Para arrays: crear parámetros repetidos
+      value.forEach(v => {
+        parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(v)}`);
+      });
+    } else if (value !== null && value !== undefined) {
+      // Para valores simples
+      parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+    }
+  });
+  
+  return parts.join('&');
+};
+
+/**
  * Crear instancia de axios configurada para el proyecto
  * Configura:
  * - Base URL
  * - Timeout
  * - Credenciales (CRÍTICO para cookies)
  * - Validación de status (NO lanzar error automáticamente)
+ * - paramsSerializer: Para enviar arrays como parámetros repetidos (?key=1&key=2)
  */
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -23,6 +48,8 @@ const api: AxiosInstance = axios.create({
   },
   // ⚠️ CRÍTICO: NO validar status (dejar que axios retorne la respuesta completa)
   validateStatus: () => true, // ← Retorna TODAS las respuestas, no lanza error
+  // ✅ Serializar arrays como parámetros repetidos: ?id=1&id=2&id=3
+  paramsSerializer,
 });
 
 /**

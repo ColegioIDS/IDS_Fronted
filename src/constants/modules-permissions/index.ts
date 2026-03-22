@@ -14,6 +14,7 @@ export { CRUD_ACTIONS, SCOPE_TYPES } from './types';
 
 // Permisos por módulo
 export { ACADEMIC_WEEK_PERMISSIONS } from './academic-week/academic-week.permissions';
+export { ACADEMIC_ANALYTICS_PERMISSIONS } from './academic-analytics/academic-analytics.permissions';
 export { PERMISSION_PERMISSIONS } from './permission/permission.permissions';
 export { ROLE_PERMISSIONS } from './role/role.permissions';
 export { SCHOOL_CYCLE_PERMISSIONS } from './school-cycle/school-cycle.permissions';
@@ -52,6 +53,7 @@ export { ERICA_HISTORY_PERMISSIONS } from './erica-history/erica-history.permiss
  */
 export const MODULES_PERMISSIONS = {
   ACADEMIC_WEEK: require('./academic-week/academic-week.permissions').ACADEMIC_WEEK_PERMISSIONS,
+  ACADEMIC_ANALYTICS: require('./academic-analytics/academic-analytics.permissions').ACADEMIC_ANALYTICS_PERMISSIONS,
   PERMISSION: require('./permission/permission.permissions').default,
   ROLE: require('./role/role.permissions').ROLE_PERMISSIONS,
   SCHOOL_CYCLE: require('./school-cycle/school-cycle.permissions').SCHOOL_CYCLE_PERMISSIONS,

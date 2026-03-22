@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import { PiStudentBold } from "react-icons/pi";
-import { CalendarPlus, GraduationCap, CalendarCheck, ClipboardList, CalendarCheck2, FileSignature, BookOpenCheck } from 'lucide-react';
+import { CalendarPlus, GraduationCap, CalendarCheck, ClipboardList, CalendarCheck2, FileSignature, BookOpenCheck, BarChart3 } from 'lucide-react';
 import { ProtectedNavItem } from '@/components/navigation/ProtectedNavItem';
 import { ERICA_TOPICS_PERMISSIONS } from '@/constants/erica-topics.permissions';
 import { ERICA_COLORS_PERMISSIONS } from '@/constants/erica-colors.permissions';
@@ -20,6 +20,7 @@ import { ASSIGNMENTS_PERMISSIONS } from '@/constants/modules-permissions/assignm
 import { PERMISSION_PERMISSIONS } from '@/constants/modules-permissions/permission/permission.permissions';
 import { ROLE_PERMISSIONS } from '@/constants/modules-permissions/role/role.permissions';
 import { VERIFY_EMAIL_PERMISSIONS } from '@/constants/modules-permissions/verify-email/verify-email.permissions';
+import { ACADEMIC_ANALYTICS_PERMISSIONS } from '@/constants/modules-permissions/academic-analytics/academic-analytics.permissions';
 import { Palette } from 'lucide-react';
 
 import {
@@ -390,6 +391,22 @@ const navItems: NavItem[] = [
         name: "Tareas",
         path: "/assignments",
         requiredPermission: { module: 'assignments', action: 'read' }
+      },
+    ]
+  },
+  {
+    icon: <BarChart3 className="w-5 h-5" />,
+    name: "Analítica Académica",
+    color: "text-blue-300 dark:text-blue-300",
+    requiredAnyPermissions: [
+      ACADEMIC_ANALYTICS_PERMISSIONS.READ,
+      ACADEMIC_ANALYTICS_PERMISSIONS.READ_OWN,
+    ],
+    subItems: [
+      {
+        name: "Reportes Académicos",
+        path: "/academic-analytics",
+        requiredPermission: ACADEMIC_ANALYTICS_PERMISSIONS.READ,
       },
     ]
   }
