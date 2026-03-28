@@ -11,7 +11,6 @@ import { ExportError } from '@/components/features/export/ExportError';
 export default function ExportPage() {
   // Estado para los filtros
   const [filters, setFilters] = useState<Partial<ExportsStudentsFiltersQuery>>({});
-  const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [exportData, setExportData] = useState<any>(null);
 
@@ -80,8 +79,6 @@ export default function ExportPage() {
       return updated;
     });
 
-    // Resetear la página cuando cambian los filtros
-    setCurrentPage(1);
     setExportData(null);
   };
 
@@ -92,7 +89,6 @@ export default function ExportPage() {
     }
 
     setIsSubmitting(true);
-    setCurrentPage(1);
 
     try {
       // Buscar la sección seleccionada
@@ -104,7 +100,7 @@ export default function ExportPage() {
         gradeId: filters.gradeId,
         sectionId: filters.sectionId,
         page: 1,
-        limit: 10,
+        limit: 1000,
       });
 
       // Guardar los datos de la sección
@@ -117,23 +113,6 @@ export default function ExportPage() {
       console.error('Error generating report:', error);
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  // Manejar cambio de página
-  const handlePageChange = async (newPage: number) => {
-    setCurrentPage(newPage);
-
-    try {
-      await fetchStudents({
-        cycleId: filters.cycleId,
-        gradeId: filters.gradeId,
-        sectionId: filters.sectionId,
-        page: newPage,
-        limit: 10,
-      });
-    } catch (error) {
-      console.error('Error changing page:', error);
     }
   };
 
@@ -172,7 +151,6 @@ export default function ExportPage() {
               filters={exportData}
               studentData={studentData}
               loading={studentLoading}
-              onPageChange={handlePageChange}
             />
           )}
         </>

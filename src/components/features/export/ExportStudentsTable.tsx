@@ -229,10 +229,6 @@ export function ExportStudentsTable({
     );
   }
 
-  const currentPage = meta?.page || 1;
-  const totalPages = meta?.totalPages || 1;
-  const total = meta?.total || students.length;
-
   return (
     <div className="space-y-4">
       {/* Selection Action Bar */}
@@ -593,43 +589,6 @@ export function ExportStudentsTable({
           </Card>
         ))}
       </div>
-
-      {/* Pagination */}
-      {meta && meta.totalPages > 1 && (
-        <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5">
-            <div className="text-sm text-slate-700 dark:text-slate-300">
-              Página <span className="font-bold text-slate-900 dark:text-white">{currentPage}</span> de{' '}
-              <span className="font-bold text-slate-900 dark:text-white">{totalPages}</span>
-              <span className="text-slate-600 dark:text-slate-400 ml-2">• {total} estudiantes</span>
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                onClick={() => onPageChange?.(currentPage - 1)}
-                disabled={currentPage === 1 || loading}
-                variant="outline"
-                size="sm"
-                className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 font-semibold gap-1 transition-colors rounded-lg h-9"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Anterior</span>
-              </Button>
-
-              <Button
-                onClick={() => onPageChange?.(currentPage + 1)}
-                disabled={currentPage === totalPages || loading}
-                variant="outline"
-                size="sm"
-                className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 font-semibold gap-1 transition-colors rounded-lg h-9"
-              >
-                <span className="hidden sm:inline">Siguiente</span>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
     </div>
   );
 }
